@@ -28,6 +28,7 @@ import { AuthModule } from './modules/auth/auth.module';
 // import { DatabaseModule } from './database/database.module';
 // import { CommonModule } from './common/common.module';
 // import { HealthModule } from './health/health.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -54,6 +55,8 @@ import { AuthModule } from './modules/auth/auth.module';
     // DatabaseModule,
     // CommonModule,
     AuthModule,
+
+    UsersModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
