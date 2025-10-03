@@ -29,6 +29,7 @@ import { AuthModule } from './modules/auth/auth.module';
 // import { CommonModule } from './common/common.module';
 // import { HealthModule } from './health/health.module';
 import { UsersModule } from './modules/users/users.module';
+import { DevicesModule } from './modules/devices/devices.module';
 
 @Module({
   imports: [
@@ -57,6 +58,8 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
 
     UsersModule,
+
+    DevicesModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
