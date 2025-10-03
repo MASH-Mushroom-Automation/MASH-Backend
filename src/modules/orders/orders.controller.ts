@@ -27,7 +27,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('Orders')
-@Controller('api/v1/orders')
+@Controller('orders')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrdersController {
