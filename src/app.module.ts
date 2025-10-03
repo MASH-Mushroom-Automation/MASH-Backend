@@ -34,6 +34,7 @@ import { SensorsModule } from './modules/sensors/sensors.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -72,6 +73,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
     OrdersModule,
 
     CategoriesModule,
+
+    AnalyticsModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
