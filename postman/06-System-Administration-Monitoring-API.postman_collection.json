@@ -1,0 +1,520 @@
+{
+  "info": {
+    "name": "MASH Mushroom Automation System Administration & Monitoring API",
+    "description": "System administration, health monitoring, and diagnostic tools for MASH Mushroom Automation. This collection includes health checks, database monitoring, debug utilities, analytics tracking, and system maintenance operations for comprehensive system oversight.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Health Monitoring",
+      "description": "System health checks and status monitoring endpoints",
+      "item": [
+        {
+          "name": "Simple Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Basic health check endpoint that returns server status, uptime, and timestamp. Used for load balancer health checks and basic connectivity testing."
+          },
+          "response": []
+        },
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Comprehensive API health check including memory usage, server information, and detailed status metrics for system monitoring and diagnostics."
+          },
+          "response": []
+        },
+        {
+          "name": "Ping Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ping",
+              "host": ["{{base_url}}"],
+              "path": ["ping"]
+            },
+            "description": "Simple ping-pong test for basic connectivity verification. Returns 'pong' response for quick connection testing."
+          },
+          "response": []
+        },
+        {
+          "name": "Server Welcome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Root endpoint with comprehensive server information including API documentation, available endpoints, and system status overview."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Database Monitoring",
+      "description": "Database health checks and status monitoring",
+      "item": [
+        {
+          "name": "Database Status Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/database/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "database", "status"]
+            },
+            "description": "Comprehensive database status check including connection health, performance metrics, table statistics, and system resource usage."
+          },
+          "response": []
+        },
+        {
+          "name": "Database Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/database/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "database", "health"]
+            },
+            "description": "Simple database health verification with connection testing and basic availability confirmation for monitoring systems."
+          },
+          "response": []
+        },
+        {
+          "name": "Database Test Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"SELECT COUNT(*) as total_employees FROM employees WHERE status = 'Active'\",\n  \"parameters\": [],\n  \"timeout\": 5000,\n  \"readOnly\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/database/test-query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "database", "test-query"]
+            },
+            "description": "Executes test queries against the database for performance testing and data validation. Restricted to read-only operations for security."
+          },
+          "response": []
+        },
+        {
+          "name": "Database Status Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/database-status",
+              "host": ["{{base_url}}"],
+              "path": ["database-status"]
+            },
+            "description": "HTML page displaying comprehensive database status information in a user-friendly format for administrators and operations teams."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Debug and Diagnostics",
+      "description": "System debugging tools and diagnostic information",
+      "item": [
+        {
+          "name": "Debug Routes Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/debug",
+              "host": ["{{base_url}}"],
+              "path": ["debug"]
+            },
+            "description": "Displays all available API routes and endpoints with methods for system documentation and troubleshooting."
+          },
+          "response": []
+        },
+        {
+          "name": "API Debug Routes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/debug",
+              "host": ["{{base_url}}"],
+              "path": ["api", "debug"]
+            },
+            "description": "Alternative debug endpoint for API route information and system diagnostics."
+          },
+          "response": []
+        },
+        {
+          "name": "Environment Variables Debug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/debug/env",
+              "host": ["{{base_url}}"],
+              "path": ["debug", "env"]
+            },
+            "description": "Displays environment configuration including backend URL, Node environment, and system settings for troubleshooting."
+          },
+          "response": []
+        },
+        {
+          "name": "CORS Configuration Debug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/debug/cors",
+              "host": ["{{base_url}}"],
+              "path": ["api", "debug", "cors"]
+            },
+            "description": "Comprehensive CORS configuration debugging including allowed origins, request headers, and cross-origin policy verification."
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth Configuration Debug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/debug/google-oauth",
+              "host": ["{{base_url}}"],
+              "path": ["debug", "google-oauth"]
+            },
+            "description": "Displays Google OAuth configuration status including client settings, callback URLs, and authentication setup verification."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics and Tracking",
+      "description": "System analytics, event tracking, and usage monitoring",
+      "item": [
+        {
+          "name": "Track Analytics Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"user_login\",\n  \"properties\": {\n    \"userId\": 123,\n    \"email\": \"user@example.com\",\n    \"loginMethod\": \"email_password\",\n    \"deviceType\": \"desktop\",\n    \"browser\": \"Chrome\",\n    \"ipAddress\": \"192.168.1.100\",\n    \"userAgent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\"\n  },\n  \"timestamp\": \"2024-01-15T10:30:00Z\",\n  \"platform\": \"web\",\n  \"sessionId\": \"sess_abc123xyz\",\n  \"metadata\": {\n    \"source\": \"login_form\",\n    \"campaign\": \"Q1_2024\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/analytics/track",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "track"]
+            },
+            "description": "Records analytics events for user behavior tracking, system usage monitoring, and business intelligence collection."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Analytics Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/?eventType={{event_type}}&startDate={{start_date}}&endDate={{end_date}}&userId={{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics"],
+              "query": [
+                {
+                  "key": "eventType",
+                  "value": "{{event_type}}",
+                  "description": "Filter by specific event type"
+                },
+                {
+                  "key": "startDate",
+                  "value": "{{start_date}}",
+                  "description": "Start date for analytics data range"
+                },
+                {
+                  "key": "endDate",
+                  "value": "{{end_date}}",
+                  "description": "End date for analytics data range"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{user_id}}",
+                  "description": "Filter by specific user ID"
+                }
+              ]
+            },
+            "description": "Retrieves analytics data with filtering options for events, date ranges, and user-specific analysis."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Analytics Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportType\": \"USER_ACTIVITY_SUMMARY\",\n  \"dateRange\": {\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-01-31\"\n  },\n  \"filters\": {\n    \"eventTypes\": [\"user_login\", \"employee_created\", \"attendance_recorded\"],\n    \"userRoles\": [\"Admin\", \"Manager\"],\n    \"departments\": [\"HR\", \"IT\"]\n  },\n  \"metrics\": [\n    \"total_events\",\n    \"unique_users\",\n    \"session_duration\",\n    \"feature_usage\",\n    \"error_rates\"\n  ],\n  \"format\": \"JSON\",\n  \"includeCharts\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/analytics/reports/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "reports", "generate"]
+            },
+            "description": "Generates comprehensive analytics reports with customizable metrics, filters, and date ranges for business intelligence and system optimization."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication Status",
+      "description": "Authentication system status and information",
+      "item": [
+        {
+          "name": "Auth API Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth"]
+            },
+            "description": "Displays authentication API status and available endpoints for system verification and documentation."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "File and Upload Management",
+      "description": "Static file serving and upload directory management",
+      "item": [
+        {
+          "name": "Access Uploaded Files",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/uploads/{{file_category}}/{{file_name}}",
+              "host": ["{{base_url}}"],
+              "path": ["uploads", "{{file_category}}", "{{file_name}}"]
+            },
+            "description": "Accesses uploaded files including employee documents and profile pictures. File categories include 'employee-documents' and 'profile-pictures'."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Upload Directory Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/system/upload-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "upload-status"]
+            },
+            "description": "Checks the status and configuration of upload directories including available space, permissions, and directory structure."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "System Maintenance",
+      "description": "System maintenance and administrative operations",
+      "item": [
+        {
+          "name": "Clear System Cache",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cacheTypes\": [\"session\", \"user\", \"employee\", \"analytics\"],\n  \"clearAll\": false,\n  \"reason\": \"Routine maintenance\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/system/clear-cache",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "clear-cache"]
+            },
+            "description": "Clears system caches for performance optimization and data refresh. Supports selective cache clearing and maintenance logging."
+          },
+          "response": []
+        },
+        {
+          "name": "System Backup Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/system/backup-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "backup-status"]
+            },
+            "description": "Retrieves system backup status including last backup date, backup schedule, and storage information for disaster recovery planning."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate System Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportType\": \"SYSTEM_HEALTH\",\n  \"includeMetrics\": {\n    \"performance\": true,\n    \"security\": true,\n    \"usage\": true,\n    \"errors\": true,\n    \"storage\": true\n  },\n  \"dateRange\": {\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-01-31\"\n  },\n  \"format\": \"JSON\",\n  \"deliveryMethod\": \"API_RESPONSE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/system/reports/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "reports", "generate"]
+            },
+            "description": "Generates comprehensive system health and performance reports for administrative oversight and system optimization planning."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "description": "Base URL for the API server"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "description": "JWT authentication token for authorized requests"
+    },
+    {
+      "key": "file_category",
+      "value": "profile-pictures",
+      "description": "Category of uploaded files (employee-documents, profile-pictures)"
+    },
+    {
+      "key": "file_name",
+      "value": "employee_123_profile.jpg",
+      "description": "Name of the specific file to access"
+    },
+    {
+      "key": "event_type",
+      "value": "user_login",
+      "description": "Type of analytics event to filter"
+    },
+    {
+      "key": "start_date",
+      "value": "2024-01-01",
+      "description": "Start date for analytics queries"
+    },
+    {
+      "key": "end_date",
+      "value": "2024-01-31",
+      "description": "End date for analytics queries"
+    },
+    {
+      "key": "user_id",
+      "value": "123",
+      "description": "User ID for analytics filtering"
+    }
+  ]
+}

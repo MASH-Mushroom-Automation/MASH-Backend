@@ -1,0 +1,445 @@
+{
+    "info": {
+        "_postman_id": "d9e0f1a2-b3c4-5d6e-7f8a-9b0c1d2e3f4a",
+        "name": "12-Support-OTP-API",
+        "description": "Collection for customer support and OTP system in the MASH Mushroom eCommerce system.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Support Tickets",
+            "item": [
+                {
+                    "name": "Create Support Ticket",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"subject\": \"Product Quality Issue\",\n    \"description\": \"I received my mushroom order but some items were damaged during shipping. Can you help me with a refund or replacement?\",\n    \"category\": \"order_issue\",\n    \"priority\": \"medium\",\n    \"orderId\": \"{{orderId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/tickets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "tickets"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Support Tickets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/tickets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "tickets"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Support Ticket by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/tickets/{{ticketId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "tickets",
+                                "{{ticketId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add Ticket Response",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"message\": \"Thank you for bringing this to our attention. I've processed a full refund for your order and it should appear in your account within 3-5 business days.\",\n    \"isInternal\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/tickets/{{ticketId}}/responses",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "tickets",
+                                "{{ticketId}}",
+                                "responses"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "OTP System",
+            "item": [
+                {
+                    "name": "Send OTP for Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"pp.namias@gmail.com\",\n    \"purpose\": \"login\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/otp/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "otp",
+                                "send"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Verify OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"pp.namias@gmail.com\",\n    \"otp\": \"123456\",\n    \"purpose\": \"login\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/otp/verify",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "otp",
+                                "verify"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Send OTP for Password Reset",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"pp.namias@gmail.com\",\n    \"purpose\": \"password_reset\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/otp/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "otp",
+                                "send"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reset Password with OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"pp.namias@gmail.com\",\n    \"otp\": \"123456\",\n    \"newPassword\": \"NewSecurePassword123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/otp/reset-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "otp",
+                                "reset-password"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "FAQ & Help Center",
+            "item": [
+                {
+                    "name": "Get FAQ Categories",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/faq/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "faq",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get FAQ by Category",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/faq?category=shipping",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "faq"
+                            ],
+                            "query": [
+                                {
+                                    "key": "category",
+                                    "value": "shipping"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Search FAQ",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/faq/search?q=mushroom storage",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "faq",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "mushroom storage"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Live Chat",
+            "item": [
+                {
+                    "name": "Start Chat Session",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"subject\": \"General Inquiry\",\n    \"message\": \"Hi, I have a question about your mushroom products.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/chat/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "chat",
+                                "start"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Send Chat Message",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"chatId\": \"{{chatId}}\",\n    \"message\": \"What are your most popular mushroom varieties?\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/chat/{{chatId}}/message",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "chat",
+                                "{{chatId}}",
+                                "message"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Chat History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/support/chat/{{chatId}}/history",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "support",
+                                "chat",
+                                "{{chatId}}",
+                                "history"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "ticketId",
+            "value": ""
+        },
+        {
+            "key": "chatId",
+            "value": ""
+        }
+    ]
+}

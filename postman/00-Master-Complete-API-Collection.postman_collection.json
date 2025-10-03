@@ -1,0 +1,875 @@
+{
+  "info": {
+    "name": "MASH Mushroom eCommerce Complete API Collection",
+    "description": "Complete API collection for MASH Mushroom eCommerce platform. This comprehensive collection includes all API endpoints for mushroom sellers and buyers, with authentication, product management, orders, categories, and CMS features for the complete eCommerce system.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Quick Start Guide",
+      "description": "Essential endpoints for getting started with the MASH Mushroom Automation API",
+      "item": [
+        {
+          "name": "1. Server Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Verify server connectivity and basic health status"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Demo\",\n  \"lastName\": \"User\",\n  \"email\": \"demo@mashroomautomation.com\",\n  \"password\": \"DemoPassword123!\",\n  \"confirmPassword\": \"DemoPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Create a new user account for API access"
+          },
+          "response": []
+        },
+        {
+          "name": "3. User Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@mashroomautomation.com\",\n  \"password\": \"DemoPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticate and obtain JWT token for API access"
+          },
+          "response": []
+        },
+        {
+          "name": "4. Get Current User Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Verify authentication and get user information"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "API Collections Overview",
+      "description": "Links and information about individual API collections",
+      "item": [
+        {
+          "name": "Collection 01 - Authentication API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth"]
+            },
+            "description": "User registration, login, password management, and profile operations. Import: 01-Authentication-API.postman_collection.json"
+          },
+          "response": []
+        },
+        {
+          "name": "Collection 02 - Employee Management API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/employees/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "employees"]
+            },
+            "description": "Complete employee lifecycle management including CRUD operations, documents, and file uploads. Import: 02-Employee-Management-API.postman_collection.json"
+          },
+          "response": []
+        },
+        {
+          "name": "Collection 03 - Department & Position API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/departments/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "departments"]
+            },
+            "description": "Organizational structure management for departments and positions. Import: 03-Department-Position-Management-API.postman_collection.json"
+          },
+          "response": []
+        },
+        {
+          "name": "Collection 04 - Attendance Management API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance"]
+            },
+            "description": "Time tracking, shift management, and attendance records. Import: 04-Attendance-Management-API.postman_collection.json"
+          },
+          "response": []
+        },
+        {
+          "name": "Collection 05 - Payroll & User Management API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/payroll/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payroll"]
+            },
+            "description": "Payroll processing and administrative user management. Import: 05-Payroll-User-Management-API.postman_collection.json"
+          },
+          "response": []
+        },
+        {
+          "name": "Collection 06 - System Administration API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/debug",
+              "host": ["{{base_url}}"],
+              "path": ["debug"]
+            },
+            "description": "Health monitoring, debug utilities, and system administration. Import: 06-System-Administration-Monitoring-API.postman_collection.json"
+          },
+          "response": []
+        },
+        {
+          "name": "Collection 07 - Cloudinary File Management API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cloudinary/storage/usage",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cloudinary", "storage", "usage"]
+            },
+            "description": "Cloud-based file management and image processing. Import: 07-Cloudinary-File-Management-API.postman_collection.json"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Environment Setup",
+      "description": "Configuration and environment setup utilities",
+      "item": [
+        {
+          "name": "Set Development Environment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/debug/env",
+              "host": ["{{base_url}}"],
+              "path": ["debug", "env"]
+            },
+            "description": "Configure environment variables for development setup",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "// Set environment variables for development",
+                    "pm.environment.set('base_url', 'http://localhost:3000');",
+                    "pm.environment.set('environment', 'development');",
+                    "console.log('Development environment configured');"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Set Production Environment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{production_url}}/health",
+              "host": ["{{production_url}}"],
+              "path": ["health"]
+            },
+            "description": "Configure environment variables for production setup",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "// Set environment variables for production",
+                    "pm.environment.set('base_url', 'https://mashroomautomation-production-49b6.up.railway.app');",
+                    "pm.environment.set('environment', 'production');",
+                    "console.log('Production environment configured');"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Authentication Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Clear stored authentication token",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "// Clear authentication token",
+                    "pm.environment.set('auth_token', '');",
+                    "console.log('Authentication token cleared');"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Testing Workflows",
+      "description": "Automated testing workflows for comprehensive API validation",
+      "item": [
+        {
+          "name": "Complete Authentication Flow Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"test.{{$randomInt}}@mashroomautomation.com\",\n  \"password\": \"TestPassword123!\",\n  \"confirmPassword\": \"TestPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Automated test for complete authentication workflow",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Registration successful', function () {",
+                    "    pm.response.to.have.status(201);",
+                    "    const jsonData = pm.response.json();",
+                    "    pm.expect(jsonData.success).to.be.true;",
+                    "});",
+                    "",
+                    "if (pm.response.code === 201) {",
+                    "    const jsonData = pm.response.json();",
+                    "    pm.environment.set('test_user_email', JSON.parse(pm.request.body.raw).email);",
+                    "    console.log('Test user registered:', pm.environment.get('test_user_email'));",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Employee Management Flow Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Employee\",\n  \"email\": \"test.employee.{{$randomInt}}@mashroomautomation.com\",\n  \"departmentId\": 1,\n  \"positionId\": 1,\n  \"hireDate\": \"{{$isoTimestamp}}\",\n  \"salary\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/employees/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "employees"]
+            },
+            "description": "Automated test for employee management workflow",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Employee creation successful', function () {",
+                    "    pm.response.to.have.status(201);",
+                    "    const jsonData = pm.response.json();",
+                    "    pm.expect(jsonData.success).to.be.true;",
+                    "    if (jsonData.data && jsonData.data.id) {",
+                    "        pm.environment.set('test_employee_id', jsonData.data.id);",
+                    "    }",
+                    "});"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sample Data Operations",
+      "description": "Operations using demo and sample data for testing",
+      "item": [
+        {
+          "name": "Get Sample Employee Data (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/employees/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "employees"]
+            },
+            "description": "Retrieve sample employee data from JSON storage"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sample Attendance Data (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/json",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance", "json"]
+            },
+            "description": "Retrieve sample attendance data from JSON storage"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sample Payroll Data (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/payroll/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payroll"]
+            },
+            "description": "Retrieve sample payroll data from JSON storage"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "eCommerce - Products",
+      "description": "Mushroom product management for sellers and buyers",
+      "item": [
+        {
+          "name": "Create Mushroom Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"White Oyster Mushrooms\",\n  \"description\": \"Fresh white oyster mushrooms, perfect for cooking\",\n  \"price\": 15.99,\n  \"unit\": \"kg\",\n  \"category\": \"Edible Mushrooms\",\n  \"stock\": 100,\n  \"sellerId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Create a new mushroom product listing"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/products",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Retrieve all mushroom products"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "1"]
+            },
+            "description": "Retrieve a specific mushroom product"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 18.99,\n  \"stock\": 80\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "1"]
+            },
+            "description": "Update mushroom product details"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products", "1"]
+            },
+            "description": "Delete a mushroom product"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "eCommerce - Categories",
+      "description": "Mushroom category management",
+      "item": [
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Edible Mushrooms\",\n  \"description\": \"Mushrooms safe for human consumption\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories"]
+            },
+            "description": "Create a new mushroom category"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories"]
+            },
+            "description": "Retrieve all mushroom categories"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "eCommerce - Orders",
+      "description": "Order management for mushroom purchases",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 2\n    }\n  ],\n  \"totalAmount\": 31.98\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders"]
+            },
+            "description": "Create a new order for mushroom products"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders"]
+            },
+            "description": "Retrieve user's mushroom orders"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders", "1"]
+            },
+            "description": "Retrieve a specific order"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "eCommerce - Sellers",
+      "description": "Seller management for mushroom vendors",
+      "item": [
+        {
+          "name": "Get All Sellers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/sellers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sellers"]
+            },
+            "description": "Retrieve all mushroom sellers"
+          },
+          "response": []
+        },
+        {
+          "name": "Become a Seller",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"{{adminName}} Mushroom Farm\",\n  \"description\": \"Premium mushroom cultivation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sellers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sellers"]
+            },
+            "description": "Register as a mushroom seller"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "eCommerce - Buyers",
+      "description": "Buyer management for mushroom purchasers",
+      "item": [
+        {
+          "name": "Get Buyer Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/buyers/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "buyers", "profile"]
+            },
+            "description": "Retrieve buyer profile information"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "description": "Base URL for development environment"
+    },
+    {
+      "key": "production_url",
+      "value": "",
+      "description": "Base URL for production environment"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "description": "JWT authentication token obtained from login"
+    },
+    {
+      "key": "employee_id",
+      "value": "1",
+      "description": "Default employee ID for testing"
+    },
+    {
+      "key": "user_id",
+      "value": "1",
+      "description": "Default user ID for testing"
+    },
+    {
+      "key": "department_id",
+      "value": "1",
+      "description": "Default department ID for testing"
+    },
+    {
+      "key": "position_id",
+      "value": "1",
+      "description": "Default position ID for testing"
+    },
+    {
+      "key": "test_user_email",
+      "value": "",
+      "description": "Email of test user for automated testing"
+    },
+    {
+      "key": "test_employee_id",
+      "value": "",
+      "description": "ID of test employee created during testing"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script for all requests",
+          "console.log('Request to: ' + pm.request.url);",
+          "",
+          "// Add timestamp to requests",
+          "pm.globals.set('timestamp', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script for all responses",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Auto-save auth token from login responses",
+          "if (pm.request.url.toString().includes('/api/auth/login') && pm.response.code === 200) {",
+          "    try {",
+          "        const jsonData = pm.response.json();",
+          "        if (jsonData.token) {",
+          "            pm.environment.set('auth_token', jsonData.token);",
+          "            console.log('Auth token automatically saved');",
+          "        }",
+          "    } catch (e) {",
+          "        console.log('Could not parse login response');",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}

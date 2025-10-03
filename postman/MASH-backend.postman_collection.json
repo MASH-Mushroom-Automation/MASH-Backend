@@ -1,0 +1,247 @@
+{
+  "info": {
+    "name": "MASH-backend",
+    "_postman_id": "mash-backend-collection",
+    "description": "Postman collection for local development of the MASH-backend. Set the {{baseUrl}} variable when importing (default: http://localhost:3000). Use the environment to store tokens.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Collection pre-request: if a Firebase ID token is present in the environment,",
+          "// automatically set the Authorization header for requests so you don't have to add it manually.",
+          "try {",
+          "  const token = pm.environment.get('firebaseIdToken');",
+          "  if (token) {",
+          "    pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token });",
+          "  }",
+          "  // If firebase emulator host is set, rewrite Firebase REST endpoints to use the emulator",
+          "  const emulator = pm.environment.get('firebaseEmulatorHost');",
+          "  if (emulator && pm.request.url && pm.request.url.host && pm.request.url.host.length) {",
+          "    const host = pm.request.url.host.join('.');",
+          "    if (host.includes('identitytoolkit.googleapis.com')) {",
+          "      const newUrl = pm.request.url.toString().replace('https://identitytoolkit.googleapis.com', emulator.replace(/\/$/, ''));",
+          "      pm.request.url = newUrl;",
+          "    }",
+          "  }",
+          "} catch (e) { console.warn('Postman pre-request script error', e); }"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Root - Hello",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": ["" ] }
+      }
+    },
+    {
+      "name": "Health",
+      "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] } }
+    },
+    {
+      "name": "Auth - Register (example)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\",\n  \"name\": \"Dev User\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "try {",
+              "  const body = pm.response.json();",
+              "  if (body.firebase && body.firebase.idToken) { pm.environment.set('firebaseIdToken', body.firebase.idToken); }",
+              "  if (body.firebase && body.firebase.localId) { pm.environment.set('firebaseLocalId', body.firebase.localId); }",
+              "  if (body.firebase && body.firebase.refreshToken) { pm.environment.set('firebaseRefreshToken', body.firebase.refreshToken); }",
+              "  if (body.user && body.user.id) { pm.environment.set('currentUserId', body.user.id); }",
+              "  pm.test('register saved tokens', () => !!body.firebase && !!body.firebase.idToken);",
+              "} catch (e) { pm.test('response is json', () => false); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Auth - Login (example)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\"\n}" },
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "try {",
+              "  const body = pm.response.json();",
+              "  if (body.firebase && body.firebase.idToken) { pm.environment.set('firebaseIdToken', body.firebase.idToken); }",
+              "  if (body.firebase && body.firebase.localId) { pm.environment.set('firebaseLocalId', body.firebase.localId); }",
+              "  if (body.firebase && body.firebase.refreshToken) { pm.environment.set('firebaseRefreshToken', body.firebase.refreshToken); }",
+              "  if (body.user && body.user.id) { pm.environment.set('currentUserId', body.user.id); }",
+              "  pm.test('login saved tokens', () => !!body.firebase && !!body.firebase.idToken);",
+              "} catch (e) { pm.test('response is json', () => false); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Users - Create (example)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwt}}" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"New User\"\n}" },
+        "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+      }
+    },
+    {
+      "name": "Users - Get by id (example)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+        "url": { "raw": "{{baseUrl}}/users/:id", "host": ["{{baseUrl}}"], "path": ["users", ":id"], "variable": [{ "key": "id", "value": "" }] }
+      }
+    },
+    {
+      "name": "Telemetry - Batch (example)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwt}}" }],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  { \"deviceId\": \"dev-1\", \"metric\": \"temp\", \"value\": 23.4, \"ts\": \"2025-09-25T00:00:00Z\" },\n  { \"deviceId\": \"dev-1\", \"metric\": \"hum\", \"value\": 55.2, \"ts\": \"2025-09-25T00:00:10Z\" }\n]"
+        },
+        "url": { "raw": "{{baseUrl}}/telemetry/batch", "host": ["{{baseUrl}}"], "path": ["telemetry","batch"] }
+      }
+    }
+    ,
+    {
+      "name": "Firebase - Sign Up (REST)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\",\n  \"returnSecureToken\": true\n}"
+        },
+        "url": { "raw": "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={{firebaseApiKey}}", "protocol": "https", "host": ["identitytoolkit","googleapis","com"], "path": ["v1","accounts:signUp"], "query": [{ "key": "key", "value": "{{firebaseApiKey}}" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Capture idToken, localId and refreshToken returned by Firebase signUp and save into environment",
+              "try {",
+              "  const body = pm.response.json();",
+              "  if (body.idToken) {",
+              "    pm.environment.set('firebaseIdToken', body.idToken);",
+              "  }",
+              "  if (body.localId) { pm.environment.set('firebaseLocalId', body.localId); }",
+              "  if (body.refreshToken) { pm.environment.set('firebaseRefreshToken', body.refreshToken); }",
+              "  pm.test('Firebase signUp returned idToken', () => !!body.idToken);",
+              "} catch (e) { pm.test('response is json', () => false); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Firebase - Sign In (REST)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\",\n  \"returnSecureToken\": true\n}"
+        },
+        "url": { "raw": "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={{firebaseApiKey}}", "protocol": "https", "host": ["identitytoolkit","googleapis","com"], "path": ["v1","accounts:signInWithPassword"], "query": [{ "key": "key", "value": "{{firebaseApiKey}}" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Capture idToken, localId and refreshToken returned by Firebase signIn and save into environment",
+              "try {",
+              "  const body = pm.response.json();",
+              "  if (body.idToken) {",
+              "    pm.environment.set('firebaseIdToken', body.idToken);",
+              "    pm.test('Saved firebaseIdToken', () => true);",
+              "  } else { pm.test('idToken present', () => false); }",
+              "  if (body.localId) { pm.environment.set('firebaseLocalId', body.localId); }",
+              "  if (body.refreshToken) { pm.environment.set('firebaseRefreshToken', body.refreshToken); }",
+              "} catch (e) { pm.test('response is json', () => false); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Backend - Verify Firebase ID Token",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{firebaseIdToken}}" }],
+        "url": { "raw": "{{baseUrl}}/auth/verify", "host": ["{{baseUrl}}"], "path": ["auth","verify"] }
+      }
+    },
+    {
+      "name": "Backend - Exchange ID Token (upsert user)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{firebaseIdToken}}" }],
+        "body": { "mode": "raw", "raw": "{ \"idToken\": \"{{firebaseIdToken}}\" }" },
+        "url": { "raw": "{{baseUrl}}/auth/exchange", "host": ["{{baseUrl}}"], "path": ["auth","exchange"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "try {",
+              "  const body = pm.response.json();",
+              "  if (body.user && body.user.id) { pm.environment.set('currentUserId', body.user.id); pm.test('Saved currentUserId', () => true); } else { pm.test('user present', () => false); }",
+              "} catch (e) { pm.test('response is json', () => false); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Backend - Protected Example (Get current user)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{firebaseIdToken}}" }],
+        "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users","me"] }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "jwt", "value": "", "type": "string" },
+    { "key": "firebaseApiKey", "value": "", "type": "string" },
+    { "key": "firebaseIdToken", "value": "", "type": "string" }
+  ]
+}
