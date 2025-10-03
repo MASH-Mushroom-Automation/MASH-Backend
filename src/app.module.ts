@@ -33,6 +33,7 @@ import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -69,6 +70,8 @@ import { OrdersModule } from './modules/orders/orders.module';
     ProductsModule,
 
     OrdersModule,
+
+    CategoriesModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
