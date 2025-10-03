@@ -32,6 +32,7 @@ import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
 import { ProductsModule } from './modules/products/products.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -66,6 +67,8 @@ import { ProductsModule } from './modules/products/products.module';
     SensorsModule,
 
     ProductsModule,
+
+    OrdersModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
