@@ -13,7 +13,7 @@ import { createDatabaseConfig } from './config/database.config';
 import { createJwtConfig } from './config/jwt.config';
 
 // Import modules (will be created)
-// import { AuthModule } from './modules/auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 // import { UsersModule } from './modules/users/users.module';
 // import { DevicesModule } from './modules/devices/devices.module';
 // import { SensorsModule } from './modules/sensors/sensors.module';
@@ -53,7 +53,7 @@ import { createJwtConfig } from './config/jwt.config';
     // Feature modules (uncomment as they are created)
     // DatabaseModule,
     // CommonModule,
-    // AuthModule,
+    AuthModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,

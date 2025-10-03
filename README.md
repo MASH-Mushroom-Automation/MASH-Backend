@@ -1,13 +1,11 @@
-# 🍄 MASH Backend - Mushroom Automation with Smart Hydro-environment
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-[![CI/CD Pipeline](https://github.com/MASH-Mushroom-Automation/MASH-Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/MASH-Mushroom-Automation/MASH-Backend/actions)
-[![codecov](https://codecov.io/gh/MASH-Mushroom-Automation/MASH-Backend/branch/main/graph/badge.svg)](https://codecov.io/gh/MASH-Mushroom-Automation/MASH-Backend)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=MASH-Backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=MASH-Backend)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=MASH-Backend&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=MASH-Backend)
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## 🎯 Project Overview
-
-MASH Backend is a production-ready NestJS API that powers the Mushroom Automation with Smart Hydro-environment system. This enterprise-grade backend provides comprehensive IoT device management, real-time sensor data processing, e-commerce functionality, and advanced analytics for modern mushroom cultivation.
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
     <p align="center">
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
