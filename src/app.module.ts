@@ -31,6 +31,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
+import { ProductsModule } from './modules/products/products.module';
 
 @Module({
   imports: [
@@ -63,6 +64,8 @@ import { SensorsModule } from './modules/sensors/sensors.module';
     DevicesModule,
 
     SensorsModule,
+
+    ProductsModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
