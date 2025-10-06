@@ -1,0 +1,559 @@
+{
+  "info": {
+    "name": "MASH Mushroom eCommerce API",
+    "description": "Complete eCommerce platform for mushroom sellers and buyers, inspired by AfriCommerce SaaS API. This collection provides comprehensive testing for the MASH (Mushroom Automation System Hub) marketplace.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Authentication & User Management",
+      "item": [
+        {
+          "name": "Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"firstname\": \"{{firstname}}\",\n  \"lastname\": \"{{lastname}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"phonenumber\": \"{{phonenumber}}\",\n  \"usertype\": \"{{usertype}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "signup"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"User registration successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('msg');",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "    ",
+                  "    // Set environment variables",
+                  "    pm.environment.set(\"userId\", jsonData.user._id);",
+                  "    pm.environment.set(\"username\", jsonData.user.username);",
+                  "    pm.environment.set(\"userEmail\", jsonData.user.email);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identity\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/loginuser",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "loginuser"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"User login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('msg');",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "    ",
+                  "    // Set access token for subsequent requests",
+                  "    pm.environment.set(\"accessToken\", jsonData.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "logout"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"User logout successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData.status).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Product Management",
+      "item": [
+        {
+          "name": "Create Mushroom Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{productName}}\",\n  \"description\": \"{{productDescription}}\",\n  \"price\": {{productPrice}},\n  \"category\": \"{{productCategory}}\",\n  \"mushroomType\": \"{{mushroomType}}\",\n  \"weight\": \"{{productWeight}}\",\n  \"origin\": \"{{productOrigin}}\",\n  \"harvestDate\": \"{{harvestDate}}\",\n  \"storageInstructions\": \"{{storageInstructions}}\",\n  \"nutritionalInfo\": \"{{nutritionalInfo}}\",\n  \"images\": [\"{{productImage1}}\", \"{{productImage2}}\"],\n  \"tags\": [\"{{tag1}}\", \"{{tag2}}\", \"{{tag3}}\"],\n  \"isOrganic\": {{isOrganic}},\n  \"isFresh\": {{isFresh}},\n  \"stockQuantity\": {{stockQuantity}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Product created successfully\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('product');",
+                  "    pm.expect(jsonData.product).to.have.property('_id');",
+                  "    ",
+                  "    // Set product ID for subsequent requests",
+                  "    pm.environment.set(\"productId\", jsonData.product._id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page={{page}}&limit={{limit}}&category={{category}}&mushroomType={{mushroomType}}&minPrice={{minPrice}}&maxPrice={{maxPrice}}&sortBy={{sortBy}}&sortOrder={{sortOrder}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "{{page}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "{{category}}",
+                  "disabled": true
+                },
+                {
+                  "key": "mushroomType",
+                  "value": "{{mushroomType}}",
+                  "disabled": true
+                },
+                {
+                  "key": "minPrice",
+                  "value": "{{minPrice}}",
+                  "disabled": true
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "{{maxPrice}}",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "{{sortBy}}",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "{{sortOrder}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Products retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('products');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    pm.expect(jsonData.products).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Product retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('product');",
+                  "    pm.expect(jsonData.product).to.have.property('_id');",
+                  "    pm.expect(jsonData.product).to.have.property('name');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{updatedProductName}}\",\n  \"description\": \"{{updatedProductDescription}}\",\n  \"price\": {{updatedProductPrice}},\n  \"stockQuantity\": {{updatedStockQuantity}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Product updated successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('product');",
+                  "    pm.expect(jsonData.product).to.have.property('_id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Product deleted successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "ppnamias",
+      "type": "string"
+    },
+    {
+      "key": "firstname",
+      "value": "John Kenneth",
+      "type": "string"
+    },
+    {
+      "key": "lastname",
+      "value": "Namias",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "pp.namias@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "PP-Namias99",
+      "type": "string"
+    },
+    {
+      "key": "phonenumber",
+      "value": "+1234567890",
+      "type": "string"
+    },
+    {
+      "key": "usertype",
+      "value": "seller",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productName",
+      "value": "White Oyster Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "productDescription",
+      "value": "Fresh, organic white oyster mushrooms harvested daily. Perfect for cooking and rich in nutrients.",
+      "type": "string"
+    },
+    {
+      "key": "productPrice",
+      "value": "15.99",
+      "type": "string"
+    },
+    {
+      "key": "productCategory",
+      "value": "Edible Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "mushroomType",
+      "value": "Oyster",
+      "type": "string"
+    },
+    {
+      "key": "productWeight",
+      "value": "1kg",
+      "type": "string"
+    },
+    {
+      "key": "productOrigin",
+      "value": "Local Farm",
+      "type": "string"
+    },
+    {
+      "key": "harvestDate",
+      "value": "2025-09-28",
+      "type": "string"
+    },
+    {
+      "key": "storageInstructions",
+      "value": "Store in refrigerator for up to 7 days",
+      "type": "string"
+    },
+    {
+      "key": "nutritionalInfo",
+      "value": "High in protein, fiber, and B vitamins",
+      "type": "string"
+    },
+    {
+      "key": "productImage1",
+      "value": "https://example.com/mushroom1.jpg",
+      "type": "string"
+    },
+    {
+      "key": "productImage2",
+      "value": "https://example.com/mushroom2.jpg",
+      "type": "string"
+    },
+    {
+      "key": "tag1",
+      "value": "organic",
+      "type": "string"
+    },
+    {
+      "key": "tag2",
+      "value": "fresh",
+      "type": "string"
+    },
+    {
+      "key": "tag3",
+      "value": "local",
+      "type": "string"
+    },
+    {
+      "key": "isOrganic",
+      "value": "true",
+      "type": "string"
+    },
+    {
+      "key": "isFresh",
+      "value": "true",
+      "type": "string"
+    },
+    {
+      "key": "stockQuantity",
+      "value": "50",
+      "type": "string"
+    },
+    {
+      "key": "page",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "limit",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "category",
+      "value": "Edible Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "mushroomType",
+      "value": "Oyster",
+      "type": "string"
+    },
+    {
+      "key": "minPrice",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "maxPrice",
+      "value": "100",
+      "type": "string"
+    },
+    {
+      "key": "sortBy",
+      "value": "price",
+      "type": "string"
+    },
+    {
+      "key": "sortOrder",
+      "value": "asc",
+      "type": "string"
+    },
+    {
+      "key": "updatedProductName",
+      "value": "Premium White Oyster Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "updatedProductDescription",
+      "value": "Updated description for premium white oyster mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "updatedProductPrice",
+      "value": "18.99",
+      "type": "string"
+    },
+    {
+      "key": "updatedStockQuantity",
+      "value": "75",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,432 @@
+{
+    "info": {
+        "_postman_id": "c8d9e0f1-a2b3-4c5d-6e7f-8a9b0c1d2e3f",
+        "name": "11-Marketing-Affiliate-API",
+        "description": "Collection for marketing campaigns and affiliate system in the MASH Mushroom eCommerce system.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Marketing Campaigns",
+            "item": [
+                {
+                    "name": "Create Email Campaign",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Mushroom Season Sale\",\n    \"subject\": \"Fresh Mushrooms - 20% Off This Week!\",\n    \"content\": \"<h1>Don't miss our amazing mushroom sale!</h1><p>Get 20% off all mushroom products this week only.</p>\",\n    \"targetAudience\": \"all_customers\",\n    \"scheduleDate\": \"2024-12-01T10:00:00Z\",\n    \"status\": \"scheduled\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/campaigns",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "campaigns"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Campaigns",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/campaigns",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "campaigns"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Send Campaign",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"campaignId\": \"{{campaignId}}\",\n    \"sendImmediately\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/campaigns/{{campaignId}}/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "campaigns",
+                                "{{campaignId}}",
+                                "send"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Promotions & Discounts",
+            "item": [
+                {
+                    "name": "Create Coupon Code",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"MUSHROOM20\",\n    \"description\": \"20% off all mushroom products\",\n    \"discountType\": \"percentage\",\n    \"discountValue\": 20,\n    \"minOrderAmount\": 50,\n    \"maxUses\": 100,\n    \"validFrom\": \"2024-12-01T00:00:00Z\",\n    \"validUntil\": \"2024-12-31T23:59:59Z\",\n    \"isActive\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/coupons",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "coupons"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Coupons",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/coupons",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "coupons"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Validate Coupon",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"MUSHROOM20\",\n    \"orderAmount\": 75.50\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/coupons/validate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "coupons",
+                                "validate"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Affiliate System",
+            "item": [
+                {
+                    "name": "Register Affiliate",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"userId\": \"{{ecommerce_userId}}\",\n    \"website\": \"https://mymushroomblog.com\",\n    \"description\": \"Mushroom enthusiast blog with growing guides\",\n    \"commissionRate\": 5.0,\n    \"paymentMethod\": \"paypal\",\n    \"paypalEmail\": \"affiliate@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/affiliates/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "affiliates",
+                                "register"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Affiliate Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/affiliates/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "affiliates",
+                                "dashboard"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Generate Affiliate Link",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"productId\": \"{{productId}}\",\n    \"customText\": \"Check out this amazing mushroom product!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/affiliates/generate-link",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "affiliates",
+                                "generate-link"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Track Affiliate Click",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/affiliates/track?affiliateId={{affiliateId}}&productId={{productId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "affiliates",
+                                "track"
+                            ],
+                            "query": [
+                                {
+                                    "key": "affiliateId",
+                                    "value": "{{affiliateId}}"
+                                },
+                                {
+                                    "key": "productId",
+                                    "value": "{{productId}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Newsletter & Subscriptions",
+            "item": [
+                {
+                    "name": "Subscribe to Newsletter",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"pp.namias@gmail.com\",\n    \"firstName\": \"John Kenneth\",\n    \"lastName\": \"Namias\",\n    \"interests\": [\"mushroom_growing\", \"organic_food\", \"health_benefits\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/newsletter/subscribe",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "newsletter",
+                                "subscribe"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Newsletter Subscribers",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/newsletter/subscribers",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "newsletter",
+                                "subscribers"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Unsubscribe from Newsletter",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"pp.namias@gmail.com\",\n    \"reason\": \"Too many emails\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/marketing/newsletter/unsubscribe",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "marketing",
+                                "newsletter",
+                                "unsubscribe"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "campaignId",
+            "value": ""
+        },
+        {
+            "key": "affiliateId",
+            "value": ""
+        }
+    ]
+}

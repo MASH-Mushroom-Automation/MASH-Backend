@@ -1,0 +1,737 @@
+{
+  "info": {
+    "name": "MASH Mushroom Sellers & Buyers API",
+    "description": "Seller and buyer management for the MASH mushroom marketplace. Handles user roles, profiles, and role-specific operations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Seller Management",
+      "item": [
+        {
+          "name": "Register as Seller",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"{{businessName}}\",\n  \"businessType\": \"{{businessType}}\",\n  \"businessDescription\": \"{{businessDescription}}\",\n  \"businessAddress\": {\n    \"street\": \"{{businessStreet}}\",\n    \"city\": \"{{businessCity}}\",\n    \"state\": \"{{businessState}}\",\n    \"zipCode\": \"{{businessZipCode}}\",\n    \"country\": \"{{businessCountry}}\"\n  },\n  \"businessPhone\": \"{{businessPhone}}\",\n  \"businessEmail\": \"{{businessEmail}}\",\n  \"businessWebsite\": \"{{businessWebsite}}\",\n  \"taxId\": \"{{taxId}}\",\n  \"bankAccount\": {\n    \"accountNumber\": \"{{accountNumber}}\",\n    \"routingNumber\": \"{{routingNumber}}\",\n    \"bankName\": \"{{bankName}}\"\n  },\n  \"specialties\": [\"{{specialty1}}\", \"{{specialty2}}\", \"{{specialty3}}\"],\n  \"yearsInBusiness\": {{yearsInBusiness}},\n  \"certifications\": [\"{{certification1}}\", \"{{certification2}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sellers/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sellers", "register"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller registration successful\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('seller');",
+                  "    pm.expect(jsonData.seller).to.have.property('_id');",
+                  "    ",
+                  "    // Set seller ID for subsequent requests",
+                  "    pm.environment.set(\"sellerId\", jsonData.seller._id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Seller Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sellers/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sellers", "profile"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller profile retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('seller');",
+                  "    pm.expect(jsonData.seller).to.have.property('businessName');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Seller Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessDescription\": \"{{updatedBusinessDescription}}\",\n  \"businessPhone\": \"{{updatedBusinessPhone}}\",\n  \"businessWebsite\": \"{{updatedBusinessWebsite}}\",\n  \"specialties\": [\"{{updatedSpecialty1}}\", \"{{updatedSpecialty2}}\", \"{{updatedSpecialty3}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sellers/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sellers", "profile"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller profile updated successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('seller');",
+                  "    pm.expect(jsonData.seller).to.have.property('_id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Seller Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sellers/products?page={{page}}&limit={{limit}}&status={{status}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sellers", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "{{page}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "{{status}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller products retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('products');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    pm.expect(jsonData.products).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Seller Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sellers/orders?page={{page}}&limit={{limit}}&status={{status}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sellers", "orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "{{page}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "{{status}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller orders retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('orders');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    pm.expect(jsonData.orders).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Seller Earnings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sellers/earnings?startDate={{startDate}}&endDate={{endDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sellers", "earnings"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "{{startDate}}",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "{{endDate}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller earnings retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('earnings');",
+                  "    pm.expect(jsonData).to.have.property('totalEarnings');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Buyer Management",
+      "item": [
+        {
+          "name": "Get Buyer Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/buyers/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buyers", "profile"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Buyer profile retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('buyer');",
+                  "    pm.expect(jsonData.buyer).to.have.property('_id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Buyer Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{updatedFirstName}}\",\n  \"lastName\": \"{{updatedLastName}}\",\n  \"phone\": \"{{updatedPhone}}\",\n  \"preferences\": {\n    \"mushroomTypes\": [\"{{preferredMushroom1}}\", \"{{preferredMushroom2}}\"],\n    \"organicOnly\": {{organicOnly}},\n    \"priceRange\": {\n      \"min\": {{minPrice}},\n      \"max\": {{maxPrice}}\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/buyers/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buyers", "profile"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Buyer profile updated successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('buyer');",
+                  "    pm.expect(jsonData.buyer).to.have.property('_id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Buyer Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/buyers/orders?page={{page}}&limit={{limit}}&status={{status}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buyers", "orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "{{page}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "{{status}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Buyer orders retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('orders');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    pm.expect(jsonData.orders).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Buyer Wishlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/buyers/wishlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buyers", "wishlist"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Buyer wishlist retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('wishlist');",
+                  "    pm.expect(jsonData.wishlist).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add to Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/buyers/wishlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buyers", "wishlist"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Product added to wishlist successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove from Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/buyers/wishlist/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buyers", "wishlist", "{{productId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Product removed from wishlist successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sellerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "businessName",
+      "value": "PP Namias Mushroom Farm",
+      "type": "string"
+    },
+    {
+      "key": "businessType",
+      "value": "Mushroom Farm",
+      "type": "string"
+    },
+    {
+      "key": "businessDescription",
+      "value": "Premium organic mushroom farm specializing in oyster and shiitake mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "businessStreet",
+      "value": "123 Farm Road",
+      "type": "string"
+    },
+    {
+      "key": "businessCity",
+      "value": "Farmville",
+      "type": "string"
+    },
+    {
+      "key": "businessState",
+      "value": "CA",
+      "type": "string"
+    },
+    {
+      "key": "businessZipCode",
+      "value": "90210",
+      "type": "string"
+    },
+    {
+      "key": "businessCountry",
+      "value": "USA",
+      "type": "string"
+    },
+    {
+      "key": "businessPhone",
+      "value": "+1-555-0123",
+      "type": "string"
+    },
+    {
+      "key": "businessEmail",
+      "value": "pp.namias@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "businessWebsite",
+      "value": "https://ppnamiasmushrooms.com",
+      "type": "string"
+    },
+    {
+      "key": "taxId",
+      "value": "12-3456789",
+      "type": "string"
+    },
+    {
+      "key": "accountNumber",
+      "value": "1234567890",
+      "type": "string"
+    },
+    {
+      "key": "routingNumber",
+      "value": "987654321",
+      "type": "string"
+    },
+    {
+      "key": "bankName",
+      "value": "Farmers Bank",
+      "type": "string"
+    },
+    {
+      "key": "specialty1",
+      "value": "Oyster Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "specialty2",
+      "value": "Shiitake Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "specialty3",
+      "value": "Organic Farming",
+      "type": "string"
+    },
+    {
+      "key": "yearsInBusiness",
+      "value": "5",
+      "type": "string"
+    },
+    {
+      "key": "certification1",
+      "value": "Organic Certified",
+      "type": "string"
+    },
+    {
+      "key": "certification2",
+      "value": "Food Safety Certified",
+      "type": "string"
+    },
+    {
+      "key": "page",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "limit",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "status",
+      "value": "active",
+      "type": "string"
+    },
+    {
+      "key": "startDate",
+      "value": "2025-01-01",
+      "type": "string"
+    },
+    {
+      "key": "endDate",
+      "value": "2025-12-31",
+      "type": "string"
+    },
+    {
+      "key": "updatedBusinessDescription",
+      "value": "Updated description for PP Namias Mushroom Farm",
+      "type": "string"
+    },
+    {
+      "key": "updatedBusinessPhone",
+      "value": "+1-555-0124",
+      "type": "string"
+    },
+    {
+      "key": "updatedBusinessWebsite",
+      "value": "https://updated-ppnamiasmushrooms.com",
+      "type": "string"
+    },
+    {
+      "key": "updatedSpecialty1",
+      "value": "Premium Oyster Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "updatedSpecialty2",
+      "value": "Premium Shiitake Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "updatedSpecialty3",
+      "value": "Sustainable Organic Farming",
+      "type": "string"
+    },
+    {
+      "key": "updatedFirstName",
+      "value": "John Kenneth",
+      "type": "string"
+    },
+    {
+      "key": "updatedLastName",
+      "value": "Namias",
+      "type": "string"
+    },
+    {
+      "key": "updatedPhone",
+      "value": "+1-555-0125",
+      "type": "string"
+    },
+    {
+      "key": "preferredMushroom1",
+      "value": "Oyster",
+      "type": "string"
+    },
+    {
+      "key": "preferredMushroom2",
+      "value": "Shiitake",
+      "type": "string"
+    },
+    {
+      "key": "organicOnly",
+      "value": "true",
+      "type": "string"
+    },
+    {
+      "key": "minPrice",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "maxPrice",
+      "value": "50",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,368 @@
+{
+    "info": {
+        "_postman_id": "a6b7c8d9-e0f1-2a3b-4c5d-6e7f8a9b0c1d",
+        "name": "09-Payment-Gateway-API",
+        "description": "Collection for testing payment gateway integrations in the MASH Mushroom eCommerce system.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Payment Methods",
+            "item": [
+                {
+                    "name": "Get Available Payment Methods",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/methods",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "methods"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add Payment Method (Credit Card)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"type\": \"credit_card\",\n    \"cardNumber\": \"4111111111111111\",\n    \"expiryMonth\": \"12\",\n    \"expiryYear\": \"2025\",\n    \"cvv\": \"123\",\n    \"cardholderName\": \"John Kenneth Namias\",\n    \"isDefault\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/methods",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "methods"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Payment Methods",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/methods/user",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "methods",
+                                "user"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Payment Processing",
+            "item": [
+                {
+                    "name": "Process Payment (Credit Card)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"orderId\": \"{{orderId}}\",\n    \"amount\": 28.49,\n    \"currency\": \"USD\",\n    \"paymentMethod\": {\n        \"type\": \"credit_card\",\n        \"cardNumber\": \"4111111111111111\",\n        \"expiryMonth\": \"12\",\n        \"expiryYear\": \"2025\",\n        \"cvv\": \"123\",\n        \"cardholderName\": \"John Kenneth Namias\"\n    },\n    \"billingAddress\": {\n        \"street\": \"123 Mushroom Lane\",\n        \"city\": \"Fungi City\",\n        \"state\": \"MC\",\n        \"zipCode\": \"12345\",\n        \"country\": \"US\"\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/process",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "process"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Process Payment (PayPal)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"orderId\": \"{{orderId}}\",\n    \"amount\": 28.49,\n    \"currency\": \"USD\",\n    \"paymentMethod\": {\n        \"type\": \"paypal\",\n        \"paypalOrderId\": \"PAYPAL_ORDER_ID_12345\"\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/process",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "process"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Process Payment (Stripe)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"orderId\": \"{{orderId}}\",\n    \"amount\": 28.49,\n    \"currency\": \"USD\",\n    \"paymentMethod\": {\n        \"type\": \"stripe\",\n        \"stripePaymentIntentId\": \"pi_1234567890\"\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/process",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "process"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Payment Status & Refunds",
+            "item": [
+                {
+                    "name": "Get Payment Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/{{paymentId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "{{paymentId}}",
+                                "status"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Process Refund",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"paymentId\": \"{{paymentId}}\",\n    \"amount\": 15.99,\n    \"reason\": \"Customer requested refund for damaged product\",\n    \"refundType\": \"partial\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/refund",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "refund"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Refund Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ecommerce_accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/refund/{{refundId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "refund",
+                                "{{refundId}}",
+                                "status"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Webhooks",
+            "item": [
+                {
+                    "name": "Stripe Webhook (Payment Success)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Stripe-Signature",
+                                "value": "t=1234567890,v1=stripe_signature_here"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": \"evt_1234567890\",\n    \"object\": \"event\",\n    \"type\": \"payment_intent.succeeded\",\n    \"data\": {\n        \"object\": {\n            \"id\": \"pi_1234567890\",\n            \"amount\": 2849,\n            \"currency\": \"usd\",\n            \"status\": \"succeeded\"\n        }\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/webhooks/stripe",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "webhooks",
+                                "stripe"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PayPal Webhook (Payment Completed)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": \"WH-1234567890\",\n    \"event_type\": \"PAYMENT.CAPTURE.COMPLETED\",\n    \"resource\": {\n        \"id\": \"PAYPAL_PAYMENT_ID\",\n        \"amount\": {\n            \"total\": \"28.49\",\n            \"currency\": \"USD\"\n        },\n        \"state\": \"completed\"\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ecommerce/payments/webhooks/paypal",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ecommerce",
+                                "payments",
+                                "webhooks",
+                                "paypal"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "paymentId",
+            "value": ""
+        },
+        {
+            "key": "refundId",
+            "value": ""
+        }
+    ]
+}

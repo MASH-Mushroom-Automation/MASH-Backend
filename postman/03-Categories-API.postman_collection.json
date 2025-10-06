@@ -1,0 +1,428 @@
+{
+  "info": {
+    "name": "MASH Mushroom Categories API",
+    "description": "Category management for mushroom products in the MASH marketplace. Handles product categorization, filtering, and organization.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Category Management",
+      "item": [
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{categoryName}}\",\n  \"description\": \"{{categoryDescription}}\",\n  \"slug\": \"{{categorySlug}}\",\n  \"parentCategory\": \"{{parentCategory}}\",\n  \"image\": \"{{categoryImage}}\",\n  \"isActive\": {{isActive}},\n  \"sortOrder\": {{sortOrder}},\n  \"metaTitle\": \"{{metaTitle}}\",\n  \"metaDescription\": \"{{metaDescription}}\",\n  \"tags\": [\"{{tag1}}\", \"{{tag2}}\", \"{{tag3}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Category created successfully\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('category');",
+                  "    pm.expect(jsonData.category).to.have.property('_id');",
+                  "    ",
+                  "    // Set category ID for subsequent requests",
+                  "    pm.environment.set(\"categoryId\", jsonData.category._id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories?page={{page}}&limit={{limit}}&parentCategory={{parentCategory}}&isActive={{isActive}}&sortBy={{sortBy}}&sortOrder={{sortOrder}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "{{page}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                },
+                {
+                  "key": "parentCategory",
+                  "value": "{{parentCategory}}",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "{{isActive}}",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "{{sortBy}}",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "{{sortOrder}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Categories retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('categories');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    pm.expect(jsonData.categories).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Category retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('category');",
+                  "    pm.expect(jsonData.category).to.have.property('_id');",
+                  "    pm.expect(jsonData.category).to.have.property('name');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{updatedCategoryName}}\",\n  \"description\": \"{{updatedCategoryDescription}}\",\n  \"isActive\": {{updatedIsActive}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Category updated successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('category');",
+                  "    pm.expect(jsonData.category).to.have.property('_id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Category deleted successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Category Products",
+      "item": [
+        {
+          "name": "Get Products by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}/products?page={{page}}&limit={{limit}}&sortBy={{sortBy}}&sortOrder={{sortOrder}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "{{page}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "{{sortBy}}",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "{{sortOrder}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Category products retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('products');",
+                  "    pm.expect(jsonData).to.have.property('category');",
+                  "    pm.expect(jsonData.products).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Category Tree",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/tree",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "tree"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Category tree retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('categories');",
+                  "    pm.expect(jsonData.categories).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryName",
+      "value": "Edible Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "categoryDescription",
+      "value": "Fresh and organic edible mushrooms for culinary use",
+      "type": "string"
+    },
+    {
+      "key": "categorySlug",
+      "value": "edible-mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "parentCategory",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryImage",
+      "value": "https://example.com/category-image.jpg",
+      "type": "string"
+    },
+    {
+      "key": "isActive",
+      "value": "true",
+      "type": "string"
+    },
+    {
+      "key": "sortOrder",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "metaTitle",
+      "value": "Edible Mushrooms - MASH Marketplace",
+      "type": "string"
+    },
+    {
+      "key": "metaDescription",
+      "value": "Buy fresh edible mushrooms from local farmers",
+      "type": "string"
+    },
+    {
+      "key": "tag1",
+      "value": "edible",
+      "type": "string"
+    },
+    {
+      "key": "tag2",
+      "value": "organic",
+      "type": "string"
+    },
+    {
+      "key": "tag3",
+      "value": "fresh",
+      "type": "string"
+    },
+    {
+      "key": "page",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "limit",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "parentCategory",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "isActive",
+      "value": "true",
+      "type": "string"
+    },
+    {
+      "key": "sortBy",
+      "value": "name",
+      "type": "string"
+    },
+    {
+      "key": "sortOrder",
+      "value": "asc",
+      "type": "string"
+    },
+    {
+      "key": "updatedCategoryName",
+      "value": "Premium Edible Mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "updatedCategoryDescription",
+      "value": "Updated description for premium edible mushrooms",
+      "type": "string"
+    },
+    {
+      "key": "updatedIsActive",
+      "value": "true",
+      "type": "string"
+    }
+  ]
+}
