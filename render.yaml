@@ -1,0 +1,92 @@
+# Render Blueprint for MASH Backend
+# This file enables one-click deployment to Render.com
+# Deploy: https://dashboard.render.com/select-repo?type=blueprint
+
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: mash-backend-db
+    plan: free  # Change to 'starter' for production
+    region: oregon  # Change to your preferred region: oregon, frankfurt, singapore, ohio
+
+  # NestJS Backend API
+  - type: web
+    name: mash-backend-api
+    runtime: docker
+    plan: free  # Change to 'starter' for production ($7/month, no spin down)
+    region: oregon  # Must match database region
+    branch: main  # Change if deploying from different branch
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      # Database (auto-populated from PostgreSQL service)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mash-backend-db
+          property: connectionString
+      
+      # Node Environment
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: 3000
+      
+      # JWT Configuration (CHANGE THESE IN RENDER DASHBOARD!)
+      - key: JWT_SECRET
+        generateValue: true  # Render will generate a random value
+      
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      
+      - key: JWT_REFRESH_SECRET
+        generateValue: true  # Render will generate a random value
+      
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      
+      # CORS Configuration
+      - key: CORS_ORIGIN
+        value: "*"  # Change to your frontend URL for production
+      
+      # Rate Limiting
+      - key: RATE_LIMIT_TTL
+        value: 60
+      
+      - key: RATE_LIMIT_MAX
+        value: 100
+      
+      # MQTT (Optional - disable by default)
+      - key: MQTT_ENABLED
+        value: "false"
+      
+      # Firebase (Add your credentials in Render Dashboard)
+      - key: FIREBASE_PROJECT_ID
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false  # Set manually in Render Dashboard
+      
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false  # Set manually in Render Dashboard
+      
+      # SendGrid Email (Optional)
+      - key: SENDGRID_API_KEY
+        sync: false  # Set manually if needed
+      
+      - key: SENDGRID_FROM_EMAIL
+        sync: false  # Set manually if needed
+      
+      # Redis (Optional - add Redis service if needed)
+      - key: REDIS_HOST
+        value: ""
+      
+      - key: REDIS_PORT
+        value: 6379
+
+  # Redis Cache (Optional - uncomment to enable)
+  # - type: redis
+  #   name: mash-backend-redis
+  #   plan: free
+  #   region: oregon
+  #   maxmemoryPolicy: allkeys-lru
