@@ -28,12 +28,20 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       // Configure MQTT broker connection
       // For local development, you can use a public broker or set up mosquitto
       const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+      
+      // Skip MQTT connection if explicitly disabled
+      if (process.env.MQTT_ENABLED === 'false') {
+        this.logger.warn('⚠️ MQTT is disabled. IoT device communication unavailable.');
+        return;
+      }
+
       const options: mqtt.IClientOptions = {
         clientId: `mash-backend-${Math.random().toString(16).slice(3)}`,
         username: process.env.MQTT_USERNAME,
         password: process.env.MQTT_PASSWORD,
         clean: true,
         reconnectPeriod: 5000,
+        connectTimeout: 5000, // 5 second timeout
       };
 
       this.client = mqtt.connect(brokerUrl, options);
@@ -61,16 +69,18 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.client.on('error', (error) => {
-        this.logger.error('MQTT connection error:', error);
+        this.logger.warn('⚠️ MQTT connection error (broker may not be running):', error.message);
         this.connected = false;
       });
 
       this.client.on('close', () => {
         this.connected = false;
-        this.logger.warn('MQTT connection closed');
+        this.logger.log('MQTT connection closed');
       });
     } catch (error) {
-      this.logger.error('Failed to connect to MQTT broker:', error);
+      this.logger.warn(
+        '⚠️ MQTT broker not available. IoT features will be limited.',
+      );
     }
   }
 

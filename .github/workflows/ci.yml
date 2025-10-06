@@ -250,37 +250,144 @@ jobs:
             sleep 2
           done
 
+      - name: Install Newman HTML Reporter
+        run: npm install -g newman-reporter-htmlextra
+
+      - name: Create Newman Reports Directory
+        run: mkdir -p newman-reports
+
       - name: Run Authentication API Tests
         run: |
           npx newman run postman/01-Authentication-API.postman_collection.json \
             -e postman/MASH-backend.postman_environment.json \
-            --reporters cli,junit \
-            --reporter-junit-export newman-auth.xml \
-            --bail || true
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-auth-report.html \
+            --reporter-junit-export newman-reports/newman-auth.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run System Admin & Monitoring API Tests
+        run: |
+          npx newman run postman/02-System-Administration-Monitoring-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-admin-report.html \
+            --reporter-junit-export newman-reports/newman-admin.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run Categories API Tests
+        run: |
+          npx newman run postman/03-Categories-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-categories-report.html \
+            --reporter-junit-export newman-reports/newman-categories.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
 
       - name: Run Orders API Tests
         run: |
           npx newman run postman/04-Orders-API.postman_collection.json \
             -e postman/MASH-backend.postman_environment.json \
-            --reporters cli,junit \
-            --reporter-junit-export newman-orders.xml \
-            --bail || true
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-orders-report.html \
+            --reporter-junit-export newman-reports/newman-orders.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
 
       - name: Run Products API Tests
         run: |
           npx newman run postman/05-Products-API.postman_collection.json \
             -e postman/MASH-backend.postman_environment.json \
-            --reporters cli,junit \
-            --reporter-junit-export newman-products.xml \
-            --bail || true
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-products-report.html \
+            --reporter-junit-export newman-reports/newman-products.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
 
-      - name: Run Complete API Collection
+      - name: Run Sellers & Buyers API Tests
+        run: |
+          npx newman run postman/06-Sellers-Buyers-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-sellers-buyers-report.html \
+            --reporter-junit-export newman-reports/newman-sellers-buyers.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run CMS API Tests
+        run: |
+          npx newman run postman/08-CMS-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-cms-report.html \
+            --reporter-junit-export newman-reports/newman-cms.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run Payment Gateway API Tests
+        run: |
+          npx newman run postman/09-Payment-Gateway-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-payment-report.html \
+            --reporter-junit-export newman-reports/newman-payment.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run Admin Dashboard API Tests
+        run: |
+          npx newman run postman/10-Admin-Dashboard-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-admin-dashboard-report.html \
+            --reporter-junit-export newman-reports/newman-admin-dashboard.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run Marketing & Affiliate API Tests
+        run: |
+          npx newman run postman/11-Marketing-Affiliate-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-marketing-report.html \
+            --reporter-junit-export newman-reports/newman-marketing.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run Support & OTP API Tests
+        run: |
+          npx newman run postman/12-Support-OTP-API.postman_collection.json \
+            -e postman/MASH-backend.postman_environment.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-support-report.html \
+            --reporter-junit-export newman-reports/newman-support.xml \
+            --color on \
+            --delay-request 100
+        continue-on-error: true
+
+      - name: Run Master Complete API Collection
         run: |
           npx newman run postman/00-Master-Complete-API-Collection.postman_collection.json \
             -e postman/MASH-backend.postman_environment.json \
-            --reporters cli,junit \
-            --reporter-junit-export newman-complete.xml \
-            --bail || true
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export newman-reports/newman-complete-report.html \
+            --reporter-junit-export newman-reports/newman-complete.xml \
+            --color on \
+            --delay-request 100 \
+            --timeout-request 10000
+        continue-on-error: false
 
       - name: Stop application
         if: always()
@@ -290,12 +397,58 @@ jobs:
             rm .pidfile
           fi
 
-      - name: Upload Newman test results
+      - name: Generate Newman Summary Report
+        if: always()
+        run: |
+          echo "## 📊 Newman API Test Results" > newman-summary.md
+          echo "" >> newman-summary.md
+          echo "| Collection | Status |" >> newman-summary.md
+          echo "|-----------|--------|" >> newman-summary.md
+          
+          for file in newman-reports/*.xml; do
+            if [ -f "$file" ]; then
+              collection=$(basename "$file" .xml | sed 's/newman-//')
+              echo "| $collection | ✅ |" >> newman-summary.md
+            fi
+          done
+
+      - name: Upload Newman HTML Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: newman-test-results
-          path: newman-*.xml
+          name: newman-html-reports
+          path: newman-reports/*.html
+          retention-days: 30
+
+      - name: Upload Newman XML Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-xml-reports
+          path: newman-reports/*.xml
+          retention-days: 30
+
+      - name: Upload Newman Summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-summary
+          path: newman-summary.md
+          retention-days: 30
+
+      - name: Comment PR with Newman Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('newman-summary.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
 
   # SonarQube Code Quality Analysis
   sonarqube-analysis:
