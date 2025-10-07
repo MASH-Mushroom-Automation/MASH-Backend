@@ -141,7 +141,9 @@ async function bootstrap() {
   // Graceful shutdown
   app.enableShutdownHooks();
 
-  await app.listen(port);
+  // Bind to 0.0.0.0 to accept connections from any network interface
+  // This is required for cloud platforms like Render, Railway, etc.
+  await app.listen(port, '0.0.0.0');
 
   logger.log(`🚀 Application is running on: http://localhost:${port}`);
   logger.log(`🌟 Environment: ${nodeEnv}`);

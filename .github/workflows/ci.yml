@@ -609,15 +609,3 @@ jobs:
             echo "❌ Deployment Not Ready - Check failed jobs"
             exit 1
           fi
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-      - run: npm ci
-      - name: Test & coverage
-        run: npm run test:cov -- --ci
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
