@@ -39,6 +39,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
 import { PrismaService } from './database/prisma.service';
+import { AlertsModule } from './modules/alerts/alerts.module';
 
 @Module({
   imports: [
@@ -88,6 +89,8 @@ import { PrismaService } from './database/prisma.service';
     NotificationsModule,
 
     AdminModule,
+
+    AlertsModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
