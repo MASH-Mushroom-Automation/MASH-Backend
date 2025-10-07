@@ -31,6 +31,7 @@
     "postman:orders": "newman run postman/04-Orders-API.postman_collection.json -e postman/MASH-backend.postman_environment.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.901.0",
     "@clerk/backend": "^2.17.1",
     "@clerk/clerk-sdk-node": "^4.13.23",
     "@nestjs/common": "^11.0.1",
@@ -49,6 +50,7 @@
     "@sendgrid/mail": "^8.1.0",
     "@types/bcrypt": "^6.0.0",
     "@types/multer": "^2.0.0",
+    "@types/sharp": "^0.31.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
@@ -57,6 +59,7 @@
     "helmet": "^7.2.0",
     "ioredis": "^5.8.1",
     "mqtt": "^5.14.1",
+    "multer": "^2.0.2",
     "nest-winston": "^1.9.4",
     "nodemailer": "^6.9.7",
     "passport": "^0.7.0",
@@ -66,6 +69,7 @@
     "redis": "^4.6.11",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sharp": "^0.34.4",
     "socket.io": "^4.8.1",
     "svix": "^1.76.1",
     "winston": "^3.11.0"
