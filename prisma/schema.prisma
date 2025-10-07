@@ -18,6 +18,7 @@ model User {
   phoneNumber         String?
   role                UserRole             @default(USER)
   isActive            Boolean              @default(true)
+  preferences         Json?                // User preferences (theme, language, timezone, notifications)
   lastLoginAt         DateTime?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt

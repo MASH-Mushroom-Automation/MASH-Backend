@@ -36,6 +36,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
 import { PrismaService } from './database/prisma.service';
 
@@ -67,6 +68,8 @@ import { PrismaService } from './database/prisma.service';
 
     // Feature modules
     AuthModule,
+
+    ProfileModule,
 
     UsersModule,
 
