@@ -5,5 +5,26 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/../src/$1",
+    "^@common/(.*)$": "<rootDir>/../src/common/$1",
+    "^@modules/(.*)$": "<rootDir>/../src/modules/$1"
+  },
+  "collectCoverageFrom": [
+    "../src/**/*.(t|j)s",
+    "!../src/**/*.module.ts",
+    "!../src/**/*.interface.ts",
+    "!../src/**/*.dto.ts",
+    "!../src/**/*.entity.ts",
+    "!../src/**/*.config.ts",
+    "!../src/main.ts"
+  ],
+  "coverageDirectory": "../coverage/e2e",
+  "coverageReporters": ["text", "text-summary", "html", "lcov"],
+  "setupFilesAfterEnv": ["jest-extended/all"],
+  "maxWorkers": 1,
+  "testTimeout": 30000,
+  "forceExit": true,
+  "detectOpenHandles": true
 }

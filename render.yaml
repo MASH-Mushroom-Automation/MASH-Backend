@@ -18,6 +18,13 @@ services:
     branch: main  # Change if deploying from different branch
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/v1/health
+    
+    # Build command (optional - Docker handles this)
+    # buildCommand: npm run build
+    
+    # Start command (optional - Docker ENTRYPOINT handles this)
+    # startCommand: npm run start:prod
+    
     envVars:
       # Database (auto-populated from PostgreSQL service)
       - key: DATABASE_URL
@@ -36,53 +43,71 @@ services:
       - key: JWT_SECRET
         generateValue: true  # Render will generate a random value
       
-      - key: JWT_EXPIRES_IN
+      - key: JWT_EXPIRATION
         value: 7d
       
-      - key: JWT_REFRESH_SECRET
-        generateValue: true  # Render will generate a random value
-      
-      - key: JWT_REFRESH_EXPIRES_IN
-        value: 30d
-      
       # CORS Configuration
-      - key: CORS_ORIGIN
-        value: "*"  # Change to your frontend URL for production
+      - key: CORS_ORIGINS
+        value: "*"  # Change to your frontend URLs (comma-separated) for production
       
       # Rate Limiting
-      - key: RATE_LIMIT_TTL
+      - key: THROTTLE_TTL
         value: 60
       
-      - key: RATE_LIMIT_MAX
+      - key: THROTTLE_LIMIT
         value: 100
       
-      # MQTT (Optional - disable by default)
-      - key: MQTT_ENABLED
-        value: "false"
+      # File Upload
+      - key: MAX_FILE_SIZE
+        value: 10485760
       
-      # Firebase (Add your credentials in Render Dashboard)
-      - key: FIREBASE_PROJECT_ID
-        sync: false  # Set manually in Render Dashboard
+      - key: UPLOAD_PATH
+        value: ./uploads
       
-      - key: FIREBASE_CLIENT_EMAIL
-        sync: false  # Set manually in Render Dashboard
+      # Logging
+      - key: LOG_LEVEL
+        value: info
       
-      - key: FIREBASE_PRIVATE_KEY
-        sync: false  # Set manually in Render Dashboard
+      # Clerk Authentication (REQUIRED - Add in Render Dashboard)
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false  # Get from https://dashboard.clerk.com
+      
+      - key: CLERK_SECRET_KEY
+        sync: false  # Get from https://dashboard.clerk.com
+      
+      # MQTT (Optional - add if using IoT features)
+      - key: MQTT_BROKER_URL
+        value: ""
+      
+      - key: MQTT_USERNAME
+        value: ""
+      
+      - key: MQTT_PASSWORD
+        value: ""
       
       # SendGrid Email (Optional)
       - key: SENDGRID_API_KEY
         sync: false  # Set manually if needed
       
-      - key: SENDGRID_FROM_EMAIL
-        sync: false  # Set manually if needed
+      - key: FROM_EMAIL
+        value: "noreply@mash-backend.com"
       
-      # Redis (Optional - add Redis service if needed)
-      - key: REDIS_HOST
-        value: ""
+      # Redis (Optional - use Upstash free tier: https://upstash.com)
+      - key: REDIS_URL
+        sync: false  # Add from Upstash dashboard if needed
       
-      - key: REDIS_PORT
-        value: 6379
+      # AWS S3 (Optional - for file storage)
+      - key: AWS_REGION
+        sync: false
+      
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      
+      - key: AWS_S3_BUCKET
+        sync: false
 
   # Redis Cache (Optional - uncomment to enable)
   # - type: redis
