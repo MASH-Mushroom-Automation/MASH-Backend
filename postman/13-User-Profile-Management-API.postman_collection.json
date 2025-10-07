@@ -1,0 +1,859 @@
+{
+  "info": {
+    "name": "13 - User Profile Management API",
+    "description": "Complete user profile management with authentication, avatar upload, session management, API keys, security logs, and 2FA/TOTP.\n\n**Phase 3: User Management APIs (17 Endpoints)**\n\n**Features:**\n- Profile CRUD operations\n- Avatar upload with image processing\n- Multi-device session management\n- API key generation and management\n- Security audit trail\n- 2FA/TOTP with backup codes\n\n**Authentication:** All endpoints require Clerk JWT token\n\n**Base URL:** {{baseUrl}}/api/v1/profile",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{clerkToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Profile Management",
+      "item": [
+        {
+          "name": "Get Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has user data', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('clerkId');",
+                  "});",
+                  "",
+                  "// Save user ID for other requests",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set('userId', jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile"]
+            },
+            "description": "Get current user's profile information including personal details, preferences, and account statistics."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Profile updated successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('firstName');",
+                  "    pm.expect(jsonData).to.have.property('lastName');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+1234567890\",\n  \"username\": \"johndoe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile"]
+            },
+            "description": "Update user profile information. All fields are optional."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Preferences",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Preferences returned', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "preferences"]
+            },
+            "description": "Get user preferences (theme, language, timezone, notifications)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Preferences",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Preferences updated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('theme');",
+                  "    pm.expect(jsonData).to.have.property('language');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": \"dark\",\n  \"language\": \"en\",\n  \"timezone\": \"America/New_York\",\n  \"notifications\": {\n    \"email\": true,\n    \"push\": true,\n    \"sms\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "preferences"]
+            },
+            "description": "Update user preferences. Merges with existing preferences."
+          },
+          "response": []
+        }
+      ],
+      "description": "Profile CRUD operations - 4 endpoints"
+    },
+    {
+      "name": "2. Avatar Management",
+      "item": [
+        {
+          "name": "Upload Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Avatar uploaded successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('imageUrl');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image file (JPEG, PNG, or WebP, max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "avatar"]
+            },
+            "description": "Upload user avatar image. Automatically resizes to 256x256 and converts to WebP.\n\n**Constraints:**\n- Max size: 5MB\n- Formats: JPEG, PNG, WebP\n- Output: 256x256 WebP at 85% quality"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Avatar deleted', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "avatar"]
+            },
+            "description": "Delete user avatar image and remove from database."
+          },
+          "response": []
+        }
+      ],
+      "description": "Avatar upload and management - 2 endpoints"
+    },
+    {
+      "name": "3. Session Management",
+      "item": [
+        {
+          "name": "List Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Sessions returned', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('sessions');",
+                  "    pm.expect(jsonData).to.have.property('stats');",
+                  "});",
+                  "",
+                  "// Save first session ID for revoke test",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.sessions && jsonData.sessions.length > 1) {",
+                  "    pm.collectionVariables.set('sessionId', jsonData.sessions[1].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "sessions"]
+            },
+            "description": "List all active sessions with device information and statistics."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Session revoked', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "sessions", "{{sessionId}}"]
+            },
+            "description": "Revoke a specific session by ID. Cannot revoke your current session."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout All Devices",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('All sessions revoked', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('revokedCount');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "sessions"]
+            },
+            "description": "Logout from all devices except the current one."
+          },
+          "response": []
+        }
+      ],
+      "description": "Multi-device session management - 3 endpoints"
+    },
+    {
+      "name": "4. API Key Management",
+      "item": [
+        {
+          "name": "List API Keys",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('API keys returned', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('apiKeys');",
+                  "    pm.expect(jsonData).to.have.property('stats');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "api-keys"]
+            },
+            "description": "List all API keys (masked). Full keys are never returned after creation."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('API key generated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('apiKey');",
+                  "    pm.expect(jsonData.apiKey).to.include('mash_sk_');",
+                  "});",
+                  "",
+                  "// Save API key ID for revoke test",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set('apiKeyId', jsonData.id);",
+                  "pm.collectionVariables.set('generatedApiKey', jsonData.apiKey);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My API Key\",\n  \"scopes\": [\"devices:read\", \"sensors:read\"],\n  \"expiresAt\": \"2026-12-31T23:59:59.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "api-keys"]
+            },
+            "description": "Generate a new crypto-secure API key.\n\n**Format:** `mash_sk_{64_random_chars}`\n\n**Security:**\n- Crypto-secure random generation\n- bcrypt hashed before storage\n- Full key shown ONLY ONCE\n\n**⚠️ IMPORTANT:** Save the generated key immediately!"
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('API key revoked', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/api-keys/{{apiKeyId}}?reason=Testing",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "api-keys", "{{apiKeyId}}"],
+              "query": [
+                {
+                  "key": "reason",
+                  "value": "Testing",
+                  "description": "Optional revocation reason"
+                }
+              ]
+            },
+            "description": "Revoke an API key. Soft delete with audit trail."
+          },
+          "response": []
+        }
+      ],
+      "description": "API key generation and management - 3 endpoints"
+    },
+    {
+      "name": "5. Security Audit Trail",
+      "item": [
+        {
+          "name": "Get Security Log",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Security log returned', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('logs');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/security-log?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "security-log"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "LOGIN",
+                  "description": "Filter by event name",
+                  "disabled": true
+                },
+                {
+                  "key": "dateFrom",
+                  "value": "2025-10-01T00:00:00.000Z",
+                  "description": "Filter from date",
+                  "disabled": true
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2025-10-31T23:59:59.000Z",
+                  "description": "Filter to date",
+                  "disabled": true
+                },
+                {
+                  "key": "severity",
+                  "value": "INFO",
+                  "description": "INFO, WARNING, ERROR, CRITICAL",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Results per page (default: 50)"
+                }
+              ]
+            },
+            "description": "View security audit trail with advanced filtering and pagination.\n\n**Filters:**\n- action: Event name (case-insensitive)\n- dateFrom/dateTo: Date range\n- severity: INFO, WARNING, ERROR, CRITICAL\n- page/limit: Pagination"
+          },
+          "response": []
+        }
+      ],
+      "description": "Security event logging and audit - 1 endpoint"
+    },
+    {
+      "name": "6. Two-Factor Authentication (2FA)",
+      "item": [
+        {
+          "name": "Enable 2FA - Step 1: Generate QR Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('QR code generated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('secret');",
+                  "    pm.expect(jsonData).to.have.property('qrCode');",
+                  "    pm.expect(jsonData.qrCode).to.include('data:image/png;base64');",
+                  "});",
+                  "",
+                  "// Display QR code in console",
+                  "const jsonData = pm.response.json();",
+                  "console.log('==================================');",
+                  "console.log('2FA SETUP - STEP 1');",
+                  "console.log('==================================');",
+                  "console.log('');",
+                  "console.log('1. Scan this QR code with your authenticator app:');",
+                  "console.log('   (Google Authenticator, Authy, Microsoft Authenticator, etc.)');",
+                  "console.log('');",
+                  "console.log('QR Code Data URL:');",
+                  "console.log(jsonData.qrCode);",
+                  "console.log('');",
+                  "console.log('Manual Entry Key:', jsonData.secret);",
+                  "console.log('');",
+                  "console.log('2. After scanning, run the \"Enable 2FA - Step 2: Verify\" request');",
+                  "console.log('   with the 6-digit code from your authenticator app.');",
+                  "console.log('==================================');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/2fa/enable",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "2fa", "enable"]
+            },
+            "description": "**Step 1 of 2FA Setup**\n\nGenerate TOTP secret and QR code for authenticator app.\n\n**Instructions:**\n1. Run this request to get QR code\n2. Check Console for QR code data URL\n3. Scan QR code with authenticator app:\n   - Google Authenticator\n   - Authy\n   - Microsoft Authenticator\n   - 1Password\n   - Bitwarden\n4. Get 6-digit code from app\n5. Run \"Step 2: Verify\" request"
+          },
+          "response": []
+        },
+        {
+          "name": "Enable 2FA - Step 2: Verify Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('2FA enabled with backup codes', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('enabled', true);",
+                  "    pm.expect(jsonData).to.have.property('backupCodes');",
+                  "    pm.expect(jsonData.backupCodes).to.be.an('array');",
+                  "    pm.expect(jsonData.backupCodes).to.have.lengthOf(10);",
+                  "});",
+                  "",
+                  "// Display backup codes",
+                  "const jsonData = pm.response.json();",
+                  "console.log('==================================');",
+                  "console.log('2FA ENABLED SUCCESSFULLY!');",
+                  "console.log('==================================');",
+                  "console.log('');",
+                  "console.log('⚠️ SAVE THESE BACKUP CODES SECURELY!');",
+                  "console.log('   You will NOT see them again.');",
+                  "console.log('');",
+                  "console.log('Backup Recovery Codes:');",
+                  "jsonData.backupCodes.forEach((code, index) => {",
+                  "    console.log(`${index + 1}. ${code}`);",
+                  "});",
+                  "console.log('');",
+                  "console.log('Use these codes if you lose access to your authenticator app.');",
+                  "console.log('Each code can only be used once.');",
+                  "console.log('==================================');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/2fa/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "2fa", "verify"]
+            },
+            "description": "**Step 2 of 2FA Setup**\n\nVerify 6-digit TOTP code and enable 2FA.\n\n**Returns:**\n- 10 backup recovery codes (SHOWN ONLY ONCE)\n- 2FA enabled confirmation\n\n**⚠️ IMPORTANT:**\nSave backup codes securely! You will NOT see them again.\n\n**Body:**\n```json\n{\n  \"token\": \"123456\"  // 6-digit code from authenticator app\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Disable 2FA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('2FA disabled', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('disabled', true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/2fa/disable",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "2fa", "disable"]
+            },
+            "description": "Disable 2FA for the account.\n\n**Security:** Requires valid TOTP code to prevent unauthorized disabling.\n\n**Body:**\n```json\n{\n  \"token\": \"123456\"  // Current 6-digit code from authenticator app\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Regenerate Backup Codes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('New backup codes generated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('backupCodes');",
+                  "    pm.expect(jsonData.backupCodes).to.have.lengthOf(10);",
+                  "});",
+                  "",
+                  "// Display new backup codes",
+                  "const jsonData = pm.response.json();",
+                  "console.log('==================================');",
+                  "console.log('NEW BACKUP CODES GENERATED');",
+                  "console.log('==================================');",
+                  "console.log('');",
+                  "console.log('⚠️ OLD CODES ARE NOW INVALID!');",
+                  "console.log('   Save these new codes securely.');",
+                  "console.log('');",
+                  "console.log('New Backup Recovery Codes:');",
+                  "jsonData.backupCodes.forEach((code, index) => {",
+                  "    console.log(`${index + 1}. ${code}`);",
+                  "});",
+                  "console.log('==================================');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/2fa/backup-codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "2fa", "backup-codes"]
+            },
+            "description": "Regenerate 10 new backup recovery codes.\n\n**⚠️ WARNING:** Old backup codes will be invalidated!\n\n**Use cases:**\n- Lost backup codes\n- Backup codes compromised\n- Used most backup codes\n\n**Body:**\n```json\n{\n  \"token\": \"123456\"  // Current 6-digit code from authenticator app\n}\n```"
+          },
+          "response": []
+        }
+      ],
+      "description": "Two-factor authentication with TOTP - 4 endpoints"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh Clerk token if needed",
+          "// This is a placeholder - implement actual token refresh logic",
+          "",
+          "// Check if token exists",
+          "const clerkToken = pm.collectionVariables.get('clerkToken');",
+          "",
+          "if (!clerkToken) {",
+          "    console.warn('⚠️ Warning: No Clerk token set!');",
+          "    console.log('Please set {{clerkToken}} in collection variables.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test - check for common error patterns",
+          "if (pm.response.code >= 400) {",
+          "    console.error('❌ Request failed:', pm.response.code, pm.response.status);",
+          "    ",
+          "    try {",
+          "        const jsonData = pm.response.json();",
+          "        console.error('Error details:', JSON.stringify(jsonData, null, 2));",
+          "    } catch (e) {",
+          "        console.error('Response body:', pm.response.text());",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "clerkToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "apiKeyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "generatedApiKey",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
