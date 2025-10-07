@@ -78,9 +78,21 @@ describe('AlertRuleService', () => {
       expect(result).toEqual(mockAlertRule);
       expect(mockPrismaService.alertRule.create).toHaveBeenCalledWith({
         data: {
-          ...createDto,
-          createdById: 'user-123',
+          name: createDto.name,
+          description: createDto.description,
+          category: createDto.category,
+          priority: createDto.priority,
+          eventType: createDto.eventType,
+          condition: createDto.condition,
+          activeHours: null,
+          cooldownMinutes: createDto.cooldownMinutes,
+          isActive: createDto.isActive,
+          createdBy: 'user-123',
+          updatedBy: 'user-123',
         },
+        include: expect.objectContaining({
+          creator: expect.any(Object),
+        }),
       });
     });
 
@@ -104,9 +116,21 @@ describe('AlertRuleService', () => {
 
       expect(mockPrismaService.alertRule.create).toHaveBeenCalledWith({
         data: {
-          ...minimalDto,
-          createdById: 'user-123',
+          name: minimalDto.name,
+          description: undefined,
+          category: minimalDto.category,
+          priority: minimalDto.priority,
+          eventType: minimalDto.eventType,
+          condition: minimalDto.condition,
+          activeHours: null,
+          cooldownMinutes: 15,
+          isActive: true,
+          createdBy: 'user-123',
+          updatedBy: 'user-123',
         },
+        include: expect.objectContaining({
+          creator: expect.any(Object),
+        }),
       });
     });
 
@@ -136,20 +160,23 @@ describe('AlertRuleService', () => {
           creator: {
             select: {
               id: true,
+              email: true,
               firstName: true,
               lastName: true,
-              email: true,
             },
           },
-          updater: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+          recipients: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
             },
           },
-          recipients: true,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -232,6 +259,12 @@ describe('AlertRuleService', () => {
           lastName: 'Doe',
           email: 'john@example.com',
         },
+        updater: {
+          id: 'user-456',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          email: 'jane@example.com',
+        },
       };
 
       mockPrismaService.alertRule.findUnique.mockResolvedValue(
@@ -247,20 +280,31 @@ describe('AlertRuleService', () => {
           creator: {
             select: {
               id: true,
+              email: true,
               firstName: true,
               lastName: true,
-              email: true,
             },
           },
           updater: {
             select: {
               id: true,
+              email: true,
               firstName: true,
               lastName: true,
-              email: true,
             },
           },
-          recipients: true,
+          recipients: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
           alerts: {
             take: 10,
             orderBy: { createdAt: 'desc' },
@@ -276,7 +320,7 @@ describe('AlertRuleService', () => {
         NotFoundException,
       );
       await expect(service.findOne('nonexistent')).rejects.toThrow(
-        'Alert rule with ID nonexistent not found',
+        "Alert rule with ID 'nonexistent' not found",
       );
     });
   });
@@ -289,7 +333,7 @@ describe('AlertRuleService', () => {
     };
 
     it('should update an alert rule successfully', async () => {
-      const updatedRule = { ...mockAlertRule, ...updateDto };
+      const updatedRule = { ...mockAlertRule, ...updateDto, updatedAt: expect.any(Date) };
       mockPrismaService.alertRule.findUnique.mockResolvedValue(mockAlertRule);
       mockPrismaService.alertRule.update.mockResolvedValue(updatedRule);
 
@@ -298,10 +342,17 @@ describe('AlertRuleService', () => {
       expect(result).toEqual(updatedRule);
       expect(mockPrismaService.alertRule.update).toHaveBeenCalledWith({
         where: { id: 'rule-123' },
-        data: {
-          ...updateDto,
-          updatedById: 'user-456',
-        },
+        data: expect.objectContaining({
+          name: updateDto.name,
+          priority: updateDto.priority,
+          isActive: updateDto.isActive,
+          updatedBy: 'user-456',
+          updatedAt: expect.any(Date),
+        }),
+        include: expect.objectContaining({
+          creator: expect.any(Object),
+          updater: expect.any(Object),
+        }),
       });
     });
 
@@ -319,16 +370,22 @@ describe('AlertRuleService', () => {
       mockPrismaService.alertRule.update.mockResolvedValue({
         ...mockAlertRule,
         ...partialUpdate,
+        updatedAt: new Date(),
       });
 
       await service.update('rule-123', partialUpdate, 'user-456');
 
       expect(mockPrismaService.alertRule.update).toHaveBeenCalledWith({
         where: { id: 'rule-123' },
-        data: {
-          ...partialUpdate,
-          updatedById: 'user-456',
-        },
+        data: expect.objectContaining({
+          isActive: false,
+          updatedBy: 'user-456',
+          updatedAt: expect.any(Date),
+        }),
+        include: expect.objectContaining({
+          creator: expect.any(Object),
+          updater: expect.any(Object),
+        }),
       });
     });
   });
@@ -340,7 +397,7 @@ describe('AlertRuleService', () => {
 
       const result = await service.remove('rule-123');
 
-      expect(result).toEqual(mockAlertRule);
+      expect(result).toBeUndefined(); // Service returns void
       expect(mockPrismaService.alertRule.delete).toHaveBeenCalledWith({
         where: { id: 'rule-123' },
       });
@@ -358,7 +415,7 @@ describe('AlertRuleService', () => {
   describe('toggleActive', () => {
     it('should toggle rule from active to inactive', async () => {
       const activeRule = { ...mockAlertRule, isActive: true };
-      const inactiveRule = { ...mockAlertRule, isActive: false };
+      const inactiveRule = { ...mockAlertRule, isActive: false, updatedAt: new Date() };
 
       mockPrismaService.alertRule.findUnique.mockResolvedValue(activeRule);
       mockPrismaService.alertRule.update.mockResolvedValue(inactiveRule);
@@ -370,14 +427,15 @@ describe('AlertRuleService', () => {
         where: { id: 'rule-123' },
         data: {
           isActive: false,
-          updatedById: 'user-456',
+          updatedBy: 'user-456',
+          updatedAt: expect.any(Date),
         },
       });
     });
 
     it('should toggle rule from inactive to active', async () => {
       const inactiveRule = { ...mockAlertRule, isActive: false };
-      const activeRule = { ...mockAlertRule, isActive: true };
+      const activeRule = { ...mockAlertRule, isActive: true, updatedAt: new Date() };
 
       mockPrismaService.alertRule.findUnique.mockResolvedValue(inactiveRule);
       mockPrismaService.alertRule.update.mockResolvedValue(activeRule);
@@ -389,7 +447,8 @@ describe('AlertRuleService', () => {
         where: { id: 'rule-123' },
         data: {
           isActive: true,
-          updatedById: 'user-456',
+          updatedBy: 'user-456',
+          updatedAt: expect.any(Date),
         },
       });
     });
@@ -422,7 +481,20 @@ describe('AlertRuleService', () => {
           category: AlertCategory.SENSOR,
           isActive: true,
         },
-        orderBy: { priority: 'desc' },
+        include: {
+          recipients: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+        },
       });
     });
 

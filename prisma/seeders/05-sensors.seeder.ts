@@ -51,7 +51,7 @@ export async function seedSensors(prisma: PrismaClient, devices: Device[]) {
           ? sensorConfig.maxValue * 0.9
           : sensorConfig.minValue * 1.1;
 
-        await prisma.alert.create({
+        await prisma.sensorAlert.create({
           data: {
             deviceId: device.id,
             sensorId: sensor.id,
@@ -59,12 +59,7 @@ export async function seedSensors(prisma: PrismaClient, devices: Device[]) {
             severity: 'medium',
             title: `${sensor.name} ${isHighAlert ? 'High' : 'Low'} Threshold`,
             message: `${sensor.name} has ${isHighAlert ? 'exceeded maximum' : 'fallen below minimum'} threshold`,
-            threshold: {
-              sensorType: sensorConfig.type,
-              condition: isHighAlert ? 'greater_than' : 'less_than',
-              value: thresholdValue,
-              unit: sensorConfig.unit,
-            },
+            threshold: thresholdValue, // Changed to number
             isActive: true,
             isResolved: true,
             resolvedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),

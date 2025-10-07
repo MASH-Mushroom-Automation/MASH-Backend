@@ -1,4 +1,4 @@
-import { PrismaClient, User, Product, OrderStatus, PaymentStatus, PaymentMethod, Prisma } from '@prisma/client';
+import { PrismaClient, User, Product, OrderStatus, PaymentStatus, PaymentMethod, Prisma, NotificationType } from '@prisma/client';
 
 /**
  * Seed Orders
@@ -155,10 +155,10 @@ export async function seedOrders(
     orders.push(order);
 
     // Create notifications for order status
-    await prisma.notification.create({
+    await prisma.userNotification.create({
       data: {
         userId: buyer.id,
-        type: 'ORDER_UPDATE',
+        type: NotificationType.ORDER_UPDATE,
         title: `Order ${order.orderNumber} - ${orderStatus}`,
         message: `Your order is now ${orderStatus.toLowerCase()}`,
         data: {

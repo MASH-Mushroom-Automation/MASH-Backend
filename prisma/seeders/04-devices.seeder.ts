@@ -86,7 +86,7 @@ export async function seedDevices(prisma: PrismaClient, users: User[]) {
 
       // Create alerts for offline/maintenance devices
       if (!isOnline || device.status === DeviceStatus.MAINTENANCE) {
-        await prisma.alert.create({
+        await prisma.sensorAlert.create({
           data: {
             deviceId: device.id,
             type: device.status === DeviceStatus.MAINTENANCE ? 'maintenance' : 'offline',
@@ -98,8 +98,8 @@ export async function seedDevices(prisma: PrismaClient, users: User[]) {
               ? `Device is currently undergoing scheduled maintenance`
               : `Device has not reported status for extended period`,
             threshold: device.status === DeviceStatus.OFFLINE 
-              ? { maxOfflineMinutes: 60 } as any
-              : undefined,
+              ? 60 // Changed to number
+              : 0,
             isActive: true,
             isResolved: false,
           },
