@@ -59,7 +59,7 @@ export async function seedSensors(prisma: PrismaClient, devices: Device[]) {
             severity: 'medium',
             title: `${sensor.name} ${isHighAlert ? 'High' : 'Low'} Threshold`,
             message: `${sensor.name} has ${isHighAlert ? 'exceeded maximum' : 'fallen below minimum'} threshold`,
-            threshold: thresholdValue, // Changed to number
+            threshold: { value: thresholdValue }, // JSON object with threshold value
             isActive: true,
             isResolved: true,
             resolvedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),

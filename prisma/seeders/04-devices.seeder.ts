@@ -98,8 +98,8 @@ export async function seedDevices(prisma: PrismaClient, users: User[]) {
               ? `Device is currently undergoing scheduled maintenance`
               : `Device has not reported status for extended period`,
             threshold: device.status === DeviceStatus.OFFLINE 
-              ? 60 // Changed to number
-              : 0,
+              ? { minutes: 60 } // JSON object for offline threshold
+              : undefined, // Use undefined for optional field
             isActive: true,
             isResolved: false,
           },
