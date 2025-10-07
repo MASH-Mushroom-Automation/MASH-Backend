@@ -5,10 +5,12 @@ import {
   Post,
   Delete,
   Body,
+  Param,
   UseGuards,
   UseInterceptors,
   UploadedFile,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,23 +19,26 @@ import {
   ApiBearerAuth,
   ApiConsumes,
   ApiBody,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
 import { AvatarService } from './services/avatar.service';
+import { SessionManagementService } from './services/session-management.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Profile')
-@Controller('api/v1/profile')
+@Controller('profile')
 @UseGuards(ClerkAuthGuard)
 @ApiBearerAuth()
 export class ProfileController {
   constructor(
     private readonly profileService: ProfileService,
     private readonly avatarService: AvatarService,
+    private readonly sessionService: SessionManagementService,
   ) {}
 
   @Get()
@@ -176,5 +181,120 @@ export class ProfileController {
     return {
       message: 'Avatar deleted successfully',
     };
+  }
+
+  @Get('sessions')
+  @ApiOperation({ summary: 'Get all active sessions for current user' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User sessions retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        sessions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              token: { type: 'string', description: 'Masked token' },
+              deviceInfo: { type: 'object' },
+              ipAddress: { type: 'string' },
+              userAgent: { type: 'string' },
+              lastActivity: { type: 'string', format: 'date-time' },
+              expiresAt: { type: 'string', format: 'date-time' },
+              createdAt: { type: 'string', format: 'date-time' },
+              isCurrent: { type: 'boolean' },
+            },
+          },
+        },
+        stats: {
+          type: 'object',
+          properties: {
+            active: { type: 'number' },
+            total: { type: 'number' },
+            revoked: { type: 'number' },
+            expired: { type: 'number' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized',
+  })
+  async getSessions(@CurrentUser('id') userId: string) {
+    const [sessions, stats] = await Promise.all([
+      this.sessionService.getUserSessions(userId),
+      this.sessionService.getSessionStats(userId),
+    ]);
+
+    return {
+      sessions,
+      stats,
+    };
+  }
+
+  @Delete('sessions/:id')
+  @ApiOperation({ summary: 'Revoke a specific session' })
+  @ApiParam({
+    name: 'id',
+    description: 'Session ID to revoke',
+    type: 'string',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Session revoked successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        sessionId: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Session not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Not authorized to revoke this session',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Cannot revoke current session or session already revoked',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized',
+  })
+  async revokeSession(
+    @CurrentUser('id') userId: string,
+    @Param('id') sessionId: string,
+  ) {
+    return this.sessionService.revokeSession(userId, sessionId);
+  }
+
+  @Delete('sessions')
+  @ApiOperation({ summary: 'Logout from all devices (revoke all sessions except current)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'All sessions revoked successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        count: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized',
+  })
+  async revokeAllSessions(@CurrentUser('id') userId: string) {
+    return this.sessionService.revokeAllSessions(userId);
   }
 }
