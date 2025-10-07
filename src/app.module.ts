@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -26,7 +26,7 @@ import { AuthModule } from './modules/auth/auth.module';
 // Import common modules
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
-// import { CommonModule } from './common/common.module';
+import { CommonModule } from './common/common.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
@@ -62,9 +62,9 @@ import { PrismaService } from './database/prisma.service';
     ]),
 
     // Core modules
+    CommonModule, // 🆕 Added - Global utilities, filters, interceptors, pipes
     DatabaseModule,
     HealthModule,
-    // CommonModule,
 
     // Feature modules
     AuthModule,
@@ -108,7 +108,7 @@ import { PrismaService } from './database/prisma.service';
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
     },
-    // Global filters and interceptors will be added here
+    // Note: Global filters, interceptors, and pipes are registered in CommonModule
   ],
 })
 export class AppModule {}
