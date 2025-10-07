@@ -19,6 +19,9 @@ model User {
   role                UserRole             @default(USER)
   isActive            Boolean              @default(true)
   preferences         Json?                // User preferences (theme, language, timezone, notifications)
+  twoFactorSecret     String?              // TOTP secret (base32 encoded)
+  twoFactorEnabled    Boolean              @default(false) // Whether 2FA is enabled
+  twoFactorBackupCodes String[]            @default([]) // Hashed backup codes
   lastLoginAt         DateTime?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
