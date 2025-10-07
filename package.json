@@ -60,7 +60,7 @@
     "ioredis": "^5.8.1",
     "mqtt": "^5.14.1",
     "multer": "^2.0.2",
-    "nest-winston": "^1.9.4",
+    "nest-winston": "^1.10.2",
     "nodemailer": "^6.9.7",
     "passport": "^0.7.0",
     "passport-custom": "^1.1.1",
@@ -74,7 +74,9 @@
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
     "svix": "^1.76.1",
-    "winston": "^3.11.0"
+    "uuid": "^13.0.0",
+    "winston": "^3.18.3",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -83,6 +85,7 @@
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/bcryptjs": "^2.4.6",
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.0",
     "@types/ioredis": "^4.28.10",
     "@types/jest": "^30.0.0",
@@ -93,6 +96,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/speakeasy": "^2.0.10",
     "@types/supertest": "^6.0.2",
+    "compression": "^1.8.1",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

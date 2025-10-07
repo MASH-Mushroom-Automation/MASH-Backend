@@ -1,18 +1,34 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
+import compression from 'compression';
 import { join } from 'path';
+import { CustomLogger } from './common/utils/logger.util';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    bufferLogs: true,
   });
+
+  // 🆕 Use CustomLogger from CommonModule
+  const customLogger = app.get(CustomLogger);
+  app.useLogger(customLogger);
+
+  // 🆕 Apply global middleware (order matters!)
+  const correlationIdMiddleware = new CorrelationIdMiddleware();
+  app.use(correlationIdMiddleware.use.bind(correlationIdMiddleware));
+
+  const requestLoggerMiddleware = new RequestLoggerMiddleware();
+  app.use(requestLoggerMiddleware.use.bind(requestLoggerMiddleware));
 
   // Serve static files (for uploaded avatars)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
@@ -64,6 +80,9 @@ async function bootstrap() {
     }),
   );
 
+  // 🆕 Compression middleware - Reduce response size
+  app.use(compression());
+
   // CORS configuration
   app.enableCors({
     origin:
@@ -79,17 +98,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
+  // Note: Global validation pipes are registered in CommonModule
 
   // API prefix
   app.setGlobalPrefix('api/v1');

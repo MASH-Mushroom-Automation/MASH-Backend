@@ -1,0 +1,101 @@
+import { Global, Module } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { WinstonModule } from 'nest-winston';
+
+// Filters
+import {
+  HttpExceptionFilter,
+  PrismaExceptionFilter,
+  ValidationExceptionFilter,
+  AllExceptionsFilter,
+} from './filters';
+
+// Interceptors
+import {
+  TransformInterceptor,
+  LoggingInterceptor,
+  TimeoutInterceptor,
+} from './interceptors';
+
+// Pipes
+import { CustomValidationPipe } from './pipes/validation.pipe';
+import { SanitizePipe } from './pipes/sanitize.pipe';
+
+// Utilities
+import { CustomLogger } from './utils/logger.util';
+
+// Logger configuration
+import { loggerConfig } from '../config/logger.config';
+
+/**
+ * Common Module
+ * 
+ * @Global decorator makes this module's providers available everywhere
+ * without needing to import it in every module
+ * 
+ * Provides:
+ * - Global exception filters
+ * - Global interceptors
+ * - Global pipes
+ * - Shared utilities
+ * - Winston logger
+ */
+@Global()
+@Module({
+  imports: [
+    // Winston Logger Module
+    WinstonModule.forRoot(loggerConfig),
+  ],
+  providers: [
+    // Custom Logger
+    CustomLogger,
+
+    // Global Exception Filters (order matters - most specific first)
+    {
+      provide: APP_FILTER,
+      useClass: ValidationExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: PrismaExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+
+    // Global Interceptors
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TimeoutInterceptor,
+    },
+
+    // Global Pipes
+    {
+      provide: APP_PIPE,
+      useClass: CustomValidationPipe,
+    },
+    {
+      provide: APP_PIPE,
+      useClass: SanitizePipe,
+    },
+  ],
+  exports: [
+    // Export CustomLogger for use in other modules
+    CustomLogger,
+    WinstonModule,
+  ],
+})
+export class CommonModule {}
