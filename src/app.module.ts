@@ -24,10 +24,10 @@ import { AuthModule } from './modules/auth/auth.module';
 // import { PaymentsModule } from './modules/payments/payments.module';
 // import { AdminModule } from './modules/admin/admin.module';
 
-// Import common modules (will be created)
-// import { DatabaseModule } from './database/database.module';
+// Import common modules
+import { DatabaseModule } from './database/database.module';
+import { HealthModule } from './health/health.module';
 // import { CommonModule } from './common/common.module';
-// import { HealthModule } from './health/health.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
@@ -59,9 +59,12 @@ import { AdminModule } from './modules/admin/admin.module';
       },
     ]),
 
-    // Feature modules (uncomment as they are created)
-    // DatabaseModule,
+    // Core modules
+    DatabaseModule,
+    HealthModule,
     // CommonModule,
+    
+    // Feature modules
     AuthModule,
 
     UsersModule,
