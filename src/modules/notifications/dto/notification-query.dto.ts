@@ -24,7 +24,11 @@ export class NotificationQueryDto {
   @IsBoolean()
   isRead?: boolean;
 
-  @ApiProperty({ description: 'Filter by notification type', enum: NotificationType, required: false })
+  @ApiProperty({
+    description: 'Filter by notification type',
+    enum: NotificationType,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(NotificationType)
   type?: NotificationType;

@@ -28,13 +28,11 @@ export class PrismaService
     // Query performance monitoring
     this.$on('query', (e: Prisma.QueryEvent) => {
       if (e.duration > 100) {
-        this.logger.warn(
-          `Slow query detected: ${e.duration}ms - ${e.query}`,
-        );
+        this.logger.warn(`Slow query detected: ${e.duration}ms - ${e.query}`);
       }
     });
 
-    // Error logging  
+    // Error logging
     this.$on('error', (e: Prisma.LogEvent) => {
       this.logger.error(`Prisma Error: ${e.message}`);
     });
@@ -50,7 +48,7 @@ export class PrismaService
       await this.$connect();
       this.isConnected = true;
       this.logger.log('✅ Successfully connected to Neon PostgreSQL');
-      
+
       // Test connection
       await this.$queryRaw`SELECT 1`;
       this.logger.log('✅ Database connection verified');
@@ -102,18 +100,22 @@ export class PrismaService
     maxRetries = 3,
   ): Promise<T> {
     let lastError: Error;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await this.$transaction(fn);
       } catch (error) {
         lastError = error as Error;
-        this.logger.warn(`Transaction attempt ${attempt}/${maxRetries} failed: ${error.message}`);
+        this.logger.warn(
+          `Transaction attempt ${attempt}/${maxRetries} failed: ${error.message}`,
+        );
         if (attempt === maxRetries) break;
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100));
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt) * 100),
+        );
       }
     }
-    
+
     throw lastError!;
   }
 

@@ -32,8 +32,13 @@ export class CategoriesController {
 
   // 1. GET /categories - List all categories
   @Get()
-  @ApiOperation({ summary: 'List all categories with filtering and pagination' })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @ApiOperation({
+    summary: 'List all categories with filtering and pagination',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
   async findAll(@Query() query: CategoryQueryDto) {
     return this.categoriesService.findAll(query);
   }
@@ -44,7 +49,10 @@ export class CategoriesController {
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Create new category' })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access required',
+  })
   async create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
   }
@@ -52,7 +60,10 @@ export class CategoriesController {
   // 3. GET /categories/tree - Get category tree
   @Get('tree')
   @ApiOperation({ summary: 'Get hierarchical category tree structure' })
-  @ApiResponse({ status: 200, description: 'Category tree retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category tree retrieved successfully',
+  })
   async getCategoryTree() {
     return this.categoriesService.getCategoryTree();
   }
@@ -72,7 +83,10 @@ export class CategoriesController {
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Update category information' })
   @ApiResponse({ status: 200, description: 'Category updated successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access required',
+  })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async update(
     @Param('id') id: string,
@@ -87,7 +101,10 @@ export class CategoriesController {
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Soft delete category' })
   @ApiResponse({ status: 200, description: 'Category deleted successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access required',
+  })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
@@ -96,7 +113,10 @@ export class CategoriesController {
   // 7. GET /categories/:id/children - Get child categories
   @Get(':id/children')
   @ApiOperation({ summary: 'Get child categories of a category' })
-  @ApiResponse({ status: 200, description: 'Child categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Child categories retrieved successfully',
+  })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async getChildren(@Param('id') id: string) {
     return this.categoriesService.getChildren(id);

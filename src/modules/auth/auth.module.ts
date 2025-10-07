@@ -6,14 +6,24 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { FirebaseStrategy } from './strategies/firebase.strategy';
+import { ClerkStrategy } from './strategies/clerk.strategy';
 import { PrismaService } from '../../database/prisma.service';
+import { RedisService } from '../../database/redis.service';
+import { ClerkService } from './services/clerk.service';
+import { SessionService } from './services/session.service';
+import { TokenService } from './services/token.service';
+import { ClerkAuthGuard } from './guards/clerk-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { PermissionsGuard } from './guards/permissions.guard';
+import clerkConfig from '../../config/clerk.config';
 
 @Module({
   imports: [
+    ConfigModule.forFeature(clerkConfig),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
           expiresIn: configService.get('JWT_EXPIRATION', '1d'),
@@ -23,7 +33,29 @@ import { PrismaService } from '../../database/prisma.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, FirebaseStrategy, PrismaService],
-  exports: [AuthService, JwtModule, PassportModule],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    FirebaseStrategy,
+    ClerkStrategy,
+    ClerkService,
+    SessionService,
+    TokenService,
+    ClerkAuthGuard,
+    RolesGuard,
+    PermissionsGuard,
+    PrismaService,
+    RedisService,
+  ],
+  exports: [
+    AuthService,
+    JwtModule,
+    PassportModule,
+    ClerkService,
+    SessionService,
+    TokenService,
+    ClerkAuthGuard,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}

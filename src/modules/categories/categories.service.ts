@@ -86,7 +86,9 @@ export class CategoriesService {
     });
 
     if (existingCategory) {
-      throw new BadRequestException(`Category with slug '${slug}' already exists`);
+      throw new BadRequestException(
+        `Category with slug '${slug}' already exists`,
+      );
     }
 
     // Validate parent category exists
@@ -96,7 +98,9 @@ export class CategoriesService {
       });
 
       if (!parentCategory) {
-        throw new NotFoundException(`Parent category with ID '${parentId}' not found`);
+        throw new NotFoundException(
+          `Parent category with ID '${parentId}' not found`,
+        );
       }
     }
 

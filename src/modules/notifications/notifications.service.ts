@@ -59,9 +59,7 @@ export class NotificationsService {
     }
 
     if (notification.userId !== userId) {
-      throw new ForbiddenException(
-        'You can only view your own notifications',
-      );
+      throw new ForbiddenException('You can only view your own notifications');
     }
 
     return notification;

@@ -29,13 +29,16 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-  ) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get user notifications with pagination and filters' })
-  @ApiResponse({ status: 200, description: 'Returns paginated list of notifications' })
+  @ApiOperation({
+    summary: 'Get user notifications with pagination and filters',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of notifications',
+  })
   async findAll(@Request() req, @Query() query: NotificationQueryDto) {
     return this.notificationsService.findAll(req.user.id, query);
   }
@@ -44,14 +47,20 @@ export class NotificationsController {
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Create new notification (admin only)' })
-  @ApiResponse({ status: 201, description: 'Notification created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Notification created successfully',
+  })
   async create(@Body() createNotificationDto: CreateNotificationDto) {
     return this.notificationsService.create(createNotificationDto);
   }
 
   @Get('unread-count')
   @ApiOperation({ summary: 'Get count of unread notifications' })
-  @ApiResponse({ status: 200, description: 'Returns unread notification count' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns unread notification count',
+  })
   async getUnreadCount(@Request() req) {
     return this.notificationsService.getUnreadCount(req.user.id);
   }
@@ -93,7 +102,10 @@ export class NotificationsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete notification' })
-  @ApiResponse({ status: 200, description: 'Notification deleted successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification deleted successfully',
+  })
   async remove(@Param('id') id: string, @Request() req) {
     return this.notificationsService.remove(id, req.user.id);
   }

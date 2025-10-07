@@ -7,6 +7,7 @@ import { seedSensors } from './seeders/05-sensors.seeder';
 import { seedSensorData } from './seeders/06-sensor-data.seeder';
 import { seedOrders } from './seeders/07-orders.seeder';
 import { seedSystemConfig } from './seeders/08-system-config.seeder';
+import { seedRBAC } from './seeds/rbac.seed';
 
 const prisma = new PrismaClient();
 
@@ -20,6 +21,14 @@ async function main() {
   try {
     // Clear existing data (optional - comment out if you want to keep existing data)
     console.log('🗑️  Cleaning existing data...');
+    await prisma.rateLimitLog.deleteMany({});
+    await prisma.securityLog.deleteMany({});
+    await prisma.apiKey.deleteMany({});
+    await prisma.session.deleteMany({});
+    await prisma.rolePermission.deleteMany({});
+    await prisma.userRoleAssignment.deleteMany({});
+    await prisma.role.deleteMany({});
+    await prisma.permission.deleteMany({});
     await prisma.auditLog.deleteMany({});
     await prisma.notification.deleteMany({});
     await prisma.payment.deleteMany({});
@@ -36,6 +45,10 @@ async function main() {
     await prisma.systemConfig.deleteMany({});
     await prisma.user.deleteMany({});
     console.log('✅ Existing data cleaned\n');
+
+    // Seed RBAC first (before users)
+    await seedRBAC();
+    console.log('');
 
     // Seed in order (maintaining relationships)
     console.log('👥 Seeding users...');

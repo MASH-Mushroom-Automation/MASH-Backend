@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,13 +7,454 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
+model User {
+  id                  String               @id @default(cuid())
+  clerkId             String               @unique
+  email               String               @unique
+  username            String?              @unique
+  firstName           String?
+  lastName            String?
+  imageUrl            String?
+  phoneNumber         String?
+  role                UserRole             @default(USER)
+  isActive            Boolean              @default(true)
+  preferences         Json?                // User preferences (theme, language, timezone, notifications)
+  twoFactorSecret     String?              // TOTP secret (base32 encoded)
+  twoFactorEnabled    Boolean              @default(false) // Whether 2FA is enabled
+  twoFactorBackupCodes String[]            @default([]) // Hashed backup codes
+  lastLoginAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  addresses           Address[]
+  apiKeys             ApiKey[]
+  devices             Device[]
+  notifications       Notification[]
+  orders              Order[]
+  payments            Payment[]
+  sensorData          SensorData[]
+  sessions            Session[]
+  userRoleAssignments UserRoleAssignment[]
+
+  @@map("users")
+}
+
+model Device {
+  id             String          @id @default(cuid())
+  name           String
+  type           DeviceType
+  serialNumber   String          @unique
+  status         DeviceStatus    @default(OFFLINE)
+  userId         String
+  location       String?
+  description    String?
+  firmware       String?
+  ipAddress      String?
+  macAddress     String?
+  lastSeen       DateTime?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  alerts         Alert[]
+  deviceCommands DeviceCommand[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sensorData     SensorData[]
+  sensors        Sensor[]
+
+  @@map("devices")
+}
+
+model Sensor {
+  id          String       @id @default(cuid())
+  deviceId    String
+  type        String
+  name        String
+  unit        String
+  minValue    Float?
+  maxValue    Float?
+  calibration Json?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  alerts      Alert[]
+  sensorData  SensorData[]
+  device      Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("sensors")
+}
+
+model SensorData {
+  id        String   @id @default(cuid())
+  deviceId  String
+  sensorId  String?
+  userId    String
+  type      String
+  value     Float
+  unit      String
+  quality   String?
+  timestamp DateTime @default(now())
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  sensor    Sensor?  @relation(fields: [sensorId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp])
+  @@index([type, timestamp])
+  @@map("sensor_data")
+}
+
+model DeviceCommand {
+  id             String    @id @default(cuid())
+  deviceId       String
+  command        String
+  parameters     Json?
+  status         String    @default("pending")
+  response       Json?
+  sentAt         DateTime  @default(now())
+  acknowledgedAt DateTime?
+  device         Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("device_commands")
+}
+
+model Alert {
+  id         String    @id @default(cuid())
+  deviceId   String?
+  sensorId   String?
+  type       String
+  severity   String
+  title      String
+  message    String
+  threshold  Json?
+  isActive   Boolean   @default(true)
+  isResolved Boolean   @default(false)
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  device     Device?   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  sensor     Sensor?   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@map("alerts")
+}
+
+model Product {
+  id             String      @id @default(cuid())
+  name           String
+  description    String?
+  slug           String      @unique
+  sku            String?     @unique
+  price          Decimal     @db.Decimal(10, 2)
+  comparePrice   Decimal?    @db.Decimal(10, 2)
+  costPrice      Decimal?    @db.Decimal(10, 2)
+  stock          Int         @default(0)
+  minStock       Int         @default(0)
+  weight         Float?
+  dimensions     Json?
+  images         Json[]
+  categories     Json[]
+  tags           Json[]
+  attributes     Json?
+  isActive       Boolean     @default(true)
+  isFeatured     Boolean     @default(false)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  orderItems     OrderItem[]
+
+  @@map("products")
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  slug        String     @unique
+  parentId    String?
+  imageUrl    String?
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+
+  @@map("categories")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  userId          String
+  status          OrderStatus @default(PENDING)
+  subtotal        Decimal     @db.Decimal(10, 2)
+  tax             Decimal     @default(0) @db.Decimal(10, 2)
+  shipping        Decimal     @default(0) @db.Decimal(10, 2)
+  discount        Decimal     @default(0) @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+  currency        String      @default("PHP")
+  notes           String?
+  shippingAddress Json
+  billingAddress  Json
+  trackingNumber  String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  firstName   String
+  lastName    String
+  company     String?
+  street1     String
+  street2     String?
+  city        String
+  state       String
+  postalCode  String
+  country     String   @default("Philippines")
+  phoneNumber String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String?
+  userId          String
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("PHP")
+  status          PaymentStatus @default(PENDING)
+  method          PaymentMethod
+  transactionId   String?       @unique
+  gatewayResponse Json?
+  processedAt     DateTime?
+  failedAt        DateTime?
+  refundedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  order           Order?        @relation(fields: [orderId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  category    String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_config")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  resource        String
+  action          String
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@index([action])
+  @@map("permissions")
+}
+
+model Role {
+  id                  String               @id @default(cuid())
+  name                String               @unique
+  description         String?
+  isSystem            Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  rolePermissions     RolePermission[]
+  userRoleAssignments UserRoleAssignment[]
+
+  @@map("roles")
+}
+
+model UserRoleAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  grantedBy String?
+  grantedAt DateTime @default(now())
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_role_assignments")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model Session {
+  id             String        @id @default(cuid())
+  userId         String
+  clerkSessionId String?       @unique
+  token          String        @unique
+  status         SessionStatus @default(ACTIVE)
+  deviceInfo     Json?
+  ipAddress      String?
+  userAgent      String?
+  lastActivity   DateTime      @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  revokedReason  String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([clerkSessionId])
+  @@map("sessions")
+}
+
+model ApiKey {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  keyHash       String    @unique
+  keyPrefix     String
+  scopes        Json
+  lastUsedAt    DateTime?
+  expiresAt     DateTime?
+  revokedAt     DateTime?
+  revokedReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([keyPrefix])
+  @@index([expiresAt])
+  @@map("api_keys")
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  event     String
+  severity  String
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([event])
+  @@index([severity])
+  @@index([timestamp])
+  @@map("security_logs")
+}
+
+model RateLimitLog {
+  id          String   @id @default(cuid())
+  identifier  String
+  endpoint    String
+  count       Int      @default(1)
+  windowStart DateTime
+  windowEnd   DateTime
+  blocked     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([identifier, endpoint, windowStart])
+  @@index([identifier, windowStart])
+  @@index([endpoint])
+  @@map("rate_limit_logs")
+}
+
 enum UserRole {
   USER
   ADMIN
   SUPER_ADMIN
   GROWER
   BUYER
+}
+
+enum SessionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
 }
 
 enum DeviceType {
@@ -70,325 +508,4 @@ enum NotificationType {
   DEVICE_STATUS
   ORDER_UPDATE
   PAYMENT_UPDATE
-}
-
-// Models
-model User {
-  id          String   @id @default(cuid())
-  clerkId     String   @unique
-  email       String   @unique
-  username    String?  @unique
-  firstName   String?
-  lastName    String?
-  imageUrl    String?
-  phoneNumber String?
-  role        UserRole @default(USER)
-  isActive    Boolean  @default(true)
-  lastLoginAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  devices       Device[]
-  orders        Order[]
-  addresses     Address[]
-  notifications Notification[]
-  sensorData    SensorData[]
-  payments      Payment[]
-  
-  @@map("users")
-}
-
-model Device {
-  id           String       @id @default(cuid())
-  name         String
-  type         DeviceType
-  serialNumber String       @unique
-  status       DeviceStatus @default(OFFLINE)
-  userId       String
-  location     String?
-  description  String?
-  firmware     String?
-  ipAddress    String?
-  macAddress   String?
-  lastSeen     DateTime?
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  // Relations
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sensors        Sensor[]
-  sensorData     SensorData[]
-  deviceCommands DeviceCommand[]
-  alerts         Alert[]
-  
-  @@map("devices")
-}
-
-model Sensor {
-  id          String   @id @default(cuid())
-  deviceId    String
-  type        String   // temperature, humidity, ph, co2, etc.
-  name        String
-  unit        String   // °C, %, pH, ppm, etc.
-  minValue    Float?
-  maxValue    Float?
-  calibration Json?    // Calibration data
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  device     Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  sensorData SensorData[]
-  alerts     Alert[]
-  
-  @@map("sensors")
-}
-
-model SensorData {
-  id        String   @id @default(cuid())
-  deviceId  String
-  sensorId  String?
-  userId    String
-  type      String   // sensor type
-  value     Float
-  unit      String
-  quality   String?  // data quality indicator
-  timestamp DateTime @default(now())
-
-  // Relations
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  sensor Sensor? @relation(fields: [sensorId], references: [id], onDelete: SetNull)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([deviceId, timestamp])
-  @@index([type, timestamp])
-  @@map("sensor_data")
-}
-
-model DeviceCommand {
-  id          String    @id @default(cuid())
-  deviceId    String
-  command     String
-  parameters  Json?
-  status      String    @default("pending") // pending, sent, acknowledged, failed
-  response    Json?
-  sentAt      DateTime  @default(now())
-  acknowledgedAt DateTime?
-
-  // Relations
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  
-  @@map("device_commands")
-}
-
-model Alert {
-  id          String    @id @default(cuid())
-  deviceId    String?
-  sensorId    String?
-  type        String    // threshold, offline, error, etc.
-  severity    String    // low, medium, high, critical
-  title       String
-  message     String
-  threshold   Json?     // threshold configuration
-  isActive    Boolean   @default(true)
-  isResolved  Boolean   @default(false)
-  resolvedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relations
-  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  sensor Sensor? @relation(fields: [sensorId], references: [id], onDelete: Cascade)
-  
-  @@map("alerts")
-}
-
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  slug        String   @unique
-  sku         String?  @unique
-  price       Decimal  @db.Decimal(10, 2)
-  comparePrice Decimal? @db.Decimal(10, 2)
-  costPrice   Decimal? @db.Decimal(10, 2)
-  stock       Int      @default(0)
-  minStock    Int      @default(0)
-  weight      Float?
-  dimensions  Json?    // {length, width, height}
-  images      Json[]   // Array of image URLs
-  categories  Json[]   // Array of category IDs
-  tags        Json[]   // Array of tags
-  attributes  Json?    // Product attributes
-  isActive    Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  seoTitle    String?
-  seoDescription String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  orderItems OrderItem[]
-  
-  @@map("products")
-}
-
-model Category {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  slug        String   @unique
-  parentId    String?
-  imageUrl    String?
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Self-referential relation for subcategories
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryHierarchy")
-  
-  @@map("categories")
-}
-
-model Order {
-  id            String        @id @default(cuid())
-  orderNumber   String        @unique
-  userId        String
-  status        OrderStatus   @default(PENDING)
-  subtotal      Decimal       @db.Decimal(10, 2)
-  tax           Decimal       @db.Decimal(10, 2) @default(0)
-  shipping      Decimal       @db.Decimal(10, 2) @default(0)
-  discount      Decimal       @db.Decimal(10, 2) @default(0)
-  total         Decimal       @db.Decimal(10, 2)
-  currency      String        @default("PHP")
-  notes         String?
-  shippingAddress Json        // Address information
-  billingAddress  Json        // Address information
-  trackingNumber  String?
-  shippedAt       DateTime?
-  deliveredAt     DateTime?
-  cancelledAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  // Relations
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
-  payments   Payment[]
-  
-  @@map("orders")
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Decimal @db.Decimal(10, 2)
-  total     Decimal @db.Decimal(10, 2)
-
-  // Relations
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  
-  @@map("order_items")
-}
-
-model Address {
-  id          String  @id @default(cuid())
-  userId      String
-  type        String  // home, work, billing, shipping
-  firstName   String
-  lastName    String
-  company     String?
-  street1     String
-  street2     String?
-  city        String
-  state       String
-  postalCode  String
-  country     String  @default("Philippines")
-  phoneNumber String?
-  isDefault   Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("addresses")
-}
-
-model Payment {
-  id              String        @id @default(cuid())
-  orderId         String?
-  userId          String
-  amount          Decimal       @db.Decimal(10, 2)
-  currency        String        @default("PHP")
-  status          PaymentStatus @default(PENDING)
-  method          PaymentMethod
-  transactionId   String?       @unique
-  gatewayResponse Json?         // Payment gateway response
-  processedAt     DateTime?
-  failedAt        DateTime?
-  refundedAt      DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // Relations
-  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("payments")
-}
-
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  type      NotificationType
-  title     String
-  message   String
-  data      Json?            // Additional notification data
-  isRead    Boolean          @default(false)
-  readAt    DateTime?
-  createdAt DateTime         @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("notifications")
-}
-
-model SystemConfig {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       Json
-  description String?
-  category    String?
-  isPublic    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("system_config")
-}
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  action     String   // CREATE, UPDATE, DELETE, LOGIN, etc.
-  entity     String   // table/model name
-  entityId   String?  // ID of the affected record
-  oldValues  Json?    // Previous values
-  newValues  Json?    // New values
-  ipAddress  String?
-  userAgent  String?
-  timestamp  DateTime @default(now())
-  
-  @@index([userId, timestamp])
-  @@index([entity, entityId])
-  @@map("audit_logs")
 }

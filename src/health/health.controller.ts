@@ -12,9 +12,9 @@ export class HealthController {
   /**
    * Database Health Check
    * Tests database connectivity and response time
-   * 
+   *
    * @returns Database health status with connection details
-   * 
+   *
    * @example
    * GET /api/v1/health/database
    * Response:
@@ -34,9 +34,9 @@ export class HealthController {
   /**
    * Application Health Check
    * Basic endpoint to verify API is running
-   * 
+   *
    * @returns Simple health status
-   * 
+   *
    * @example
    * GET /api/v1/health
    * Response:
@@ -60,9 +60,9 @@ export class HealthController {
   /**
    * Detailed System Health Check
    * Combines database and application health
-   * 
+   *
    * @returns Comprehensive system health status
-   * 
+   *
    * @example
    * GET /api/v1/health/system
    * Response:
