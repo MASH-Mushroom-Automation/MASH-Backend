@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerGuard } from '@nestjs/throttler';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -37,6 +36,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
+import { PrismaService } from './database/prisma.service';
 
 @Module({
   imports: [
@@ -63,7 +64,7 @@ import { AdminModule } from './modules/admin/admin.module';
     DatabaseModule,
     HealthModule,
     // CommonModule,
-    
+
     // Feature modules
     AuthModule,
 
@@ -98,10 +99,11 @@ import { AdminModule } from './modules/admin/admin.module';
   controllers: [AppController],
   providers: [
     AppService,
+    PrismaService,
     // Global guards
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CustomThrottlerGuard,
     },
     // Global filters and interceptors will be added here
   ],

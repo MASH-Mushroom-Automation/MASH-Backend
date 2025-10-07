@@ -28,10 +28,12 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       // Configure MQTT broker connection
       // For local development, you can use a public broker or set up mosquitto
       const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
-      
+
       // Skip MQTT connection if explicitly disabled
       if (process.env.MQTT_ENABLED === 'false') {
-        this.logger.warn('⚠️ MQTT is disabled. IoT device communication unavailable.');
+        this.logger.warn(
+          '⚠️ MQTT is disabled. IoT device communication unavailable.',
+        );
         return;
       }
 
@@ -69,7 +71,10 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.client.on('error', (error) => {
-        this.logger.warn('⚠️ MQTT connection error (broker may not be running):', error.message);
+        this.logger.warn(
+          '⚠️ MQTT connection error (broker may not be running):',
+          error.message,
+        );
         this.connected = false;
       });
 

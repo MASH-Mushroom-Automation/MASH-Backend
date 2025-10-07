@@ -124,7 +124,8 @@ export class OrdersService {
         tax: new Prisma.Decimal(tax),
         discount: new Prisma.Decimal(discount),
         total: new Prisma.Decimal(total),
-        shippingAddress: createOrderDto.shippingAddress as unknown as Prisma.InputJsonValue,
+        shippingAddress:
+          createOrderDto.shippingAddress as unknown as Prisma.InputJsonValue,
         billingAddress: (createOrderDto.billingAddress ||
           createOrderDto.shippingAddress) as unknown as Prisma.InputJsonValue,
         notes: createOrderDto.notes,
@@ -178,11 +179,7 @@ export class OrdersService {
   }
 
   // 3. Get user's orders
-  async getUserOrders(
-    userId: string,
-    query: OrderQueryDto,
-    currentUser: any,
-  ) {
+  async getUserOrders(userId: string, query: OrderQueryDto, currentUser: any) {
     if (
       userId !== currentUser.id &&
       !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)

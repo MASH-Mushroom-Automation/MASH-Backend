@@ -90,7 +90,10 @@ export class AdminController {
 
   @Post('system/config')
   @ApiOperation({ summary: 'Update system configuration' })
-  @ApiResponse({ status: 200, description: 'Configuration updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Configuration updated successfully',
+  })
   async updateSystemConfig(@Body() configDto: SystemConfigDto) {
     return this.adminService.updateSystemConfig(
       configDto.key,

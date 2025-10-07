@@ -60,13 +60,7 @@ export class AdminService {
   }
 
   async getAllUsers(query: any) {
-    const {
-      page = 1,
-      limit = 20,
-      role,
-      status,
-      search,
-    } = query;
+    const { page = 1, limit = 20, role, status, search } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -160,14 +154,7 @@ export class AdminService {
   }
 
   async getAuditLogs(query: any) {
-    const {
-      page = 1,
-      limit = 20,
-      userId,
-      action,
-      startDate,
-      endDate,
-    } = query;
+    const { page = 1, limit = 20, userId, action, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
     // Placeholder implementation - in production, use a dedicated audit log table
@@ -274,7 +261,8 @@ export class AdminService {
     if (startDate) dateFilter.gte = new Date(startDate);
     if (endDate) dateFilter.lte = new Date(endDate);
 
-    const where = dateFilter.gte || dateFilter.lte ? { createdAt: dateFilter } : {};
+    const where =
+      dateFilter.gte || dateFilter.lte ? { createdAt: dateFilter } : {};
 
     const [orderStats, revenueStats, userStats, deviceStats] =
       await Promise.all([
@@ -301,7 +289,10 @@ export class AdminService {
       },
       orders: {
         byStatus: orderStats,
-        total: orderStats.reduce((sum, stat) => sum + (stat._count?.id || 0), 0),
+        total: orderStats.reduce(
+          (sum, stat) => sum + (stat._count?.id || 0),
+          0,
+        ),
       },
       revenue: {
         total: revenueStats._sum?.total || 0,

@@ -31,6 +31,8 @@
     "postman:orders": "newman run postman/04-Orders-API.postman_collection.json -e postman/MASH-backend.postman_environment.json"
   },
   "dependencies": {
+    "@clerk/backend": "^2.17.1",
+    "@clerk/clerk-sdk-node": "^4.13.23",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^11.0.1",
@@ -41,7 +43,7 @@
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^8.0.0",
     "@nestjs/terminus": "^10.2.3",
-    "@nestjs/throttler": "^6.2.1",
+    "@nestjs/throttler": "^6.4.0",
     "@nestjs/websockets": "^11.1.6",
     "@prisma/client": "^5.22.0",
     "@sendgrid/mail": "^8.1.0",
@@ -52,8 +54,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "firebase-admin": "^13.5.0",
-    "helmet": "^7.1.0",
-    "ioredis": "^5.3.2",
+    "helmet": "^7.2.0",
+    "ioredis": "^5.8.1",
     "mqtt": "^5.14.1",
     "nest-winston": "^1.9.4",
     "nodemailer": "^6.9.7",
@@ -65,6 +67,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
+    "svix": "^1.76.1",
     "winston": "^3.11.0"
   },
   "devDependencies": {
@@ -75,6 +78,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/express": "^5.0.0",
+    "@types/ioredis": "^4.28.10",
     "@types/jest": "^30.0.0",
     "@types/mqtt": "^0.0.34",
     "@types/node": "^22.10.7",

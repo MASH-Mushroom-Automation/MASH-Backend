@@ -18,7 +18,14 @@ export class AnalyticsService {
       };
     }
 
-    const [totalOrders, totalRevenue, totalUsers, deviceStats, pendingOrders, completedOrders] = await Promise.all([
+    const [
+      totalOrders,
+      totalRevenue,
+      totalUsers,
+      deviceStats,
+      pendingOrders,
+      completedOrders,
+    ] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.aggregate({
         where,
@@ -27,12 +34,15 @@ export class AnalyticsService {
         },
       }),
       this.prisma.user.count({
-        where: startDate && endDate ? {
-          createdAt: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-          },
-        } : undefined,
+        where:
+          startDate && endDate
+            ? {
+                createdAt: {
+                  gte: new Date(startDate),
+                  lte: new Date(endDate),
+                },
+              }
+            : undefined,
       }),
       this.prisma.device.aggregate({
         _count: true,
@@ -101,7 +111,10 @@ export class AnalyticsService {
       }),
     ]);
 
-    const trends = await this.getOrderTrendsGrouped(where, query.interval || TimeInterval.DAILY);
+    const trends = await this.getOrderTrendsGrouped(
+      where,
+      query.interval || TimeInterval.DAILY,
+    );
 
     return {
       totalSales: Number(salesData._sum.total) || 0,
@@ -160,15 +173,16 @@ export class AnalyticsService {
       };
     }
 
-    const [totalUsers, activeUsers, newSignups, usersByRole] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.user.count({ where: { isActive: true } }),
-      this.prisma.user.count({ where }),
-      this.prisma.user.groupBy({
-        by: ['role'],
-        _count: true,
-      }),
-    ]);
+    const [totalUsers, activeUsers, newSignups, usersByRole] =
+      await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({ where: { isActive: true } }),
+        this.prisma.user.count({ where }),
+        this.prisma.user.groupBy({
+          by: ['role'],
+          _count: true,
+        }),
+      ]);
 
     return {
       totalUsers,
@@ -183,7 +197,13 @@ export class AnalyticsService {
   }
 
   async getDeviceStatistics(query: DateRangeQueryDto) {
-    const [totalDevices, activeDevices, devicesByType, sensorCount, sensorData] = await Promise.all([
+    const [
+      totalDevices,
+      activeDevices,
+      devicesByType,
+      sensorCount,
+      sensorData,
+    ] = await Promise.all([
       this.prisma.device.count(),
       this.prisma.device.count({ where: { isActive: true } }),
       this.prisma.device.groupBy({
@@ -218,7 +238,10 @@ export class AnalyticsService {
       };
     }
 
-    const trends = await this.getOrderTrendsGrouped(where, interval || TimeInterval.DAILY);
+    const trends = await this.getOrderTrendsGrouped(
+      where,
+      interval || TimeInterval.DAILY,
+    );
 
     return {
       trends,
@@ -255,7 +278,10 @@ export class AnalyticsService {
       }),
     ]);
 
-    const trends = await this.getOrderTrendsGrouped(where, query.interval || TimeInterval.MONTHLY);
+    const trends = await this.getOrderTrendsGrouped(
+      where,
+      query.interval || TimeInterval.MONTHLY,
+    );
 
     return {
       totalRevenue: Number(revenueData._sum.total) || 0,
@@ -272,29 +298,51 @@ export class AnalyticsService {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastYear = new Date(now.getFullYear() - 1, now.getMonth(), 1);
 
-    const [currentMonth, previousMonth, currentYear, previousYear] = await Promise.all([
-      this.getMonthStats(now),
-      this.getMonthStats(lastMonth),
-      this.getMonthStats(now),
-      this.getMonthStats(lastYear),
-    ]);
+    const [currentMonth, previousMonth, currentYear, previousYear] =
+      await Promise.all([
+        this.getMonthStats(now),
+        this.getMonthStats(lastMonth),
+        this.getMonthStats(now),
+        this.getMonthStats(lastYear),
+      ]);
 
     const monthOverMonth = {
-      revenue: previousMonth.revenue > 0 ? 
-        ((currentMonth.revenue - previousMonth.revenue) / previousMonth.revenue) * 100 : 0,
-      orders: previousMonth.orders > 0 ? 
-        ((currentMonth.orders - previousMonth.orders) / previousMonth.orders) * 100 : 0,
-      users: previousMonth.users > 0 ? 
-        ((currentMonth.users - previousMonth.users) / previousMonth.users) * 100 : 0,
+      revenue:
+        previousMonth.revenue > 0
+          ? ((currentMonth.revenue - previousMonth.revenue) /
+              previousMonth.revenue) *
+            100
+          : 0,
+      orders:
+        previousMonth.orders > 0
+          ? ((currentMonth.orders - previousMonth.orders) /
+              previousMonth.orders) *
+            100
+          : 0,
+      users:
+        previousMonth.users > 0
+          ? ((currentMonth.users - previousMonth.users) / previousMonth.users) *
+            100
+          : 0,
     };
 
     const yearOverYear = {
-      revenue: previousYear.revenue > 0 ? 
-        ((currentYear.revenue - previousYear.revenue) / previousYear.revenue) * 100 : 0,
-      orders: previousYear.orders > 0 ? 
-        ((currentYear.orders - previousYear.orders) / previousYear.orders) * 100 : 0,
-      users: previousYear.users > 0 ? 
-        ((currentYear.users - previousYear.users) / previousYear.users) * 100 : 0,
+      revenue:
+        previousYear.revenue > 0
+          ? ((currentYear.revenue - previousYear.revenue) /
+              previousYear.revenue) *
+            100
+          : 0,
+      orders:
+        previousYear.orders > 0
+          ? ((currentYear.orders - previousYear.orders) / previousYear.orders) *
+            100
+          : 0,
+      users:
+        previousYear.users > 0
+          ? ((currentYear.users - previousYear.users) / previousYear.users) *
+            100
+          : 0,
     };
 
     return {
@@ -334,21 +382,24 @@ export class AnalyticsService {
       },
     });
 
-    const productStats = orderItems.reduce((acc, item) => {
-      const productId = item.productId;
-      if (!acc[productId]) {
-        acc[productId] = {
-          product: item.product,
-          totalQuantity: 0,
-          totalRevenue: 0,
-          orderCount: 0,
-        };
-      }
-      acc[productId].totalQuantity += item.quantity;
-      acc[productId].totalRevenue += Number(item.total);
-      acc[productId].orderCount += 1;
-      return acc;
-    }, {} as Record<string, any>);
+    const productStats = orderItems.reduce(
+      (acc, item) => {
+        const productId = item.productId;
+        if (!acc[productId]) {
+          acc[productId] = {
+            product: item.product,
+            totalQuantity: 0,
+            totalRevenue: 0,
+            orderCount: 0,
+          };
+        }
+        acc[productId].totalQuantity += item.quantity;
+        acc[productId].totalRevenue += Number(item.total);
+        acc[productId].orderCount += 1;
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     const topProducts = Object.values(productStats)
       .sort((a: any, b: any) => b.totalRevenue - a.totalRevenue)
