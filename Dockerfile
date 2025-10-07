@@ -9,8 +9,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci --legacy-peer-deps --only=production && npm cache clean --force
+# Install ALL dependencies (including dev dependencies needed for build)
+RUN npm ci --legacy-peer-deps && npm cache clean --force
 
 # Generate Prisma Client
 RUN npx prisma generate
