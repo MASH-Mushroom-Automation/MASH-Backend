@@ -30,7 +30,6 @@ import { NotificationQueueService } from '../queues/services/notification-queue.
 
 @ApiTags('Notifications')
 @Controller('notifications')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class NotificationsController {
   constructor(
@@ -39,6 +38,7 @@ export class NotificationsController {
   ) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get user notifications with pagination and filters',
   })
@@ -51,6 +51,7 @@ export class NotificationsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Create new notification (admin only)' })
