@@ -3,7 +3,7 @@ import { PrismaService } from '../../../database/prisma.service';
 
 /**
  * SecurityLogService
- * 
+ *
  * Manages security event logging and audit trail.
  * Provides methods to log security events and query security history.
  */
@@ -17,14 +17,17 @@ export class SecurityLogService {
    * @param filters Optional filters (action, dateFrom, dateTo, severity, page, limit)
    * @returns Paginated security log entries
    */
-  async getSecurityLog(userId: string, filters?: {
-    action?: string;
-    dateFrom?: Date;
-    dateTo?: Date;
-    severity?: string;
-    page?: number;
-    limit?: number;
-  }) {
+  async getSecurityLog(
+    userId: string,
+    filters?: {
+      action?: string;
+      dateFrom?: Date;
+      dateTo?: Date;
+      severity?: string;
+      page?: number;
+      limit?: number;
+    },
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 50;
     const skip = (page - 1) * limit;
@@ -131,7 +134,9 @@ export class SecurityLogService {
       this.prisma.securityLog.count({ where: { userId, severity: 'INFO' } }),
       this.prisma.securityLog.count({ where: { userId, severity: 'WARNING' } }),
       this.prisma.securityLog.count({ where: { userId, severity: 'ERROR' } }),
-      this.prisma.securityLog.count({ where: { userId, severity: 'CRITICAL' } }),
+      this.prisma.securityLog.count({
+        where: { userId, severity: 'CRITICAL' },
+      }),
     ]);
 
     return {

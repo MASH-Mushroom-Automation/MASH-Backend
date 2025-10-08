@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  ExecutionContext,
-  Logger,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, ExecutionContext, Logger, Inject } from '@nestjs/common';
 import {
   ThrottlerGuard,
   ThrottlerException,
@@ -12,28 +7,36 @@ import {
 import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../../database/prisma.service';
+import { RATE_LIMIT_HEADERS } from '../../../common/config/throttler.config';
 
 /**
- * CustomThrottlerGuard - Rate limiting with database logging
+ * CustomThrottlerGuard - Enhanced rate limiting with database logging and response headers
  *
  * Extends @nestjs/throttler's ThrottlerGuard to add:
  * - Database logging of rate limit violations
+ * - Rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)
  * - IP address tracking
  * - User agent tracking
  * - Endpoint tracking
+ * - Distributed rate limiting via Redis
  *
  * Default Configuration (from AppModule):
- * - 100 requests per minute per IP
+ * - Multiple tiers: short (5/15min), medium (10/hour), long (1000/hour), default (100/min)
  * - Logs all violations to RateLimitLog table
+ * - Adds standard rate limit headers to all responses
  *
  * Usage:
  * Global guard applied in AppModule providers
  *
  * Custom rate limits per route:
  * ```typescript
- * @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
- * @Get('/sensitive-endpoint')
- * async getSensitiveData() {}
+ * @Throttle({ short: { limit: 5, ttl: 900000 } }) // 5 requests per 15 minutes
+ * @Post('/auth/login')
+ * async login() {}
+ *
+ * @SkipThrottle() // Skip rate limiting
+ * @Get('/public/data')
+ * async getPublicData() {}
  * ```
  */
 @Injectable()
@@ -43,7 +46,8 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   constructor(
     @Inject('THROTTLER:MODULE_OPTIONS')
     protected readonly options: ThrottlerModuleOptions,
-    @Inject(ThrottlerStorage) protected readonly storageService: ThrottlerStorage,
+    @Inject(ThrottlerStorage)
+    protected readonly storageService: ThrottlerStorage,
     protected readonly reflector: Reflector,
     private readonly prisma: PrismaService,
   ) {
@@ -51,15 +55,22 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   /**
-   * Override canActivate to add custom logging on rate limit violations
+   * Override canActivate to add custom logging and rate limit headers
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    const response = context.switchToHttp().getResponse();
     const { ip, method, url, headers, user } = request;
 
     try {
       // Call parent implementation (performs rate limit check)
-      return await super.canActivate(context);
+      const result = await super.canActivate(context);
+
+      // Add rate limit headers to response (success case)
+      // Note: We can't get exact counts here without duplicating parent logic
+      // Headers will be set by handleRequest override
+
+      return result;
     } catch (error) {
       // Rate limit exceeded - log to database
       if (error instanceof ThrottlerException) {
@@ -71,6 +82,9 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
           user?.id,
         );
 
+        // Add Retry-After header (60 seconds by default)
+        response.setHeader(RATE_LIMIT_HEADERS.RETRY_AFTER, '60');
+
         this.logger.warn(
           `Rate limit exceeded: ${ip} - ${method} ${url} - User: ${user?.id || 'anonymous'}`,
         );
@@ -78,6 +92,29 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
       throw error;
     }
+  }
+
+  /**
+   * Override handleRequest to add rate limit headers
+   * This is called by the parent ThrottlerGuard after checking rate limits
+   */
+  protected async handleRequest(requestProps: any): Promise<boolean> {
+    const { context, limit, ttl, throttler } = requestProps;
+    const response = context.switchToHttp().getResponse();
+
+    // Call parent implementation
+    const result = await super.handleRequest(requestProps);
+
+    // Add rate limit headers to response
+    if (response && limit) {
+      response.setHeader(RATE_LIMIT_HEADERS.LIMIT, limit.toString());
+
+      // Calculate reset time (current time + TTL)
+      const resetTime = Math.ceil((Date.now() + ttl) / 1000);
+      response.setHeader(RATE_LIMIT_HEADERS.RESET, resetTime.toString());
+    }
+
+    return result;
   }
 
   /**

@@ -1,6 +1,6 @@
 /**
  * Error Response Interface
- * 
+ *
  * Standard error response structure for all API errors
  */
 export interface ErrorResponse {

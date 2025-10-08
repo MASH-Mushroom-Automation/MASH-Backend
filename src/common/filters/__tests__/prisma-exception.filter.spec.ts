@@ -122,7 +122,9 @@ describe.skip('PrismaExceptionFilter', () => {
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockResponse.status).toHaveBeenCalledWith(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     });
 
     it('should handle validation errors', () => {
@@ -153,7 +155,9 @@ describe.skip('PrismaExceptionFilter', () => {
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+      expect(mockResponse.status).toHaveBeenCalledWith(
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     });
 
     it('should handle unknown Prisma errors as 500', () => {
@@ -164,17 +168,16 @@ describe.skip('PrismaExceptionFilter', () => {
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockResponse.status).toHaveBeenCalledWith(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     });
 
     it('should include correlation ID in response', () => {
-      const exception = new Prisma.PrismaClientKnownRequestError(
-        'Test error',
-        {
-          code: 'P2002',
-          clientVersion: '5.0.0',
-        },
-      );
+      const exception = new Prisma.PrismaClientKnownRequestError('Test error', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
 
       filter.catch(exception, mockArgumentsHost);
 

@@ -1,6 +1,6 @@
 /**
  * Base Classes Export
- * 
+ *
  * Barrel export for base classes
  */
 

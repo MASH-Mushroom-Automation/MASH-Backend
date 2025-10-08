@@ -31,7 +31,9 @@ export class DatabaseTestHelper {
    */
   static getPrisma(): PrismaClient {
     if (!this.prisma) {
-      throw new Error('Prisma client not initialized. Call initialize() first.');
+      throw new Error(
+        'Prisma client not initialized. Call initialize() first.',
+      );
     }
     return this.prisma;
   }
@@ -53,7 +55,9 @@ export class DatabaseTestHelper {
     // Truncate all tables
     for (const { tablename } of tables) {
       if (tablename !== '_prisma_migrations') {
-        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tablename}" CASCADE;`);
+        await prisma.$executeRawUnsafe(
+          `TRUNCATE TABLE "${tablename}" CASCADE;`,
+        );
       }
     }
 
@@ -66,7 +70,7 @@ export class DatabaseTestHelper {
    */
   static async seedTestData(): Promise<void> {
     const prisma = this.getPrisma();
-    
+
     // Add your seed data logic here
     // Example:
     // await prisma.user.createMany({
@@ -85,7 +89,8 @@ export class DatabaseTestHelper {
       execSync('npx prisma migrate deploy', {
         env: {
           ...process.env,
-          DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
+          DATABASE_URL:
+            process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
         },
         stdio: 'inherit',
       });
@@ -170,7 +175,7 @@ export class DatabaseTestHelper {
    */
   static async createTestUser(overrides?: Partial<any>): Promise<any> {
     const prisma = this.getPrisma();
-    
+
     // Example implementation - adjust based on your User model
     // return await prisma.user.create({
     //   data: {
@@ -180,7 +185,7 @@ export class DatabaseTestHelper {
     //     ...overrides,
     //   },
     // });
-    
+
     // Placeholder return
     return {
       id: `test-user-${Date.now()}`,
@@ -192,10 +197,7 @@ export class DatabaseTestHelper {
   /**
    * Create test data for a specific model
    */
-  static async createTestData<T>(
-    modelName: string,
-    data: T,
-  ): Promise<T> {
+  static async createTestData<T>(modelName: string, data: T): Promise<T> {
     const prisma = this.getPrisma();
     // @ts-ignore - Dynamic model access
     return await prisma[modelName].create({ data });
@@ -216,10 +218,7 @@ export class DatabaseTestHelper {
   /**
    * Delete test data by ID
    */
-  static async deleteTestData(
-    modelName: string,
-    id: string,
-  ): Promise<void> {
+  static async deleteTestData(modelName: string, id: string): Promise<void> {
     const prisma = this.getPrisma();
     // @ts-ignore - Dynamic model access
     await prisma[modelName].delete({ where: { id } });

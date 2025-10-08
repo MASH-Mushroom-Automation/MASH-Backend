@@ -2,15 +2,15 @@ import { Transform as ClassTransformTransform } from 'class-transformer';
 
 /**
  * Transform Decorator
- * 
+ *
  * Alias for class-transformer's Transform decorator
  * Makes it easier to import and use
- * 
+ *
  * Usage:
  * @Transform(({ value }) => value.trim())
  * @IsString()
  * name: string;
- * 
+ *
  * Or with custom function:
  * @Transform(({ value }) => value.toLowerCase())
  * @IsEmail()

@@ -9,7 +9,7 @@ import { Request, Response } from 'express';
 
 /**
  * Validation Exception Filter
- * 
+ *
  * Catches validation errors from class-validator and formats them consistently
  * Features:
  * - Structured validation error messages

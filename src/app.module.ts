@@ -10,6 +10,7 @@ import { AppService } from './app.service';
 import { createAppConfig } from './config/app.config';
 import { createDatabaseConfig } from './config/database.config';
 import { createJwtConfig } from './config/jwt.config';
+import { getThrottlerConfig } from './common/config/throttler.config';
 
 // Import modules (will be created)
 import { AuthModule } from './modules/auth/auth.module';
@@ -42,6 +43,8 @@ import { PrismaService } from './database/prisma.service';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
+import { RedisService } from './database/redis.service';
+import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 
 @Module({
   imports: [
@@ -56,13 +59,16 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
       ],
     }),
 
-    // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
+    // Rate limiting with Redis-backed distributed storage
+    ThrottlerModule.forRootAsync({
+      useFactory: (redisService: RedisService) => ({
+        throttlers: getThrottlerConfig(),
+        storage: new RedisThrottlerStorage(redisService),
+        // Enable skip if decorated with @SkipThrottle()
+        skipIf: () => false,
+      }),
+      inject: [RedisService],
+    }),
 
     // Core modules
     CommonModule, // 🆕 Added - Global utilities, filters, interceptors, pipes

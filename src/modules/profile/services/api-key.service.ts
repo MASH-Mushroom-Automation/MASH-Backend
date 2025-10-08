@@ -202,10 +202,7 @@ export class ApiKeyService {
         where: {
           userId,
           revokedAt: null,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gte: new Date() } },
-          ],
+          OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
         },
       }),
       this.prisma.apiKey.count({

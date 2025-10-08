@@ -9,6 +9,7 @@ import { SecurityLogService } from './services/security-log.service';
 import { TwoFactorService } from './services/two-factor.service';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../auth/auth.module';
+import { FileValidationService } from '../../common/services/file-validation.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -21,6 +22,7 @@ import { AuthModule } from '../auth/auth.module';
     ApiKeyService,
     SecurityLogService,
     TwoFactorService,
+    FileValidationService,
   ],
   exports: [
     ProfileService,

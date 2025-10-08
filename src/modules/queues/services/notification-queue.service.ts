@@ -37,11 +37,11 @@ export class NotificationQueueService {
   private readonly logger = new Logger(NotificationQueueService.name);
 
   constructor(
-    @InjectQueue('email-notifications') 
+    @InjectQueue('email-notifications')
     private emailQueue: Queue,
-    @InjectQueue('sms-notifications') 
+    @InjectQueue('sms-notifications')
     private smsQueue: Queue,
-    @InjectQueue('push-notifications') 
+    @InjectQueue('push-notifications')
     private pushQueue: Queue,
   ) {}
 
@@ -51,7 +51,7 @@ export class NotificationQueueService {
   async sendEmail(data: EmailNotificationJob): Promise<void> {
     try {
       const priority = this.getPriority(data.priority);
-      
+
       await this.emailQueue.add('send-email', data, {
         priority,
         attempts: 3,
@@ -76,7 +76,7 @@ export class NotificationQueueService {
   async sendSms(data: SmsNotificationJob): Promise<void> {
     try {
       const priority = this.getPriority(data.priority);
-      
+
       await this.smsQueue.add('send-sms', data, {
         priority,
         attempts: 3,
@@ -101,7 +101,7 @@ export class NotificationQueueService {
   async sendPush(data: PushNotificationJob): Promise<void> {
     try {
       const priority = this.getPriority(data.priority);
-      
+
       await this.pushQueue.add('send-push', data, {
         priority,
         attempts: 3,
@@ -113,7 +113,9 @@ export class NotificationQueueService {
         removeOnFail: false,
       });
 
-      this.logger.log(`Push notification queued for token: ${data.token.substring(0, 20)}...`);
+      this.logger.log(
+        `Push notification queued for token: ${data.token.substring(0, 20)}...`,
+      );
     } catch (error) {
       this.logger.error(`Failed to queue push notification: ${error.message}`);
       throw error;
@@ -197,7 +199,9 @@ export class NotificationQueueService {
   async clearAllQueues(userRole?: string): Promise<void> {
     // Authorization check - only allow for admin users or testing environment
     if (process.env.NODE_ENV === 'production' && userRole !== 'admin') {
-      throw new Error('Unauthorized: clearAllQueues requires admin privileges in production');
+      throw new Error(
+        'Unauthorized: clearAllQueues requires admin privileges in production',
+      );
     }
 
     await Promise.all([

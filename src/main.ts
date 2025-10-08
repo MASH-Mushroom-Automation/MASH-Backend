@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -10,6 +10,10 @@ import { join } from 'path';
 import { CustomLogger } from './common/utils/logger.util';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+import { getHelmetConfig } from './config/helmet.config';
+import { getCorsConfig } from './config/cors.config';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
+import { AuditLogService } from './common/services/audit-log.service';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -39,64 +43,21 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3000);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
-  // Security middleware - Helmet with enhanced configuration
-  app.use(
-    helmet({
-      // Content Security Policy
-      contentSecurityPolicy:
-        nodeEnv === 'development'
-          ? false
-          : {
-              directives: {
-                defaultSrc: ["'self'"],
-                styleSrc: ["'self'", "'unsafe-inline'"],
-                scriptSrc: ["'self'"],
-                imgSrc: ["'self'", 'data:', 'https:'],
-                connectSrc: ["'self'"],
-                fontSrc: ["'self'"],
-                objectSrc: ["'none'"],
-                mediaSrc: ["'self'"],
-                frameSrc: ["'none'"],
-              },
-            },
-      // HTTP Strict Transport Security (HSTS)
-      hsts: {
-        maxAge: 31536000, // 1 year in seconds
-        includeSubDomains: true,
-        preload: true,
-      },
-      // X-Frame-Options: Prevent clickjacking
-      frameguard: {
-        action: 'deny',
-      },
-      // X-Content-Type-Options: Prevent MIME sniffing
-      noSniff: true,
-      // X-XSS-Protection: Enable XSS filter
-      xssFilter: true,
-      // Referrer-Policy: Control referrer information
-      referrerPolicy: {
-        policy: 'strict-origin-when-cross-origin',
-      },
-    }),
-  );
+  // 🔒 Security middleware - Helmet with comprehensive headers
+  app.use(helmet(getHelmetConfig(nodeEnv)));
 
-  // 🆕 Compression middleware - Reduce response size
+  // 🗜️ Compression middleware - Reduce response size
   app.use(compression());
 
-  // CORS configuration
-  app.enableCors({
-    origin:
-      nodeEnv === 'development'
-        ? [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://localhost:5173',
-          ]
-        : configService.get<string>('CORS_ORIGINS', '').split(','),
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  });
+  // 🌐 CORS configuration - Cross-origin resource sharing
+  const corsOrigins = configService.get<string>('CORS_ORIGINS');
+  const corsCredentials = configService.get<boolean>('CORS_CREDENTIALS', true);
+  app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
+
+  // 📝 Audit logging interceptor - Track sensitive operations
+  const reflector = app.get(Reflector);
+  const auditLogService = app.get(AuditLogService);
+  app.useGlobalInterceptors(new AuditLogInterceptor(reflector, auditLogService));
 
   // Note: Global validation pipes are registered in CommonModule
 

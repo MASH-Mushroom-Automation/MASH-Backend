@@ -14,14 +14,14 @@ import { BaseService } from './base.service';
 
 /**
  * Base Controller Class
- * 
+ *
  * Abstract controller providing standard REST endpoints
  * Features:
  * - Standard CRUD operations
  * - Pagination support
  * - Swagger documentation
  * - Consistent response format
- * 
+ *
  * @abstract
  * @template T - Entity type
  * @template CreateDto - DTO for creating entity
@@ -41,7 +41,7 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
 
   /**
    * Get all entities
-   * 
+   *
    * @param page - Page number (default: 1)
    * @param limit - Items per page (default: 10)
    * @param sortBy - Sort field (default: createdAt)
@@ -61,7 +61,7 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const orderBy = { [sortBy]: sortOrder };
-    
+
     return this.service.findAll({
       page: Number(page),
       limit: Number(limit),
@@ -71,7 +71,7 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
 
   /**
    * Get entity by ID
-   * 
+   *
    * @param id - Entity ID
    * @returns Entity
    */
@@ -91,7 +91,7 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
 
   /**
    * Create a new entity
-   * 
+   *
    * @param dto - Create DTO
    * @returns Created entity
    */
@@ -112,7 +112,7 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
 
   /**
    * Update an entity
-   * 
+   *
    * @param id - Entity ID
    * @param dto - Update DTO
    * @returns Updated entity
@@ -131,16 +131,13 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
     status: 400,
     description: 'Bad request',
   })
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateDto) {
     return this.service.update(id, dto);
   }
 
   /**
    * Delete an entity (soft delete)
-   * 
+   *
    * @param id - Entity ID
    */
   @Delete(':id')
@@ -160,7 +157,7 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
 
   /**
    * Restore a soft-deleted entity
-   * 
+   *
    * @param id - Entity ID
    * @returns Restored entity
    */
@@ -180,7 +177,7 @@ export abstract class BaseController<T, CreateDto, UpdateDto> {
 
   /**
    * Get entity count
-   * 
+   *
    * @returns Count
    */
   @Get('count/all')

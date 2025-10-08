@@ -18,8 +18,10 @@ export class PushProcessor {
   @Process('send-push')
   async handlePushJob(job: Job<PushNotificationJob>) {
     const { token, title, body, data, alertId, userId, priority } = job.data;
-    
-    this.logger.log(`Processing push notification job ${job.id} for token: ${token.substring(0, 20)}...`);
+
+    this.logger.log(
+      `Processing push notification job ${job.id} for token: ${token.substring(0, 20)}...`,
+    );
 
     try {
       // Create notification record in database
@@ -58,20 +60,23 @@ export class PushProcessor {
       });
 
       this.logger.log(`Push notification sent successfully: ${message}`);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         messageId: message,
         notificationId: notification.id,
       };
-
     } catch (error) {
       this.logger.error(`Failed to send push notification: ${error.message}`);
-      
+
       // Check if it's an invalid token error
-      if (error.code === 'messaging/invalid-registration-token' || 
-          error.code === 'messaging/registration-token-not-registered') {
-        this.logger.warn(`Invalid or unregistered FCM token: ${token.substring(0, 20)}...`);
+      if (
+        error.code === 'messaging/invalid-registration-token' ||
+        error.code === 'messaging/registration-token-not-registered'
+      ) {
+        this.logger.warn(
+          `Invalid or unregistered FCM token: ${token.substring(0, 20)}...`,
+        );
       }
 
       // Update notification status to FAILED
@@ -92,7 +97,9 @@ export class PushProcessor {
           },
         });
       } catch (dbError) {
-        this.logger.error(`Failed to update notification status: ${dbError.message}`);
+        this.logger.error(
+          `Failed to update notification status: ${dbError.message}`,
+        );
       }
 
       throw error; // Bull will retry
@@ -134,20 +141,26 @@ export class PushProcessor {
     try {
       // Send to each token individually
       const results = await Promise.allSettled(
-        tokens.map(token =>
+        tokens.map((token) =>
           admin.messaging().send({
             token,
             notification: { title, body },
             data: data || {},
-          })
-        )
+          }),
+        ),
       );
 
-      const successCount = results.filter(r => r.status === 'fulfilled').length;
-      const failureCount = results.filter(r => r.status === 'rejected').length;
-      
-      this.logger.log(`Sent to ${successCount} devices, failed: ${failureCount}`);
-      
+      const successCount = results.filter(
+        (r) => r.status === 'fulfilled',
+      ).length;
+      const failureCount = results.filter(
+        (r) => r.status === 'rejected',
+      ).length;
+
+      this.logger.log(
+        `Sent to ${successCount} devices, failed: ${failureCount}`,
+      );
+
       return {
         successCount,
         failureCount,

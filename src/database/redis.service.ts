@@ -34,9 +34,7 @@ export class RedisService implements OnModuleDestroy {
     const redisUrl = this.configService.get<string>('REDIS_URL');
 
     if (!redisUrl) {
-      this.logger.warn(
-        '⚠️ REDIS_URL not configured - Redis caching disabled',
-      );
+      this.logger.warn('⚠️ REDIS_URL not configured - Redis caching disabled');
       // Create a mock client that does nothing
       this.client = null;
       return;
@@ -202,6 +200,53 @@ export class RedisService implements OnModuleDestroy {
     } catch (error) {
       this.logger.error(`Redis TTL error for key ${key}:`, error);
       return -2;
+    }
+  }
+
+  /**
+   * Alias for ttl() - Get remaining TTL for a key
+   * @param key - Cache key
+   * @returns TTL in seconds, -1 if no expiry, -2 if key doesn't exist
+   */
+  async getTTL(key: string): Promise<number> {
+    return this.ttl(key);
+  }
+
+  /**
+   * Atomically increment a key's value
+   * @param key - Cache key
+   * @returns New value after increment
+   */
+  async increment(key: string): Promise<number> {
+    if (!this.isAvailable()) {
+      return 0;
+    }
+
+    try {
+      return await this.client!.incr(key);
+    } catch (error) {
+      this.logger.error(`Redis INCR error for key ${key}:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Set expiration on a key
+   * @param key - Cache key
+   * @param seconds - TTL in seconds
+   * @returns true if expiration was set, false otherwise
+   */
+  async setExpiration(key: string, seconds: number): Promise<boolean> {
+    if (!this.isAvailable()) {
+      return false;
+    }
+
+    try {
+      const result = await this.client!.expire(key, seconds);
+      return result === 1;
+    } catch (error) {
+      this.logger.error(`Redis EXPIRE error for key ${key}:`, error);
+      return false;
     }
   }
 

@@ -135,7 +135,9 @@ export class PermissionsGuard implements CanActivate {
       return cachedPermissions;
     }
 
-    this.logger.debug(`Cache MISS for user ${userId} permissions - querying DB`);
+    this.logger.debug(
+      `Cache MISS for user ${userId} permissions - querying DB`,
+    );
 
     // Query user's role assignments with permissions
     const userRoleAssignments = await this.prisma.userRoleAssignment.findMany({

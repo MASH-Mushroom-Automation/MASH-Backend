@@ -2,13 +2,13 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 /**
  * Current User Decorator
- * 
+ *
  * Extract authenticated user from request
- * 
+ *
  * Usage:
  * @Get('profile')
  * getProfile(@CurrentUser() user: User) {}
- * 
+ *
  * Or get specific property:
  * @Get('profile')
  * getProfile(@CurrentUser('id') userId: string) {}

@@ -1,6 +1,6 @@
 /**
  * Exception Filters Export
- * 
+ *
  * Barrel export for all exception filters
  */
 

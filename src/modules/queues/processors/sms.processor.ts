@@ -13,8 +13,12 @@ export class SmsProcessor {
 
   constructor(private prisma: PrismaService) {
     // Check if Twilio is configured
-    this.isConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER);
-    
+    this.isConfigured = !!(
+      process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_PHONE_NUMBER
+    );
+
     if (this.isConfigured) {
       try {
         // TODO: For production, install and initialize Twilio client
@@ -27,14 +31,16 @@ export class SmsProcessor {
         this.isConfigured = false;
       }
     } else {
-      this.logger.warn('⚠️ Twilio not configured. SMS notifications will be simulated.');
+      this.logger.warn(
+        '⚠️ Twilio not configured. SMS notifications will be simulated.',
+      );
     }
   }
 
   @Process('send-sms')
   async handleSmsJob(job: Job<SmsNotificationJob>) {
     const { to, body, alertId, userId, priority } = job.data;
-    
+
     this.logger.log(`📱 Processing SMS job ${job.id} for: ${to}`);
 
     try {
@@ -44,10 +50,10 @@ export class SmsProcessor {
       if (!this.isConfigured) {
         // Simulation mode when Twilio is not configured
         this.logger.log(`📱 [SIMULATION] SMS to ${to}: ${body}`);
-        
+
         // Simulate delivery delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         await this.prisma.notification.update({
           where: { id: notification.id },
           data: {
@@ -64,8 +70,8 @@ export class SmsProcessor {
           },
         });
 
-        return { 
-          success: true, 
+        return {
+          success: true,
           mode: 'simulation',
           notificationId: notification.id,
           message: 'SMS simulated successfully (Twilio not configured)',
@@ -94,19 +100,22 @@ export class SmsProcessor {
       // });
 
       // this.logger.log(`SMS sent successfully: ${message.sid}`);
-      
-      // return { 
-      //   success: true, 
+
+      // return {
+      //   success: true,
       //   sid: message.sid,
       //   notificationId: notification.id,
       // };
 
       // Temporary return for now
-      return { success: true, mode: 'simulation', notificationId: notification.id };
-
+      return {
+        success: true,
+        mode: 'simulation',
+        notificationId: notification.id,
+      };
     } catch (error) {
       this.logger.error(`Failed to send SMS: ${error.message}`);
-      
+
       // Update notification status to FAILED
       try {
         await this.prisma.notification.updateMany({
@@ -124,7 +133,9 @@ export class SmsProcessor {
           },
         });
       } catch (dbError) {
-        this.logger.error(`Failed to update notification status: ${dbError.message}`);
+        this.logger.error(
+          `Failed to update notification status: ${dbError.message}`,
+        );
       }
 
       throw error; // Bull will retry

@@ -192,9 +192,7 @@ describe('MainGateway', () => {
 
       gateway.handleDisconnect(mockSocket1);
 
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Active: 1'),
-      );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Active: 1'));
     });
 
     it('should handle error during disconnection gracefully', () => {
@@ -202,7 +200,7 @@ describe('MainGateway', () => {
         'socket-1',
         'user-1',
       ) as AuthenticatedSocket;
-      
+
       jest
         .spyOn(connectionManager, 'removeConnection')
         .mockImplementation(() => {
@@ -716,7 +714,10 @@ describe('MainGateway', () => {
 
       // Connect
       await gateway.handleConnection(mockSocket);
-      expect(mockSocket.emit).toHaveBeenCalledWith('connected', expect.any(Object));
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'connected',
+        expect.any(Object),
+      );
 
       // Subscribe to room
       await gateway.handleSubscribe(mockSocket, { room: 'test:room' });

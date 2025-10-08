@@ -4,9 +4,9 @@ import { Type } from 'class-transformer';
 
 /**
  * Filter DTO
- * 
+ *
  * Common DTO for filtering query parameters
- * 
+ *
  * Usage:
  * @Get()
  * findAll(@Query() filterDto: FilterDto) {}

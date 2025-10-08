@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsOptional,
 } from 'class-validator';
+import { IsNotFutureDate } from '../../../common/validators';
 
 export class IngestSensorDataDto {
   @ApiProperty({
@@ -16,11 +17,12 @@ export class IngestSensorDataDto {
   value: number;
 
   @ApiProperty({
-    description: 'Timestamp of the reading (ISO 8601)',
+    description: 'Timestamp of the reading (ISO 8601, cannot be in the future)',
     example: '2025-10-04T08:30:00Z',
     required: false,
   })
   @IsDateString()
+  @IsNotFutureDate({ gracePeriodMs: 300000 }) // 5 minutes grace period for clock skew
   @IsOptional()
   timestamp?: string;
 
