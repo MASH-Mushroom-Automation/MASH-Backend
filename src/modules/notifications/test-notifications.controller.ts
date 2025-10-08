@@ -91,7 +91,7 @@ export class TestNotificationsController {
     pushToken?: string;
     message?: string;
   }) {
-    const results = [];
+    const results: Array<{ channel: string; status: string; target: string }> = [];
     const baseMessage = dto.message || '🍄 MASH Phase 4 Multi-Channel Test: All notification systems operational!';
 
     try {
