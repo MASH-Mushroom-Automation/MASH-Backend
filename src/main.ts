@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -12,6 +12,8 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { getHelmetConfig } from './config/helmet.config';
 import { getCorsConfig } from './config/cors.config';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
+import { AuditLogService } from './common/services/audit-log.service';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -51,6 +53,11 @@ async function bootstrap() {
   const corsOrigins = configService.get<string>('CORS_ORIGINS');
   const corsCredentials = configService.get<boolean>('CORS_CREDENTIALS', true);
   app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
+
+  // 📝 Audit logging interceptor - Track sensitive operations
+  const reflector = app.get(Reflector);
+  const auditLogService = app.get(AuditLogService);
+  app.useGlobalInterceptors(new AuditLogInterceptor(reflector, auditLogService));
 
   // Note: Global validation pipes are registered in CommonModule
 

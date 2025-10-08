@@ -24,6 +24,8 @@ import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuditLog } from '../../common/decorators/audit-log.decorator';
+import { AuditAction } from '../../common/services/audit-log.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -32,6 +34,11 @@ export class AuthController {
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.USER_CREATE,
+    entity: 'User',
+    getEntityId: (args) => args[0]?.data?.id,
+  })
   @ApiOperation({
     summary: 'Clerk webhook handler',
     description: 'Handles user synchronization events from Clerk',
@@ -72,6 +79,11 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.LOGOUT,
+    entity: 'User',
+    getEntityId: (args) => args[0]?.user?.userId as string,
+  })
   @ApiOperation({
     summary: 'Logout user',
     description: 'Invalidates the current user session',
@@ -86,6 +98,10 @@ export class AuthController {
   @Post('refresh')
   @Throttle({ short: { limit: 5, ttl: 900000 } }) // 5 requests per 15 minutes
   @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.TOKEN_REFRESH,
+    entity: 'Auth',
+  })
   @ApiOperation({ summary: 'Refresh JWT access token using refresh token' })
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({

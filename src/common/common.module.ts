@@ -24,6 +24,7 @@ import { SanitizePipe } from './pipes/sanitize.pipe';
 // Services
 import { SanitizationService } from './services/sanitization.service';
 import { FileValidationService } from './services/file-validation.service';
+import { AuditLogService } from './services/audit-log.service';
 
 // Utilities
 import { CustomLogger } from './utils/logger.util';
@@ -54,6 +55,7 @@ import { loggerConfig } from '../config/logger.config';
     // Services (Issue #23 - Enterprise Security)
     SanitizationService,
     FileValidationService,
+    AuditLogService,
 
     // Custom Logger
     CustomLogger,
@@ -104,6 +106,7 @@ import { loggerConfig } from '../config/logger.config';
     // Export services for use in other modules (Issue #23)
     SanitizationService,
     FileValidationService,
+    AuditLogService,
 
     // Export CustomLogger for use in other modules
     CustomLogger,
