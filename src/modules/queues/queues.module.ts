@@ -1,5 +1,8 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
+import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { NotificationQueueService } from './services/notification-queue.service';
 import { EmailProcessor } from './processors/email.processor';
 import { SmsProcessor } from './processors/sms.processor';
@@ -22,6 +25,22 @@ import { DatabaseModule } from '../../database/database.module';
       { name: 'sms-notifications' },
       { name: 'push-notifications' },
     ),
+    BullBoardModule.forRoot({
+      route: '/admin/queues',
+      adapter: ExpressAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'email-notifications',
+      adapter: BullAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'sms-notifications',
+      adapter: BullAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'push-notifications',
+      adapter: BullAdapter,
+    }),
   ],
   providers: [
     NotificationQueueService,
