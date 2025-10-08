@@ -64,6 +64,7 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get count of unread notifications' })
   @ApiResponse({
     status: 200,
