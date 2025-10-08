@@ -21,13 +21,13 @@ export class NotificationsService {
     if (type) where.type = type;
 
     const [notifications, total] = await Promise.all([
-      this.prisma.notification.findMany({
+      this.prisma.userNotification.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.notification.count({ where }),
+      this.prisma.userNotification.count({ where }),
     ]);
 
     return {
@@ -44,13 +44,13 @@ export class NotificationsService {
   }
 
   async create(createNotificationDto: CreateNotificationDto) {
-    return this.prisma.notification.create({
+    return this.prisma.userNotification.create({
       data: createNotificationDto,
     });
   }
 
   async findOne(id: string, userId: string) {
-    const notification = await this.prisma.notification.findUnique({
+    const notification = await this.prisma.userNotification.findUnique({
       where: { id },
     });
 
@@ -68,7 +68,7 @@ export class NotificationsService {
   async markAsRead(id: string, userId: string) {
     const notification = await this.findOne(id, userId);
 
-    return this.prisma.notification.update({
+    return this.prisma.userNotification.update({
       where: { id },
       data: { isRead: true, readAt: new Date() },
     });
@@ -77,7 +77,7 @@ export class NotificationsService {
   async remove(id: string, userId: string) {
     const notification = await this.findOne(id, userId);
 
-    await this.prisma.notification.delete({
+    await this.prisma.userNotification.delete({
       where: { id },
     });
 
@@ -88,7 +88,7 @@ export class NotificationsService {
   }
 
   async getUnreadCount(userId: string) {
-    const count = await this.prisma.notification.count({
+    const count = await this.prisma.userNotification.count({
       where: {
         userId,
         isRead: false,

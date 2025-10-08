@@ -120,7 +120,7 @@ export async function seedUsers(prisma: PrismaClient) {
             },
           ],
         },
-        notifications: {
+        userNotifications: {
           create: [
             {
               type: 'INFO',

@@ -439,7 +439,7 @@ export class SensorsService {
       throw new NotFoundException('Sensor not found');
     }
 
-    const alerts = await this.prisma.alert.findMany({
+    const alerts = await this.prisma.sensorAlert.findMany({
       where: { sensorId: id },
       orderBy: { createdAt: 'desc' },
       take: 50,
