@@ -5,29 +5,28 @@ import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { SmsNotificationJob } from '../services/notification-queue.service';
 
-// Twilio will be imported when configured
-// import * as twilio from 'twilio';
-
 @Processor('sms-notifications')
 export class SmsProcessor {
   private readonly logger = new Logger(SmsProcessor.name);
   private twilioClient: any; // Will be typed as twilio.Twilio when configured
+  private isConfigured: boolean = false;
 
   constructor(private prisma: PrismaService) {
-    // Initialize Twilio client if credentials are available
-    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    // Check if Twilio is configured
+    this.isConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER);
+    
+    if (this.isConfigured) {
       try {
-        // Uncomment when twilio is installed:
-        // this.twilioClient = twilio(
-        //   process.env.TWILIO_ACCOUNT_SID,
-        //   process.env.TWILIO_AUTH_TOKEN,
-        // );
-        this.logger.log('Twilio client initialized');
+        // For now, we'll simulate Twilio - in production, install twilio package
+        // const twilio = require('twilio');
+        // this.twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        this.logger.log('✅ Twilio configuration detected (simulation mode)');
       } catch (error) {
         this.logger.error(`Failed to initialize Twilio: ${error.message}`);
+        this.isConfigured = false;
       }
     } else {
-      this.logger.warn('Twilio credentials not configured. SMS notifications will be logged only.');
+      this.logger.warn('⚠️ Twilio not configured. SMS notifications will be simulated.');
     }
   }
 
@@ -35,15 +34,18 @@ export class SmsProcessor {
   async handleSmsJob(job: Job<SmsNotificationJob>) {
     const { to, body, alertId, userId, priority } = job.data;
     
-    this.logger.log(`Processing SMS job ${job.id} for: ${to}`);
+    this.logger.log(`📱 Processing SMS job ${job.id} for: ${to}`);
 
     try {
       // Create notification record in database
       const notification = await this.createNotificationRecord(job.data);
 
-      if (!this.twilioClient) {
-        // Log-only mode when Twilio is not configured
-        this.logger.warn(`SMS would be sent to ${to}: ${body}`);
+      if (!this.isConfigured) {
+        // Simulation mode when Twilio is not configured
+        this.logger.log(`📱 [SIMULATION] SMS to ${to}: ${body}`);
+        
+        // Simulate delivery delay
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         await this.prisma.notification.update({
           where: { id: notification.id },
@@ -53,7 +55,10 @@ export class SmsProcessor {
             deliveredAt: new Date(),
             metadata: {
               mode: 'simulation',
-              message: 'Twilio not configured',
+              provider: 'twilio-simulation',
+              to,
+              body: body.substring(0, 100),
+              simulatedMessageId: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             },
           },
         });
@@ -62,6 +67,7 @@ export class SmsProcessor {
           success: true, 
           mode: 'simulation',
           notificationId: notification.id,
+          message: 'SMS simulated successfully (Twilio not configured)',
         };
       }
 
