@@ -27,6 +27,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
+import * as nodemailer from 'nodemailer';
 
 @ApiTags('Notifications')
 @Controller('notifications')

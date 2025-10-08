@@ -272,10 +272,13 @@ export class AlertEngineService {
 
       this.logger.log(`Alert created: ${alert.id} for rule ${rule.id}`);
       
-      // Send notifications asynchronously
-      this.sendNotifications(alert, rule).catch(error => {
-        this.logger.error(`Failed to send notifications for alert ${alert.id}: ${error.message}`);
-      });
+      // Send notifications with proper error handling
+      try {
+        await this.sendNotifications(alert, rule);
+      } catch (error) {
+        this.logger.error(`Failed to send notifications for alert ${alert.id}: ${error.message}`, error.stack);
+        // Continue execution - alert is still created even if notifications fail
+      }
 
       return alert;
     } catch (error) {
