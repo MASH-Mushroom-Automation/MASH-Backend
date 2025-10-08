@@ -11,10 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  AlertCategory,
-  AlertPriority,
-} from '@prisma/client';
+import { AlertCategory, AlertPriority } from '@prisma/client';
 
 /**
  * DTO for creating an alert rule
@@ -103,4 +100,3 @@ export class CreateAlertRuleDto {
   @IsOptional()
   isActive?: boolean;
 }
-
