@@ -14,16 +14,6 @@ import { DatabaseModule } from '../../database/database.module';
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD || undefined,
-        // Add connection error handling
-        maxRetriesPerRequest: 3,
-        enableReadyCheck: true,
-        retryStrategy: (times: number) => {
-          if (times > 3) {
-            // Stop retrying after 3 attempts
-            return null;
-          }
-          return Math.min(times * 50, 2000);
-        },
       },
     }),
     BullModule.registerQueue(
