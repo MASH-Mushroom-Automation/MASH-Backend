@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,13 +25,17 @@ import { NotificationPreferencesDto } from './dto/notification-preferences.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { NotificationQueueService } from '../queues/services/notification-queue.service';
 
 @ApiTags('Notifications')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly notificationQueue: NotificationQueueService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -108,5 +114,43 @@ export class NotificationsController {
   })
   async remove(@Param('id') id: string, @Request() req) {
     return this.notificationsService.remove(id, req.user.id);
+  }
+
+  /**
+   * Test email delivery (no auth required for testing)
+   */
+  @Post('test-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send test email' })
+  @ApiResponse({ status: 200, description: 'Test email queued' })
+  async testEmail(@Body() dto: { to: string; subject?: string; body?: string }) {
+    await this.notificationQueue.sendEmail({
+      to: [dto.to],
+      subject: dto.subject || 'Test Email from MASH System',
+      body: dto.body || 'This is a test email to verify your email configuration is working correctly.',
+      priority: 'normal',
+    });
+
+    return {
+      success: true,
+      message: `Test email queued for ${dto.to}`,
+    };
+  }
+
+  /**
+   * Get queue statistics (admin only)
+   */
+  @Get('queue-stats')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Get notification queue statistics' })
+  @ApiResponse({ status: 200, description: 'Queue statistics retrieved' })
+  async getQueueStats() {
+    const stats = await this.notificationQueue.getQueueStats();
+    
+    return {
+      success: true,
+      data: stats,
+    };
   }
 }

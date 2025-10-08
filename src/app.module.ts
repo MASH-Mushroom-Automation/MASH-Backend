@@ -40,6 +40,7 @@ import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
 import { PrismaService } from './database/prisma.service';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { QueuesModule } from './modules/queues/queues.module';
 
 @Module({
   imports: [
@@ -91,6 +92,8 @@ import { AlertsModule } from './modules/alerts/alerts.module';
     AdminModule,
 
     AlertsModule,
+
+    QueuesModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
