@@ -4,9 +4,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Pagination DTO
- * 
+ *
  * Common DTO for pagination query parameters
- * 
+ *
  * Usage:
  * @Get()
  * findAll(@Query() paginationDto: PaginationDto) {}

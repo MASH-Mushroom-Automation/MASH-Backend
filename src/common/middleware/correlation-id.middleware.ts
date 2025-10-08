@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Correlation ID Middleware
- * 
+ *
  * Features:
  * - Generates unique UUID for each request
  * - Adds correlation ID to request object
@@ -17,9 +17,9 @@ import { v4 as uuidv4 } from 'uuid';
 export class CorrelationIdMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     // Check if correlation ID already exists in headers
-    const existingCorrelationId = 
-      req.headers['x-correlation-id'] as string ||
-      req.headers['x-request-id'] as string;
+    const existingCorrelationId =
+      (req.headers['x-correlation-id'] as string) ||
+      (req.headers['x-request-id'] as string);
 
     // Generate new correlation ID or use existing one
     const correlationId = existingCorrelationId || uuidv4();

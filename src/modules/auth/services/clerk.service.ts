@@ -17,8 +17,7 @@ export class ClerkService {
 
   constructor(private configService: ConfigService) {
     const secretKey = this.configService.get<string>('clerk.secretKey');
-    const webhookSecret =
-      this.configService.get<string>('clerk.webhookSecret');
+    const webhookSecret = this.configService.get<string>('clerk.webhookSecret');
 
     if (!secretKey) {
       this.logger.warn('⚠️ Clerk secret key not configured');

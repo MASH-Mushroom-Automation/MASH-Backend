@@ -5,9 +5,7 @@ import { NotificationQueueService } from '../queues/services/notification-queue.
 @ApiTags('SMS & Push Testing')
 @Controller('test-notifications')
 export class TestNotificationsController {
-  constructor(
-    private readonly notificationQueue: NotificationQueueService,
-  ) {}
+  constructor(private readonly notificationQueue: NotificationQueueService) {}
 
   /**
    * Test SMS notification (no auth required for testing)
@@ -20,7 +18,9 @@ export class TestNotificationsController {
     try {
       await this.notificationQueue.sendSms({
         to: dto.to,
-        body: dto.message || '🍄 MASH Alert: Phase 4 SMS test successful! Your notification system is working.',
+        body:
+          dto.message ||
+          '🍄 MASH Alert: Phase 4 SMS test successful! Your notification system is working.',
         priority: 'normal',
       });
 
@@ -45,17 +45,22 @@ export class TestNotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send test push notification via queue' })
   @ApiResponse({ status: 200, description: 'Test push notification queued' })
-  async testPush(@Body() dto: { 
-    token: string; 
-    title?: string; 
-    message?: string;
-    data?: Record<string, any>;
-  }) {
+  async testPush(
+    @Body()
+    dto: {
+      token: string;
+      title?: string;
+      message?: string;
+      data?: Record<string, any>;
+    },
+  ) {
     try {
       await this.notificationQueue.sendPush({
         token: dto.token,
         title: dto.title || '🍄 MASH Alert System',
-        body: dto.message || 'Phase 4 Push notification test successful! Your alert system is working.',
+        body:
+          dto.message ||
+          'Phase 4 Push notification test successful! Your alert system is working.',
         data: dto.data || {
           type: 'test',
           phase: '4',
@@ -83,16 +88,24 @@ export class TestNotificationsController {
    */
   @Post('test-all')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send test notifications via all channels (Email + SMS + Push)' })
+  @ApiOperation({
+    summary: 'Send test notifications via all channels (Email + SMS + Push)',
+  })
   @ApiResponse({ status: 200, description: 'All test notifications queued' })
-  async testAllNotifications(@Body() dto: { 
-    email: string;
-    phone?: string;
-    pushToken?: string;
-    message?: string;
-  }) {
-    const results: Array<{ channel: string; status: string; target: string }> = [];
-    const baseMessage = dto.message || '🍄 MASH Phase 4 Multi-Channel Test: All notification systems operational!';
+  async testAllNotifications(
+    @Body()
+    dto: {
+      email: string;
+      phone?: string;
+      pushToken?: string;
+      message?: string;
+    },
+  ) {
+    const results: Array<{ channel: string; status: string; target: string }> =
+      [];
+    const baseMessage =
+      dto.message ||
+      '🍄 MASH Phase 4 Multi-Channel Test: All notification systems operational!';
 
     try {
       // Test Email
@@ -123,11 +136,15 @@ export class TestNotificationsController {
           data: {
             type: 'multi-channel-test',
             phase: '4',
-            channels: results.map(r => r.channel),
+            channels: results.map((r) => r.channel),
           },
           priority: 'normal',
         });
-        results.push({ channel: 'push', status: 'queued', target: dto.pushToken.substring(0, 20) + '...' });
+        results.push({
+          channel: 'push',
+          status: 'queued',
+          target: dto.pushToken.substring(0, 20) + '...',
+        });
       }
 
       return {

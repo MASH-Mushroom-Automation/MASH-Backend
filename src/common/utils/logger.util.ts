@@ -5,7 +5,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 /**
  * Custom Logger Utility
- * 
+ *
  * Features:
  * - Extends NestJS LoggerService
  * - Adds context to all logs
@@ -13,7 +13,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
  * - Performance logging
  * - Request/response logging
  * - Structured logging
- * 
+ *
  * Note: Using default scope (SINGLETON) to allow app.get() in main.ts
  */
 
@@ -104,9 +104,10 @@ export class CustomLogger implements LoggerService {
     correlationId?: string,
     userId?: string,
   ) {
-    const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+    const level =
+      statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
     const message = `${method} ${url} ${statusCode} ${duration}ms`;
-    
+
     this.logger.log(level, message, {
       context: 'HTTP',
       method,
@@ -138,11 +139,7 @@ export class CustomLogger implements LoggerService {
   /**
    * Log database query
    */
-  logQuery(
-    query: string,
-    duration: number,
-    params?: any[],
-  ) {
+  logQuery(query: string, duration: number, params?: any[]) {
     this.logger.debug('Database Query', {
       context: 'Database',
       query,
@@ -198,10 +195,7 @@ export class CustomLogger implements LoggerService {
   /**
    * Log business event
    */
-  logEvent(
-    event: string,
-    data?: Record<string, any>,
-  ) {
+  logEvent(event: string, data?: Record<string, any>) {
     this.logger.info(`Event: ${event}`, {
       context: 'Event',
       event,

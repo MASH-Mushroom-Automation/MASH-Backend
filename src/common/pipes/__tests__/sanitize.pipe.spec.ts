@@ -18,7 +18,7 @@ describe.skip('SanitizePipe', () => {
     it('should remove script tags from string input', () => {
       const maliciousInput = '<script>alert("XSS")</script>Hello World';
       const result = pipe.transform(maliciousInput, {} as ArgumentMetadata);
-      
+
       expect(result).not.toContain('<script>');
       expect(result).not.toContain('</script>');
       expect(result).toContain('Hello World');
@@ -27,7 +27,7 @@ describe.skip('SanitizePipe', () => {
     it('should remove event handlers from HTML attributes', () => {
       const maliciousInput = '<img src="x" onerror="alert(\'XSS\')">';
       const result = pipe.transform(maliciousInput, {} as ArgumentMetadata);
-      
+
       expect(result).not.toContain('onerror');
       expect(result).not.toContain('alert');
     });
@@ -73,7 +73,7 @@ describe.skip('SanitizePipe', () => {
     it('should escape SQL special characters', () => {
       const sqlInput = "'; DROP TABLE users; --";
       const result = pipe.transform(sqlInput, {} as ArgumentMetadata);
-      
+
       // Should escape or remove SQL injection patterns
       expect(result).not.toContain('DROP TABLE');
       expect(result).not.toContain('--');
@@ -82,7 +82,7 @@ describe.skip('SanitizePipe', () => {
     it('should handle SQL UNION attacks', () => {
       const sqlInput = "1' UNION SELECT * FROM users--";
       const result = pipe.transform(sqlInput, {} as ArgumentMetadata);
-      
+
       expect(result).not.toContain('UNION SELECT');
     });
 

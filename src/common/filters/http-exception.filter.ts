@@ -10,7 +10,7 @@ import { Request, Response } from 'express';
 
 /**
  * HTTP Exception Filter
- * 
+ *
  * Catches all HttpException instances and formats them consistently
  * Features:
  * - Structured error response

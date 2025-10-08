@@ -10,9 +10,9 @@ import { catchError, timeout } from 'rxjs/operators';
 
 /**
  * Timeout Interceptor
- * 
+ *
  * Automatically throws a timeout exception if request takes too long
- * 
+ *
  * Features:
  * - Configurable timeout duration (default: 30 seconds)
  * - Throws RequestTimeoutException (408)

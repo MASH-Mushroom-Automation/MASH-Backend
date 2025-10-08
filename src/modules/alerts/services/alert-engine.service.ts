@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { AlertRule, AlertCategory, AlertPriority, Prisma } from '@prisma/client';
+import {
+  AlertRule,
+  AlertCategory,
+  AlertPriority,
+  Prisma,
+} from '@prisma/client';
 import * as crypto from 'crypto';
 import { NotificationQueueService } from '../../queues/services/notification-queue.service';
 
@@ -52,7 +57,9 @@ export class AlertEngineService {
       },
     });
 
-    this.logger.log(`Found ${rules.length} active rules for ${event.eventType}`);
+    this.logger.log(
+      `Found ${rules.length} active rules for ${event.eventType}`,
+    );
 
     // Evaluate each rule
     const triggeredRules: AlertRule[] = [];
@@ -147,9 +154,7 @@ export class AlertEngineService {
         return fieldValue !== condition.value;
 
       case 'BETWEEN': // Between min and max
-        return (
-          fieldValue >= condition.min! && fieldValue <= condition.max!
-        );
+        return fieldValue >= condition.min! && fieldValue <= condition.max!;
 
       case 'IN': // Value in array
         return condition.values?.includes(fieldValue) ?? false;
@@ -204,9 +209,7 @@ export class AlertEngineService {
 
     // Check time range
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    return (
-      currentTime >= activeHours.start && currentTime <= activeHours.end
-    );
+    return currentTime >= activeHours.start && currentTime <= activeHours.end;
   }
 
   /**
@@ -263,7 +266,8 @@ export class AlertEngineService {
           fingerprint,
           status: 'PENDING',
           metadata: {
-            eventTimestamp: event.timestamp?.toISOString() || new Date().toISOString(),
+            eventTimestamp:
+              event.timestamp?.toISOString() || new Date().toISOString(),
             evaluatedAt: new Date().toISOString(),
           } as Prisma.JsonObject,
           triggeredAt: event.timestamp || new Date(),
@@ -271,18 +275,24 @@ export class AlertEngineService {
       });
 
       this.logger.log(`Alert created: ${alert.id} for rule ${rule.id}`);
-      
+
       // Send notifications with proper error handling
       try {
         await this.sendNotifications(alert, rule);
       } catch (error) {
-        this.logger.error(`Failed to send notifications for alert ${alert.id}: ${error.message}`, error.stack);
+        this.logger.error(
+          `Failed to send notifications for alert ${alert.id}: ${error.message}`,
+          error.stack,
+        );
         // Continue execution - alert is still created even if notifications fail
       }
 
       return alert;
     } catch (error) {
-      this.logger.error(`Failed to create alert: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create alert: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -290,10 +300,7 @@ export class AlertEngineService {
   /**
    * Send notifications for an alert
    */
-  private async sendNotifications(
-    alert: any,
-    rule: any,
-  ): Promise<void> {
+  private async sendNotifications(alert: any, rule: any): Promise<void> {
     try {
       // Get recipients from rule
       if (!rule.recipients || rule.recipients.length === 0) {
@@ -302,7 +309,7 @@ export class AlertEngineService {
       }
 
       const emailRecipients = rule.recipients
-        .map(r => r.user?.email)
+        .map((r) => r.user?.email)
         .filter((email): email is string => !!email);
 
       if (emailRecipients.length === 0) {
@@ -320,7 +327,9 @@ export class AlertEngineService {
         priority: alert.priority === 'CRITICAL' ? 'high' : 'normal',
       });
 
-      this.logger.log(`Queued email notifications for alert ${alert.id} to ${emailRecipients.length} recipients`);
+      this.logger.log(
+        `Queued email notifications for alert ${alert.id} to ${emailRecipients.length} recipients`,
+      );
     } catch (error) {
       this.logger.error(`Failed to queue notifications: ${error.message}`);
       throw error;
@@ -332,7 +341,7 @@ export class AlertEngineService {
    */
   private formatAlertEmail(alert: any, rule: AlertRule): string {
     const priorityColor = this.getPriorityColor(alert.priority);
-    
+
     return `
       <!DOCTYPE html>
       <html>
@@ -397,10 +406,14 @@ export class AlertEngineService {
             <h3>Message</h3>
             <p>${alert.message}</p>
             
-            ${alert.eventData ? `
+            ${
+              alert.eventData
+                ? `
               <h3>Event Data</h3>
               <pre style="background: white; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(alert.eventData, null, 2)}</pre>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
           <div class="footer">
             <p>Alert ID: ${alert.id}</p>
@@ -416,11 +429,16 @@ export class AlertEngineService {
    */
   private getPriorityEmoji(priority: string): string {
     switch (priority) {
-      case 'CRITICAL': return '🔴';
-      case 'HIGH': return '🟠';
-      case 'MEDIUM': return '🟡';
-      case 'LOW': return '🟢';
-      default: return '⚪';
+      case 'CRITICAL':
+        return '🔴';
+      case 'HIGH':
+        return '🟠';
+      case 'MEDIUM':
+        return '🟡';
+      case 'LOW':
+        return '🟢';
+      default:
+        return '⚪';
     }
   }
 
@@ -429,11 +447,16 @@ export class AlertEngineService {
    */
   private getPriorityColor(priority: string): string {
     switch (priority) {
-      case 'CRITICAL': return '#dc2626'; // red-600
-      case 'HIGH': return '#ea580c'; // orange-600
-      case 'MEDIUM': return '#ca8a04'; // yellow-600
-      case 'LOW': return '#16a34a'; // green-600
-      default: return '#6b7280'; // gray-500
+      case 'CRITICAL':
+        return '#dc2626'; // red-600
+      case 'HIGH':
+        return '#ea580c'; // orange-600
+      case 'MEDIUM':
+        return '#ca8a04'; // yellow-600
+      case 'LOW':
+        return '#16a34a'; // green-600
+      default:
+        return '#6b7280'; // gray-500
     }
   }
 
@@ -465,10 +488,10 @@ export class AlertEngineService {
     event: { eventType: string; data: Record<string, any> },
   ): string {
     const condition = rule.condition as any;
-    
+
     // Build descriptive message
     const parts: string[] = [];
-    
+
     if (condition.field && event.data[condition.field] !== undefined) {
       parts.push(`${condition.field}: ${event.data[condition.field]}`);
     }

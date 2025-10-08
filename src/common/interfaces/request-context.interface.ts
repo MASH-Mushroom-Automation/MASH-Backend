@@ -1,6 +1,6 @@
 /**
  * Request Context Interface
- * 
+ *
  * Contains metadata about the current HTTP request
  * Used for logging, tracking, and context propagation
  */
@@ -81,7 +81,8 @@ export interface RequestContext {
  */
 export function createRequestContext(req: any): RequestContext {
   return {
-    correlationId: req.correlationId || req.headers['x-correlation-id'] || 'unknown',
+    correlationId:
+      req.correlationId || req.headers['x-correlation-id'] || 'unknown',
     userId: req.user?.id,
     userEmail: req.user?.email,
     timestamp: new Date(),

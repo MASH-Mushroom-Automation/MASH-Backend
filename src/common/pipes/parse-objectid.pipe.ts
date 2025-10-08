@@ -8,13 +8,13 @@ import { isObjectId } from '../utils/validator.util';
 
 /**
  * Parse ObjectId Pipe
- * 
+ *
  * Validates and transforms MongoDB ObjectId strings
  * Features:
  * - Validates ObjectId format
  * - Throws BadRequestException for invalid IDs
  * - Can be used with @Param, @Query, @Body
- * 
+ *
  * Usage:
  * @Get(':id')
  * findOne(@Param('id', ParseObjectIdPipe) id: string) {}

@@ -128,11 +128,15 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send test email via queue' })
   @ApiResponse({ status: 200, description: 'Test email queued' })
-  async testEmail(@Body() dto: { to: string; subject?: string; body?: string }) {
+  async testEmail(
+    @Body() dto: { to: string; subject?: string; body?: string },
+  ) {
     await this.notificationQueue.sendEmail({
       to: [dto.to],
       subject: dto.subject || 'Test Email from MASH System',
-      body: dto.body || 'This is a test email to verify your email configuration is working correctly.',
+      body:
+        dto.body ||
+        'This is a test email to verify your email configuration is working correctly.',
       priority: 'normal',
     });
 
@@ -148,9 +152,13 @@ export class NotificationsController {
   @Public() // <--- ALLOW UNAUTHENTICATED ACCESS FOR TESTING
   @Post('test-email-direct')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send test email directly without queue (no Redis needed)' })
+  @ApiOperation({
+    summary: 'Send test email directly without queue (no Redis needed)',
+  })
   @ApiResponse({ status: 200, description: 'Test email sent directly' })
-  async testEmailDirect(@Body() dto: { to: string; subject?: string; body?: string }) {
+  async testEmailDirect(
+    @Body() dto: { to: string; subject?: string; body?: string },
+  ) {
     // Use your existing Gmail SMTP configuration
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
@@ -236,12 +244,10 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Queue statistics retrieved' })
   async getQueueStats() {
     const stats = await this.notificationQueue.getQueueStats();
-    
+
     return {
       success: true,
       data: stats,
     };
   }
 }
-
-

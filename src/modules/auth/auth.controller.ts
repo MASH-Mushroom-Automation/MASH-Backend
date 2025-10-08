@@ -16,6 +16,7 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { FirebaseAuthGuard } from './guards/firebase-auth.guard';
@@ -83,6 +84,7 @@ export class AuthController {
 
   // 3. Refresh Token
   @Post('refresh')
+  @Throttle({ short: { limit: 5, ttl: 900000 } }) // 5 requests per 15 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh JWT access token using refresh token' })
   @ApiBody({ type: RefreshTokenDto })
@@ -98,12 +100,17 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 400, description: 'Invalid or expired refresh token' })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests - Rate limit exceeded',
+  })
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshToken(refreshTokenDto.refreshToken);
   }
 
   // 6. Verify Token
   @Post('verify')
+  @Throttle({ short: { limit: 5, ttl: 900000 } }) // 5 requests per 15 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify if a JWT token is valid' })
   @ApiBody({
@@ -131,6 +138,10 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests - Rate limit exceeded',
+  })
   async verifyToken(@Body() body: { token: string }) {
     if (!body.token) {
       throw new BadRequestException('Token is required');

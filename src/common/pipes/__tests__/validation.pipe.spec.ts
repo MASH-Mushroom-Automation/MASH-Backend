@@ -70,7 +70,9 @@ describe('CustomValidationPipe', () => {
 
       const value = { name: '' };
 
-      await expect(pipe.transform(value, metadata)).rejects.toThrow(BadRequestException);
+      await expect(pipe.transform(value, metadata)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should skip validation for primitive types', async () => {
@@ -131,7 +133,9 @@ describe('CustomValidationPipe', () => {
 
       const value = { email: 'invalid', age: 10 };
 
-      await expect(pipe.transform(value, metadata)).rejects.toThrow(BadRequestException);
+      await expect(pipe.transform(value, metadata)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

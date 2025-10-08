@@ -213,7 +213,8 @@ export class SessionManagementService {
     if (!deviceInfo) return {};
 
     try {
-      const info = typeof deviceInfo === 'string' ? JSON.parse(deviceInfo) : deviceInfo;
+      const info =
+        typeof deviceInfo === 'string' ? JSON.parse(deviceInfo) : deviceInfo;
       return {
         browser: info.browser || 'Unknown',
         os: info.os || 'Unknown',

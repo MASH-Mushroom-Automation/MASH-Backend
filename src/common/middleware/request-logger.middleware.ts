@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 
 /**
  * Request Logger Middleware
- * 
+ *
  * Features:
  * - Logs all incoming requests
  * - Captures request metadata (method, URL, IP, user agent)
@@ -32,9 +32,9 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const { statusCode } = res;
       const duration = Date.now() - req['startTime'];
-      
+
       const logMessage = `${method} ${originalUrl} ${statusCode} ${duration}ms [${correlationId}]`;
-      
+
       // Log level based on status code
       if (statusCode >= 500) {
         this.logger.error(logMessage);

@@ -1,8 +1,8 @@
 /**
  * Standard API Response Interface
- * 
+ *
  * All API responses should follow this structure for consistency
- * 
+ *
  * @template T - The type of data being returned
  */
 export interface ApiResponse<T = any> {

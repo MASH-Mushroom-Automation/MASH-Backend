@@ -271,7 +271,9 @@ describe('IsStrongPassword Validator', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.isStrongPassword).toContain('12 characters');
+      expect(errors[0].constraints?.isStrongPassword).toContain(
+        '12 characters',
+      );
     });
 
     it('should enforce custom character counts', async () => {

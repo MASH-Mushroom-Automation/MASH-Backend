@@ -20,11 +20,13 @@ describe('WsJwtGuard', () => {
   };
 
   // Mock socket factory
-  const createMockSocket = (options: {
-    authToken?: string;
-    headerToken?: string;
-    queryToken?: string;
-  } = {}): Partial<AuthenticatedSocket> => {
+  const createMockSocket = (
+    options: {
+      authToken?: string;
+      headerToken?: string;
+      queryToken?: string;
+    } = {},
+  ): Partial<AuthenticatedSocket> => {
     const mockSocket: Partial<AuthenticatedSocket> = {
       id: 'socket-123',
       handshake: {
@@ -477,7 +479,10 @@ describe('WsJwtGuard', () => {
       });
 
       it('should extract user ID from "userId" field when "sub" is missing', async () => {
-        const payload = { userId: 'user-from-userId', email: 'test@example.com' };
+        const payload = {
+          userId: 'user-from-userId',
+          email: 'test@example.com',
+        };
         const mockToken = 'valid-token';
         const mockSocket = createMockSocket({ authToken: mockToken });
         const mockContext = createMockContext(mockSocket);
@@ -501,7 +506,9 @@ describe('WsJwtGuard', () => {
 
         await guard.canActivate(mockContext);
 
-        expect((mockSocket as AuthenticatedSocket).user.id).toBe('user-from-id');
+        expect((mockSocket as AuthenticatedSocket).user.id).toBe(
+          'user-from-id',
+        );
       });
 
       it('should extract Firebase UID when present', async () => {

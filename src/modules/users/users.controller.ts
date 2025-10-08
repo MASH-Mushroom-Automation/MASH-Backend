@@ -32,13 +32,17 @@ import { UserFilterQueryDto } from './dto/user-filter-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FileValidationService } from '../../common/services/file-validation.service';
 
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly fileValidationService: FileValidationService,
+  ) {}
 
   // 1. GET /users - List users (admin only)
   @Get()
@@ -140,17 +144,32 @@ export class UsersController {
 
   // 8. POST /users/:id/avatar - Upload avatar
   @Post(':id/avatar')
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      },
+    }),
+  )
   @ApiOperation({ summary: 'Upload user avatar image' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 200, description: 'Avatar uploaded successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid file' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Invalid file (wrong format, size exceeded, dangerous type, MIME spoofing)',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async uploadAvatar(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    // Validate file before processing (security layer)
+    await this.fileValidationService.validateImage(file, {
+      maxSize: 5 * 1024 * 1024, // 5MB limit for avatars
+    });
+
     return this.usersService.uploadAvatar(id, file);
   }
 

@@ -1,6 +1,6 @@
 /**
  * HTTP Status Code Constants
- * 
+ *
  * Centralized HTTP status codes for consistency across the application
  */
 

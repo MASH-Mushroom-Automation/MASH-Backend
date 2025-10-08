@@ -1,6 +1,6 @@
 /**
  * Decorators Export
- * 
+ *
  * Barrel export for all decorators
  */
 

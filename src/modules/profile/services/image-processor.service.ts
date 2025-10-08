@@ -4,7 +4,11 @@ import sharp from 'sharp';
 @Injectable()
 export class ImageProcessorService {
   private readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  private readonly ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  private readonly ALLOWED_MIME_TYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ];
   private readonly AVATAR_SIZE = 256;
   private readonly QUALITY = 85;
 

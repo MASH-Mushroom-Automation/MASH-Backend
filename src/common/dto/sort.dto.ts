@@ -3,9 +3,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Sort DTO
- * 
+ *
  * Common DTO for sorting query parameters
- * 
+ *
  * Usage:
  * @Get()
  * findAll(@Query() sortDto: SortDto) {}

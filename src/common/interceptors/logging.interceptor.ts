@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 
 /**
  * Logging Interceptor
- * 
+ *
  * Features:
  * - Logs all incoming requests
  * - Logs all outgoing responses
@@ -114,7 +114,14 @@ export class LoggingInterceptor implements NestInterceptor {
   private sanitizeBody(body: any): any {
     if (!body) return body;
 
-    const sensitiveFields = ['password', 'token', 'secret', 'apiKey', 'accessToken', 'refreshToken'];
+    const sensitiveFields = [
+      'password',
+      'token',
+      'secret',
+      'apiKey',
+      'accessToken',
+      'refreshToken',
+    ];
     const sanitized = { ...body };
 
     for (const field of sensitiveFields) {

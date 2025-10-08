@@ -22,10 +22,7 @@ export class AlertRuleService {
   /**
    * Create a new alert rule
    */
-  async create(
-    dto: CreateAlertRuleDto,
-    userId: string,
-  ): Promise<AlertRule> {
+  async create(dto: CreateAlertRuleDto, userId: string): Promise<AlertRule> {
     this.logger.log(`Creating alert rule: ${dto.name}`);
 
     // Create the alert rule
@@ -183,8 +180,12 @@ export class AlertRuleService {
         ...(dto.priority && { priority: dto.priority }),
         ...(dto.eventType && { eventType: dto.eventType }),
         ...(dto.condition && { condition: dto.condition as Prisma.JsonObject }),
-        ...(dto.activeHours !== undefined && { activeHours: dto.activeHours as Prisma.JsonObject }),
-        ...(dto.cooldownMinutes !== undefined && { cooldownMinutes: dto.cooldownMinutes }),
+        ...(dto.activeHours !== undefined && {
+          activeHours: dto.activeHours as Prisma.JsonObject,
+        }),
+        ...(dto.cooldownMinutes !== undefined && {
+          cooldownMinutes: dto.cooldownMinutes,
+        }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
         updatedBy: userId,
         updatedAt: new Date(),

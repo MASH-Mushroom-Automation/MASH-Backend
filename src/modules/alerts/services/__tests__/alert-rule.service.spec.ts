@@ -333,7 +333,11 @@ describe('AlertRuleService', () => {
     };
 
     it('should update an alert rule successfully', async () => {
-      const updatedRule = { ...mockAlertRule, ...updateDto, updatedAt: expect.any(Date) };
+      const updatedRule = {
+        ...mockAlertRule,
+        ...updateDto,
+        updatedAt: expect.any(Date),
+      };
       mockPrismaService.alertRule.findUnique.mockResolvedValue(mockAlertRule);
       mockPrismaService.alertRule.update.mockResolvedValue(updatedRule);
 
@@ -415,7 +419,11 @@ describe('AlertRuleService', () => {
   describe('toggleActive', () => {
     it('should toggle rule from active to inactive', async () => {
       const activeRule = { ...mockAlertRule, isActive: true };
-      const inactiveRule = { ...mockAlertRule, isActive: false, updatedAt: new Date() };
+      const inactiveRule = {
+        ...mockAlertRule,
+        isActive: false,
+        updatedAt: new Date(),
+      };
 
       mockPrismaService.alertRule.findUnique.mockResolvedValue(activeRule);
       mockPrismaService.alertRule.update.mockResolvedValue(inactiveRule);
@@ -435,7 +443,11 @@ describe('AlertRuleService', () => {
 
     it('should toggle rule from inactive to active', async () => {
       const inactiveRule = { ...mockAlertRule, isActive: false };
-      const activeRule = { ...mockAlertRule, isActive: true, updatedAt: new Date() };
+      const activeRule = {
+        ...mockAlertRule,
+        isActive: true,
+        updatedAt: new Date(),
+      };
 
       mockPrismaService.alertRule.findUnique.mockResolvedValue(inactiveRule);
       mockPrismaService.alertRule.update.mockResolvedValue(activeRule);
@@ -464,10 +476,7 @@ describe('AlertRuleService', () => {
 
   describe('getActiveRulesByCategory', () => {
     it('should return active rules for a specific category', async () => {
-      const sensorRules = [
-        mockAlertRule,
-        { ...mockAlertRule, id: 'rule-789' },
-      ];
+      const sensorRules = [mockAlertRule, { ...mockAlertRule, id: 'rule-789' }];
 
       mockPrismaService.alertRule.findMany.mockResolvedValue(sensorRules);
 

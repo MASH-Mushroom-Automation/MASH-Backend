@@ -19,9 +19,9 @@ export class PaginatedDto<T> {
 
 /**
  * API Paginated Response Decorator
- * 
+ *
  * Swagger decorator for paginated responses
- * 
+ *
  * Usage:
  * @Get()
  * @ApiPaginatedResponse(UserDto)

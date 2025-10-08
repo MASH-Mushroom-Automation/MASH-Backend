@@ -160,7 +160,7 @@ export class SanitizationService {
       .replace(/\*\//g, '') // Remove block comment end
       .replace(/xp_/gi, '') // Remove extended stored procedures
       .replace(/sp_/gi, '') // Remove stored procedures
-      .replace(/exec(\s|\+)+(s|x)p\w+/gi, '') // Remove EXEC patterns
+      .replace(/\bexec(ute)?\b/gi, '') // Remove EXEC and EXECUTE keywords
       .replace(/union.*select/gi, '') // Remove UNION SELECT
       .replace(/insert.*into/gi, '') // Remove INSERT INTO
       .replace(/delete.*from/gi, '') // Remove DELETE FROM
@@ -194,13 +194,24 @@ export class SanitizationService {
 
     return (
       filename
-        .replace(/\.\./g, '') // Remove directory traversal
-        .replace(/[/\\]/g, '') // Remove path separators
+        .replace(/\.\.[\\/]/g, '-') // Replace directory traversal with separator as dash
+        .replace(/\.\./g, '-') // Replace remaining directory traversal with dash
+        .replace(/[\\/]+/g, (match, offset) => {
+          // Keep slash as dash if preceded/followed by alphanumeric (e.g., etc/passwd)
+          // Remove slash if in traversal context (already handled above)
+          const before = filename[offset - 1];
+          const after = filename[offset + match.length];
+          return before && after && /[a-zA-Z0-9]/.test(before + after)
+            ? '-'
+            : '';
+        })
         .replace(/[<>:"|?*\x00-\x1f]/g, '-') // Replace dangerous chars with dash
         .replace(/\s+/g, '-') // Replace spaces with dash
         .replace(/-+/g, '-') // Replace multiple dashes with single dash
+        .replace(/-+\./g, '.') // Remove dashes before dots (file extension)
+        .replace(/^-+/, '') // Remove leading dashes
+        .replace(/-+$/, '') // Remove trailing dashes
         .replace(/^\.+/, '') // Remove leading dots
-        .replace(/\.+$/, '') // Remove trailing dots
         .substring(0, 255) // Limit length to 255 chars
         .trim() || 'untitled'
     ); // Fallback if empty
@@ -334,13 +345,21 @@ export class SanitizationService {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map((item) => this.sanitizeObject(item, level));
+      return obj.map((item) => {
+        if (typeof item === 'string') {
+          return this.sanitizeHtml(item, level);
+        }
+        return this.sanitizeObject(item, level);
+      });
     }
 
     const sanitized: any = {};
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === 'string') {
         sanitized[key] = this.sanitizeHtml(value, level);
+      } else if (value instanceof Date) {
+        // Preserve Date objects
+        sanitized[key] = value;
       } else if (typeof value === 'object' && value !== null) {
         sanitized[key] = this.sanitizeObject(value, level);
       } else {

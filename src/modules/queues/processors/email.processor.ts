@@ -26,7 +26,9 @@ export class EmailProcessor {
     // Verify transporter configuration
     this.transporter.verify((error, success) => {
       if (error) {
-        this.logger.error(`Email transporter verification failed: ${error.message}`);
+        this.logger.error(
+          `Email transporter verification failed: ${error.message}`,
+        );
       } else {
         this.logger.log('Email transporter is ready to send messages');
       }
@@ -36,7 +38,7 @@ export class EmailProcessor {
   @Process('send-email')
   async handleEmailJob(job: Job<EmailNotificationJob>) {
     const { to, subject, body, html, alertId, userId } = job.data;
-    
+
     this.logger.log(`Processing email job ${job.id} for: ${to.join(', ')}`);
 
     try {
@@ -67,16 +69,15 @@ export class EmailProcessor {
       });
 
       this.logger.log(`Email sent successfully: ${info.messageId}`);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         messageId: info.messageId,
         notificationId: notification.id,
       };
-
     } catch (error) {
       this.logger.error(`Failed to send email: ${error.message}`);
-      
+
       // Update notification status to FAILED
       try {
         await this.prisma.notification.updateMany({
@@ -95,7 +96,9 @@ export class EmailProcessor {
           },
         });
       } catch (dbError) {
-        this.logger.error(`Failed to update notification status: ${dbError.message}`);
+        this.logger.error(
+          `Failed to update notification status: ${dbError.message}`,
+        );
       }
 
       throw error; // Bull will retry based on job configuration
@@ -170,7 +173,10 @@ export class EmailProcessor {
             <h2>🍄 MASH Notification</h2>
           </div>
           <div class="content">
-            ${text.split('\n').map(line => `<p>${line}</p>`).join('')}
+            ${text
+              .split('\n')
+              .map((line) => `<p>${line}</p>`)
+              .join('')}
           </div>
           <div class="footer">
             <p>Sent by MASH Mushroom Automation System</p>
@@ -191,9 +197,11 @@ export class EmailProcessor {
         to,
         subject: 'Test Email from MASH System',
         text: 'This is a test email to verify your email configuration is working correctly.',
-        html: this.formatAsHtml('This is a test email to verify your email configuration is working correctly.'),
+        html: this.formatAsHtml(
+          'This is a test email to verify your email configuration is working correctly.',
+        ),
       });
-      
+
       this.logger.log(`Test email sent: ${info.messageId}`);
     } catch (error) {
       this.logger.error(`Test email failed: ${error.message}`);

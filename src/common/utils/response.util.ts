@@ -1,6 +1,6 @@
 /**
  * Response Utility
- * 
+ *
  * Provides standardized response formatting
  */
 
@@ -45,7 +45,7 @@ export interface PaginatedResponse<T = any> {
 
 /**
  * Create a success response
- * 
+ *
  * @param data - Response data
  * @param message - Optional success message
  * @returns Success response
@@ -61,7 +61,7 @@ export function success<T>(data: T, message?: string): SuccessResponse<T> {
 
 /**
  * Create an error response
- * 
+ *
  * @param code - Error code
  * @param message - Error message
  * @param details - Additional error details
@@ -88,7 +88,7 @@ export function error(
 
 /**
  * Create a paginated response
- * 
+ *
  * @param data - Response data array
  * @param pagination - Pagination metadata
  * @returns Paginated response
@@ -112,7 +112,7 @@ export function paginated<T>(
 
 /**
  * Create a no content response
- * 
+ *
  * @param message - Optional message
  * @returns Success response with null data
  */

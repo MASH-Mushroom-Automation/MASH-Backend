@@ -1,6 +1,6 @@
 /**
  * Utilities Export
- * 
+ *
  * Barrel export for utility functions
  */
 

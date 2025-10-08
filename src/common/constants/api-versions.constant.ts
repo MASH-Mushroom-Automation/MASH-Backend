@@ -1,6 +1,6 @@
 /**
  * API Version Constants
- * 
+ *
  * Centralized API versioning configuration
  */
 
@@ -58,6 +58,8 @@ export function isVersionDeprecated(version: ApiVersion): boolean {
 /**
  * Helper function to get full API path
  */
-export function getFullApiPath(version: ApiVersion = CURRENT_API_VERSION as ApiVersion): string {
+export function getFullApiPath(
+  version: ApiVersion = CURRENT_API_VERSION as ApiVersion,
+): string {
   return `${API_VERSION_PREFIX}/${version}`;
 }

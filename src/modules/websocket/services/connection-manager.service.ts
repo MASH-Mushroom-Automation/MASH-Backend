@@ -16,7 +16,7 @@ export class ConnectionManagerService {
   private readonly connections = new Map<string, AuthenticatedSocket>();
   private readonly userConnections = new Map<string, Set<string>>();
   private readonly connectionInfo = new Map<string, ConnectionInfo>();
-  
+
   // Statistics tracking
   private messageCount = 0;
   private errorCount = 0;
@@ -205,7 +205,8 @@ export class ConnectionManagerService {
     const now = Date.now();
     const timeDiff = (now - this.lastMessageTime) / 1000; // seconds
     const messagesPerSecond = timeDiff > 0 ? this.messageCount / timeDiff : 0;
-    const errorRate = this.messageCount > 0 ? this.errorCount / this.messageCount : 0;
+    const errorRate =
+      this.messageCount > 0 ? this.errorCount / this.messageCount : 0;
 
     // Calculate memory usage
     const memUsage = process.memoryUsage();
@@ -281,8 +282,10 @@ export class ConnectionManagerService {
    * Check if a user is connected
    */
   isUserConnected(userId: string): boolean {
-    return this.userConnections.has(userId) && 
-           this.userConnections.get(userId)!.size > 0;
+    return (
+      this.userConnections.has(userId) &&
+      this.userConnections.get(userId)!.size > 0
+    );
   }
 
   /**
