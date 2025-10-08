@@ -1,23 +1,26 @@
 import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
-import {
-  sanitizeHtml,
-  sanitizeObject,
-  trimObject,
-} from '../utils/sanitizer.util';
+import { SanitizationService } from '../services/sanitization.service';
 
 /**
- * Sanitize Pipe
- * 
+ * Sanitize Pipe (Enhanced)
+ *
  * Sanitizes input data to prevent XSS and SQL injection attacks
+ * Now uses SanitizationService for enterprise-grade security
+ *
  * Features:
- * - HTML sanitization
+ * - HTML sanitization (XSS prevention)
  * - SQL injection prevention
+ * - Control character removal
  * - Trim whitespace
- * - Remove null/undefined values
  * - Recursive object sanitization
+ * - Configurable sanitization levels
+ *
+ * Part of Issue #23 - Enterprise Security & Input Validation System
  */
 @Injectable()
 export class SanitizePipe implements PipeTransform {
+  constructor(private readonly sanitizationService: SanitizationService) {}
+
   transform(value: any, metadata: ArgumentMetadata) {
     // Only sanitize body and query parameters
     if (metadata.type !== 'body' && metadata.type !== 'query') {
@@ -47,55 +50,28 @@ export class SanitizePipe implements PipeTransform {
 
   /**
    * Sanitize string values
+   * Uses SanitizationService for comprehensive cleaning
    */
   private sanitizeString(value: string): string {
     // Trim whitespace
     let sanitized = value.trim();
 
-    // Sanitize HTML to prevent XSS
-    sanitized = sanitizeHtml(sanitized);
+    // Remove control characters
+    sanitized = this.sanitizationService.removeControlCharacters(sanitized);
+
+    // Sanitize HTML to prevent XSS (strict mode for safety)
+    sanitized = this.sanitizationService.sanitizeHtml(sanitized, 'strict');
 
     return sanitized;
   }
 
   /**
    * Sanitize object values recursively
+   * Uses SanitizationService for enterprise-grade security
    */
   private sanitizeObject(obj: Record<string, any>): Record<string, any> {
-    // First trim all string values
-    let sanitized = trimObject(obj);
-
-    // Then sanitize HTML in all string values
-    sanitized = this.recursiveSanitize(sanitized);
-
-    // Remove null, undefined, and empty strings
-    sanitized = sanitizeObject(sanitized);
-
-    return sanitized;
-  }
-
-  /**
-   * Recursively sanitize all string values in an object
-   */
-  private recursiveSanitize(obj: any): any {
-    if (typeof obj === 'string') {
-      return sanitizeHtml(obj);
-    }
-
-    if (typeof obj === 'object' && obj !== null) {
-      if (Array.isArray(obj)) {
-        return obj.map((item) => this.recursiveSanitize(item));
-      }
-
-      const result: any = {};
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          result[key] = this.recursiveSanitize(obj[key]);
-        }
-      }
-      return result;
-    }
-
-    return obj;
+    // Use SanitizationService's sanitizeObject method
+    // This handles nested objects, arrays, and all string values
+    return this.sanitizationService.sanitizeObject(obj, 'strict');
   }
 }

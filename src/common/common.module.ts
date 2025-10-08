@@ -21,6 +21,10 @@ import {
 import { CustomValidationPipe } from './pipes/validation.pipe';
 import { SanitizePipe } from './pipes/sanitize.pipe';
 
+// Services
+import { SanitizationService } from './services/sanitization.service';
+import { FileValidationService } from './services/file-validation.service';
+
 // Utilities
 import { CustomLogger } from './utils/logger.util';
 
@@ -29,10 +33,10 @@ import { loggerConfig } from '../config/logger.config';
 
 /**
  * Common Module
- * 
+ *
  * @Global decorator makes this module's providers available everywhere
  * without needing to import it in every module
- * 
+ *
  * Provides:
  * - Global exception filters
  * - Global interceptors
@@ -47,6 +51,10 @@ import { loggerConfig } from '../config/logger.config';
     WinstonModule.forRoot(loggerConfig),
   ],
   providers: [
+    // Services (Issue #23 - Enterprise Security)
+    SanitizationService,
+    FileValidationService,
+
     // Custom Logger
     CustomLogger,
 
@@ -93,6 +101,10 @@ import { loggerConfig } from '../config/logger.config';
     },
   ],
   exports: [
+    // Export services for use in other modules (Issue #23)
+    SanitizationService,
+    FileValidationService,
+
     // Export CustomLogger for use in other modules
     CustomLogger,
     WinstonModule,
