@@ -41,6 +41,7 @@ import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
 import { PrismaService } from './database/prisma.service';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
+import { WebsocketModule } from './modules/websocket/websocket.module';
 
 @Module({
   imports: [
@@ -94,6 +95,9 @@ import { QueuesModule } from './modules/queues/queues.module';
     AlertsModule,
 
     QueuesModule,
+
+    // WebSocket module for real-time communication
+    WebsocketModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,

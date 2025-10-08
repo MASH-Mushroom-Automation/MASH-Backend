@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test Client - MASH Backend</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 80px;
+            font-family: monospace;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-connected {
+            background: #28a745;
+        }
+        
+        .status-disconnected {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .log-container {
+            grid-column: 1 / -1;
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            line-height: 1.5;
+        }
+        
+        .log-info {
+            color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+        
+        .log-success {
+            color: #81c784;
+            background: rgba(129, 199, 132, 0.1);
+        }
+        
+        .log-error {
+            color: #e57373;
+            background: rgba(229, 115, 115, 0.1);
+        }
+        
+        .log-event {
+            color: #ffb74d;
+            background: rgba(255, 183, 77, 0.1);
+        }
+        
+        .log-timestamp {
+            color: #9e9e9e;
+            margin-right: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 WebSocket Test Client</h1>
+            <p class="subtitle">MASH Backend Real-time Communication Testing</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Connection Panel -->
+            <div class="panel">
+                <h2>Connection Settings</h2>
+                <div class="form-group">
+                    <label for="serverUrl">Server URL</label>
+                    <input type="text" id="serverUrl" value="http://localhost:3000/ws" placeholder="ws://localhost:3000/ws">
+                </div>
+                <div class="form-group">
+                    <label for="jwtToken">JWT Token</label>
+                    <textarea id="jwtToken" placeholder="Paste your JWT token here"></textarea>
+                </div>
+                <div class="form-group">
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    <span id="statusText">Disconnected</span>
+                </div>
+                <button class="btn btn-primary" id="connectBtn">Connect</button>
+                <button class="btn btn-danger" id="disconnectBtn" disabled>Disconnect</button>
+                <button class="btn btn-warning" id="pingBtn" disabled>Ping</button>
+            </div>
+            
+            <!-- Actions Panel -->
+            <div class="panel">
+                <h2>Actions</h2>
+                <div class="form-group">
+                    <label for="roomName">Room Name</label>
+                    <input type="text" id="roomName" placeholder="e.g., sensor:123 or user:abc" value="test:room">
+                </div>
+                <button class="btn btn-success" id="subscribeBtn" disabled>Subscribe to Room</button>
+                <button class="btn btn-warning" id="unsubscribeBtn" disabled>Unsubscribe from Room</button>
+                <button class="btn btn-primary" id="connectionInfoBtn" disabled>Get Connection Info</button>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="customEvent">Custom Event</label>
+                    <input type="text" id="customEvent" placeholder="Event name">
+                    <label for="customData" style="margin-top: 10px;">Event Data (JSON)</label>
+                    <textarea id="customData" placeholder='{"key": "value"}'></textarea>
+                    <button class="btn btn-primary" id="sendCustomBtn" disabled style="margin-top: 10px;">Send Custom Event</button>
+                </div>
+            </div>
+            
+            <!-- Statistics Panel -->
+            <div class="panel">
+                <h2>Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="messagesReceived">0</div>
+                        <div class="stat-label">Messages Received</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="messagesSent">0</div>
+                        <div class="stat-label">Messages Sent</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="errors">0</div>
+                        <div class="stat-label">Errors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="latency">-</div>
+                        <div class="stat-label">Latency (ms)</div>
+                    </div>
+                </div>
+                <button class="btn btn-warning" id="clearStatsBtn" style="margin-top: 15px; width: 100%;">Clear Statistics</button>
+            </div>
+            
+            <!-- Event Log -->
+            <div class="log-container">
+                <h2 style="color: white; margin-bottom: 15px;">Event Log</h2>
+                <div id="logEntries"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let stats = {
+            received: 0,
+            sent: 0,
+            errors: 0,
+            lastPingTime: null
+        };
+
+        // DOM Elements
+        const serverUrlInput = document.getElementById('serverUrl');
+        const jwtTokenInput = document.getElementById('jwtToken');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const pingBtn = document.getElementById('pingBtn');
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const unsubscribeBtn = document.getElementById('unsubscribeBtn');
+        const connectionInfoBtn = document.getElementById('connectionInfoBtn');
+        const roomNameInput = document.getElementById('roomName');
+        const customEventInput = document.getElementById('customEvent');
+        const customDataInput = document.getElementById('customData');
+        const sendCustomBtn = document.getElementById('sendCustomBtn');
+        const clearStatsBtn = document.getElementById('clearStatsBtn');
+        const logEntries = document.getElementById('logEntries');
+
+        // Logging functions
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span>${message}`;
+            logEntries.insertBefore(entry, logEntries.firstChild);
+            
+            // Keep only last 100 entries
+            while (logEntries.children.length > 100) {
+                logEntries.removeChild(logEntries.lastChild);
+            }
+        }
+
+        // Update UI state
+        function updateConnectionState(connected) {
+            if (connected) {
+                statusIndicator.className = 'status-indicator status-connected';
+                statusText.textContent = 'Connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                pingBtn.disabled = false;
+                subscribeBtn.disabled = false;
+                unsubscribeBtn.disabled = false;
+                connectionInfoBtn.disabled = false;
+                sendCustomBtn.disabled = false;
+            } else {
+                statusIndicator.className = 'status-indicator status-disconnected';
+                statusText.textContent = 'Disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                pingBtn.disabled = true;
+                subscribeBtn.disabled = true;
+                unsubscribeBtn.disabled = true;
+                connectionInfoBtn.disabled = true;
+                sendCustomBtn.disabled = true;
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('messagesReceived').textContent = stats.received;
+            document.getElementById('messagesSent').textContent = stats.sent;
+            document.getElementById('errors').textContent = stats.errors;
+        }
+
+        // Connect to WebSocket
+        connectBtn.addEventListener('click', () => {
+            const serverUrl = serverUrlInput.value.trim();
+            const token = jwtTokenInput.value.trim();
+
+            if (!serverUrl) {
+                log('Please enter server URL', 'error');
+                return;
+            }
+
+            if (!token) {
+                log('Please enter JWT token', 'error');
+                return;
+            }
+
+            log(`Connecting to ${serverUrl}...`, 'info');
+
+            socket = io(serverUrl, {
+                auth: { token },
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                reconnectionAttempts: 5
+            });
+
+            // Connection events
+            socket.on('connect', () => {
+                log(`✅ Connected! Socket ID: ${socket.id}`, 'success');
+                updateConnectionState(true);
+            });
+
+            socket.on('disconnect', (reason) => {
+                log(`❌ Disconnected: ${reason}`, 'error');
+                updateConnectionState(false);
+            });
+
+            socket.on('connect_error', (error) => {
+                log(`Connection error: ${error.message}`, 'error');
+                stats.errors++;
+                updateStats();
+            });
+
+            // Custom events
+            socket.on('connected', (data) => {
+                log(`📡 Server acknowledged connection: ${JSON.stringify(data)}`, 'event');
+                stats.received++;
+                updateStats();
+            });
+
+            socket.on('subscribed', (data) => {
+                log(`✅ Subscribed to room: ${JSON.stringify(data)}`, 'success');
+                stats.received++;
+                updateStats();
+            });
+
+            socket.on('unsubscribed', (data) => {
+                log(`✅ Unsubscribed from room: ${JSON.stringify(data)}`, 'success');
+                stats.received++;
+                updateStats();
+            });
+
+            socket.on('pong', (data) => {
+                const latency = Date.now() - stats.lastPingTime;
+                document.getElementById('latency').textContent = latency;
+                log(`🏓 Pong received! Latency: ${latency}ms`, 'success');
+                stats.received++;
+                updateStats();
+            });
+
+            socket.on('connection:info', (data) => {
+                log(`📊 Connection info: ${JSON.stringify(data.data, null, 2)}`, 'event');
+                stats.received++;
+                updateStats();
+            });
+
+            socket.on('error', (data) => {
+                log(`❌ Error: ${JSON.stringify(data)}`, 'error');
+                stats.errors++;
+                stats.received++;
+                updateStats();
+            });
+
+            // Catch all other events
+            socket.onAny((eventName, ...args) => {
+                if (!['connect', 'disconnect', 'connected', 'subscribed', 'unsubscribed', 'pong', 'connection:info', 'error'].includes(eventName)) {
+                    log(`📨 Event '${eventName}': ${JSON.stringify(args)}`, 'event');
+                    stats.received++;
+                    updateStats();
+                }
+            });
+        });
+
+        // Disconnect
+        disconnectBtn.addEventListener('click', () => {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                log('Disconnected by user', 'info');
+            }
+        });
+
+        // Ping
+        pingBtn.addEventListener('click', () => {
+            if (socket) {
+                stats.lastPingTime = Date.now();
+                socket.emit('ping');
+                log('🏓 Ping sent', 'info');
+                stats.sent++;
+                updateStats();
+            }
+        });
+
+        // Subscribe
+        subscribeBtn.addEventListener('click', () => {
+            const room = roomNameInput.value.trim();
+            if (!room) {
+                log('Please enter room name', 'error');
+                return;
+            }
+            
+            if (socket) {
+                socket.emit('subscribe', { room });
+                log(`📥 Subscribe request sent: ${room}`, 'info');
+                stats.sent++;
+                updateStats();
+            }
+        });
+
+        // Unsubscribe
+        unsubscribeBtn.addEventListener('click', () => {
+            const room = roomNameInput.value.trim();
+            if (!room) {
+                log('Please enter room name', 'error');
+                return;
+            }
+            
+            if (socket) {
+                socket.emit('unsubscribe', { room });
+                log(`📤 Unsubscribe request sent: ${room}`, 'info');
+                stats.sent++;
+                updateStats();
+            }
+        });
+
+        // Get connection info
+        connectionInfoBtn.addEventListener('click', () => {
+            if (socket) {
+                socket.emit('connection:info');
+                log('📊 Connection info request sent', 'info');
+                stats.sent++;
+                updateStats();
+            }
+        });
+
+        // Send custom event
+        sendCustomBtn.addEventListener('click', () => {
+            const event = customEventInput.value.trim();
+            const dataStr = customDataInput.value.trim();
+            
+            if (!event) {
+                log('Please enter event name', 'error');
+                return;
+            }
+            
+            let data;
+            try {
+                data = dataStr ? JSON.parse(dataStr) : {};
+            } catch (e) {
+                log('Invalid JSON data', 'error');
+                return;
+            }
+            
+            if (socket) {
+                socket.emit(event, data);
+                log(`📤 Custom event '${event}' sent: ${JSON.stringify(data)}`, 'info');
+                stats.sent++;
+                updateStats();
+            }
+        });
+
+        // Clear statistics
+        clearStatsBtn.addEventListener('click', () => {
+            stats = { received: 0, sent: 0, errors: 0, lastPingTime: null };
+            document.getElementById('latency').textContent = '-';
+            updateStats();
+            logEntries.innerHTML = '';
+            log('Statistics cleared', 'info');
+        });
+
+        // Initialize
+        updateConnectionState(false);
+        log('WebSocket Test Client ready. Enter your JWT token and click Connect.', 'info');
+    </script>
+</body>
+</html>
