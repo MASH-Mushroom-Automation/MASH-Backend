@@ -17,7 +17,8 @@ export class SmsProcessor {
     
     if (this.isConfigured) {
       try {
-        // For now, we'll simulate Twilio - in production, install twilio package
+        // TODO: For production, install and initialize Twilio client
+        // npm install twilio
         // const twilio = require('twilio');
         // this.twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
         this.logger.log('✅ Twilio configuration detected (simulation mode)');

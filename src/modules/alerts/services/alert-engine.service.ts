@@ -500,7 +500,7 @@ export class AlertEngineService {
 
     return crypto
       .createHash('sha256')
-      .update(JSON.stringify(payload))
+      .update(JSON.stringify(payload, Object.keys(payload).sort()))
       .digest('hex')
       .substring(0, 16);
   }

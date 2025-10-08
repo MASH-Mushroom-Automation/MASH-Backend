@@ -191,9 +191,15 @@ export class NotificationQueueService {
   }
 
   /**
-   * Clear all queues (for testing)
+   * Clear all queues (for testing only - requires admin authorization)
+   * @param userRole - User role to verify authorization
    */
-  async clearAllQueues(): Promise<void> {
+  async clearAllQueues(userRole?: string): Promise<void> {
+    // Authorization check - only allow for admin users or testing environment
+    if (process.env.NODE_ENV === 'production' && userRole !== 'admin') {
+      throw new Error('Unauthorized: clearAllQueues requires admin privileges in production');
+    }
+
     await Promise.all([
       this.emailQueue.empty(),
       this.smsQueue.empty(),

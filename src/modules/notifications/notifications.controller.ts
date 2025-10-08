@@ -151,8 +151,6 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Send test email directly without queue (no Redis needed)' })
   @ApiResponse({ status: 200, description: 'Test email sent directly' })
   async testEmailDirect(@Body() dto: { to: string; subject?: string; body?: string }) {
-    const nodemailer = require('nodemailer');
-    
     // Use your existing Gmail SMTP configuration
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
