@@ -26,6 +26,7 @@ import { SanitizationService } from './services/sanitization.service';
 import { FileValidationService } from './services/file-validation.service';
 import { AuditLogService } from './services/audit-log.service';
 import { CacheService } from './services/cache.service';
+import { CacheManagerService } from './services/cache-manager.service';
 
 // Utilities
 import { CustomLogger } from './utils/logger.util';
@@ -58,6 +59,7 @@ import { loggerConfig } from '../config/logger.config';
     FileValidationService,
     AuditLogService,
     CacheService, // Performance: Distributed caching abstraction
+    CacheManagerService, // Performance: Cache warming, statistics, and monitoring
 
     // Custom Logger
     CustomLogger,
@@ -110,6 +112,7 @@ import { loggerConfig } from '../config/logger.config';
     FileValidationService,
     AuditLogService,
     CacheService, // Performance: Cache service for Redis operations
+    CacheManagerService, // Performance: Cache management and monitoring
 
     // Export CustomLogger for use in other modules
     CustomLogger,

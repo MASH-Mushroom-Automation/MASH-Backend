@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
@@ -69,6 +70,9 @@ import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage'
       }),
       inject: [RedisService],
     }),
+
+    // Schedule Module for cron jobs (cache monitoring, cache warming)
+    ScheduleModule.forRoot(),
 
     // Core modules
     CommonModule, // 🆕 Added - Global utilities, filters, interceptors, pipes
