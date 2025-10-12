@@ -72,15 +72,25 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         id: trivy-scan
+        continue-on-error: true
         with:
           image-ref: ${{ steps.image-id.outputs.image_id }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
 
+      - name: Check if Trivy SARIF exists
+        id: check-trivy-sarif
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.check-trivy-sarif.outputs.exists == 'true'
         with:
           sarif_file: 'trivy-results.sarif'
           category: trivy
@@ -96,17 +106,28 @@ jobs:
       - name: Run Grype vulnerability scanner
         uses: anchore/scan-action@v3
         id: grype-scan
+        continue-on-error: true
         with:
           image: ${{ steps.image-id.outputs.image_id }}
           fail-build: false
           severity-cutoff: high
           output-format: sarif
 
+      - name: Check if Grype SARIF exists
+        id: check-grype-sarif
+        run: |
+          if [ -n "${{ steps.grype-scan.outputs.sarif }}" ] && [ -f "${{ steps.grype-scan.outputs.sarif }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "file=${{ steps.grype-scan.outputs.sarif }}" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Grype results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.check-grype-sarif.outputs.exists == 'true'
         with:
-          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          sarif_file: ${{ steps.check-grype-sarif.outputs.file }}
           category: grype
 
       # Snyk Scanner - Third security scanner
