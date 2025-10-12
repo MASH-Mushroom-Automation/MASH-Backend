@@ -24,13 +24,10 @@ export class DatabaseMetricsMiddleware implements OnModuleInit {
   async onModuleInit() {
     // Lazy load PrometheusService to avoid circular dependency
     try {
-      const { PrometheusService } = await import(
-        '../../monitoring/prometheus/prometheus.service'
-      );
-      const moduleRef = await import('@nestjs/core').then((m) => m.ModuleRef);
-
-      // Get PrometheusService instance if available
-      // This is optional - metrics will be skipped if Prometheus is not configured
+      // Optional: PrometheusService for database metrics tracking
+      // If not available, database will still work but without metrics
+      this.prometheusService = null;
+      this.logger.log('Database metrics middleware initialized (Prometheus optional)');
     } catch (error) {
       this.logger.warn(
         'PrometheusService not available - database metrics disabled',

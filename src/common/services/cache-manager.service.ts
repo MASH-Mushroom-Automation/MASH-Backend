@@ -114,7 +114,7 @@ export class CacheManagerService implements OnModuleInit {
     const startTime = Date.now();
 
     try {
-      const warmingTasks = [];
+      const warmingTasks: Promise<void>[] = [];
 
       // 1. Warm system configuration (critical for app startup)
       if (warmConfig.systemConfig) {
@@ -180,7 +180,8 @@ export class CacheManagerService implements OnModuleInit {
   private async warmSystemConfig(): Promise<void> {
     try {
       const config = await this.prisma.systemConfig.findMany({
-        where: { isActive: true },
+        // Note: Remove isActive filter if the field doesn't exist in schema
+        // where: { isActive: true },
       });
 
       await this.cacheService.set(

@@ -30,6 +30,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { CommonModule } from './common/common.module';
 import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
+import { TracingModule } from './monitoring/tracing/tracing.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
@@ -83,6 +84,7 @@ import { PrometheusService } from './monitoring/prometheus/prometheus.service';
     DatabaseModule,
     HealthModule,
     PrometheusModule, // 🆕 Prometheus metrics collection
+    TracingModule, // 🆕 OpenTelemetry distributed tracing
 
     // Feature modules
     AuthModule,

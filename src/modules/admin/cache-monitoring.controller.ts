@@ -21,10 +21,8 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import {
-  CacheManagerService,
-  WarmCacheConfig,
-} from '../../common/services/cache-manager.service';
+import { CacheManagerService } from '../../common/services/cache-manager.service';
+import type { WarmCacheConfig } from '../../common/services/cache-manager.service';
 import { FirebaseAuthGuard } from '../auth/guards/firebase-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';

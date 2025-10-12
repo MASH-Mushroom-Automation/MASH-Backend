@@ -146,11 +146,11 @@ export class AuditLogService {
           entity: entry.entity,
           entityId: entry.entityId,
           oldValues: entry.oldValues
-            ? (entry.oldValues as Prisma.JsonValue)
-            : null,
+            ? (entry.oldValues as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           newValues: entry.newValues
-            ? (entry.newValues as Prisma.JsonValue)
-            : null,
+            ? (entry.newValues as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           ipAddress: entry.ipAddress,
           userAgent: entry.userAgent,
         },

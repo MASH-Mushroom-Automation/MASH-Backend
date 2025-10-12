@@ -1,0 +1,277 @@
+# Prometheus Alert Rules for MASH Backend
+# This file defines alert conditions that trigger notifications
+
+groups:
+  # API Performance Alerts
+  - name: api_performance
+    interval: 30s
+    rules:
+      # High error rate (>5% for 5 minutes)
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_requests_total{job="mash-backend",status_code=~"5.."}[5m])) 
+          / sum(rate(http_requests_total{job="mash-backend"}[5m]))) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanize }}% (threshold: 5%)"
+          dashboard: "http://localhost:3001/d/mash-api-performance"
+      
+      # Slow response time (P95 >1s for 10 minutes)
+      - alert: SlowResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket{job="mash-backend"}[5m])
+          ) > 1
+        for: 10m
+        labels:
+          severity: high
+          category: performance
+        annotations:
+          summary: "Slow API response time"
+          description: "P95 latency is {{ $value | humanize }}s (threshold: 1s)"
+          dashboard: "http://localhost:3001/d/mash-api-performance"
+      
+      # Very slow response time (P95 >2s for 5 minutes) - Critical
+      - alert: VerySlowResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket{job="mash-backend"}[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "Very slow API response time (CRITICAL)"
+          description: "P95 latency is {{ $value | humanize }}s (threshold: 2s)"
+          dashboard: "http://localhost:3001/d/mash-api-performance"
+      
+      # High request latency (P99 >2s for 10 minutes)
+      - alert: HighRequestLatency
+        expr: |
+          histogram_quantile(0.99, 
+            rate(http_request_duration_seconds_bucket{job="mash-backend"}[5m])
+          ) > 2
+        for: 10m
+        labels:
+          severity: high
+          category: performance
+        annotations:
+          summary: "High P99 request latency"
+          description: "P99 latency is {{ $value | humanize }}s (threshold: 2s)"
+          dashboard: "http://localhost:3001/d/mash-api-performance"
+
+  # Database Performance Alerts
+  - name: database_performance
+    interval: 30s
+    rules:
+      # Slow database queries (>100ms for 5 minutes)
+      - alert: SlowDatabaseQueries
+        expr: |
+          sum(rate(db_slow_queries_total{job="mash-backend"}[5m])) > 10
+        for: 5m
+        labels:
+          severity: high
+          category: database
+        annotations:
+          summary: "High number of slow database queries"
+          description: "{{ $value | humanize }} slow queries/s (threshold: 10)"
+          dashboard: "http://localhost:3001/d/mash-database-performance"
+      
+      # Database connection pool exhaustion (>90% for 5 minutes)
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: |
+          (db_pool_active_connections{job="mash-backend"} 
+          / db_pool_max_connections{job="mash-backend"}) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "Connection pool usage is {{ $value | humanize }}% (threshold: 90%)"
+          dashboard: "http://localhost:3001/d/mash-database-performance"
+      
+      # High database error rate
+      - alert: HighDatabaseErrorRate
+        expr: |
+          sum(rate(db_errors_total{job="mash-backend"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: high
+          category: database
+        annotations:
+          summary: "High database error rate"
+          description: "{{ $value | humanize }} database errors/s (threshold: 5)"
+          dashboard: "http://localhost:3001/d/mash-database-performance"
+
+  # Cache Performance Alerts
+  - name: cache_performance
+    interval: 30s
+    rules:
+      # Low cache hit rate (<75% for 15 minutes)
+      - alert: LowCacheHitRate
+        expr: |
+          (rate(cache_hits_total{job="mash-backend"}[5m]) 
+          / (rate(cache_hits_total{job="mash-backend"}[5m]) 
+          + rate(cache_misses_total{job="mash-backend"}[5m]))) * 100 < 75
+        for: 15m
+        labels:
+          severity: high
+          category: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanize }}% (threshold: 75%)"
+          dashboard: "http://localhost:3001/d/mash-api-performance"
+      
+      # Redis connection errors
+      - alert: RedisConnectionErrors
+        expr: |
+          sum(rate(cache_errors_total{job="mash-backend"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+          category: cache
+        annotations:
+          summary: "Redis connection errors detected"
+          description: "{{ $value | humanize }} cache errors/s (threshold: 1)"
+          dashboard: "http://localhost:3001/d/mash-api-performance"
+
+  # System Resource Alerts
+  - name: system_resources
+    interval: 30s
+    rules:
+      # High memory usage (>80% for 5 minutes)
+      - alert: HighMemoryUsage
+        expr: |
+          (process_resident_memory_bytes{job="mash-backend"} 
+          / node_memory_MemTotal_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: high
+          category: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanize }}% (threshold: 80%)"
+      
+      # High CPU usage (>80% for 5 minutes)
+      - alert: HighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total{job="mash-backend"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: high
+          category: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanize }}% (threshold: 80%)"
+
+  # Rate Limiting Alerts
+  - name: rate_limiting
+    interval: 30s
+    rules:
+      # Rate limit violations spike (>100/min for 5 minutes)
+      - alert: RateLimitViolationsSpike
+        expr: |
+          sum(rate(rate_limit_violations_total{job="mash-backend"}[1m])) * 60 > 100
+        for: 5m
+        labels:
+          severity: high
+          category: security
+        annotations:
+          summary: "High rate limit violations"
+          description: "{{ $value | humanize }} violations/min (threshold: 100)"
+          dashboard: "http://localhost:3001/d/mash-api-performance"
+
+  # Tracing & Observability Alerts
+  - name: tracing
+    interval: 30s
+    rules:
+      # Trace errors spike (>50/min for 5 minutes)
+      - alert: TraceErrorsSpike
+        expr: |
+          sum(rate(traces_total{job="mash-backend",status="error"}[1m])) * 60 > 50
+        for: 5m
+        labels:
+          severity: high
+          category: observability
+        annotations:
+          summary: "High trace error rate"
+          description: "{{ $value | humanize }} error traces/min (threshold: 50)"
+          dashboard: "http://localhost:3001/d/mash-trace-analytics"
+      
+      # Missing traces (no traces for 10 minutes)
+      - alert: MissingTraces
+        expr: |
+          rate(traces_total{job="mash-backend"}[5m]) == 0
+        for: 10m
+        labels:
+          severity: high
+          category: observability
+        annotations:
+          summary: "No traces received"
+          description: "Tracing may be disabled or broken"
+          dashboard: "http://localhost:3001/d/mash-trace-analytics"
+
+  # System Health Alerts
+  - name: system_health
+    interval: 30s
+    rules:
+      # Service down
+      - alert: ServiceDown
+        expr: up{job="mash-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "MASH Backend service is down"
+          description: "Service has been down for more than 1 minute"
+      
+      # System health degradation (>5% errors)
+      - alert: SystemHealthDegraded
+        expr: |
+          (sum(rate(http_requests_total{job="mash-backend",status_code=~"5.."}[5m])) 
+          / sum(rate(http_requests_total{job="mash-backend"}[5m]))) * 100 > 1
+        for: 10m
+        labels:
+          severity: high
+          category: availability
+        annotations:
+          summary: "System health degraded"
+          description: "Error rate is {{ $value | humanize }}% (threshold: 1%)"
+          dashboard: "http://localhost:3001/d/mash-business-metrics"
+
+  # Business Metrics Alerts
+  - name: business_metrics
+    interval: 1m
+    rules:
+      # No orders in last hour (business hours only)
+      - alert: NoOrdersReceived
+        expr: |
+          increase(orders_created_total{job="mash-backend"}[1h]) == 0
+        for: 1h
+        labels:
+          severity: high
+          category: business
+        annotations:
+          summary: "No orders received in last hour"
+          description: "This may indicate a problem with the ordering system"
+          dashboard: "http://localhost:3001/d/mash-business-metrics"
+      
+      # Low active users (<10 during business hours)
+      - alert: LowActiveUsers
+        expr: |
+          active_users{job="mash-backend"} < 10
+        for: 30m
+        labels:
+          severity: high
+          category: business
+        annotations:
+          summary: "Low active user count"
+          description: "Only {{ $value }} active users (threshold: 10)"
+          dashboard: "http://localhost:3001/d/mash-business-metrics"

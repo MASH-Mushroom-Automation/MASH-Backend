@@ -58,6 +58,8 @@ import clerkConfig from '../../config/clerk.config';
     ClerkService,
     SessionService,
     TokenService,
+    QuotaService,
+    ViolationTrackerService,
     ClerkAuthGuard,
     RolesGuard,
   ],

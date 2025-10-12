@@ -1,0 +1,212 @@
+{{ define "email.default.html" }}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: #f4f4f4;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .alert {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 3px;
+    }
+    .alert.critical {
+      background: #f8d7da;
+      border-left-color: #dc3545;
+    }
+    .alert.resolved {
+      background: #d4edda;
+      border-left-color: #28a745;
+    }
+    .details {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 3px;
+      margin: 10px 0;
+    }
+    .label {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      margin: 2px;
+      background: #e9ecef;
+      color: #495057;
+    }
+    .footer {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+      font-size: 12px;
+      color: #6c757d;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>🔔 MASH Backend Alert</h2>
+    <p><strong>Alert Group:</strong> {{ .GroupLabels.alertname }}</p>
+    <p><strong>Time:</strong> {{ .CommonAnnotations.startsAt | date "2006-01-02 15:04:05" }}</p>
+  </div>
+
+  {{ if gt (len .Alerts.Firing) 0 }}
+  <h3>🔥 Firing Alerts ({{ len .Alerts.Firing }})</h3>
+  {{ range .Alerts.Firing }}
+  <div class="alert {{ if eq .Labels.severity "critical" }}critical{{ end }}">
+    <h4>{{ .Labels.alertname }}</h4>
+    <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+    <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+    
+    <div class="details">
+      <strong>Labels:</strong><br>
+      {{ range .Labels.SortedPairs }}
+      <span class="label">{{ .Name }}: {{ .Value }}</span>
+      {{ end }}
+    </div>
+
+    {{ if .Annotations.dashboard }}
+    <p>📊 <a href="{{ .Annotations.dashboard }}">View Dashboard</a></p>
+    {{ end }}
+
+    <p><small>Started: {{ .StartsAt | date "2006-01-02 15:04:05" }}</small></p>
+  </div>
+  {{ end }}
+  {{ end }}
+
+  {{ if gt (len .Alerts.Resolved) 0 }}
+  <h3>✅ Resolved Alerts ({{ len .Alerts.Resolved }})</h3>
+  {{ range .Alerts.Resolved }}
+  <div class="alert resolved">
+    <h4>{{ .Labels.alertname }}</h4>
+    <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+    <p><strong>Duration:</strong> {{ .StartsAt | date "15:04:05" }} - {{ .EndsAt | date "15:04:05" }}</p>
+  </div>
+  {{ end }}
+  {{ end }}
+
+  <div class="footer">
+    <p>This alert was sent by Alertmanager for MASH Backend.</p>
+    <p>View all alerts: <a href="http://localhost:9093">http://localhost:9093</a></p>
+    <p>View Grafana: <a href="http://localhost:3001">http://localhost:3001</a></p>
+  </div>
+</body>
+</html>
+{{ end }}
+
+{{ define "email.critical.html" }}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #fff5f5;
+    }
+    .header {
+      background: #dc3545;
+      color: white;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .header h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .alert {
+      background: white;
+      border: 2px solid #dc3545;
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .alert h3 {
+      color: #dc3545;
+      margin-top: 0;
+    }
+    .details {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 3px;
+      margin: 10px 0;
+    }
+    .action-required {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #dc3545;
+      color: white;
+      text-decoration: none;
+      border-radius: 3px;
+      margin: 10px 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>🚨 CRITICAL ALERT</h2>
+    <p>Immediate action required!</p>
+  </div>
+
+  {{ range .Alerts.Firing }}
+  <div class="alert">
+    <h3>{{ .Labels.alertname }}</h3>
+    <p><strong>{{ .Annotations.summary }}</strong></p>
+    <p>{{ .Annotations.description }}</p>
+    
+    <div class="details">
+      <p><strong>Severity:</strong> CRITICAL</p>
+      <p><strong>Category:</strong> {{ .Labels.category }}</p>
+      <p><strong>Started:</strong> {{ .StartsAt | date "2006-01-02 15:04:05" }}</p>
+    </div>
+
+    <div class="action-required">
+      <strong>⚠️ Action Required:</strong>
+      <ol>
+        <li>Acknowledge this alert in Alertmanager</li>
+        <li>Check the dashboard for more details</li>
+        <li>Investigate logs and metrics</li>
+        <li>Take corrective action</li>
+      </ol>
+    </div>
+
+    {{ if .Annotations.dashboard }}
+    <a href="{{ .Annotations.dashboard }}" class="button">View Dashboard</a>
+    {{ end }}
+    <a href="http://localhost:9093" class="button">View Alertmanager</a>
+  </div>
+  {{ end }}
+</body>
+</html>
+{{ end }}

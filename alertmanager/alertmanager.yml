@@ -1,0 +1,186 @@
+# Alertmanager Configuration
+# Defines routing, grouping, and notification channels for alerts
+
+global:
+  # Global defaults
+  resolve_timeout: 5m
+  
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@mash-backend.com'
+  smtp_auth_username: 'alerts@mash-backend.com'
+  smtp_auth_password: 'your-smtp-password' # CHANGE THIS!
+  smtp_require_tls: true
+
+# Route tree for alert distribution
+route:
+  # Default receiver for all alerts
+  receiver: 'default-receiver'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # Wait time before sending first notification
+  group_wait: 30s
+  
+  # Wait time before sending notification about new alerts in group
+  group_interval: 5m
+  
+  # Wait time before resending notification
+  repeat_interval: 4h
+  
+  # Child routes for specific alert types
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 30m
+    
+    # High severity alerts
+    - match:
+        severity: high
+      receiver: 'high-priority-alerts'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 2h
+    
+    # Database alerts
+    - match:
+        category: database
+      receiver: 'database-team'
+      group_by: ['alertname', 'instance']
+    
+    # Performance alerts
+    - match:
+        category: performance
+      receiver: 'performance-team'
+      group_by: ['alertname', 'endpoint']
+    
+    # Cache alerts
+    - match:
+        category: cache
+      receiver: 'cache-alerts'
+      group_by: ['alertname', 'cache_type']
+
+# Alert suppression rules (inhibit lower priority alerts)
+inhibit_rules:
+  # If critical alert is firing, suppress warnings
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+  
+  # If service is down, suppress latency alerts
+  - source_match:
+      alertname: 'ServiceDown'
+    target_match_re:
+      alertname: '.*Latency.*'
+    equal: ['instance']
+
+# Notification receivers/channels
+receivers:
+  # Default receiver (fallback)
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'devops@mash-backend.com'
+        send_resolved: true
+        headers:
+          Subject: '[MASH Alert] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+  
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    # Email notification
+    email_configs:
+      - to: 'oncall@mash-backend.com,cto@mash-backend.com'
+        send_resolved: true
+        headers:
+          Subject: '🚨 [CRITICAL] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.critical.html" . }}'
+    
+    # Slack notification
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        title: '🚨 Critical Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+        color: 'danger'
+    
+    # Optional: PagerDuty for on-call escalation
+    # pagerduty_configs:
+    #   - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+    #     description: '{{ .GroupLabels.alertname }}'
+  
+  # High priority alerts
+  - name: 'high-priority-alerts'
+    email_configs:
+      - to: 'devops@mash-backend.com'
+        send_resolved: true
+        headers:
+          Subject: '⚠️ [HIGH] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-high'
+        title: '⚠️ High Priority: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+        color: 'warning'
+  
+  # Database team alerts
+  - name: 'database-team'
+    email_configs:
+      - to: 'database-team@mash-backend.com'
+        send_resolved: true
+        headers:
+          Subject: '[Database Alert] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-database'
+        title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+  
+  # Performance team alerts
+  - name: 'performance-team'
+    email_configs:
+      - to: 'performance-team@mash-backend.com'
+        send_resolved: true
+        headers:
+          Subject: '[Performance Alert] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-performance'
+        title: '⚡ Performance Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+  
+  # Cache alerts
+  - name: 'cache-alerts'
+    email_configs:
+      - to: 'devops@mash-backend.com'
+        send_resolved: true
+        headers:
+          Subject: '[Cache Alert] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-cache'
+        title: '💾 Cache Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+# Templates directory
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

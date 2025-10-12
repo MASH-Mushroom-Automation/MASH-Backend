@@ -161,18 +161,20 @@ export function getHelmetConfig(nodeEnv: string = 'production'): HelmetOptions {
      * - gyroscope: Gyroscope sensor
      * - accelerometer: Accelerometer sensor
      */
-    permissionsPolicy: {
-      features: {
-        geolocation: ["'none'"],
-        camera: ["'none'"],
-        microphone: ["'none'"],
-        payment: ["'none'"],
-        usb: ["'none'"],
-        magnetometer: ["'none'"],
-        gyroscope: ["'none'"],
-        accelerometer: ["'none'"],
-      },
-    },
+    // Note: permissionsPolicy is not available in helmet v7+
+    // Use Permissions-Policy header manually if needed
+    // permissionsPolicy: {
+    //   features: {
+    //     geolocation: ["'none'"],
+    //     camera: ["'none'"],
+    //     microphone: ["'none'"],
+    //     payment: ["'none'"],
+    //     usb: ["'none'"],
+    //     magnetometer: ["'none'"],
+    //     gyroscope: ["'none'"],
+    //     accelerometer: ["'none'"],
+    //   },
+    // },
 
     /**
      * X-DNS-Prefetch-Control
@@ -222,7 +224,7 @@ export const SECURITY_HEADERS = {
 /**
  * Helmet configuration presets for different deployment scenarios
  */
-export const HELMET_PRESETS = {
+export const HELMET_PRESETS: Record<string, any> = {
   /**
    * Maximum security - For production APIs without browser clients
    */
@@ -253,4 +255,4 @@ export const HELMET_PRESETS = {
    * Development - Minimal security for local development
    */
   DEVELOPMENT: getHelmetConfig('development'),
-} as const;
+};
