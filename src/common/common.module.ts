@@ -25,6 +25,7 @@ import { SanitizePipe } from './pipes/sanitize.pipe';
 import { SanitizationService } from './services/sanitization.service';
 import { FileValidationService } from './services/file-validation.service';
 import { AuditLogService } from './services/audit-log.service';
+import { CacheService } from './services/cache.service';
 
 // Utilities
 import { CustomLogger } from './utils/logger.util';
@@ -52,10 +53,11 @@ import { loggerConfig } from '../config/logger.config';
     WinstonModule.forRoot(loggerConfig),
   ],
   providers: [
-    // Services (Issue #23 - Enterprise Security)
+    // Services (Issue #23 - Enterprise Security, #24 - Performance Optimization)
     SanitizationService,
     FileValidationService,
     AuditLogService,
+    CacheService, // Performance: Distributed caching abstraction
 
     // Custom Logger
     CustomLogger,
@@ -103,10 +105,11 @@ import { loggerConfig } from '../config/logger.config';
     },
   ],
   exports: [
-    // Export services for use in other modules (Issue #23)
+    // Export services for use in other modules (Issue #23, #24)
     SanitizationService,
     FileValidationService,
     AuditLogService,
+    CacheService, // Performance: Cache service for Redis operations
 
     // Export CustomLogger for use in other modules
     CustomLogger,
