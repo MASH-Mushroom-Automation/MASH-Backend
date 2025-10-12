@@ -16,7 +16,9 @@ import { Prisma } from '@prisma/client';
 export class ProductsService {
   private readonly PRODUCT_CACHE_PREFIX = 'product';
   private readonly PRODUCTS_LIST_CACHE_PREFIX = 'products:list';
+  private readonly PRODUCTS_SEARCH_CACHE_PREFIX = 'products:search';
   private readonly PRODUCT_TTL = 600; // 10 minutes
+  private readonly SEARCH_TTL = 300; // 5 minutes (search results more volatile)
 
   constructor(
     private prisma: PrismaService,
@@ -145,8 +147,12 @@ export class ProductsService {
       },
     });
 
-    // Invalidate product caches
-    await this.cacheService.invalidateByTags(['products', 'products:list']);
+    // Invalidate product caches (including search results)
+    await this.cacheService.invalidateByTags([
+      'products',
+      'products:list',
+      'products:search',
+    ]);
 
     return product;
   }
@@ -306,10 +312,11 @@ export class ProductsService {
       },
     });
 
-    // Invalidate product caches
+    // Invalidate product caches (including search results)
     await this.cacheService.invalidateByTags([
       'products',
       'products:list',
+      'products:search',
       `product:${id}`,
     ]);
 
@@ -328,10 +335,11 @@ export class ProductsService {
       data: { isActive: false },
     });
 
-    // Invalidate product caches
+    // Invalidate product caches (including search results)
     await this.cacheService.invalidateByTags([
       'products',
       'products:list',
+      'products:search',
       `product:${id}`,
     ]);
 
@@ -379,9 +387,20 @@ export class ProductsService {
 
   /**
    * Search products
+   * Phase 2 Task 2.3.2: Cache search results
    */
   async search(term: string, query: ProductQueryDto) {
     const { page = 1, limit = 10 } = query;
+
+    // Generate cache key from search term and query parameters
+    const cacheKey = `${this.PRODUCTS_SEARCH_CACHE_PREFIX}:${term}:${JSON.stringify(query)}`;
+
+    // Try cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
@@ -405,7 +424,7 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: products,
       meta: {
         total,
@@ -414,6 +433,14 @@ export class ProductsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache search results for 5 minutes
+    await this.cacheService.set(cacheKey, result, this.SEARCH_TTL, [
+      'products',
+      'products:search',
+    ]);
+
+    return result;
   }
 
   /**
@@ -428,10 +455,11 @@ export class ProductsService {
       data: { isActive: !product.isActive },
     });
 
-    // Invalidate product caches
+    // Invalidate product caches (including search results)
     await this.cacheService.invalidateByTags([
       'products',
       'products:list',
+      'products:search',
       `product:${id}`,
     ]);
 
