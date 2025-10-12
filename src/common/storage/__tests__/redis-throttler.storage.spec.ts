@@ -220,13 +220,7 @@ describe('RedisThrottlerStorage', () => {
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Next request should reset counter
-      const result = await storage.increment(
-        'test-key',
-        100,
-        10,
-        0,
-        'default',
-      );
+      const result = await storage.increment('test-key', 100, 10, 0, 'default');
 
       expect(result.totalHits).toBe(1); // Reset to 1
     });
@@ -385,7 +379,7 @@ describe('RedisThrottlerStorage', () => {
       await storage.increment('key1', 100, 10, 0, 'default');
 
       storage.cleanupExpiredRecords(); // First cleanup (not expired yet)
-      
+
       const result1 = await storage.get('key1');
       expect(result1).not.toBeNull();
 
@@ -402,7 +396,7 @@ describe('RedisThrottlerStorage', () => {
   describe('distributed rate limiting simulation', () => {
     it('should handle concurrent increments from multiple instances', async () => {
       redisService.isAvailable.mockReturnValue(true);
-      
+
       // Simulate 5 concurrent requests
       let count = 0;
       redisService.increment.mockImplementation(async () => {

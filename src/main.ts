@@ -57,7 +57,9 @@ async function bootstrap() {
   // 📝 Audit logging interceptor - Track sensitive operations
   const reflector = app.get(Reflector);
   const auditLogService = app.get(AuditLogService);
-  app.useGlobalInterceptors(new AuditLogInterceptor(reflector, auditLogService));
+  app.useGlobalInterceptors(
+    new AuditLogInterceptor(reflector, auditLogService),
+  );
 
   // Note: Global validation pipes are registered in CommonModule
 

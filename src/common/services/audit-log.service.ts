@@ -126,7 +126,10 @@ export class AuditLogService {
       // Log to file (for backup and compliance)
       await this.logToFile(entry);
     } catch (error) {
-      this.logger.error(`Failed to log audit event: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to log audit event: ${error.message}`,
+        error.stack,
+      );
       // Don't throw - audit logging should never break the app
     }
   }
@@ -142,8 +145,12 @@ export class AuditLogService {
           action: entry.action,
           entity: entry.entity,
           entityId: entry.entityId,
-          oldValues: entry.oldValues ? (entry.oldValues as Prisma.JsonValue) : null,
-          newValues: entry.newValues ? (entry.newValues as Prisma.JsonValue) : null,
+          oldValues: entry.oldValues
+            ? (entry.oldValues as Prisma.JsonValue)
+            : null,
+          newValues: entry.newValues
+            ? (entry.newValues as Prisma.JsonValue)
+            : null,
           ipAddress: entry.ipAddress,
           userAgent: entry.userAgent,
         },
@@ -346,7 +353,11 @@ export class AuditLogService {
     startDate?: Date,
     endDate?: Date,
   ) {
-    const logs = await this.findByUserId(userId, { startDate, endDate, limit: 1000 });
+    const logs = await this.findByUserId(userId, {
+      startDate,
+      endDate,
+      limit: 1000,
+    });
 
     const actionCounts = logs.reduce(
       (acc, log) => {
@@ -382,7 +393,9 @@ export class AuditLogService {
       },
     });
 
-    this.logger.log(`Deleted ${result.count} audit logs older than ${daysToKeep} days`);
+    this.logger.log(
+      `Deleted ${result.count} audit logs older than ${daysToKeep} days`,
+    );
     return result.count;
   }
 }

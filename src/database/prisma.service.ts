@@ -14,6 +14,14 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
   private isConnected = false;
 
+  // Query performance tracking
+  private queryStats = {
+    totalQueries: 0,
+    slowQueries: 0,
+    totalDuration: 0,
+    slowestQuery: { duration: 0, query: '' },
+  };
+
   constructor() {
     super({
       log: [
@@ -25,10 +33,32 @@ export class PrismaService
       errorFormat: 'pretty',
     });
 
-    // Query performance monitoring
+    // 🚀 Enhanced query performance monitoring (Task 1.1.1)
     this.$on('query', (e: Prisma.QueryEvent) => {
-      if (e.duration > 100) {
-        this.logger.warn(`Slow query detected: ${e.duration}ms - ${e.query}`);
+      this.queryStats.totalQueries++;
+      this.queryStats.totalDuration += e.duration;
+
+      // Log slow queries (> 50ms)
+      if (e.duration > 50) {
+        this.queryStats.slowQueries++;
+
+        if (e.duration > this.queryStats.slowestQuery.duration) {
+          this.queryStats.slowestQuery = {
+            duration: e.duration,
+            query: e.query,
+          };
+        }
+
+        const severity = this.getQuerySeverity(e.duration);
+        const logMessage = `[${severity}] Slow Query (${e.duration}ms):\n  Query: ${this.truncateQuery(e.query)}\n  Params: ${e.params}`;
+
+        if (e.duration > 200) {
+          this.logger.error(logMessage);
+        } else if (e.duration > 100) {
+          this.logger.warn(logMessage);
+        } else {
+          this.logger.debug(logMessage);
+        }
       }
     });
 
@@ -41,6 +71,68 @@ export class PrismaService
     this.$on('warn', (e: Prisma.LogEvent) => {
       this.logger.warn(`Prisma Warning: ${e.message}`);
     });
+  }
+
+  /**
+   * Get query severity level based on duration
+   */
+  private getQuerySeverity(duration: number): string {
+    if (duration > 500) return 'CRITICAL';
+    if (duration > 200) return 'HIGH';
+    if (duration > 100) return 'MEDIUM';
+    return 'LOW';
+  }
+
+  /**
+   * Truncate query string for logging
+   */
+  private truncateQuery(query: string, maxLength = 200): string {
+    return query.length > maxLength
+      ? query.substring(0, maxLength) + '...'
+      : query;
+  }
+
+  /**
+   * Get query performance statistics
+   */
+  getQueryStats() {
+    const avgDuration =
+      this.queryStats.totalQueries > 0
+        ? (
+            this.queryStats.totalDuration / this.queryStats.totalQueries
+          ).toFixed(2)
+        : 0;
+
+    return {
+      totalQueries: this.queryStats.totalQueries,
+      slowQueries: this.queryStats.slowQueries,
+      slowQueryPercentage:
+        this.queryStats.totalQueries > 0
+          ? (
+              (this.queryStats.slowQueries / this.queryStats.totalQueries) *
+              100
+            ).toFixed(2) + '%'
+          : '0%',
+      avgDuration: `${avgDuration}ms`,
+      totalDuration: `${this.queryStats.totalDuration}ms`,
+      slowestQuery: {
+        duration: `${this.queryStats.slowestQuery.duration}ms`,
+        query: this.truncateQuery(this.queryStats.slowestQuery.query, 100),
+      },
+    };
+  }
+
+  /**
+   * Reset query statistics
+   */
+  resetQueryStats() {
+    this.queryStats = {
+      totalQueries: 0,
+      slowQueries: 0,
+      totalDuration: 0,
+      slowestQuery: { duration: 0, query: '' },
+    };
+    this.logger.log('Query statistics reset');
   }
 
   async onModuleInit() {

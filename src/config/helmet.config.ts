@@ -194,9 +194,7 @@ export function getHelmetConfig(nodeEnv: string = 'production'): HelmetOptions {
      * Controls cross-domain policies for Flash and PDF
      */
     crossOriginEmbedderPolicy: isDevelopment ? false : true,
-    crossOriginOpenerPolicy: isDevelopment
-      ? false
-      : { policy: 'same-origin' },
+    crossOriginOpenerPolicy: isDevelopment ? false : { policy: 'same-origin' },
     crossOriginResourcePolicy: isDevelopment
       ? false
       : { policy: 'same-origin' },
