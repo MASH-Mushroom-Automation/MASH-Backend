@@ -1,11 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { ThrottleEndpoint } from '../common/decorators/throttle-endpoint.decorator';
 
 /**
  * Health Check Controller
  * Provides endpoints to monitor application and database health
  */
 @Controller('health')
+@ThrottleEndpoint('CHEAP') // Health checks are lightweight - 1000 req/min
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 

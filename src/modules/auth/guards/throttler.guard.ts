@@ -9,7 +9,16 @@ import { Reflector } from '@nestjs/core';
 import type { UserRole } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { RATE_LIMIT_HEADERS } from '../../../common/config/throttler.config';
-import { formatRateLimitForLog } from '../../../common/config/role-limits.config';
+import {
+  getRoleLimits,
+  formatRateLimitForLog,
+} from '../../../common/config/role-limits.config';
+import {
+  THROTTLE_ENDPOINT_KEY,
+  EndpointCategory,
+  getEndpointLimit,
+  formatEndpointLimitForLog,
+} from '../../../common/decorators/throttle-endpoint.decorator';
 
 /**
  * CustomThrottlerGuard - Enhanced rate limiting with role-based limits and database logging
@@ -104,26 +113,79 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   /**
-   * Override handleRequest to add rate limit headers
-   * This is called by the parent ThrottlerGuard after checking rate limits
+   * Override handleRequest to:
+   * 1. Read endpoint category metadata (@ThrottleEndpoint decorator)
+   * 2. Get role-based limit
+   * 3. Get endpoint-specific limit
+   * 4. Use minimum of both limits (most restrictive)
+   * 5. Add rate limit headers showing effective limit
    */
   protected async handleRequest(
     requestProps: Record<string, any>,
   ): Promise<boolean> {
     const { context, limit, ttl } = requestProps;
+    const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
 
-    // Call parent implementation
+    // Get user role
+    const userRole = request.user?.role as UserRole | undefined;
+    const role = userRole || 'GUEST';
+
+    // Get role-based limit
+    const roleLimit = getRoleLimits(role);
+
+    // Get endpoint category from decorator metadata
+    const endpointCategory = this.reflector.getAllAndOverride<EndpointCategory>(
+      THROTTLE_ENDPOINT_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    // Calculate effective limit (minimum of role and endpoint limits)
+    let effectiveLimit = roleLimit.limit;
+    let effectiveTtl = roleLimit.ttl;
+    let limitSource = `role=${role}`;
+
+    if (endpointCategory) {
+      const endpointLimit = getEndpointLimit(endpointCategory);
+
+      // Use minimum of both limits (most restrictive)
+      if (endpointLimit.limit < roleLimit.limit) {
+        effectiveLimit = endpointLimit.limit;
+        effectiveTtl = endpointLimit.ttl;
+        limitSource = `endpoint=${endpointCategory}`;
+      } else {
+        limitSource = `role=${role} (endpoint=${endpointCategory} less restrictive)`;
+      }
+
+      this.logger.debug(
+        `Combined limits - Role: ${formatRateLimitForLog(role)}, ` +
+          `Endpoint: ${formatEndpointLimitForLog(endpointCategory)}, ` +
+          `Effective: ${effectiveLimit} req/min (${limitSource})`,
+      );
+    } else {
+      this.logger.debug(
+        `Using role limit only - ${formatRateLimitForLog(role)}`,
+      );
+    }
+
+    // Override request props with effective limit
+    requestProps.limit = effectiveLimit;
+    requestProps.ttl = effectiveTtl;
+
+    // Call parent implementation with effective limit
     // @ts-expect-error - ThrottlerRequest type mismatch (NestJS internal)
     const result = await super.handleRequest(requestProps);
 
     // Add rate limit headers to response
-    if (response && limit) {
-      response.setHeader(RATE_LIMIT_HEADERS.LIMIT, limit.toString());
+    if (response && effectiveLimit) {
+      response.setHeader(RATE_LIMIT_HEADERS.LIMIT, effectiveLimit.toString());
 
       // Calculate reset time (current time + TTL)
-      const resetTime = Math.ceil((Date.now() + ttl) / 1000);
+      const resetTime = Math.ceil((Date.now() + effectiveTtl) / 1000);
       response.setHeader(RATE_LIMIT_HEADERS.RESET, resetTime.toString());
+
+      // Add custom header showing which limit was applied
+      response.setHeader('X-RateLimit-Source', limitSource);
     }
 
     return result;
@@ -162,8 +224,14 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   /**
-   * Override generateKey to apply role-based limits
-   * This method is called by parent ThrottlerGuard to determine the rate limit
+   * Override generateKey to include both role and endpoint category
+   * This creates separate Redis counters for each role+endpoint combination
+   *
+   * Key format: {name}-{role}-{endpoint_category}-{suffix}
+   * Examples:
+   * - throttle-ADMIN-EXPENSIVE-192.168.1.1
+   * - throttle-USER-STANDARD-192.168.1.2
+   * - throttle-GUEST-CHEAP-192.168.1.3
    */
   protected generateKey(
     context: ExecutionContext,
@@ -176,8 +244,15 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const userRole = request.user?.role as UserRole | undefined;
     const role = userRole || 'GUEST';
 
-    // Include role in the key for role-based tracking
-    return `${name}-${role}-${suffix}`;
+    // Get endpoint category from decorator metadata
+    const endpointCategory =
+      this.reflector.getAllAndOverride<EndpointCategory>(
+        THROTTLE_ENDPOINT_KEY,
+        [context.getHandler(), context.getClass()],
+      ) || 'NONE';
+
+    // Include both role and endpoint category in the key
+    return `${name}-${role}-${endpointCategory}-${suffix}`;
   }
 
   /**

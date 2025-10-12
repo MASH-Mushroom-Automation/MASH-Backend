@@ -26,11 +26,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
+import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 
 @ApiTags('Orders')
 @Controller('orders')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
+@ThrottleEndpoint('STANDARD') // Standard CRUD operations - 100 req/min
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 

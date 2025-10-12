@@ -27,9 +27,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
+import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 
 @ApiTags('Products')
 @Controller('products')
+@ThrottleEndpoint('STANDARD') // Standard CRUD operations - 100 req/min
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
