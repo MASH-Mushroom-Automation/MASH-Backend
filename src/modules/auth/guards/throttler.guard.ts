@@ -8,6 +8,7 @@ import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import type { UserRole } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
+import { QuotaService } from '../services/quota.service';
 import { RATE_LIMIT_HEADERS } from '../../../common/config/throttler.config';
 import {
   getRoleLimits,
@@ -68,6 +69,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     protected readonly storageService: ThrottlerStorage,
     protected readonly reflector: Reflector,
     private readonly prisma: PrismaService,
+    private readonly quotaService: QuotaService,
   ) {
     super(options, storageService, reflector);
   }
@@ -114,33 +116,72 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
   /**
    * Override handleRequest to:
-   * 1. Read endpoint category metadata (@ThrottleEndpoint decorator)
-   * 2. Get role-based limit
-   * 3. Get endpoint-specific limit
-   * 4. Use minimum of both limits (most restrictive)
-   * 5. Add rate limit headers showing effective limit
+   * 1. Check daily/monthly quotas first (long-term limits)
+   * 2. Read endpoint category metadata (@ThrottleEndpoint decorator)
+   * 3. Get role-based limit
+   * 4. Get endpoint-specific limit
+   * 5. Use minimum of both limits (most restrictive)
+   * 6. Add rate limit headers and quota headers showing effective limits
    */
   protected async handleRequest(
     requestProps: Record<string, any>,
   ): Promise<boolean> {
-    const { context, limit, ttl } = requestProps;
+    const { context } = requestProps;
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
 
-    // Get user role
+    // Get user role and ID
     const userRole = request.user?.role as UserRole | undefined;
+    const userId = request.user?.id || request.user?.userId;
     const role = userRole || 'GUEST';
 
-    // Get role-based limit
+    // 1. Check quotas first (for authenticated users)
+    if (userId) {
+      // Check if user has quota available
+      const quotaOk = await this.quotaService.checkQuota(userId, role);
+      if (!quotaOk) {
+        this.logger.warn(
+          `Quota exceeded for user ${userId} (${role}) - ${request.method} ${request.url}`,
+        );
+        throw new ThrottlerException('Daily or monthly quota exceeded');
+      }
+
+      // Get quota info for headers
+      const quotaInfo = await this.quotaService.getQuotaInfo(userId, role);
+
+      // Add quota headers
+      response.setHeader(
+        'X-RateLimit-Quota-Daily-Limit',
+        quotaInfo.daily.limit.toString(),
+      );
+      response.setHeader(
+        'X-RateLimit-Quota-Daily-Remaining',
+        quotaInfo.daily.remaining.toString(),
+      );
+      response.setHeader(
+        'X-RateLimit-Quota-Daily-Reset',
+        quotaInfo.daily.resetAt.toString(),
+      );
+      response.setHeader(
+        'X-RateLimit-Quota-Monthly-Remaining',
+        quotaInfo.monthly.remaining.toString(),
+      );
+      response.setHeader(
+        'X-RateLimit-Quota-Monthly-Reset',
+        quotaInfo.monthly.resetAt.toString(),
+      );
+    }
+
+    // 2. Get role-based limit
     const roleLimit = getRoleLimits(role);
 
-    // Get endpoint category from decorator metadata
+    // 3. Get endpoint category from decorator metadata
     const endpointCategory = this.reflector.getAllAndOverride<EndpointCategory>(
       THROTTLE_ENDPOINT_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // Calculate effective limit (minimum of role and endpoint limits)
+    // 4. Calculate effective rate limit (minimum of role and endpoint limits)
     let effectiveLimit = roleLimit.limit;
     let effectiveTtl = roleLimit.ttl;
     let limitSource = `role=${role}`;

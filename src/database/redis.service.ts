@@ -231,6 +231,25 @@ export class RedisService implements OnModuleDestroy {
   }
 
   /**
+   * Atomically increment a key's value by a specific amount
+   * @param key - Cache key
+   * @param amount - Amount to increment by
+   * @returns New value after increment
+   */
+  async incrementBy(key: string, amount: number): Promise<number> {
+    if (!this.isAvailable()) {
+      return 0;
+    }
+
+    try {
+      return await this.client!.incrby(key, amount);
+    } catch (error) {
+      this.logger.error(`Redis INCRBY error for key ${key}:`, error);
+      return 0;
+    }
+  }
+
+  /**
    * Set expiration on a key
    * @param key - Cache key
    * @param seconds - TTL in seconds
