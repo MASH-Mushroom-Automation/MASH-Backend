@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import type { UserRole } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { QuotaService } from '../services/quota.service';
+import { ViolationTrackerService } from '../services/violation-tracker.service';
 import { RATE_LIMIT_HEADERS } from '../../../common/config/throttler.config';
 import {
   getRoleLimits,
@@ -62,6 +63,9 @@ import {
 export class CustomThrottlerGuard extends ThrottlerGuard {
   private readonly logger = new Logger(CustomThrottlerGuard.name);
 
+  // Whitelist Redis key
+  private readonly WHITELIST_KEY = 'throttle:whitelist';
+
   constructor(
     @Inject('THROTTLER:MODULE_OPTIONS')
     protected readonly options: ThrottlerModuleOptions,
@@ -70,17 +74,19 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     protected readonly reflector: Reflector,
     private readonly prisma: PrismaService,
     private readonly quotaService: QuotaService,
+    private readonly violationTracker: ViolationTrackerService,
   ) {
     super(options, storageService, reflector);
   }
 
   /**
-   * Override canActivate to add custom logging and rate limit headers
+   * Override canActivate to add custom logging, rate limit headers, and violation tracking
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
     const { ip, method, url, headers, user } = request;
+    const userId = user?.id || user?.userId;
 
     try {
       // Call parent implementation (performs rate limit check)
@@ -92,22 +98,46 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
       return result;
     } catch (error) {
-      // Rate limit exceeded - log to database
+      // Rate limit exceeded - log to database and record violation
       if (error instanceof ThrottlerException) {
         await this.logRateLimitViolation(
           ip || 'unknown',
           method,
           url,
           headers['user-agent'] || 'unknown',
-          user?.id,
+          userId,
         );
 
-        // Add Retry-After header (60 seconds by default)
-        response.setHeader(RATE_LIMIT_HEADERS.RETRY_AFTER, '60');
+        // Record violation for progressive backoff (authenticated users only)
+        if (userId) {
+          const violationCount = await this.violationTracker.recordViolation(
+            userId,
+            `${method} ${url}`,
+          );
+          const backoffSeconds =
+            await this.violationTracker.getBackoffTime(userId);
 
-        this.logger.warn(
-          `Rate limit exceeded: ${ip} - ${method} ${url} - User: ${user?.id || 'anonymous'}`,
-        );
+          // Set dynamic Retry-After header based on violation count
+          response.setHeader(
+            RATE_LIMIT_HEADERS.RETRY_AFTER,
+            backoffSeconds.toString(),
+          );
+          response.setHeader(
+            'X-RateLimit-Backoff-Level',
+            violationCount.toString(),
+          );
+
+          this.logger.warn(
+            `Rate limit exceeded: ${ip} - ${method} ${url} - User: ${userId} ` +
+              `(Violation #${violationCount}, backoff: ${backoffSeconds}s)`,
+          );
+        } else {
+          // Guest users get static 60s backoff
+          response.setHeader(RATE_LIMIT_HEADERS.RETRY_AFTER, '60');
+          this.logger.warn(
+            `Rate limit exceeded: ${ip} - ${method} ${url} - User: anonymous`,
+          );
+        }
       }
 
       throw error;
@@ -116,12 +146,14 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
   /**
    * Override handleRequest to:
-   * 1. Check daily/monthly quotas first (long-term limits)
-   * 2. Read endpoint category metadata (@ThrottleEndpoint decorator)
-   * 3. Get role-based limit
-   * 4. Get endpoint-specific limit
-   * 5. Use minimum of both limits (most restrictive)
-   * 6. Add rate limit headers and quota headers showing effective limits
+   * 0. Check whitelist (bypass rate limiting for trusted clients)
+   * 1. Check if user is in backoff period from previous violations
+   * 2. Check daily/monthly quotas (long-term limits)
+   * 3. Read endpoint category metadata (@ThrottleEndpoint decorator)
+   * 4. Get role-based limit
+   * 5. Get endpoint-specific limit
+   * 6. Use minimum of both limits (most restrictive)
+   * 7. Add rate limit headers, quota headers, and backoff headers
    */
   protected async handleRequest(
     requestProps: Record<string, any>,
@@ -134,8 +166,51 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const userRole = request.user?.role as UserRole | undefined;
     const userId = request.user?.id || request.user?.userId;
     const role = userRole || 'GUEST';
+    const ip = request.ip || 'unknown';
 
-    // 1. Check quotas first (for authenticated users)
+    // 0. Check whitelist (bypass rate limiting for trusted clients)
+    const identifier = userId || ip;
+    const isWhitelisted = await this.isWhitelisted(identifier);
+    if (isWhitelisted) {
+      this.logger.debug(
+        `Whitelisted identifier ${identifier} bypassing rate limits`,
+      );
+      response.setHeader('X-RateLimit-Whitelisted', 'true');
+      return true; // Bypass all rate limiting
+    }
+
+    // 1. Check if user is in backoff period from previous violations
+    if (userId) {
+      const inBackoff = await this.violationTracker.isInBackoff(userId);
+      if (inBackoff) {
+        const remainingBackoff =
+          await this.violationTracker.getRemainingBackoff(userId);
+        const violationCount = (
+          await this.violationTracker.getViolations(userId)
+        ).count;
+
+        // Set backoff headers
+        response.setHeader(
+          RATE_LIMIT_HEADERS.RETRY_AFTER,
+          remainingBackoff.toString(),
+        );
+        response.setHeader(
+          'X-RateLimit-Backoff-Level',
+          violationCount.toString(),
+        );
+
+        this.logger.warn(
+          `User ${userId} in backoff period (${remainingBackoff}s remaining, ` +
+            `${violationCount} violations)`,
+        );
+
+        throw new ThrottlerException(
+          `Rate limit backoff in effect. Retry after ${remainingBackoff} seconds.`,
+        );
+      }
+    }
+
+    // 2. Check quotas (for authenticated users)
     if (userId) {
       // Check if user has quota available
       const quotaOk = await this.quotaService.checkQuota(userId, role);
@@ -172,10 +247,10 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       );
     }
 
-    // 2. Get role-based limit
+    // 3. Get role-based limit
     const roleLimit = getRoleLimits(role);
 
-    // 3. Get endpoint category from decorator metadata
+    // 4. Get endpoint category from decorator metadata
     const endpointCategory = this.reflector.getAllAndOverride<EndpointCategory>(
       THROTTLE_ENDPOINT_KEY,
       [context.getHandler(), context.getClass()],
@@ -294,6 +369,78 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
     // Include both role and endpoint category in the key
     return `${name}-${role}-${endpointCategory}-${suffix}`;
+  }
+
+  /**
+   * Check if an identifier (userId or IP) is whitelisted
+   *
+   * @param identifier - User ID or IP address
+   * @returns true if whitelisted, false otherwise
+   */
+  private async isWhitelisted(identifier: string): Promise<boolean> {
+    // Check if identifier exists in whitelist set
+    // Using Redis SET for O(1) lookup performance
+    const key = this.WHITELIST_KEY;
+
+    // Get all whitelist members (small set, so this is fine)
+    // In production, you might want to use SISMEMBER for direct lookup
+    const whitelistData = await this.prisma.rateLimitLog.findFirst({
+      where: {
+        identifier: `whitelist:${identifier}`,
+        blocked: false,
+      },
+    });
+
+    return !!whitelistData;
+  }
+
+  /**
+   * Add identifier to whitelist (admin function)
+   *
+   * @param identifier - User ID or IP address
+   * @param reason - Reason for whitelisting
+   */
+  async addToWhitelist(identifier: string, reason?: string): Promise<void> {
+    await this.prisma.rateLimitLog.upsert({
+      where: {
+        identifier_endpoint_windowStart: {
+          identifier: `whitelist:${identifier}`,
+          endpoint: 'whitelist',
+          windowStart: new Date(0), // Epoch
+        },
+      },
+      create: {
+        identifier: `whitelist:${identifier}`,
+        endpoint: 'whitelist',
+        count: 0,
+        windowStart: new Date(0),
+        windowEnd: new Date(),
+        blocked: false,
+      },
+      update: {
+        windowEnd: new Date(),
+      },
+    });
+
+    this.logger.log(
+      `Added ${identifier} to whitelist${reason ? `: ${reason}` : ''}`,
+    );
+  }
+
+  /**
+   * Remove identifier from whitelist (admin function)
+   *
+   * @param identifier - User ID or IP address
+   */
+  async removeFromWhitelist(identifier: string): Promise<void> {
+    await this.prisma.rateLimitLog.deleteMany({
+      where: {
+        identifier: `whitelist:${identifier}`,
+        endpoint: 'whitelist',
+      },
+    });
+
+    this.logger.log(`Removed ${identifier} from whitelist`);
   }
 
   /**

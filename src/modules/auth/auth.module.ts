@@ -13,6 +13,7 @@ import { ClerkService } from './services/clerk.service';
 import { SessionService } from './services/session.service';
 import { TokenService } from './services/token.service';
 import { QuotaService } from './services/quota.service';
+import { ViolationTrackerService } from './services/violation-tracker.service';
 import { ClerkAuthGuard } from './guards/clerk-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
@@ -43,6 +44,7 @@ import clerkConfig from '../../config/clerk.config';
     SessionService,
     TokenService,
     QuotaService,
+    ViolationTrackerService,
     ClerkAuthGuard,
     RolesGuard,
     PermissionsGuard,
