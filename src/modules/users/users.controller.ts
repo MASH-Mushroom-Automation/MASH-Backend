@@ -32,6 +32,7 @@ import { UserFilterQueryDto } from './dto/user-filter-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 import { FileValidationService } from '../../common/services/file-validation.service';
 
 @ApiTags('Users')
@@ -48,6 +49,23 @@ export class UsersController {
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'email',
+      'firstName',
+      'lastName',
+      'role',
+      'isActive',
+      'avatar',
+      'phone',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'email'],
+    defaultFields: ['id', 'email', 'firstName', 'lastName', 'role', 'isActive'],
+    maxFields: 12,
+  })
   @ApiOperation({ summary: 'List all users with pagination and filters' })
   @ApiResponse({
     status: 200,
@@ -74,6 +92,33 @@ export class UsersController {
 
   // 3. GET /users/:id - Get user details
   @Get(':id')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'email',
+      'firstName',
+      'lastName',
+      'role',
+      'isActive',
+      'avatar',
+      'phone',
+      'emailVerified',
+      'twoFactorEnabled',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id'],
+    defaultFields: [
+      'id',
+      'email',
+      'firstName',
+      'lastName',
+      'role',
+      'isActive',
+      'avatar',
+    ],
+    maxFields: 15,
+  })
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'User retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

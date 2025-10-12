@@ -25,6 +25,7 @@ import { CancelOrderDto } from './dto/cancel-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -37,6 +38,21 @@ export class OrdersController {
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'orderNumber',
+      'status',
+      'total',
+      'userId',
+      'shippingAddress',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'orderNumber', 'status'],
+    defaultFields: ['id', 'orderNumber', 'status', 'total', 'createdAt'],
+    maxFields: 12,
+  })
   @ApiOperation({ summary: 'List all orders with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
   async findAll(@Query() query: OrderQueryDto) {
@@ -69,6 +85,33 @@ export class OrdersController {
 
   // 4. GET /api/v1/orders/:id - Get order details
   @Get(':id')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'orderNumber',
+      'status',
+      'total',
+      'subtotal',
+      'tax',
+      'shipping',
+      'userId',
+      'shippingAddress',
+      'billingAddress',
+      'paymentMethod',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'orderNumber'],
+    defaultFields: [
+      'id',
+      'orderNumber',
+      'status',
+      'total',
+      'shippingAddress',
+      'createdAt',
+    ],
+    maxFields: 15,
+  })
   @ApiOperation({ summary: 'Get order by ID' })
   @ApiResponse({ status: 200, description: 'Order retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Order not found' })
