@@ -46,11 +46,13 @@ export class AnalyticsService {
       };
     }
 
+    // ✅ Task 3.3: Parallelize ALL independent queries (7 concurrent queries)
     const [
       totalOrders,
       totalRevenue,
       totalUsers,
       deviceStats,
+      activeDevices,
       pendingOrders,
       completedOrders,
     ] = await Promise.all([
@@ -75,6 +77,9 @@ export class AnalyticsService {
       this.prisma.device.aggregate({
         _count: true,
       }),
+      this.prisma.device.count({
+        where: { isActive: true },
+      }),
       this.prisma.order.count({
         where: {
           ...where,
@@ -88,10 +93,6 @@ export class AnalyticsService {
         },
       }),
     ]);
-
-    const activeDevices = await this.prisma.device.count({
-      where: { isActive: true },
-    });
 
     const result = {
       totalOrders,
@@ -395,7 +396,8 @@ export class AnalyticsService {
       };
     }
 
-    const [revenueData, revenueByStatus] = await Promise.all([
+    // ✅ Task 3.3: Parallelize all 3 independent queries
+    const [revenueData, revenueByStatus, trends] = await Promise.all([
       this.prisma.order.aggregate({
         where: {
           ...where,
@@ -412,12 +414,8 @@ export class AnalyticsService {
           total: true,
         },
       }),
+      this.getOrderTrendsGrouped(where, query.interval || TimeInterval.MONTHLY),
     ]);
-
-    const trends = await this.getOrderTrendsGrouped(
-      where,
-      query.interval || TimeInterval.MONTHLY,
-    );
 
     const result = {
       totalRevenue: Number(revenueData._sum.total) || 0,
@@ -601,13 +599,15 @@ export class AnalyticsService {
 
     const { startDate, endDate } = query;
 
-    const categories = await this.prisma.category.findMany({
-      where: { isActive: true },
-    });
-
-    const products = await this.prisma.product.findMany({
-      where: { isActive: true },
-    });
+    // ✅ Task 3.3: Parallelize independent queries
+    const [categories, products] = await Promise.all([
+      this.prisma.category.findMany({
+        where: { isActive: true },
+      }),
+      this.prisma.product.findMany({
+        where: { isActive: true },
+      }),
+    ]);
 
     const categoryStats = categories.map((category) => {
       const productCount = products.filter((product) =>
