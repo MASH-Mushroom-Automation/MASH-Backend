@@ -358,23 +358,25 @@ export class CategoriesService {
    * 7. Get child categories
    */
   async getChildren(id: string) {
+    // ✅ FIX: Single query with include (eliminates N+1)
     const category = await this.prisma.category.findUnique({
       where: { id },
+      include: {
+        children: {
+          where: { isActive: true },
+          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        },
+        parent: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
     });
 
     if (!category) {
       throw new NotFoundException(`Category with ID '${id}' not found`);
     }
 
-    const children = await this.prisma.category.findMany({
-      where: {
-        parentId: id,
-        isActive: true,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-
-    return children;
+    return category.children;
   }
 
   /**
