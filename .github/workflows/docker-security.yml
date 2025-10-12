@@ -1,0 +1,296 @@
+name: Docker Security Scan & SBOM Generation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3 AM
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
+jobs:
+  build-and-scan:
+    name: Build & Multi-Scanner Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Get image ID
+        id: image-id
+        run: |
+          IMAGE_ID=$(docker images --format "{{.ID}}" | head -n 1)
+          echo "image_id=$IMAGE_ID" >> $GITHUB_OUTPUT
+          echo "Image ID: $IMAGE_ID"
+
+      # Trivy Scanner - Comprehensive vulnerability scanning
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        id: trivy-scan
+        with:
+          image-ref: ${{ steps.image-id.outputs.image_id }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: trivy
+
+      - name: Generate Trivy JSON report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-id.outputs.image_id }}
+          format: 'json'
+          output: 'trivy-results.json'
+
+      # Grype Scanner - Additional vulnerability scanning
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v3
+        id: grype-scan
+        with:
+          image: ${{ steps.image-id.outputs.image_id }}
+          fail-build: false
+          severity-cutoff: high
+          output-format: sarif
+
+      - name: Upload Grype results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          category: grype
+
+      # Snyk Scanner - Third security scanner
+      - name: Run Snyk container scan
+        continue-on-error: true
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: ${{ steps.image-id.outputs.image_id }}
+          args: --severity-threshold=high --json-file-output=snyk-results.json
+
+      # Generate SBOM (Software Bill of Materials)
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.image-id.outputs.image_id }}
+          format: 'spdx-json'
+          output-file: 'sbom.spdx.json'
+
+      - name: Generate SBOM with CycloneDX
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $(pwd):/out \
+            anchore/syft:latest \
+            ${{ steps.image-id.outputs.image_id }} \
+            -o cyclonedx-json=/out/sbom.cyclonedx.json
+
+      # Analyze image layers and size
+      - name: Analyze Docker image layers
+        run: |
+          docker history ${{ steps.image-id.outputs.image_id }} > image-layers.txt
+          docker inspect ${{ steps.image-id.outputs.image_id }} > image-inspect.json
+          
+          # Get image size
+          IMAGE_SIZE=$(docker inspect ${{ steps.image-id.outputs.image_id }} | jq '.[0].Size' | numfmt --to=iec)
+          echo "image_size=$IMAGE_SIZE" >> $GITHUB_ENV
+
+      # Parse scan results
+      - name: Parse security scan results
+        id: parse-results
+        run: |
+          # Trivy results
+          TRIVY_CRITICAL=$(cat trivy-results.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
+          TRIVY_HIGH=$(cat trivy-results.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length')
+          TRIVY_MEDIUM=$(cat trivy-results.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length')
+          
+          echo "trivy_critical=$TRIVY_CRITICAL" >> $GITHUB_OUTPUT
+          echo "trivy_high=$TRIVY_HIGH" >> $GITHUB_OUTPUT
+          echo "trivy_medium=$TRIVY_MEDIUM" >> $GITHUB_OUTPUT
+          
+          # Determine if build should fail
+          if [ "$TRIVY_CRITICAL" -gt 0 ]; then
+            echo "should_fail=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_fail=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Generate comprehensive security report
+      - name: Generate security report
+        run: |
+          cat > security-report.md << 'EOF'
+          # 🔒 Docker Security Scan Report
+          
+          **Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          **Size**: ${{ env.image_size }}
+          **Scan Date**: $(date '+%Y-%m-%d %H:%M:%S')
+          
+          ## 🛡️ Multi-Scanner Results
+          
+          ### Trivy Scanner
+          | Severity | Count |
+          |----------|-------|
+          | Critical | ${{ steps.parse-results.outputs.trivy_critical }} |
+          | High | ${{ steps.parse-results.outputs.trivy_high }} |
+          | Medium | ${{ steps.parse-results.outputs.trivy_medium }} |
+          
+          ### Grype Scanner
+          See [Grype SARIF results](../security/code-scanning)
+          
+          ### Snyk Scanner
+          See [Snyk JSON results](../actions/runs/${context.runId})
+          
+          ## 📦 SBOM Generated
+          
+          - ✅ SPDX format: `sbom.spdx.json`
+          - ✅ CycloneDX format: `sbom.cyclonedx.json`
+          
+          ## 📊 Image Analysis
+          
+          **Layer Count**: $(docker history ${{ steps.image-id.outputs.image_id }} | wc -l)
+          
+          <details>
+          <summary>View Layer Details</summary>
+          
+          ```
+          $(cat image-layers.txt)
+          ```
+          </details>
+          
+          ## 🎯 Security Status
+          
+          ${{ steps.parse-results.outputs.trivy_critical > 0 && '🔴 **CRITICAL VULNERABILITIES DETECTED** - Build should not be deployed' || '✅ **No critical vulnerabilities detected**' }}
+          
+          ## 💡 Recommendations
+          
+          1. Review all HIGH and CRITICAL vulnerabilities
+          2. Update base image to latest secure version
+          3. Update vulnerable dependencies
+          4. Consider using distroless or alpine images
+          5. Implement image signing and verification
+          
+          ---
+          *Automated security scan by GitHub Actions*
+          EOF
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            trivy-results.sarif
+            trivy-results.json
+            snyk-results.json
+            sbom.spdx.json
+            sbom.cyclonedx.json
+            image-layers.txt
+            image-inspect.json
+            security-report.md
+
+      - name: Comment PR with security results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const critical = parseInt('${{ steps.parse-results.outputs.trivy_critical }}');
+            const high = parseInt('${{ steps.parse-results.outputs.trivy_high }}');
+            const medium = parseInt('${{ steps.parse-results.outputs.trivy_medium }}');
+            const imageSize = '${{ env.image_size }}';
+            
+            const hasCritical = critical > 0;
+            
+            const body = `## 🔒 Docker Security Scan Results
+            
+            ### 📊 Vulnerability Summary (Trivy)
+            - **Critical**: ${critical} ${hasCritical ? '🔴' : '✅'}
+            - **High**: ${high} ${high > 0 ? '⚠️' : '✅'}
+            - **Medium**: ${medium}
+            
+            ### 📦 Image Details
+            - **Size**: ${imageSize}
+            - **SBOM Generated**: ✅
+            
+            ### 🛡️ Scanners Used
+            - ✅ Trivy (Aqua Security)
+            - ✅ Grype (Anchore)
+            - ✅ Snyk (if token available)
+            
+            ${hasCritical ? '### ⚠️ Action Required\n\nCritical vulnerabilities detected! Review the security report before merging.\n\n**Do NOT deploy this image to production.**' : '### ✅ Security Status\n\nNo critical vulnerabilities detected. Image is safe for deployment.'}
+            
+            [View detailed security report](../actions/runs/${context.runId})
+            [View SARIF results](../security/code-scanning)
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: body
+            });
+
+      - name: Push image to registry
+        if: github.event_name == 'push' && steps.parse-results.outputs.should_fail == 'false'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Fail build if critical vulnerabilities
+        if: steps.parse-results.outputs.should_fail == 'true'
+        run: |
+          echo "::error::Critical vulnerabilities detected in Docker image!"
+          exit 1

@@ -1,0 +1,255 @@
+name: Coverage Tracking & Quality Gates
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  MIN_COVERAGE: 80
+  MIN_BRANCH_COVERAGE: 75
+
+jobs:
+  coverage:
+    name: Coverage Analysis & Quality Gates
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: mash_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+
+      - name: Run tests with coverage
+        run: npm run test:cov:ci
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-jwt-secret
+
+      - name: Parse coverage results
+        id: coverage
+        run: |
+          # Parse coverage summary
+          LINES=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+          STATEMENTS=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+          FUNCTIONS=$(cat coverage/coverage-summary.json | jq '.total.functions.pct')
+          BRANCHES=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
+          
+          echo "lines=$LINES" >> $GITHUB_OUTPUT
+          echo "statements=$STATEMENTS" >> $GITHUB_OUTPUT
+          echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          
+          # Check if quality gates pass
+          LINES_PASS=$(echo "$LINES >= $MIN_COVERAGE" | bc -l)
+          BRANCHES_PASS=$(echo "$BRANCHES >= $MIN_BRANCH_COVERAGE" | bc -l)
+          
+          if [ "$LINES_PASS" -eq 1 ] && [ "$BRANCHES_PASS" -eq 1 ]; then
+            echo "quality_gate=passed" >> $GITHUB_OUTPUT
+          else
+            echo "quality_gate=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate coverage badge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = parseFloat('${{ steps.coverage.outputs.lines }}');
+            
+            let color = 'red';
+            if (coverage >= 80) color = 'brightgreen';
+            else if (coverage >= 60) color = 'yellow';
+            else if (coverage >= 40) color = 'orange';
+            
+            const badge = {
+              schemaVersion: 1,
+              label: 'coverage',
+              message: `${coverage.toFixed(1)}%`,
+              color: color
+            };
+            
+            fs.writeFileSync('coverage-badge.json', JSON.stringify(badge));
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: mash-backend-coverage
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage to SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=MASH-Mushroom-Automation_MASH-Backend
+            -Dsonar.organization=mash-mushroom-automation
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=**/*.spec.ts,**/*.test.ts,**/test/**,**/dist/**
+
+      - name: Generate coverage diff (for PRs)
+        if: github.event_name == 'pull_request'
+        run: |
+          # Download base branch coverage
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+          
+          # Run tests on base branch
+          npm ci --legacy-peer-deps || true
+          npx prisma generate || true
+          npm run test:cov || true
+          
+          if [ -f coverage/coverage-summary.json ]; then
+            BASE_LINES=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+            echo "base_coverage=$BASE_LINES" >> $GITHUB_ENV
+          else
+            echo "base_coverage=0" >> $GITHUB_ENV
+          fi
+          
+          # Return to PR branch
+          git checkout ${{ github.sha }}
+
+      - name: Generate coverage report
+        run: |
+          cat > coverage-report.md << 'EOF'
+          # 📊 Code Coverage Report
+          
+          ## Coverage Metrics
+          
+          | Metric | Coverage | Status |
+          |--------|----------|--------|
+          | Lines | ${{ steps.coverage.outputs.lines }}% | ${{ steps.coverage.outputs.lines >= env.MIN_COVERAGE && '✅' || '❌' }} |
+          | Statements | ${{ steps.coverage.outputs.statements }}% | ${{ steps.coverage.outputs.statements >= env.MIN_COVERAGE && '✅' || '❌' }} |
+          | Functions | ${{ steps.coverage.outputs.functions }}% | ${{ steps.coverage.outputs.functions >= env.MIN_COVERAGE && '✅' || '❌' }} |
+          | Branches | ${{ steps.coverage.outputs.branches }}% | ${{ steps.coverage.outputs.branches >= env.MIN_BRANCH_COVERAGE && '✅' || '❌' }} |
+          
+          ## Quality Gates
+          
+          - **Minimum Line Coverage**: ${MIN_COVERAGE}%
+          - **Minimum Branch Coverage**: ${MIN_BRANCH_COVERAGE}%
+          - **Status**: ${{ steps.coverage.outputs.quality_gate == 'passed' && '✅ PASSED' || '❌ FAILED' }}
+          
+          ${{ github.event_name == 'pull_request' && env.base_coverage != '0' && format('## Coverage Change\n\n**Base**: {0}%\n**Current**: {1}%\n**Diff**: {2}%\n', env.base_coverage, steps.coverage.outputs.lines, (steps.coverage.outputs.lines - env.base_coverage)) || '' }}
+          
+          ## Detailed Reports
+          
+          - [HTML Report](../actions/runs/${context.runId})
+          - [Codecov Dashboard](https://codecov.io/gh/${{ github.repository }})
+          - [SonarCloud Analysis](https://sonarcloud.io/project/overview?id=MASH-Mushroom-Automation_MASH-Backend)
+          
+          ---
+          *Automated coverage analysis by GitHub Actions*
+          EOF
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            coverage/
+            coverage-report.md
+            coverage-badge.json
+
+      - name: Comment PR with coverage results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const lines = parseFloat('${{ steps.coverage.outputs.lines }}');
+            const statements = parseFloat('${{ steps.coverage.outputs.statements }}');
+            const functions = parseFloat('${{ steps.coverage.outputs.functions }}');
+            const branches = parseFloat('${{ steps.coverage.outputs.branches }}');
+            const qualityGate = '${{ steps.coverage.outputs.quality_gate }}';
+            const baseCoverage = parseFloat('${{ env.base_coverage }}') || 0;
+            
+            const diff = baseCoverage > 0 ? lines - baseCoverage : null;
+            const diffEmoji = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
+            
+            const body = `## 📊 Code Coverage Report
+            
+            ### Coverage Metrics
+            | Metric | Coverage | Target | Status |
+            |--------|----------|--------|--------|
+            | Lines | ${lines.toFixed(2)}% | ${process.env.MIN_COVERAGE}% | ${lines >= process.env.MIN_COVERAGE ? '✅' : '❌'} |
+            | Statements | ${statements.toFixed(2)}% | ${process.env.MIN_COVERAGE}% | ${statements >= process.env.MIN_COVERAGE ? '✅' : '❌'} |
+            | Functions | ${functions.toFixed(2)}% | ${process.env.MIN_COVERAGE}% | ${functions >= process.env.MIN_COVERAGE ? '✅' : '❌'} |
+            | Branches | ${branches.toFixed(2)}% | ${process.env.MIN_BRANCH_COVERAGE}% | ${branches >= process.env.MIN_BRANCH_COVERAGE ? '✅' : '❌'} |
+            
+            ### Quality Gate
+            **Status**: ${qualityGate === 'passed' ? '✅ **PASSED**' : '❌ **FAILED**'}
+            
+            ${diff !== null ? `### Coverage Change ${diffEmoji}\n**Base**: ${baseCoverage.toFixed(2)}%\n**Current**: ${lines.toFixed(2)}%\n**Diff**: ${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%\n` : ''}
+            
+            ### 📈 Trends
+            - [View on Codecov](https://codecov.io/gh/${{ github.repository }}/pull/${{ github.event.pull_request.number }})
+            - [View on SonarCloud](https://sonarcloud.io/project/overview?id=MASH-Mushroom-Automation_MASH-Backend)
+            
+            [View detailed HTML report](../actions/runs/${context.runId})
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: body
+            });
+
+      - name: Fail if quality gates not met
+        if: steps.coverage.outputs.quality_gate == 'failed'
+        run: |
+          echo "::error::Coverage quality gates not met!"
+          echo "::error::Minimum line coverage: ${{ env.MIN_COVERAGE }}%"
+          echo "::error::Minimum branch coverage: ${{ env.MIN_BRANCH_COVERAGE }}%"
+          exit 1
