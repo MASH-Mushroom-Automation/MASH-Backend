@@ -16,6 +16,7 @@ import {
   LoggingInterceptor,
   TimeoutInterceptor,
 } from './interceptors';
+import { FieldSelectionInterceptor } from './interceptors/field-selection.interceptor';
 
 // Pipes
 import { CustomValidationPipe } from './pipes/validation.pipe';
@@ -94,6 +95,10 @@ import { loggerConfig } from '../config/logger.config';
     {
       provide: APP_INTERCEPTOR,
       useClass: TimeoutInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: FieldSelectionInterceptor, // Performance: Field selection for 40-60% response size reduction
     },
 
     // Global Pipes

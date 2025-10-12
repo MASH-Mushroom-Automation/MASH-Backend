@@ -22,6 +22,7 @@ import { CategoryQueryDto } from './dto/category-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 
 @ApiTags('Categories')
 @Controller('categories')
@@ -32,6 +33,22 @@ export class CategoriesController {
 
   // 1. GET /categories - List all categories
   @Get()
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'slug',
+      'description',
+      'icon',
+      'parentId',
+      'isActive',
+      'sortOrder',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'name'],
+    defaultFields: ['id', 'name', 'slug', 'description', 'icon', 'isActive'],
+  })
   @ApiOperation({
     summary: 'List all categories with filtering and pagination',
   })
