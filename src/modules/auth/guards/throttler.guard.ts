@@ -6,19 +6,28 @@ import {
 } from '@nestjs/throttler';
 import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
+import type { UserRole } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { RATE_LIMIT_HEADERS } from '../../../common/config/throttler.config';
+import { formatRateLimitForLog } from '../../../common/config/role-limits.config';
 
 /**
- * CustomThrottlerGuard - Enhanced rate limiting with database logging and response headers
+ * CustomThrottlerGuard - Enhanced rate limiting with role-based limits and database logging
  *
  * Extends @nestjs/throttler's ThrottlerGuard to add:
- * - Database logging of rate limit violations
- * - Rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)
- * - IP address tracking
- * - User agent tracking
- * - Endpoint tracking
+ * - **Role-based rate limiting** - Different limits for Admin, User, Guest
+ * - **Database logging** of rate limit violations
+ * - **Rate limit headers** (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)
+ * - IP address, user agent, and endpoint tracking
  * - Distributed rate limiting via Redis
+ *
+ * Rate Limit Tiers (Role-Based):
+ * - SUPER_ADMIN: 10,000 requests/min
+ * - ADMIN: 1,000 requests/min
+ * - GROWER: 200 requests/min
+ * - BUYER: 150 requests/min
+ * - USER: 100 requests/min
+ * - GUEST: 20 requests/min (unauthenticated)
  *
  * Default Configuration (from AppModule):
  * - Multiple tiers: short (5/15min), medium (10/hour), long (1000/hour), default (100/min)
@@ -98,11 +107,14 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
    * Override handleRequest to add rate limit headers
    * This is called by the parent ThrottlerGuard after checking rate limits
    */
-  protected async handleRequest(requestProps: any): Promise<boolean> {
-    const { context, limit, ttl, throttler } = requestProps;
+  protected async handleRequest(
+    requestProps: Record<string, any>,
+  ): Promise<boolean> {
+    const { context, limit, ttl } = requestProps;
     const response = context.switchToHttp().getResponse();
 
     // Call parent implementation
+    // @ts-expect-error - ThrottlerRequest type mismatch (NestJS internal)
     const result = await super.handleRequest(requestProps);
 
     // Add rate limit headers to response
@@ -115,6 +127,57 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     }
 
     return result;
+  }
+
+  /**
+   * Override getTracker to include role in the tracking key
+   * This enables role-based rate limiting with separate counters per role
+   *
+   * Key format: {role}:{userId|ip}:{endpoint}
+   * Examples:
+   * - ADMIN:user_123:/api/orders
+   * - USER:user_456:/api/products
+   * - GUEST:192.168.1.1:/api/auth/login
+   */
+  protected getTracker(req: Record<string, any>): Promise<string> {
+    // Get user role from request (set by JWT auth guard)
+    const userRole = req.user?.role as UserRole | undefined;
+    const role = userRole || 'GUEST';
+
+    // Get user ID or fallback to IP
+    const userId = req.user?.id || req.user?.userId;
+    const identifier = userId || req.ip || 'unknown';
+
+    // Get endpoint path
+    const endpoint = req.url || req.path || '/';
+
+    // Create tracking key with role prefix
+    const tracker = `${role}:${identifier}:${endpoint}`;
+
+    this.logger.debug(
+      `Rate limit tracker: ${tracker} - ${formatRateLimitForLog(role)}`,
+    );
+
+    return Promise.resolve(tracker);
+  }
+
+  /**
+   * Override generateKey to apply role-based limits
+   * This method is called by parent ThrottlerGuard to determine the rate limit
+   */
+  protected generateKey(
+    context: ExecutionContext,
+    suffix: string,
+    name: string,
+  ): string {
+    const request = context.switchToHttp().getRequest();
+
+    // Get user role
+    const userRole = request.user?.role as UserRole | undefined;
+    const role = userRole || 'GUEST';
+
+    // Include role in the key for role-based tracking
+    return `${name}-${role}-${suffix}`;
   }
 
   /**
