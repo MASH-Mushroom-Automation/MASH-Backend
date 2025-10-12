@@ -55,13 +55,9 @@ export class SensorsService {
       where.name = { contains: search, mode: 'insensitive' };
     }
 
-    // RBAC: Users can only see sensors from their devices
+    // ✅ FIX: RBAC filter using nested where (eliminates N+1 query)
     if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
-      const userDevices = await this.prisma.device.findMany({
-        where: { userId: currentUser.id },
-        select: { id: true },
-      });
-      where.deviceId = { in: userDevices.map((d) => d.id) };
+      where.device = { userId: currentUser.id };
     }
 
     const [sensors, total] = await Promise.all([

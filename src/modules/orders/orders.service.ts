@@ -90,10 +90,19 @@ export class OrdersService {
       throw new ForbiddenException('You can only create orders for yourself');
     }
 
+    // ✅ FIX: Batch fetch all products (eliminates N+1 query)
+    const productIds = createOrderDto.items.map((item) => item.productId);
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true, stock: true },
+    });
+
+    // Create lookup map for O(1) access
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    // Validate all products
     for (const item of createOrderDto.items) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: item.productId },
-      });
+      const product = productMap.get(item.productId);
       if (!product) {
         throw new BadRequestException(`Product ${item.productId} not found`);
       }
@@ -164,16 +173,19 @@ export class OrdersService {
       },
     });
 
-    for (const item of createOrderDto.items) {
-      await this.prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity,
+    // ✅ FIX: Batch stock updates in transaction (eliminates N+1 query)
+    await this.prisma.$transaction(
+      createOrderDto.items.map((item) =>
+        this.prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
           },
-        },
-      });
-    }
+        }),
+      ),
+    );
 
     return order;
   }
