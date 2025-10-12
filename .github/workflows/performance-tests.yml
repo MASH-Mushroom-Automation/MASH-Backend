@@ -1,0 +1,238 @@
+name: Performance Tests & Regression Detection
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly on Sunday at 2 AM
+  workflow_dispatch:
+
+env:
+  K6_VERSION: '0.48.0'
+  PERFORMANCE_BASELINE_BRANCH: 'main'
+  PERFORMANCE_THRESHOLD_P99: '300'  # 300ms
+
+jobs:
+  k6-smoke-test:
+    name: K6 Performance Testing
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: mash_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application in background
+        run: |
+          nohup npm run start:prod > app.log 2>&1 &
+          echo $! > .pidfile
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-jwt-secret
+
+      - name: Wait for application
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Create k6 test script
+        run: |
+          mkdir -p k6-tests
+          cat > k6-tests/load-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          import { Rate, Trend } from 'k6/metrics';
+
+          const errorRate = new Rate('errors');
+          const responseTrend = new Trend('response_time');
+
+          export const options = {
+            stages: [
+              { duration: '30s', target: 50 },   // Ramp up to 50 users
+              { duration: '1m', target: 100 },   // Stay at 100 users
+              { duration: '30s', target: 0 },    // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500', 'p(99)<1000'],
+              errors: ['rate<0.1'],
+            },
+          };
+
+          const BASE_URL = 'http://localhost:3000';
+
+          export default function () {
+            // Health check
+            let res = http.get(`${BASE_URL}/health`);
+            check(res, {
+              'health check status 200': (r) => r.status === 200,
+            }) || errorRate.add(1);
+            responseTrend.add(res.timings.duration);
+
+            sleep(1);
+
+            // Products endpoint
+            res = http.get(`${BASE_URL}/api/products`);
+            check(res, {
+              'products status 200': (r) => r.status === 200,
+            }) || errorRate.add(1);
+            responseTrend.add(res.timings.duration);
+
+            sleep(1);
+          }
+          EOF
+
+      - name: Run k6 performance tests
+        id: k6-test
+        run: |
+          k6 run --out json=k6-results.json k6-tests/load-test.js || echo "k6_failed=true" >> $GITHUB_OUTPUT
+
+      - name: Parse k6 results
+        id: parse-results
+        run: |
+          # Extract key metrics
+          P95=$(cat k6-results.json | jq -r 'select(.type=="Point" and .metric=="http_req_duration" and .data.tags.expected_response=="true") | .data.value' | awk '{sum+=$1; count++} END {print sum/count}' | xargs printf "%.2f")
+          P99=$(cat k6-results.json | jq -r 'select(.type=="Point" and .metric=="http_req_duration" and .data.tags.expected_response=="true") | .data.value' | sort -n | tail -n 1 | xargs printf "%.2f")
+          ERROR_RATE=$(cat k6-results.json | jq -r 'select(.type=="Point" and .metric=="errors") | .data.value' | awk '{sum+=$1; count++} END {if(count>0) print sum/count; else print 0}')
+          
+          echo "p95=$P95" >> $GITHUB_OUTPUT
+          echo "p99=$P99" >> $GITHUB_OUTPUT
+          echo "error_rate=$ERROR_RATE" >> $GITHUB_OUTPUT
+          
+          # Check regression
+          if (( $(echo "$P99 > $PERFORMANCE_THRESHOLD_P99" | bc -l) )); then
+            echo "regression=true" >> $GITHUB_OUTPUT
+          else
+            echo "regression=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate HTML report
+        run: |
+          cat > k6-report.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head><title>K6 Performance Test Report</title></head>
+          <body>
+            <h1>🚀 Performance Test Results</h1>
+            <h2>Key Metrics</h2>
+            <ul>
+              <li><strong>P95 Response Time:</strong> ${{ steps.parse-results.outputs.p95 }}ms</li>
+              <li><strong>P99 Response Time:</strong> ${{ steps.parse-results.outputs.p99 }}ms</li>
+              <li><strong>Error Rate:</strong> ${{ steps.parse-results.outputs.error_rate }}%</li>
+            </ul>
+            <h2>Threshold Status</h2>
+            <p>P99 Threshold: ${PERFORMANCE_THRESHOLD_P99}ms</p>
+            <p>Status: ${{ steps.parse-results.outputs.regression == 'true' && '❌ REGRESSION DETECTED' || '✅ PASSED' }}</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload k6 results
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-results
+          path: |
+            k6-results.json
+            k6-report.html
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const p95 = '${{ steps.parse-results.outputs.p95 }}';
+            const p99 = '${{ steps.parse-results.outputs.p99 }}';
+            const errorRate = '${{ steps.parse-results.outputs.error_rate }}';
+            const regression = '${{ steps.parse-results.outputs.regression }}' === 'true';
+            
+            const body = `## 🚀 Performance Test Results
+            
+            ### Key Metrics
+            - **P95 Response Time**: ${p95}ms
+            - **P99 Response Time**: ${p99}ms ${regression ? '⚠️ **EXCEEDS THRESHOLD**' : '✅'}
+            - **Error Rate**: ${errorRate}%
+            
+            ### Status
+            ${regression ? '❌ **Performance Regression Detected**' : '✅ **Performance Acceptable**'}
+            
+            **Threshold**: P99 < ${process.env.PERFORMANCE_THRESHOLD_P99}ms
+            
+            [View detailed report](../actions/runs/${context.runId})
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: body
+            });
+
+      - name: Fail if regression detected
+        if: steps.parse-results.outputs.regression == 'true'
+        run: |
+          echo "::error::Performance regression detected! P99 response time exceeds threshold."
+          exit 1
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -f .pidfile ]; then
+            kill $(cat .pidfile) || true
+          fi

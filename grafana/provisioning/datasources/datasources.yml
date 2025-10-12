@@ -1,0 +1,58 @@
+# Grafana Data Sources - Auto-provisioned on startup
+# This file automatically configures Prometheus and Jaeger as data sources
+
+apiVersion: 1
+
+datasources:
+  # Prometheus - Metrics data source
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: 5s
+      queryTimeout: 60s
+      # Enable Exemplars for linking metrics to traces
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger
+    version: 1
+
+  # Jaeger - Distributed tracing data source
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    uid: jaeger
+    editable: true
+    jsonData:
+      # Enable trace to logs correlation
+      tracesToLogsV2:
+        datasourceUid: loki
+        tags:
+          - key: service.name
+            value: service
+      # Node graph settings
+      nodeGraph:
+        enabled: true
+    version: 1
+
+  # TestData - For testing and demo purposes
+  - name: TestData
+    type: testdata
+    access: proxy
+    editable: true
+    version: 1
+
+# Optional: Loki for logs (if you add logging later)
+# Uncomment when you set up Loki for centralized logging
+#  - name: Loki
+#    type: loki
+#    access: proxy
+#    url: http://loki:3100
+#    uid: loki
+#    editable: true
+#    version: 1

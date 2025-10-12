@@ -68,6 +68,9 @@ model Device {
   sensorData     SensorData[]
   sensors        Sensor[]
 
+  // Performance Indexes (Task 1.2)
+  @@index([userId, status, isActive])
+  @@index([status, lastSeen(sort: Desc)])
   @@map("devices")
 }
 
@@ -168,6 +171,10 @@ model Product {
   updatedAt      DateTime    @updatedAt
   orderItems     OrderItem[]
 
+  // Performance Indexes (Task 1.2)
+  @@index([isActive, isFeatured, createdAt(sort: Desc)])
+  @@index([slug, isActive])
+  @@index([stock, minStock])
   @@map("products")
 }
 
@@ -185,6 +192,9 @@ model Category {
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
 
+  // Performance Indexes (Task 1.2)
+  @@index([isActive, sortOrder])
+  @@index([parentId, isActive])
   @@map("categories")
 }
 
@@ -212,6 +222,10 @@ model Order {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments        Payment[]
 
+  // Performance Indexes (Task 1.2)
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([orderNumber])
   @@map("orders")
 }
 
@@ -762,6 +776,10 @@ model Notification {
   @@index([channel])
   @@index([queuedAt])
   @@index([createdAt])
+  // Performance Indexes (Task 1.2)
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, priority, queuedAt])
+  @@index([status, nextRetryAt])
   @@map("notifications")
 }
 

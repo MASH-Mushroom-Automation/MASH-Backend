@@ -1,0 +1,226 @@
+name: Dependency Audit & Update Check
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Every Monday at 8 AM
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  audit-dependencies:
+    name: Security Audit & Outdated Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run npm audit
+        id: npm-audit
+        continue-on-error: true
+        run: |
+          npm audit --json > npm-audit.json
+          npm audit || echo "audit_failed=true" >> $GITHUB_OUTPUT
+
+      - name: Check for outdated packages
+        id: outdated
+        continue-on-error: true
+        run: |
+          npm outdated --json > npm-outdated.json || echo "outdated_found=true" >> $GITHUB_OUTPUT
+
+      - name: Check licenses
+        id: licenses
+        continue-on-error: true
+        run: |
+          npx license-checker --json > licenses.json
+
+      - name: Analyze audit results
+        id: analyze
+        run: |
+          # Count vulnerabilities by severity
+          CRITICAL=$(cat npm-audit.json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(cat npm-audit.json | jq '.metadata.vulnerabilities.high // 0')
+          MODERATE=$(cat npm-audit.json | jq '.metadata.vulnerabilities.moderate // 0')
+          LOW=$(cat npm-audit.json | jq '.metadata.vulnerabilities.low // 0')
+          
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
+          echo "low=$LOW" >> $GITHUB_OUTPUT
+          
+          # Count outdated packages
+          OUTDATED_COUNT=$(cat npm-outdated.json | jq 'length // 0')
+          echo "outdated_count=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Generate dependency report
+        run: |
+          cat > dependency-report.md << 'EOF'
+          # 📦 Dependency Audit Report
+          
+          **Generated**: $(date '+%Y-%m-%d %H:%M:%S')
+          
+          ## 🔒 Security Vulnerabilities
+          
+          | Severity | Count |
+          |----------|-------|
+          | Critical | ${{ steps.analyze.outputs.critical }} |
+          | High | ${{ steps.analyze.outputs.high }} |
+          | Moderate | ${{ steps.analyze.outputs.moderate }} |
+          | Low | ${{ steps.analyze.outputs.low }} |
+          
+          ### Vulnerability Details
+          ```json
+          $(cat npm-audit.json | jq '.vulnerabilities' | head -n 50)
+          ```
+          
+          ## 📊 Outdated Packages
+          
+          **Total Outdated**: ${{ steps.analyze.outputs.outdated_count }}
+          
+          ```json
+          $(cat npm-outdated.json | jq '.' | head -n 50)
+          ```
+          
+          ## 📜 License Compliance
+          
+          <details>
+          <summary>View all licenses</summary>
+          
+          ```json
+          $(cat licenses.json | jq '.' | head -n 100)
+          ```
+          </details>
+          
+          ---
+          *Automated dependency audit by GitHub Actions*
+          EOF
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-reports
+          path: |
+            npm-audit.json
+            npm-outdated.json
+            licenses.json
+            dependency-report.md
+
+      - name: Create issue for critical vulnerabilities
+        if: steps.analyze.outputs.critical > 0 || steps.analyze.outputs.high > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const critical = parseInt('${{ steps.analyze.outputs.critical }}');
+            const high = parseInt('${{ steps.analyze.outputs.high }}');
+            
+            const body = `## 🚨 Critical Security Alert: Dependency Vulnerabilities
+            
+            **Critical Vulnerabilities**: ${critical}
+            **High Vulnerabilities**: ${high}
+            
+            ### Action Required
+            
+            Run \`npm audit fix\` to automatically fix vulnerabilities, or review the [detailed report](../actions/runs/${context.runId}).
+            
+            ### Quick Fix
+            \`\`\`bash
+            npm audit fix
+            npm audit fix --force  # For breaking changes
+            \`\`\`
+            
+            ### Review Command
+            \`\`\`bash
+            npm audit
+            \`\`\`
+            
+            ---
+            *This issue was automatically created by the dependency audit workflow*
+            `;
+            
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security,dependencies'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('Dependency Vulnerabilities')
+            );
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: `### 🔄 Updated Audit Results\n\n${body}`
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Dependency Vulnerabilities Detected',
+                body: body,
+                labels: ['security', 'dependencies', 'critical']
+              });
+            }
+
+      - name: Comment on PR if triggered by PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const critical = '${{ steps.analyze.outputs.critical }}';
+            const high = '${{ steps.analyze.outputs.high }}';
+            const moderate = '${{ steps.analyze.outputs.moderate }}';
+            const outdated = '${{ steps.analyze.outputs.outdated_count }}';
+            
+            const hasVulnerabilities = parseInt(critical) > 0 || parseInt(high) > 0;
+            
+            const body = `## 📦 Dependency Audit Results
+            
+            ### 🔒 Security Status
+            - **Critical**: ${critical} ${parseInt(critical) > 0 ? '🔴' : '✅'}
+            - **High**: ${high} ${parseInt(high) > 0 ? '⚠️' : '✅'}
+            - **Moderate**: ${moderate}
+            
+            ### 📊 Package Status
+            - **Outdated Packages**: ${outdated}
+            
+            ${hasVulnerabilities ? '⚠️ **Action Required**: This PR introduces or does not fix existing vulnerabilities. Please run \`npm audit fix\` before merging.' : '✅ **No critical vulnerabilities detected**'}
+            
+            [View detailed report](../actions/runs/${context.runId})
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: body
+            });
+
+      - name: Fail if critical vulnerabilities
+        if: steps.analyze.outputs.critical > 0
+        run: |
+          echo "::error::Critical vulnerabilities detected! Please fix before merging."
+          exit 1

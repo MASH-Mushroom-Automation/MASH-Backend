@@ -27,6 +27,7 @@ import { SensorFilterQueryDto } from './dto/sensor-filter-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 
 @ApiTags('Sensors')
 @Controller('sensors')
@@ -37,6 +38,22 @@ export class SensorsController {
 
   // 1. GET /sensors - List all sensors with filters
   @Get()
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'type',
+      'unit',
+      'isActive',
+      'calibration',
+      'deviceId',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'name', 'type'],
+    defaultFields: ['id', 'name', 'type', 'unit', 'isActive'],
+    maxFields: 12,
+  })
   @ApiOperation({ summary: 'List all sensors with filtering and pagination' })
   @ApiResponse({ status: 200, description: 'Sensors retrieved successfully' })
   async findAll(@Query() query: SensorFilterQueryDto, @Request() req) {
@@ -56,6 +73,23 @@ export class SensorsController {
 
   // 3. GET /sensors/:id - Get sensor details
   @Get(':id')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'type',
+      'unit',
+      'isActive',
+      'calibration',
+      'thresholds',
+      'deviceId',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id'],
+    defaultFields: ['id', 'name', 'type', 'unit', 'isActive', 'calibration'],
+    maxFields: 15,
+  })
   @ApiOperation({ summary: 'Get sensor details by ID' })
   @ApiResponse({ status: 200, description: 'Sensor retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Sensor not found' })

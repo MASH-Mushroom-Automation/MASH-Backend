@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
@@ -28,6 +29,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { CommonModule } from './common/common.module';
+import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
+import { TracingModule } from './monitoring/tracing/tracing.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
@@ -45,6 +48,9 @@ import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics.interceptor';
+import { PrometheusService } from './monitoring/prometheus/prometheus.service';
 
 @Module({
   imports: [
@@ -70,10 +76,15 @@ import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage'
       inject: [RedisService],
     }),
 
+    // Schedule Module for cron jobs (cache monitoring, cache warming)
+    ScheduleModule.forRoot(),
+
     // Core modules
     CommonModule, // 🆕 Added - Global utilities, filters, interceptors, pipes
     DatabaseModule,
     HealthModule,
+    PrometheusModule, // 🆕 Prometheus metrics collection
+    TracingModule, // 🆕 OpenTelemetry distributed tracing
 
     // Feature modules
     AuthModule,
@@ -119,10 +130,16 @@ import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage'
   providers: [
     AppService,
     PrismaService,
+    PrometheusService,
     // Global guards
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
+    },
+    // Global interceptors
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
     },
     // Note: Global filters, interceptors, and pipes are registered in CommonModule
   ],

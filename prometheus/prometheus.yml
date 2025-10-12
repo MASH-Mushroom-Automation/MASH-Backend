@@ -1,0 +1,70 @@
+# Prometheus Configuration for MASH Backend
+# Defines scrape targets, alert rules, and Alertmanager integration
+
+global:
+  # How frequently to scrape targets
+  scrape_interval: 15s
+  
+  # How frequently to evaluate alert rules
+  evaluation_interval: 15s
+  
+  # Attach these labels to all time series or alerts
+  external_labels:
+    cluster: 'mash-backend-prod'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+      timeout: 10s
+
+# Load alert rules from files
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # MASH Backend application metrics
+  - job_name: 'mash-backend'
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:3000' # Windows/Mac Docker
+          # For Linux, use: - 'localhost:3000'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'mash-backend-1'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'localhost:9090'
+
+  # Optional: Node Exporter (system metrics)
+  # Uncomment if you want to monitor system-level metrics
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets:
+  #         - 'node-exporter:9100'
+
+  # Optional: Redis Exporter (Redis metrics)
+  # Uncomment if you want detailed Redis metrics
+  # - job_name: 'redis-exporter'
+  #   static_configs:
+  #     - targets:
+  #         - 'redis-exporter:9121'
+
+  # Optional: PostgreSQL Exporter (database metrics)
+  # Uncomment if you want detailed PostgreSQL metrics
+  # - job_name: 'postgres-exporter'
+  #   static_configs:
+  #     - targets:
+  #         - 'postgres-exporter:9187'

@@ -98,7 +98,7 @@ export class AdminController {
     return this.adminService.updateSystemConfig(
       configDto.key,
       configDto.value,
-      configDto.metadata,
+      configDto.metadata ? JSON.stringify(configDto.metadata) : undefined,
     );
   }
 

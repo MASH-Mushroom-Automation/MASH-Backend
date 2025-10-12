@@ -20,6 +20,7 @@ import { DevicesService } from './devices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { DeviceFilterQueryDto } from './dto/device-filter-query.dto';
@@ -39,6 +40,23 @@ export class DevicesController {
   // ========== Device CRUD (6 endpoints) ==========
 
   @Get()
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'type',
+      'status',
+      'isActive',
+      'lastSeen',
+      'firmware',
+      'userId',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'name', 'status'],
+    defaultFields: ['id', 'name', 'type', 'status', 'isActive', 'lastSeen'],
+    maxFields: 12,
+  })
   @ApiOperation({ summary: 'List all devices with pagination and filters' })
   @ApiResponse({
     status: 200,
@@ -59,6 +77,32 @@ export class DevicesController {
   }
 
   @Get(':id')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'type',
+      'status',
+      'isActive',
+      'lastSeen',
+      'firmware',
+      'configuration',
+      'userId',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id'],
+    defaultFields: [
+      'id',
+      'name',
+      'type',
+      'status',
+      'isActive',
+      'lastSeen',
+      'firmware',
+    ],
+    maxFields: 15,
+  })
   @ApiOperation({ summary: 'Get device details by ID' })
   @ApiResponse({ status: 200, description: 'Device retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Device not found' })

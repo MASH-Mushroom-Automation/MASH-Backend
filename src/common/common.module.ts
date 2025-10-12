@@ -16,6 +16,7 @@ import {
   LoggingInterceptor,
   TimeoutInterceptor,
 } from './interceptors';
+import { FieldSelectionInterceptor } from './interceptors/field-selection.interceptor';
 
 // Pipes
 import { CustomValidationPipe } from './pipes/validation.pipe';
@@ -25,6 +26,8 @@ import { SanitizePipe } from './pipes/sanitize.pipe';
 import { SanitizationService } from './services/sanitization.service';
 import { FileValidationService } from './services/file-validation.service';
 import { AuditLogService } from './services/audit-log.service';
+import { CacheService } from './services/cache.service';
+import { CacheManagerService } from './services/cache-manager.service';
 
 // Utilities
 import { CustomLogger } from './utils/logger.util';
@@ -52,10 +55,12 @@ import { loggerConfig } from '../config/logger.config';
     WinstonModule.forRoot(loggerConfig),
   ],
   providers: [
-    // Services (Issue #23 - Enterprise Security)
+    // Services (Issue #23 - Enterprise Security, #24 - Performance Optimization)
     SanitizationService,
     FileValidationService,
     AuditLogService,
+    CacheService, // Performance: Distributed caching abstraction
+    CacheManagerService, // Performance: Cache warming, statistics, and monitoring
 
     // Custom Logger
     CustomLogger,
@@ -91,6 +96,10 @@ import { loggerConfig } from '../config/logger.config';
       provide: APP_INTERCEPTOR,
       useClass: TimeoutInterceptor,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: FieldSelectionInterceptor, // Performance: Field selection for 40-60% response size reduction
+    },
 
     // Global Pipes
     {
@@ -103,10 +112,12 @@ import { loggerConfig } from '../config/logger.config';
     },
   ],
   exports: [
-    // Export services for use in other modules (Issue #23)
+    // Export services for use in other modules (Issue #23, #24)
     SanitizationService,
     FileValidationService,
     AuditLogService,
+    CacheService, // Performance: Cache service for Redis operations
+    CacheManagerService, // Performance: Cache management and monitoring
 
     // Export CustomLogger for use in other modules
     CustomLogger,

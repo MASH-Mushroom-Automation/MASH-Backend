@@ -89,7 +89,9 @@ describe('AuditLogService', () => {
     });
 
     it('should not throw error if logging fails', async () => {
-      mockPrismaService.auditLog.create.mockRejectedValue(new Error('Database error'));
+      mockPrismaService.auditLog.create.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       await expect(
         service.log({
