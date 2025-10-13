@@ -172,6 +172,7 @@ All protected endpoints require a Bearer token in the Authorization header.
     .addTag('users', 'User management endpoints (Admin)')
     .addTag('devices', 'IoT device management endpoints')
     .addTag('sensors', 'Sensor data collection and retrieval endpoints')
+    .addTag('inventory', 'Inventory endpoints')
     .addTag('products', 'Product catalog management endpoints')
     .addTag('orders', 'Order processing and management endpoints')
     .addTag('categories', 'Product category management endpoints')
@@ -197,8 +198,7 @@ All protected endpoints require a Bearer token in the Authorization header.
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
-    operationIdFactory: (controllerKey: string, methodKey: string) =>
-      methodKey,
+    operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
     deepScanRoutes: true,
   });
 
@@ -212,9 +212,7 @@ All protected endpoints require a Bearer token in the Authorization header.
     },
   });
 
-  logger.log(
-    `Swagger API Documentation: http://localhost:${port}/api/docs`,
-  );
+  logger.log(`Swagger API Documentation: http://localhost:${port}/api/docs`);
 
   // Graceful shutdown
   app.enableShutdownHooks();

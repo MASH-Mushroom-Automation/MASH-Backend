@@ -45,6 +45,7 @@ import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -110,6 +111,8 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     AlertsModule,
 
     QueuesModule,
+
+    InventoryModule,
 
     // WebSocket module for real-time communication
     WebsocketModule,

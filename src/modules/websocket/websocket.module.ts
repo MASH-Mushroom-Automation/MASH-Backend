@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Gateways
@@ -28,10 +28,15 @@ import { WsJwtGuard } from './guards/ws-jwt.guard';
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+      useFactory: async (
+        configService: ConfigService,
+      ): Promise<JwtModuleOptions> => ({
+        secret: configService.get<string>('JWT_SECRET') ?? '',
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION') || '24h',
+          // ✅ Explicitly cast to the correct allowed types
+          expiresIn: (configService.get<string>('JWT_EXPIRATION') ?? '24h') as
+            | number
+            | `${number}${'s' | 'm' | 'h' | 'd'}`,
         },
       }),
       inject: [ConfigService],

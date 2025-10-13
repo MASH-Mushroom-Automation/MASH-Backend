@@ -28,8 +28,9 @@ export class TokenService {
         type: 'access',
       },
       {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<string>('clerk.sessionDuration'),
+        secret: this.configService.get<string>('JWT_SECRET') ?? '',
+        expiresIn: (this.configService.get<string>('clerk.sessionDuration') ??
+          '24h') as number | `${number}${'s' | 'm' | 'h' | 'd'}`,
       },
     );
   }
@@ -44,8 +45,10 @@ export class TokenService {
         type: 'refresh',
       },
       {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<string>('clerk.refreshTokenDuration'),
+        secret: this.configService.get<string>('JWT_SECRET') ?? '',
+        expiresIn: (this.configService.get<string>(
+          'clerk.refreshTokenDuration',
+        ) ?? '7d') as number | `${number}${'s' | 'm' | 'h' | 'd'}`,
       },
     );
   }
@@ -69,7 +72,7 @@ export class TokenService {
   async verifyToken(token: string): Promise<TokenPayload> {
     try {
       const payload = await this.jwtService.verifyAsync<TokenPayload>(token, {
-        secret: this.configService.get<string>('JWT_SECRET'),
+        secret: this.configService.get<string>('JWT_SECRET') ?? '',
       });
       return payload;
     } catch (error) {
