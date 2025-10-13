@@ -1,4 +1,4 @@
-// 🔍 Initialize OpenTelemetry tracing FIRST (before any other imports)
+// Initialize OpenTelemetry tracing FIRST (before any other imports)
 import './tracing';
 
 import { NestFactory, Reflector } from '@nestjs/core';
@@ -26,11 +26,11 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
-  // 🆕 Use CustomLogger from CommonModule
+  // Use CustomLogger from CommonModule
   const customLogger = app.get(CustomLogger);
   app.useLogger(customLogger);
 
-  // 🆕 Apply global middleware (order matters!)
+  // Apply global middleware (order matters!)
   const correlationIdMiddleware = new CorrelationIdMiddleware();
   app.use(correlationIdMiddleware.use.bind(correlationIdMiddleware));
 
@@ -46,18 +46,18 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3000);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
-  // 🔒 Security middleware - Helmet with comprehensive headers
+  // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
 
-  // 🗜️ Compression middleware - Reduce response size
+  // Compression middleware - Reduce response size
   app.use(compression());
 
-  // 🌐 CORS configuration - Cross-origin resource sharing
+  // CORS configuration - Cross-origin resource sharing
   const corsOrigins = configService.get<string>('CORS_ORIGINS');
   const corsCredentials = configService.get<boolean>('CORS_CREDENTIALS', true);
   app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
 
-  // 📝 Audit logging interceptor - Track sensitive operations
+  // Audit logging interceptor - Track sensitive operations
   const reflector = app.get(Reflector);
   const auditLogService = app.get(AuditLogService);
   app.useGlobalInterceptors(
@@ -69,40 +69,152 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix('api/v1');
 
-  // Swagger documentation (only in development)
-  if (nodeEnv === 'development') {
-    const config = new DocumentBuilder()
-      .setTitle('MASH Backend API')
-      .setDescription(
-        'Mushroom Automation with Smart Hydro-environment Backend API',
-      )
-      .setVersion('1.0')
-      .addTag('auth', 'Authentication endpoints')
-      .addTag('users', 'User management endpoints')
-      .addTag('devices', 'IoT device management endpoints')
-      .addTag('sensors', 'Sensor data endpoints')
-      .addTag('orders', 'Order management endpoints')
-      .addTag('products', 'Product catalog endpoints')
-      .addTag('analytics', 'Analytics and reporting endpoints')
-      .addTag('admin', 'Administrative endpoints')
-      .addBearerAuth()
-      .addServer('http://localhost:3000', 'Development server')
-      .addServer('https://api.mash-backend.com', 'Production server')
-      .build();
+  // Swagger/OpenAPI documentation
+  const config = new DocumentBuilder()
+    .setTitle('MASH Backend API')
+    .setDescription(
+      `# Mushroom Automation with Smart Hydro-environment Backend API
 
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/docs', app, document, {
-      swaggerOptions: {
-        persistAuthorization: true,
-        tagsSorter: 'alpha',
-        operationsSorter: 'alpha',
+**Production URL**: https://mash-backend.onrender.com
+
+## Overview
+
+Complete IoT-enabled backend system for automated mushroom cultivation with integrated e-commerce, real-time monitoring, and advanced analytics.
+
+## Key Features
+
+- **Authentication**: Clerk-based authentication with OAuth support (Google, GitHub, Facebook)
+- **IoT Monitoring**: Real-time device and sensor data management
+- **E-commerce**: Complete product catalog and order management system
+- **Analytics**: Advanced reporting and business intelligence
+- **Notifications**: Multi-channel (Email, SMS, Push) notification system
+- **Performance**: Redis caching, rate limiting, and connection pooling
+- **Real-time Communication**: WebSocket support for live updates
+- **Observability**: Prometheus metrics and OpenTelemetry tracing
+
+## Quick Start
+
+### 1. Check API Health
+\`\`\`
+GET /api/v1/health
+\`\`\`
+
+### 2. Register a New User
+\`\`\`
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+\`\`\`
+
+### 3. Login
+\`\`\`
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!"
+}
+\`\`\`
+
+### 4. Use Protected Endpoints
+Include the Bearer token in all authenticated requests:
+\`\`\`
+Authorization: Bearer YOUR_ACCESS_TOKEN
+\`\`\`
+
+## Authentication
+
+All protected endpoints require a Bearer token in the Authorization header.
+
+**Obtain tokens via**:
+- Email/Password login: \`POST /api/v1/auth/login\`
+- OAuth providers: \`GET /api/v1/auth/oauth/{google|github|facebook}\`
+
+**Token Types**:
+- **Access Token**: Valid for 1 day, used for API requests
+- **Refresh Token**: Valid for 7 days, used to obtain new access tokens
+
+## Rate Limiting
+
+| Endpoint Category | Limit | Window |
+|------------------|-------|---------|
+| Registration | 3 requests | 1 minute |
+| Login Attempts | 5 requests | 1 minute |
+| Password Reset | 3 requests | 5 minutes |
+| General API | 100 requests | 15 minutes |
+| WebSocket Connections | 50 connections | per user |
+
+## Support
+
+- **Email**: pp.namias@gmail.com
+- **GitHub**: https://github.com/MASH-Mushroom-Automation/MASH-Backend
+- **Documentation**: Full API documentation available at this page
+      `,
+    )
+    .setVersion('1.0.0')
+    .setContact(
+      'MASH Development Team',
+      'https://github.com/MASH-Mushroom-Automation',
+      'pp.namias@gmail.com',
+    )
+    .setLicense('MIT', 'https://opensource.org/licenses/MIT')
+    .addTag('root', 'Root API information endpoint')
+    .addTag('health', 'System health and monitoring endpoints')
+    .addTag('auth', 'Authentication and authorization endpoints')
+    .addTag('profile', 'User profile management endpoints')
+    .addTag('users', 'User management endpoints (Admin)')
+    .addTag('devices', 'IoT device management endpoints')
+    .addTag('sensors', 'Sensor data collection and retrieval endpoints')
+    .addTag('products', 'Product catalog management endpoints')
+    .addTag('orders', 'Order processing and management endpoints')
+    .addTag('categories', 'Product category management endpoints')
+    .addTag('analytics', 'Analytics and reporting endpoints')
+    .addTag('notifications', 'Notification management endpoints')
+    .addTag('admin', 'Administrative endpoints (Super Admin only)')
+    .addTag('metrics', 'Prometheus metrics endpoints')
+    .addTag('cache', 'Cache monitoring and management endpoints')
+    .addTag('alerts', 'Alert rules and monitoring endpoints')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Enter JWT token obtained from login or OAuth',
+        in: 'header',
       },
-    });
+      'access-token',
+    )
+    .addServer(`http://localhost:${port}`, 'Development Server')
+    .addServer('https://mash-backend.onrender.com', 'Production Server')
+    .build();
 
-    logger.log(
-      `📚 API Documentation available at: http://localhost:${port}/api/docs`,
-    );
-  }
+  const document = SwaggerModule.createDocument(app, config, {
+    operationIdFactory: (controllerKey: string, methodKey: string) =>
+      methodKey,
+    deepScanRoutes: true,
+  });
+
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'MASH Backend API - Documentation',
+    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+    },
+  });
+
+  logger.log(
+    `Swagger API Documentation: http://localhost:${port}/api/docs`,
+  );
 
   // Graceful shutdown
   app.enableShutdownHooks();
@@ -111,12 +223,12 @@ async function bootstrap() {
   // This is required for cloud platforms like Render, Railway, etc.
   await app.listen(port, '0.0.0.0');
 
-  logger.log(`🚀 Application is running on: http://localhost:${port}`);
-  logger.log(`🌟 Environment: ${nodeEnv}`);
-  logger.log(`🔐 API Prefix: api/v1`);
+  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Environment: ${nodeEnv}`);
+  logger.log(`API Prefix: api/v1`);
 }
 
 bootstrap().catch((error) => {
-  Logger.error('❌ Error starting application', error, 'Bootstrap');
+  Logger.error('Error starting application', error, 'Bootstrap');
   process.exit(1);
 });

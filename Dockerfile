@@ -44,11 +44,11 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 
-# Copy other necessary files
-COPY --chown=appuser:appuser . .
+# Copy scripts folder (if it exists)
+COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
 
-# Change ownership of the app directory
-RUN chown -R appuser:appuser /app
+# Set ownership of copied files
+RUN chown -R appuser:appuser /app/dist /app/node_modules/.prisma /app/prisma
 
 # Switch to non-root user
 USER appuser

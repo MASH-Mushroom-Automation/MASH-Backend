@@ -7,8 +7,6 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { FirebaseStrategy } from './strategies/firebase.strategy';
 import { ClerkStrategy } from './strategies/clerk.strategy';
-import { PrismaService } from '../../database/prisma.service';
-import { RedisService } from '../../database/redis.service';
 import { ClerkService } from './services/clerk.service';
 import { SessionService } from './services/session.service';
 import { TokenService } from './services/token.service';
@@ -48,8 +46,7 @@ import clerkConfig from '../../config/clerk.config';
     ClerkAuthGuard,
     RolesGuard,
     PermissionsGuard,
-    PrismaService,
-    RedisService,
+    // Removed PrismaService and RedisService - they are provided globally by DatabaseModule
   ],
   exports: [
     AuthService,

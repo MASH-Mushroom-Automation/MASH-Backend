@@ -42,7 +42,6 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
-import { PrismaService } from './database/prisma.service';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
@@ -50,7 +49,6 @@ import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics.interceptor';
-import { PrometheusService } from './monitoring/prometheus/prometheus.service';
 
 @Module({
   imports: [
@@ -129,8 +127,6 @@ import { PrometheusService } from './monitoring/prometheus/prometheus.service';
   controllers: [AppController],
   providers: [
     AppService,
-    PrismaService,
-    PrometheusService,
     // Global guards
     {
       provide: APP_GUARD,

@@ -2,6 +2,11 @@
 node_modules
 npm-debug.log
 
+# Build outputs (will be generated in Docker)
+dist
+build
+out
+
 # IDE files
 .vscode
 .idea

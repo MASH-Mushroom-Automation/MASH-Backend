@@ -139,17 +139,35 @@ export class PrismaService
 
   async onModuleInit() {
     try {
-      await this.$connect();
+      this.logger.log('🔄 Connecting to Neon PostgreSQL...');
+      
+      // Set a timeout for the connection attempt
+      const connectWithTimeout = Promise.race([
+        this.$connect(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database connection timeout after 10 seconds')), 10000)
+        ),
+      ]);
+
+      await connectWithTimeout;
       this.isConnected = true;
       this.logger.log('✅ Successfully connected to Neon PostgreSQL');
 
-      // Test connection
-      await this.$queryRaw`SELECT 1`;
+      // Test connection with timeout
+      const testQueryWithTimeout = Promise.race([
+        this.$queryRaw`SELECT 1`,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Test query timeout after 5 seconds')), 5000)
+        ),
+      ]);
+
+      await testQueryWithTimeout;
       this.logger.log('✅ Database connection verified');
     } catch (error) {
       this.isConnected = false;
       this.logger.error('❌ Failed to connect to database:', error);
-      throw error;
+      this.logger.error('⚠️  Starting server without database connection - some features will be unavailable');
+      // Don't throw - allow server to start without DB
     }
   }
 
