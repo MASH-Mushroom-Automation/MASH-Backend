@@ -117,6 +117,7 @@ async function bootstrap() {
       .addTag('sensors', 'Sensor data endpoints')
       .addTag('orders', 'Order management endpoints')
       .addTag('products', 'Product catalog endpoints')
+      .addTag('inventory', 'Inventory endpoints')
       .addTag('analytics', 'Analytics and reporting endpoints')
       .addTag('admin', 'Administrative endpoints')
       .addBearerAuth()

@@ -42,6 +42,7 @@ import { PrismaService } from './database/prisma.service';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -95,6 +96,8 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
     AlertsModule,
 
     QueuesModule,
+
+    InventoryModule,
 
     // WebSocket module for real-time communication
     WebsocketModule,
