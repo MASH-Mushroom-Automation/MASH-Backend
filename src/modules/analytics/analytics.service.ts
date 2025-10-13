@@ -1,13 +1,41 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { CacheService } from '../../common/services/cache.service';
 import { DateRangeQueryDto, TimeInterval } from './dto/date-range-query.dto';
 import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AnalyticsService.name);
+
+  // Cache configuration
+  private readonly ANALYTICS_CACHE_PREFIX = 'analytics';
+  private readonly DASHBOARD_CACHE_PREFIX = 'analytics:dashboard';
+  private readonly SALES_CACHE_PREFIX = 'analytics:sales';
+  private readonly PRODUCTS_CACHE_PREFIX = 'analytics:products';
+  private readonly USERS_CACHE_PREFIX = 'analytics:users';
+  private readonly DEVICES_CACHE_PREFIX = 'analytics:devices';
+  private readonly REPORTS_CACHE_PREFIX = 'analytics:reports';
+  private readonly ANALYTICS_TTL = 900; // 15 minutes (historical data rarely changes)
+  private readonly DASHBOARD_TTL = 300; // 5 minutes (more dynamic)
+  private readonly REPORTS_TTL = 1800; // 30 minutes (reports rarely change)
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async getDashboardStats(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.DASHBOARD_CACHE_PREFIX}:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for dashboard stats: ${cacheKey}`);
+      return cached;
+    }
+
     const { startDate, endDate } = query;
     const where: any = {};
 
@@ -18,11 +46,13 @@ export class AnalyticsService {
       };
     }
 
+    // ✅ Task 3.3: Parallelize ALL independent queries (7 concurrent queries)
     const [
       totalOrders,
       totalRevenue,
       totalUsers,
       deviceStats,
+      activeDevices,
       pendingOrders,
       completedOrders,
     ] = await Promise.all([
@@ -47,6 +77,9 @@ export class AnalyticsService {
       this.prisma.device.aggregate({
         _count: true,
       }),
+      this.prisma.device.count({
+        where: { isActive: true },
+      }),
       this.prisma.order.count({
         where: {
           ...where,
@@ -61,11 +94,7 @@ export class AnalyticsService {
       }),
     ]);
 
-    const activeDevices = await this.prisma.device.count({
-      where: { isActive: true },
-    });
-
-    return {
+    const result = {
       totalOrders,
       totalRevenue: Number(totalRevenue._sum.total) || 0,
       totalUsers,
@@ -74,9 +103,27 @@ export class AnalyticsService {
       pendingOrders,
       completedOrders,
     };
+
+    // Cache the result with 5-minute TTL (dashboard is more dynamic)
+    await this.cacheService.set(cacheKey, result, this.DASHBOARD_TTL, [
+      'analytics',
+      'analytics:dashboard',
+    ]);
+
+    return result;
   }
 
   async getSalesAnalytics(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.SALES_CACHE_PREFIX}:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for sales analytics: ${cacheKey}`);
+      return cached;
+    }
+
     const { startDate, endDate } = query;
     const where: any = {};
 
@@ -116,7 +163,7 @@ export class AnalyticsService {
       query.interval || TimeInterval.DAILY,
     );
 
-    return {
+    const result = {
       totalSales: Number(salesData._sum.total) || 0,
       averageOrderValue: Number(salesData._avg.total) || 0,
       orderCount: salesData._count,
@@ -127,9 +174,27 @@ export class AnalyticsService {
       })),
       trends,
     };
+
+    // Cache the result with 15-minute TTL
+    await this.cacheService.set(cacheKey, result, this.ANALYTICS_TTL, [
+      'analytics',
+      'analytics:sales',
+    ]);
+
+    return result;
   }
 
   async getProductMetrics(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.PRODUCTS_CACHE_PREFIX}:metrics:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for product metrics: ${cacheKey}`);
+      return cached;
+    }
+
     const { startDate, endDate } = query;
     const where: any = {};
 
@@ -152,7 +217,7 @@ export class AnalyticsService {
       _count: true,
     });
 
-    return {
+    const result = {
       products: orderItems.map((item) => ({
         productId: item.productId,
         totalQuantity: item._sum.quantity || 0,
@@ -160,9 +225,27 @@ export class AnalyticsService {
         orderCount: item._count,
       })),
     };
+
+    // Cache the result with 15-minute TTL
+    await this.cacheService.set(cacheKey, result, this.ANALYTICS_TTL, [
+      'analytics',
+      'analytics:products',
+    ]);
+
+    return result;
   }
 
   async getUserEngagement(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.USERS_CACHE_PREFIX}:engagement:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for user engagement: ${cacheKey}`);
+      return cached;
+    }
+
     const { startDate, endDate } = query;
     const where: any = {};
 
@@ -184,7 +267,7 @@ export class AnalyticsService {
         }),
       ]);
 
-    return {
+    const result = {
       totalUsers,
       activeUsers,
       newSignups,
@@ -194,9 +277,27 @@ export class AnalyticsService {
         count: role._count,
       })),
     };
+
+    // Cache the result with 15-minute TTL
+    await this.cacheService.set(cacheKey, result, this.ANALYTICS_TTL, [
+      'analytics',
+      'analytics:users',
+    ]);
+
+    return result;
   }
 
   async getDeviceStatistics(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.DEVICES_CACHE_PREFIX}:stats:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for device statistics: ${cacheKey}`);
+      return cached;
+    }
+
     const [
       totalDevices,
       activeDevices,
@@ -214,7 +315,7 @@ export class AnalyticsService {
       this.prisma.sensorData.count(),
     ]);
 
-    return {
+    const result = {
       totalDevices,
       activeDevices,
       devicesByType: devicesByType.map((type) => ({
@@ -225,9 +326,27 @@ export class AnalyticsService {
       sensorReadings: sensorData,
       healthRate: totalDevices > 0 ? (activeDevices / totalDevices) * 100 : 0,
     };
+
+    // Cache the result with 15-minute TTL
+    await this.cacheService.set(cacheKey, result, this.ANALYTICS_TTL, [
+      'analytics',
+      'analytics:devices',
+    ]);
+
+    return result;
   }
 
   async getOrderTrends(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.REPORTS_CACHE_PREFIX}:trends:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for order trends: ${cacheKey}`);
+      return cached;
+    }
+
     const { startDate, endDate, interval } = query;
     const where: any = {};
 
@@ -243,12 +362,30 @@ export class AnalyticsService {
       interval || TimeInterval.DAILY,
     );
 
-    return {
+    const result = {
       trends,
     };
+
+    // Cache the result with 30-minute TTL (reports are stable)
+    await this.cacheService.set(cacheKey, result, this.REPORTS_TTL, [
+      'analytics',
+      'analytics:reports',
+    ]);
+
+    return result;
   }
 
   async getRevenueReports(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.REPORTS_CACHE_PREFIX}:revenue:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for revenue reports: ${cacheKey}`);
+      return cached;
+    }
+
     const { startDate, endDate } = query;
     const where: any = {};
 
@@ -259,7 +396,8 @@ export class AnalyticsService {
       };
     }
 
-    const [revenueData, revenueByStatus] = await Promise.all([
+    // ✅ Task 3.3: Parallelize all 3 independent queries
+    const [revenueData, revenueByStatus, trends] = await Promise.all([
       this.prisma.order.aggregate({
         where: {
           ...where,
@@ -276,14 +414,10 @@ export class AnalyticsService {
           total: true,
         },
       }),
+      this.getOrderTrendsGrouped(where, query.interval || TimeInterval.MONTHLY),
     ]);
 
-    const trends = await this.getOrderTrendsGrouped(
-      where,
-      query.interval || TimeInterval.MONTHLY,
-    );
-
-    return {
+    const result = {
       totalRevenue: Number(revenueData._sum.total) || 0,
       revenueByStatus: revenueByStatus.map((status) => ({
         status: status.status,
@@ -291,9 +425,26 @@ export class AnalyticsService {
       })),
       trends,
     };
+
+    // Cache the result with 30-minute TTL (reports are stable)
+    await this.cacheService.set(cacheKey, result, this.REPORTS_TTL, [
+      'analytics',
+      'analytics:reports',
+    ]);
+
+    return result;
   }
 
   async getGrowthMetrics(query: DateRangeQueryDto) {
+    // Generate cache key
+    const cacheKey = `${this.REPORTS_CACHE_PREFIX}:growth:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for growth metrics: ${cacheKey}`);
+      return cached;
+    }
     const now = new Date();
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastYear = new Date(now.getFullYear() - 1, now.getMonth(), 1);
@@ -345,13 +496,30 @@ export class AnalyticsService {
           : 0,
     };
 
-    return {
+    const result = {
       monthOverMonth,
       yearOverYear,
     };
+
+    // Cache the result with 30-minute TTL (growth metrics don't change frequently)
+    await this.cacheService.set(cacheKey, result, this.REPORTS_TTL, [
+      'analytics',
+      'analytics:reports',
+    ]);
+
+    return result;
   }
 
   async getTopProducts(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.PRODUCTS_CACHE_PREFIX}:top:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for top products: ${cacheKey}`);
+      return cached;
+    }
     const { startDate, endDate } = query;
     const where: any = {};
 
@@ -405,21 +573,41 @@ export class AnalyticsService {
       .sort((a: any, b: any) => b.totalRevenue - a.totalRevenue)
       .slice(0, 10);
 
-    return {
+    const result = {
       topProducts,
     };
+
+    // Cache the result with 30-minute TTL
+    await this.cacheService.set(cacheKey, result, this.REPORTS_TTL, [
+      'analytics',
+      'analytics:products',
+    ]);
+
+    return result;
   }
 
   async getTopCategories(query: DateRangeQueryDto) {
+    // Generate cache key based on query parameters
+    const cacheKey = `${this.PRODUCTS_CACHE_PREFIX}:categories:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for top categories: ${cacheKey}`);
+      return cached;
+    }
+
     const { startDate, endDate } = query;
 
-    const categories = await this.prisma.category.findMany({
-      where: { isActive: true },
-    });
-
-    const products = await this.prisma.product.findMany({
-      where: { isActive: true },
-    });
+    // ✅ Task 3.3: Parallelize independent queries
+    const [categories, products] = await Promise.all([
+      this.prisma.category.findMany({
+        where: { isActive: true },
+      }),
+      this.prisma.product.findMany({
+        where: { isActive: true },
+      }),
+    ]);
 
     const categoryStats = categories.map((category) => {
       const productCount = products.filter((product) =>
@@ -436,9 +624,17 @@ export class AnalyticsService {
       .sort((a, b) => b.productCount - a.productCount)
       .slice(0, 10);
 
-    return {
+    const result = {
       topCategories,
     };
+
+    // Cache the result with 30-minute TTL
+    await this.cacheService.set(cacheKey, result, this.REPORTS_TTL, [
+      'analytics',
+      'analytics:products',
+    ]);
+
+    return result;
   }
 
   private async getMonthStats(date: Date) {

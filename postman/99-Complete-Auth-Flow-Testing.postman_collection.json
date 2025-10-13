@@ -1,0 +1,945 @@
+{
+	"info": {
+		"_postman_id": "auth-flow-complete-2024",
+		"name": "Complete Auth Flow - Registration to OAuth",
+		"description": "Complete authentication flow testing with Clerk:\n- User Registration with Email\n- Email Verification (6-digit code)\n- Resend Verification\n- Login\n- Forgot Password\n- Reset Password\n- Google/GitHub/Facebook OAuth\n- Session Management\n- Logout\n\nTest email: pp.namias@gmail.com",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Registration Flow",
+			"item": [
+				{
+					"name": "1.1 Register New User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save response data for next requests",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.userId) {",
+									"        pm.environment.set('userId', response.userId);",
+									"        console.log('✅ User registered:', response.userId);",
+									"    }",
+									"    if (response.verificationSent) {",
+									"        console.log('✅ Verification email sent to pp.namias@gmail.com');",
+									"        console.log('📧 Check your email for 6-digit code');",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has success true', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});",
+									"",
+									"pm.test('Response has userId', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.userId).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"pp.namias@gmail.com\",\n  \"password\": \"MashBackend2024!@#$Secure\",\n  \"firstName\": \"Paul Patrick\",\n  \"lastName\": \"Namias\",\n  \"username\": \"ppnamias\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"description": "Register a new user account. This will:\n1. Create user in Clerk\n2. Send 6-digit verification code to email\n3. Code expires in 15 minutes\n\nSample email: pp.namias@gmail.com"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Verify Email with Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save tokens for authenticated requests",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.accessToken) {",
+									"        pm.environment.set('accessToken', response.accessToken);",
+									"        console.log('✅ Access token saved');",
+									"    }",
+									"    if (response.refreshToken) {",
+									"        pm.environment.set('refreshToken', response.refreshToken);",
+									"        console.log('✅ Refresh token saved');",
+									"    }",
+									"    if (response.user) {",
+									"        pm.environment.set('userId', response.user.id);",
+									"        console.log('✅ User verified:', response.user.email);",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Returns access token', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.accessToken).to.exist;",
+									"});",
+									"",
+									"pm.test('Returns user data', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.user).to.exist;",
+									"    pm.expect(jsonData.user.email).to.equal('pp.namias@gmail.com');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"pp.namias@gmail.com\",\n  \"code\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-email",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "verify-email"]
+						},
+						"description": "Verify email with the 6-digit code sent to your inbox.\n\n⚠️ IMPORTANT: Replace '123456' with the actual code from your email!"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Resend Verification Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Success message received', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('sent');",
+									"});",
+									"",
+									"console.log('📧 New verification code sent to pp.namias@gmail.com');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"pp.namias@gmail.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-verification",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "resend-verification"]
+						},
+						"description": "Resend verification code if:\n- Code expired (15 minutes)\n- Email not received\n- Code lost\n\nRate limit: 3 requests per 5 minutes"
+					},
+					"response": []
+				}
+			],
+			"description": "Complete registration flow with email verification"
+		},
+		{
+			"name": "2. Login Flow",
+			"item": [
+				{
+					"name": "2.1 Login with Email/Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save tokens",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.accessToken) {",
+									"        pm.environment.set('accessToken', response.accessToken);",
+									"        console.log('✅ Logged in successfully');",
+									"    }",
+									"    if (response.refreshToken) {",
+									"        pm.environment.set('refreshToken', response.refreshToken);",
+									"    }",
+									"    if (response.user) {",
+									"        pm.environment.set('userId', response.user.id);",
+									"        console.log('👤 User:', response.user.email);",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Returns access token', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.accessToken).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"pp.namias@gmail.com\",\n  \"password\": \"MashBackend2024!@#$Secure\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Login with email and password.\nReturns access token and refresh token."
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Get Current User (Protected)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Returns user data', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.email).to.equal('pp.namias@gmail.com');",
+									"    pm.expect(jsonData.id).to.exist;",
+									"});",
+									"",
+									"const user = pm.response.json();",
+									"console.log('👤 Current user:', user.email);",
+									"console.log('🎭 Role:', user.role);",
+									"console.log('✅ Verified:', user.emailVerified);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						},
+						"description": "Get current authenticated user information.\nRequires valid access token."
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 Refresh Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.accessToken) {",
+									"        pm.environment.set('accessToken', response.accessToken);",
+									"        console.log('✅ Token refreshed successfully');",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Returns new access token', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.accessToken).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "refresh"]
+						},
+						"description": "Refresh expired access token using refresh token"
+					},
+					"response": []
+				}
+			],
+			"description": "Login and session management"
+		},
+		{
+			"name": "3. Password Reset Flow",
+			"item": [
+				{
+					"name": "3.1 Forgot Password - Request Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Success message received', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});",
+									"",
+									"console.log('📧 Password reset code sent to pp.namias@gmail.com');",
+									"console.log('⏰ Code expires in 15 minutes');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"pp.namias@gmail.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/forgot-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "forgot-password"]
+						},
+						"description": "Request password reset code.\nSends 6-digit code to email.\nCode expires in 15 minutes."
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Reset Password with Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Password reset successful', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});",
+									"",
+									"console.log('✅ Password reset successfully');",
+									"console.log('🔐 New password: MashReset2024!@#$Strong');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"pp.namias@gmail.com\",\n  \"code\": \"123456\",\n  \"newPassword\": \"MashReset2024!@#$Strong\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "reset-password"]
+						},
+						"description": "Reset password using the 6-digit code.\n\n⚠️ IMPORTANT: Replace '123456' with the actual code from your email!\n\nPassword requirements:\n- Min 8 characters\n- Uppercase letter\n- Lowercase letter\n- Number\n- Special character"
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 Login with New Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.accessToken) {",
+									"        pm.environment.set('accessToken', response.accessToken);",
+									"    }",
+									"    if (response.refreshToken) {",
+									"        pm.environment.set('refreshToken', response.refreshToken);",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"console.log('✅ Login successful with new password');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"pp.namias@gmail.com\",\n  \"password\": \"MashReset2024!@#$Strong\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Test login with the new password after reset"
+					},
+					"response": []
+				}
+			],
+			"description": "Complete password reset flow with email codes"
+		},
+		{
+			"name": "4. OAuth SSO Flows",
+			"item": [
+				{
+					"name": "4.1 Google OAuth - Initiate",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/google",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "google"]
+						},
+						"description": "Initiate Google OAuth flow.\nRedirects to Google login page.\n\nIn browser:\n1. Open this URL\n2. Sign in with Google\n3. Authorize the app\n4. Get redirected with tokens"
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Google OAuth - Callback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.accessToken) {",
+									"        pm.environment.set('accessToken', response.accessToken);",
+									"    }",
+									"    if (response.refreshToken) {",
+									"        pm.environment.set('refreshToken', response.refreshToken);",
+									"    }",
+									"    console.log('✅ Google OAuth successful');",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"AUTHORIZATION_CODE_FROM_GOOGLE\",\n  \"state\": \"random_state_value\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/google/callback",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "google", "callback"]
+						},
+						"description": "Handle Google OAuth callback.\n\n⚠️ This is automatically called by Google after user authorizes.\nYou don't need to call this manually in testing.\n\nFor manual testing:\n1. Use the authorization code from Google's redirect\n2. Include the state parameter"
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 GitHub OAuth - Initiate",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/github",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "github"]
+						},
+						"description": "Initiate GitHub OAuth flow.\nRedirects to GitHub login page.\n\nIn browser:\n1. Open this URL\n2. Sign in with GitHub\n3. Authorize the app\n4. Get redirected with tokens"
+					},
+					"response": []
+				},
+				{
+					"name": "4.4 GitHub OAuth - Callback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.accessToken) {",
+									"        pm.environment.set('accessToken', response.accessToken);",
+									"    }",
+									"    if (response.refreshToken) {",
+									"        pm.environment.set('refreshToken', response.refreshToken);",
+									"    }",
+									"    console.log('✅ GitHub OAuth successful');",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"AUTHORIZATION_CODE_FROM_GITHUB\",\n  \"state\": \"random_state_value\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/github/callback",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "github", "callback"]
+						},
+						"description": "Handle GitHub OAuth callback.\n\n⚠️ This is automatically called by GitHub after user authorizes."
+					},
+					"response": []
+				},
+				{
+					"name": "4.5 Facebook OAuth - Initiate",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/facebook",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "facebook"]
+						},
+						"description": "Initiate Facebook OAuth flow.\nRedirects to Facebook login page.\n\nIn browser:\n1. Open this URL\n2. Sign in with Facebook\n3. Authorize the app\n4. Get redirected with tokens"
+					},
+					"response": []
+				},
+				{
+					"name": "4.6 Facebook OAuth - Callback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.accessToken) {",
+									"        pm.environment.set('accessToken', response.accessToken);",
+									"    }",
+									"    if (response.refreshToken) {",
+									"        pm.environment.set('refreshToken', response.refreshToken);",
+									"    }",
+									"    console.log('✅ Facebook OAuth successful');",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"AUTHORIZATION_CODE_FROM_FACEBOOK\",\n  \"state\": \"random_state_value\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/facebook/callback",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "facebook", "callback"]
+						},
+						"description": "Handle Facebook OAuth callback.\n\n⚠️ This is automatically called by Facebook after user authorizes."
+					},
+					"response": []
+				}
+			],
+			"description": "OAuth Social Sign-In (Google, GitHub, Facebook)"
+		},
+		{
+			"name": "5. Session Management",
+			"item": [
+				{
+					"name": "5.1 Get Active Sessions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Returns sessions array', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.sessions).to.be.an('array');",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"console.log('📱 Active sessions:', response.sessions.length);",
+									"if (response.sessions.length > 0) {",
+									"    console.log('First session:', response.sessions[0].deviceName);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/sessions",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "sessions"]
+						},
+						"description": "Get all active sessions for the current user.\nShows devices, IPs, and last activity."
+					},
+					"response": []
+				},
+				{
+					"name": "5.2 Revoke Specific Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"console.log('✅ Session revoked successfully');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/sessions/:sessionId",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "sessions", ":sessionId"],
+							"variable": [
+								{
+									"key": "sessionId",
+									"value": "SESSION_ID_HERE",
+									"description": "Get session ID from 'Get Active Sessions' request"
+								}
+							]
+						},
+						"description": "Revoke a specific session.\n\n⚠️ Replace :sessionId with actual session ID from 'Get Active Sessions'"
+					},
+					"response": []
+				},
+				{
+					"name": "5.3 Logout (Revoke Current Session)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Clear stored tokens",
+									"pm.environment.set('accessToken', '');",
+									"pm.environment.set('refreshToken', '');",
+									"",
+									"console.log('✅ Logged out successfully');",
+									"console.log('🔒 Tokens cleared from environment');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "logout"]
+						},
+						"description": "Logout and revoke current session.\nInvalidates access token."
+					},
+					"response": []
+				},
+				{
+					"name": "5.4 Revoke All Sessions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Clear stored tokens",
+									"pm.environment.set('accessToken', '');",
+									"pm.environment.set('refreshToken', '');",
+									"",
+									"console.log('✅ All sessions revoked');",
+									"console.log('🔒 User logged out from all devices');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/sessions/revoke-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "sessions", "revoke-all"]
+						},
+						"description": "Revoke all sessions for the user.\nLogs out from all devices.\nUse for security purposes (password changed, suspicious activity, etc.)"
+					},
+					"response": []
+				}
+			],
+			"description": "Session management and logout"
+		},
+		{
+			"name": "6. Testing Helpers",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Check if server is running"
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Environment Variables",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set('accessToken', '');",
+									"pm.environment.set('refreshToken', '');",
+									"pm.environment.set('userId', '');",
+									"",
+									"console.log('🧹 Environment variables cleared');",
+									"console.log('✅ Ready for fresh testing');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Clears stored tokens and user ID from environment.\nUse before starting fresh test cycle."
+					},
+					"response": []
+				}
+			],
+			"description": "Helper requests for testing"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Log request details",
+					"console.log('🚀 Request:', pm.request.method, pm.request.url.toString());",
+					"",
+					"// Show current tokens status",
+					"const accessToken = pm.environment.get('accessToken');",
+					"if (accessToken) {",
+					"    console.log('🔑 Using access token');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Log response status",
+					"console.log('📥 Response:', pm.response.code, pm.response.status);",
+					"",
+					"// Show response time",
+					"console.log('⏱️  Response time:', pm.response.responseTime + 'ms');"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

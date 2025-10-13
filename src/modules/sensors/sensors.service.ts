@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { CacheService } from '../../common/services/cache.service';
 import { CreateSensorDto } from './dto/create-sensor.dto';
 import { UpdateSensorDto } from './dto/update-sensor.dto';
 import { IngestSensorDataDto } from './dto/ingest-sensor-data.dto';
@@ -18,10 +19,29 @@ import { SensorFilterQueryDto } from './dto/sensor-filter-query.dto';
 
 @Injectable()
 export class SensorsService {
-  constructor(private prisma: PrismaService) {}
+  // Cache configuration
+  private readonly SENSOR_CACHE_PREFIX = 'sensor';
+  private readonly SENSORS_LIST_CACHE_PREFIX = 'sensors:list';
+  private readonly SENSOR_CALIBRATION_CACHE_PREFIX = 'sensor:calibration';
+  private readonly SENSOR_TTL = 300; // 5 minutes (sensor metadata changes less frequently)
+  private readonly SENSOR_CALIBRATION_TTL = 900; // 15 minutes (calibration changes rarely)
+
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   // 1. List all sensors with filtering and pagination
   async findAll(query: SensorFilterQueryDto, currentUser: any) {
+    // Generate cache key based on query parameters and user context
+    const cacheKey = `${this.SENSORS_LIST_CACHE_PREFIX}:${currentUser.id}:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const { type, deviceId, search, isActive, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
@@ -35,13 +55,9 @@ export class SensorsService {
       where.name = { contains: search, mode: 'insensitive' };
     }
 
-    // RBAC: Users can only see sensors from their devices
+    // ✅ FIX: RBAC filter using nested where (eliminates N+1 query)
     if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
-      const userDevices = await this.prisma.device.findMany({
-        where: { userId: currentUser.id },
-        select: { id: true },
-      });
-      where.deviceId = { in: userDevices.map((d) => d.id) };
+      where.device = { userId: currentUser.id };
     }
 
     const [sensors, total] = await Promise.all([
@@ -58,7 +74,7 @@ export class SensorsService {
       this.prisma.sensor.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: sensors,
       meta: {
         total,
@@ -67,6 +83,14 @@ export class SensorsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache the result with 5-minute TTL
+    await this.cacheService.set(cacheKey, result, this.SENSOR_TTL, [
+      'sensors',
+      'sensors:list',
+    ]);
+
+    return result;
   }
 
   // 2. Create new sensor
@@ -90,7 +114,7 @@ export class SensorsService {
       throw new ForbiddenException('You do not own this device');
     }
 
-    return this.prisma.sensor.create({
+    const sensor = await this.prisma.sensor.create({
       data: {
         ...sensorData,
         deviceId,
@@ -99,10 +123,24 @@ export class SensorsService {
         device: { select: { id: true, name: true } },
       },
     });
+
+    // Invalidate sensors list caches
+    await this.cacheService.invalidateByTags(['sensors', 'sensors:list']);
+
+    return sensor;
   }
 
   // 3. Get sensor details by ID
   async findOne(id: string) {
+    // Generate cache key
+    const cacheKey = `${this.SENSOR_CACHE_PREFIX}:${id}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const sensor = await this.prisma.sensor.findUnique({
       where: { id },
       include: {
@@ -123,6 +161,12 @@ export class SensorsService {
       throw new NotFoundException('Sensor not found');
     }
 
+    // Cache the result with 5-minute TTL
+    await this.cacheService.set(cacheKey, sensor, this.SENSOR_TTL, [
+      'sensors',
+      `sensor:${id}`,
+    ]);
+
     return sensor;
   }
 
@@ -134,13 +178,22 @@ export class SensorsService {
       throw new NotFoundException('Sensor not found');
     }
 
-    return this.prisma.sensor.update({
+    const updated = await this.prisma.sensor.update({
       where: { id },
       data: updateSensorDto,
       include: {
         device: { select: { id: true, name: true } },
       },
     });
+
+    // Invalidate sensor caches
+    await this.cacheService.invalidateByTags([
+      'sensors',
+      'sensors:list',
+      `sensor:${id}`,
+    ]);
+
+    return updated;
   }
 
   // 5. Delete sensor (soft delete)
@@ -151,10 +204,19 @@ export class SensorsService {
       throw new NotFoundException('Sensor not found');
     }
 
-    return this.prisma.sensor.update({
+    const deleted = await this.prisma.sensor.update({
       where: { id },
       data: { isActive: false },
     });
+
+    // Invalidate sensor caches
+    await this.cacheService.invalidateByTags([
+      'sensors',
+      'sensors:list',
+      `sensor:${id}`,
+    ]);
+
+    return deleted;
   }
 
   // 6. Ingest sensor data point
@@ -371,10 +433,15 @@ export class SensorsService {
       throw new NotFoundException('Sensor not found');
     }
 
-    return this.prisma.sensor.update({
+    const updated = await this.prisma.sensor.update({
       where: { id },
       data: { calibration: calibrationData },
     });
+
+    // Invalidate sensor caches (calibration changed)
+    await this.cacheService.invalidateByTags(['sensors', `sensor:${id}`]);
+
+    return updated;
   }
 
   // 13. Get sensor health and connectivity status

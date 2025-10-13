@@ -1,0 +1,161 @@
+name: 'Intelligent Stale Issue/PR Management'
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Stale Bot
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Stale Issues and PRs
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Days before marking as stale
+          days-before-stale: 30
+          days-before-pr-stale: 14
+          
+          # Days before closing after marked stale
+          days-before-close: 7
+          days-before-pr-close: 7
+          
+          # Stale issue settings
+          stale-issue-message: |
+            👋 This issue has been automatically marked as stale because it has not had recent activity.
+            
+            **It will be closed in 7 days if no further activity occurs.**
+            
+            If this issue is still relevant, please:
+            - Add a comment to keep it open
+            - Remove the `stale` label
+            - Provide additional context or updates
+            
+            Thank you for your contributions! 🙏
+          
+          close-issue-message: |
+            🔒 This issue has been automatically closed due to inactivity.
+            
+            If you believe this issue should remain open:
+            - Reopen it with a comment explaining why
+            - Provide new information or context
+            - Tag relevant maintainers
+            
+            Thank you for understanding!
+          
+          stale-issue-label: 'stale'
+          close-issue-label: 'auto-closed'
+          exempt-issue-labels: 'pinned,security,critical,in-progress,roadmap'
+          
+          # Stale PR settings
+          stale-pr-message: |
+            👋 This pull request has been automatically marked as stale because it has not had recent activity.
+            
+            **It will be closed in 7 days if no further activity occurs.**
+            
+            If this PR is still needed, please:
+            - Rebase on the latest main branch
+            - Address any review comments
+            - Remove the `stale` label
+            - Add a comment with an update
+            
+            Thank you for your contribution! 🚀
+          
+          close-pr-message: |
+            🔒 This pull request has been automatically closed due to inactivity.
+            
+            If you'd like to continue this work:
+            - Reopen the PR with an update
+            - Create a new PR with the latest changes
+            - Explain the current status
+            
+            Feel free to reach out if you need help!
+          
+          stale-pr-label: 'stale'
+          close-pr-label: 'auto-closed'
+          exempt-pr-labels: 'work-in-progress,blocked,awaiting-review,hotfix'
+          
+          # Only process these issue types
+          only-labels: ''
+          
+          # Dry run mode (set to true to test without actually closing)
+          debug-only: false
+          
+          # Operations per run (to avoid rate limiting)
+          operations-per-run: 30
+          
+          # Remove stale label when issue is updated
+          remove-stale-when-updated: true
+          
+          # Ascending order (oldest first)
+          ascending: true
+
+      - name: Notify on closed issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all issues closed by stale bot in the last day
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+            
+            const closedIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              since: oneDayAgo.toISOString(),
+              labels: 'auto-closed',
+              per_page: 100
+            });
+            
+            if (closedIssues.data.length > 0) {
+              const issueList = closedIssues.data.map(issue => 
+                `- #${issue.number}: ${issue.title}`
+              ).join('\n');
+              
+              console.log(`📊 Stale Bot Summary: ${closedIssues.data.length} items auto-closed today\n${issueList}`);
+            } else {
+              console.log('✅ No items were auto-closed today');
+            }
+
+      - name: Auto-close resolved issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find issues marked as "resolved" but still open
+            const resolvedIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'resolved',
+              per_page: 100
+            });
+            
+            for (const issue of resolvedIssues.data) {
+              // Check if issue has been marked resolved for > 3 days
+              const resolvedLabel = issue.labels.find(l => l.name === 'resolved');
+              if (resolvedLabel) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: '✅ Automatically closing this issue as it was marked as resolved. Thank you!'
+                });
+                
+                console.log(`✅ Auto-closed resolved issue #${issue.number}`);
+              }
+            }

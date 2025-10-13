@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Two-Factor Authentication Code</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; color: #333333; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; }
+        .logo { font-size: 36px; font-weight: bold; color: #ffffff; margin: 0; }
+        .security-icon { font-size: 48px; margin-bottom: 10px; }
+        .content { padding: 40px 30px; }
+        .greeting { font-size: 24px; font-weight: 600; color: #333333; margin: 0 0 20px 0; }
+        .message { font-size: 16px; line-height: 1.6; color: #555555; margin: 0 0 30px 0; }
+        .code-box { background-color: #f8f9fa; border: 2px dashed #667eea; padding: 30px; margin: 20px 0; text-align: center; border-radius: 8px; }
+        .code-text { font-size: 42px; font-weight: bold; color: #667eea; letter-spacing: 12px; font-family: 'Courier New', monospace; }
+        .warning-box { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .info-box { background-color: #d1ecf1; border-left: 4px solid #0c5460; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .footer { background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0; }
+        .footer-text { font-size: 14px; color: #888888; margin: 5px 0; }
+        .footer-links { margin: 20px 0; }
+        .footer-link { color: #667eea; text-decoration: none; margin: 0 10px; font-size: 14px; }
+        .divider { height: 1px; background-color: #e0e0e0; margin: 30px 0; }
+        @media only screen and (max-width: 600px) {
+            .content { padding: 30px 20px; }
+            .header { padding: 30px 20px; }
+            .greeting { font-size: 20px; }
+            .code-text { font-size: 32px; letter-spacing: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="security-icon">🔐</div>
+            <h1 class="logo">MASH</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px;">Two-Factor Authentication</p>
+        </div>
+
+        <div class="content">
+            <h2 class="greeting">Hi {{firstName}},</h2>
+            
+            <p class="message">
+                You've requested a two-factor authentication code to sign in to your MASH account. 
+                Use the code below to complete your login:
+            </p>
+
+            <div class="code-box">
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: 600;">YOUR VERIFICATION CODE</p>
+                <div class="code-text">{{code}}</div>
+                <p style="margin: 15px 0 0 0; font-size: 12px; color: #888888;">
+                    ⏰ Expires in {{expiresIn}}
+                </p>
+            </div>
+
+            <div class="info-box">
+                <p><strong>🔍 How to Use This Code</strong></p>
+                <ol style="margin: 10px 0 0 0; padding-left: 20px; font-size: 14px; color: #0c5460; line-height: 1.8;">
+                    <li>Return to the MASH login page</li>
+                    <li>Enter this 6-digit code when prompted</li>
+                    <li>Complete your sign-in process</li>
+                </ol>
+            </div>
+
+            <div class="warning-box">
+                <p><strong>⚠️ Important Security Notice</strong></p>
+                <p style="margin-top: 10px; color: #856404;">
+                    This code is time-sensitive and will expire in <strong>{{expiresIn}}</strong>. 
+                    Never share this code with anyone, including MASH support staff. 
+                    We will never ask you for your 2FA code.
+                </p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p><strong>🚨 Didn't Request This Code?</strong></p>
+                <p style="margin-top: 10px; color: #721c24;">
+                    If you didn't attempt to sign in to your MASH account, someone may be trying to access your account. 
+                    Please take these steps immediately:
+                </p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #721c24; line-height: 1.8;">
+                    <li>Change your password right away</li>
+                    <li>Review your recent account activity</li>
+                    <li>Contact support: <strong>{{supportEmail}}</strong></li>
+                    <li>Check for any unauthorized devices</li>
+                </ul>
+            </div>
+
+            <div style="background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 30px 0; border-radius: 4px;">
+                <p><strong>🛡️ Security Best Practices</strong></p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 14px; color: #666666; line-height: 1.8;">
+                    <li>Always verify the login location and device</li>
+                    <li>Don't use public Wi-Fi for sensitive operations</li>
+                    <li>Keep your recovery codes in a safe place</li>
+                    <li>Regularly review your account's security settings</li>
+                    <li>Use a unique, strong password for your MASH account</li>
+                </ul>
+            </div>
+
+            <p class="message" style="margin-top: 40px;">
+                Stay secure,<br>
+                <strong>The MASH Security Team</strong> 🛡️
+            </p>
+        </div>
+
+        <div class="footer">
+            <div class="footer-links">
+                <a href="{{appUrl}}" class="footer-link">Home</a>
+                <a href="{{appUrl}}/support" class="footer-link">Support</a>
+                <a href="{{appUrl}}/privacy" class="footer-link">Privacy</a>
+                <a href="{{appUrl}}/terms" class="footer-link">Terms</a>
+            </div>
+            
+            <div class="divider"></div>
+
+            <p class="footer-text">© {{year}} MASH. All rights reserved.</p>
+            <p class="footer-text">Mushroom Automation Smart Home System</p>
+            <p class="footer-text" style="margin-top: 15px;">
+                This is an automated security email. Please do not reply directly to this message.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

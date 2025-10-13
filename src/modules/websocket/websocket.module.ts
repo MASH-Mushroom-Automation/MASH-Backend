@@ -13,14 +13,14 @@ import { WsJwtGuard } from './guards/ws-jwt.guard';
 
 /**
  * WebSocket Module
- * 
+ *
  * Provides enterprise-grade WebSocket functionality including:
  * - Real-time bidirectional communication
  * - JWT authentication
  * - Connection management
  * - Room-based subscriptions
  * - Broadcasting capabilities
- * 
+ *
  * @see https://docs.nestjs.com/websockets/gateways
  */
 @Module({
@@ -40,17 +40,17 @@ import { WsJwtGuard } from './guards/ws-jwt.guard';
   providers: [
     // Gateways
     MainGateway,
-    
+
     // Services
     ConnectionManagerService,
-    
+
     // Guards
     WsJwtGuard,
   ],
   exports: [
     // Export services for use in other modules
     ConnectionManagerService,
-    
+
     // Export gateway for direct access if needed
     MainGateway,
   ],

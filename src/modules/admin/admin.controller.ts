@@ -25,7 +25,7 @@ import { AuditLogQueryDto } from './dto/audit-log-query.dto';
 import { SystemConfigDto } from './dto/system-config.dto';
 import { MaintenanceDto } from './dto/maintenance.dto';
 
-@ApiTags('Admin')
+@ApiTags('admin')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')
@@ -98,7 +98,7 @@ export class AdminController {
     return this.adminService.updateSystemConfig(
       configDto.key,
       configDto.value,
-      configDto.metadata,
+      configDto.metadata ? JSON.stringify(configDto.metadata) : undefined,
     );
   }
 

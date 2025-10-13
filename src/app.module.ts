@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
@@ -10,6 +11,7 @@ import { AppService } from './app.service';
 import { createAppConfig } from './config/app.config';
 import { createDatabaseConfig } from './config/database.config';
 import { createJwtConfig } from './config/jwt.config';
+import { getThrottlerConfig } from './common/config/throttler.config';
 
 // Import modules (will be created)
 import { AuthModule } from './modules/auth/auth.module';
@@ -27,6 +29,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { CommonModule } from './common/common.module';
+import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
+import { TracingModule } from './monitoring/tracing/tracing.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
@@ -38,11 +42,14 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
-import { PrismaService } from './database/prisma.service';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { RedisService } from './database/redis.service';
+import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics.interceptor';
 
 @Module({
   imports: [
@@ -57,18 +64,26 @@ import { InventoryModule } from './modules/inventory/inventory.module';
       ],
     }),
 
-    // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
+    // Rate limiting with Redis-backed distributed storage
+    ThrottlerModule.forRootAsync({
+      useFactory: (redisService: RedisService) => ({
+        throttlers: getThrottlerConfig(),
+        storage: new RedisThrottlerStorage(redisService),
+        // Enable skip if decorated with @SkipThrottle()
+        skipIf: () => false,
+      }),
+      inject: [RedisService],
+    }),
+
+    // Schedule Module for cron jobs (cache monitoring, cache warming)
+    ScheduleModule.forRoot(),
 
     // Core modules
     CommonModule, // 🆕 Added - Global utilities, filters, interceptors, pipes
     DatabaseModule,
     HealthModule,
+    PrometheusModule, // 🆕 Prometheus metrics collection
+    TracingModule, // 🆕 OpenTelemetry distributed tracing
 
     // Feature modules
     AuthModule,
@@ -115,11 +130,15 @@ import { InventoryModule } from './modules/inventory/inventory.module';
   controllers: [AppController],
   providers: [
     AppService,
-    PrismaService,
     // Global guards
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
+    },
+    // Global interceptors
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
     },
     // Note: Global filters, interceptors, and pipes are registered in CommonModule
   ],

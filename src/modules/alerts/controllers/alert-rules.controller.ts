@@ -26,10 +26,10 @@ import { UpdateAlertRuleDto } from '../dto/update-alert-rule.dto';
 /**
  * Alert Rules Controller
  * Manages alert rule configuration via REST API
- * 
+ *
  * @tag Alerts
  */
-@ApiTags('Alert Rules')
+@ApiTags('alerts')
 @Controller('alerts/rules')
 // @UseGuards(JwtAuthGuard) // Uncomment when auth is ready
 // @ApiBearerAuth()
@@ -43,7 +43,8 @@ export class AlertRulesController {
   @Post()
   @ApiOperation({
     summary: 'Create alert rule',
-    description: 'Create a new alert rule with specified conditions and thresholds',
+    description:
+      'Create a new alert rule with specified conditions and thresholds',
   })
   @ApiResponse({
     status: 201,
@@ -63,7 +64,7 @@ export class AlertRulesController {
   ) {
     // TODO: Get userId from JWT token when auth is implemented
     const userId = req.user?.id || 'system'; // Temporary fallback
-    
+
     return this.alertRuleService.create(createAlertRuleDto, userId);
   }
 
@@ -74,13 +75,22 @@ export class AlertRulesController {
   @Get()
   @ApiOperation({
     summary: 'List alert rules',
-    description: 'Get all alert rules with optional filtering by category, priority, and status',
+    description:
+      'Get all alert rules with optional filtering by category, priority, and status',
   })
   @ApiQuery({
     name: 'category',
     required: false,
     description: 'Filter by alert category',
-    enum: ['SYSTEM', 'SECURITY', 'BUSINESS', 'USER', 'SENSOR', 'ORDER', 'PAYMENT'],
+    enum: [
+      'SYSTEM',
+      'SECURITY',
+      'BUSINESS',
+      'USER',
+      'SENSOR',
+      'ORDER',
+      'PAYMENT',
+    ],
   })
   @ApiQuery({
     name: 'priority',
@@ -104,13 +114,13 @@ export class AlertRulesController {
     @Query('isActive') isActive?: string,
   ) {
     const filters: any = {};
-    
+
     if (category) filters.category = category;
     if (priority) filters.priority = priority;
     if (isActive !== undefined) {
       filters.isActive = isActive === 'true';
     }
-    
+
     return this.alertRuleService.findAll(filters);
   }
 
@@ -163,7 +173,7 @@ export class AlertRulesController {
   ) {
     // TODO: Get userId from JWT token when auth is implemented
     const userId = req.user?.id || 'system';
-    
+
     return this.alertRuleService.update(id, updateAlertRuleDto, userId);
   }
 
@@ -209,7 +219,7 @@ export class AlertRulesController {
   async toggleActive(@Param('id') id: string, @Request() req: any) {
     // TODO: Get userId from JWT token when auth is implemented
     const userId = req.user?.id || 'system';
-    
+
     return this.alertRuleService.toggleActive(id, userId);
   }
 

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Deletion Confirmation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .warning-box p {
+            margin: 10px 0;
+            color: #856404;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-box p {
+            margin: 8px 0;
+            font-size: 15px;
+        }
+        .info-box strong {
+            color: #667eea;
+        }
+        .deletion-details {
+            background-color: #e9ecef;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border: 2px solid #dc3545;
+        }
+        .deletion-details h4 {
+            margin-top: 0;
+            color: #dc3545;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: #ffffff !important;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button.secondary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        .data-info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .data-info h4 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        .alert-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .alert-box p {
+            margin: 5px 0;
+            color: #721c24;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer-links {
+            margin: 15px 0;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">👋</div>
+            <h1>Account Deletion Request</h1>
+        </div>
+        
+        <div class="content">
+            <div class="warning-box">
+                <h3>⚠️ Your Account Will Be Deleted</h3>
+                <p>
+                    We've received your request to permanently delete your MASH account 
+                    <strong>{{email}}</strong>.
+                </p>
+            </div>
+            
+            <p style="font-size: 16px;">
+                Hello {{firstName}},
+            </p>
+            
+            <p>
+                We're sorry to see you go. This email confirms that your account deletion 
+                request has been received and is being processed.
+            </p>
+
+            <div class="deletion-details">
+                <h4>🗑️ Deletion Schedule:</h4>
+                <p><strong>Request Date:</strong> {{requestDate}}</p>
+                <p><strong>Deletion Date:</strong> {{deletionDate}}</p>
+                <p><strong>Grace Period:</strong> {{gracePeriod}} days</p>
+                <p><strong>Account Email:</strong> {{email}}</p>
+            </div>
+
+            <div class="alert-box">
+                <p><strong>🚨 Important: You Can Still Cancel</strong></p>
+                <p>
+                    You have <strong>{{gracePeriod}} days</strong> to change your mind. 
+                    If you don't cancel this request, your account will be permanently deleted 
+                    on <strong>{{deletionDate}}</strong>.
+                </p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{cancelUrl}}" class="button secondary">
+                    ↩️ Cancel Deletion
+                </a>
+                <p style="margin-top: 15px; color: #28a745; font-weight: 600;">
+                    Click above to keep your account
+                </p>
+            </div>
+
+            <div class="data-info">
+                <h4>📊 What Will Be Deleted:</h4>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Your profile information and settings</li>
+                    <li>All connected IoT devices and configurations</li>
+                    <li>Automation rules and schedules</li>
+                    <li>Historical sensor data and logs</li>
+                    <li>Notifications and alert history</li>
+                    <li>Any uploaded files or documents</li>
+                    <li>Subscription and billing information</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <p><strong>⚠️ This Action Is Permanent</strong></p>
+                <p>
+                    Once your account is deleted, you will <strong>not</strong> be able to:
+                </p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Recover your account or data</li>
+                    <li>Access your device history</li>
+                    <li>Restore automation settings</li>
+                    <li>View past notifications</li>
+                    <li>Retrieve any stored information</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h4>💾 Want to Download Your Data?</h4>
+                <p>
+                    Before your account is deleted, you can download a copy of your data. 
+                    This includes all your sensor readings, configurations, and personal information.
+                </p>
+                <div style="text-align: center; margin-top: 15px;">
+                    <a href="{{downloadDataUrl}}" class="button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        💾 Download My Data
+                    </a>
+                </div>
+            </div>
+
+            <div class="alert-box">
+                <p><strong>❓ Didn't Request This?</strong></p>
+                <p>
+                    If you didn't request to delete your account, please contact our security 
+                    team immediately at <strong>security@mash.com</strong> or call our support hotline.
+                </p>
+                <p style="margin-top: 10px;">
+                    Your account may have been compromised. Change your password immediately and 
+                    cancel this deletion request.
+                </p>
+            </div>
+
+            <div class="info-box" style="margin-top: 30px;">
+                <h4>💬 We'd Love Your Feedback</h4>
+                <p>
+                    Before you go, would you mind sharing why you're leaving? Your feedback 
+                    helps us improve MASH for everyone.
+                </p>
+                <div style="text-align: center; margin-top: 15px;">
+                    <a href="{{feedbackUrl}}" class="button" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                        📝 Share Feedback
+                    </a>
+                </div>
+            </div>
+
+            <p style="margin-top: 30px;">
+                If you have any questions about the deletion process or need assistance, 
+                our support team is here to help.
+            </p>
+
+            <p style="color: #6c757d; font-size: 14px; margin-top: 20px;">
+                Thank you for using MASH. We hope to see you again in the future!
+            </p>
+
+            <p style="color: #6c757d; font-size: 14px;">
+                Best regards,<br>
+                <strong>The MASH Team</strong>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 MASH - Mushroom Automation Smart Home. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="{{homeUrl}}">Home</a> |
+                <a href="{{supportUrl}}">Support</a> |
+                <a href="{{privacyUrl}}">Privacy Policy</a> |
+                <a href="{{termsUrl}}">Terms of Service</a>
+            </div>
+            <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                After deletion, you're welcome to create a new account anytime.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

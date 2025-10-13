@@ -25,11 +25,11 @@ export async function bootstrapTestApp(
   module: TestingModule,
 ): Promise<INestApplication> {
   const app = module.createNestApplication();
-  
+
   // Apply the same global configurations as main.ts
   app.setGlobalPrefix('api/v1');
   app.enableCors();
-  
+
   await app.init();
   return app;
 }
@@ -67,14 +67,14 @@ export async function waitFor(
   interval = 100,
 ): Promise<void> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeout) {
     if (await condition()) {
       return;
     }
-    await new Promise(resolve => setTimeout(resolve, interval));
+    await new Promise((resolve) => setTimeout(resolve, interval));
   }
-  
+
   throw new Error('Timeout waiting for condition');
 }
 
@@ -154,7 +154,7 @@ export function expectErrorResponse(
   expect(response.body).toHaveProperty('statusCode', expectedStatus);
   expect(response.body).toHaveProperty('timestamp');
   expect(response.body).toHaveProperty('error');
-  
+
   if (expectedMessage) {
     expect(response.body.error.message).toContain(expectedMessage);
   }
@@ -195,4 +195,5 @@ export function generateTestData(type: 'email' | 'uuid' | 'string' | 'number') {
 /**
  * Sleep utility for testing async operations
  */
-export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));

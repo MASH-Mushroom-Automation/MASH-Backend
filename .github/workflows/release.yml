@@ -1,0 +1,325 @@
+name: Automated Release & Changelog Generation
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  issues: write
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      changelog: ${{ steps.generate-changelog.outputs.changelog }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format. Expected v1.2.3"
+            exit 1
+          fi
+
+      - name: Install git-cliff
+        run: |
+          wget https://github.com/orhun/git-cliff/releases/download/v1.4.0/git-cliff-1.4.0-x86_64-unknown-linux-gnu.tar.gz
+          tar -xzf git-cliff-1.4.0-x86_64-unknown-linux-gnu.tar.gz
+          sudo mv git-cliff-1.4.0/git-cliff /usr/local/bin/
+          chmod +x /usr/local/bin/git-cliff
+
+      - name: Create git-cliff config
+        run: |
+          cat > cliff.toml << 'EOF'
+          [changelog]
+          header = """
+          # Changelog
+          All notable changes to this project will be documented in this file.\n
+          """
+          body = """
+          {% if version %}\
+              ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+          {% else %}\
+              ## [unreleased]
+          {% endif %}\
+          {% for group, commits in commits | group_by(attribute="group") %}
+              ### {{ group | upper_first }}
+              {% for commit in commits %}
+                  - {{ commit.message | split(pat="\n") | first | trim }}\
+                    {% if commit.breaking %} [**BREAKING**]{% endif %}
+              {% endfor %}
+          {% endfor %}\n
+          """
+          trim = true
+
+          [git]
+          conventional_commits = true
+          filter_unconventional = false
+          commit_parsers = [
+              { message = "^feat", group = "Features" },
+              { message = "^fix", group = "Bug Fixes" },
+              { message = "^perf", group = "Performance" },
+              { message = "^refactor", group = "Refactoring" },
+              { message = "^doc", group = "Documentation" },
+              { message = "^test", group = "Testing" },
+              { message = "^chore", group = "Miscellaneous" },
+              { body = ".*security", group = "Security" },
+          ]
+          EOF
+
+      - name: Generate changelog
+        id: generate-changelog
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            # First release - get all commits
+            CHANGELOG=$(git-cliff --config cliff.toml --tag ${{ steps.get-version.outputs.version }})
+          else
+            # Generate changelog since last tag
+            CHANGELOG=$(git-cliff --config cliff.toml $PREV_TAG..${{ steps.get-version.outputs.version }})
+          fi
+          
+          # Save to file
+          echo "$CHANGELOG" > CHANGELOG.md
+          
+          # Save to output (escape for JSON)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload changelog artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG.md
+
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run linter
+        run: npm run lint:check
+
+      - name: Run tests
+        run: npm run test:cov
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist/
+
+  docker-build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [prepare-release, build-and-test]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.prepare-release.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.prepare-release.outputs.version }}
+            type=semver,pattern={{major}},value=${{ needs.prepare-release.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [prepare-release, build-and-test, docker-build]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: dist/
+
+      - name: Create release archive
+        run: |
+          tar -czf mash-backend-${{ needs.prepare-release.outputs.version }}.tar.gz dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.prepare-release.outputs.version }}
+          name: Release ${{ needs.prepare-release.outputs.version }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+          files: |
+            mash-backend-${{ needs.prepare-release.outputs.version }}.tar.gz
+            CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update package.json version
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.version }}"
+          VERSION_NO_V="${VERSION#v}"
+          npm version $VERSION_NO_V --no-git-tag-version
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to ${{ needs.prepare-release.outputs.version }}"
+          git push origin HEAD:main
+
+  notify-release:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [prepare-release, create-release]
+    
+    steps:
+      - name: Create deployment tracking issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ needs.prepare-release.outputs.version }}';
+            const changelog = `${{ needs.prepare-release.outputs.changelog }}`;
+            
+            const body = `## 🚀 Release ${version} Deployed
+            
+            ### 📦 Artifacts
+            - Docker Image: \`ghcr.io/${{ github.repository }}:${version}\`
+            - GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${version}
+            
+            ### 📝 Changelog
+            ${changelog}
+            
+            ### 🎯 Next Steps
+            - [ ] Deploy to staging environment
+            - [ ] Run smoke tests
+            - [ ] Deploy to production
+            - [ ] Update documentation
+            - [ ] Notify stakeholders
+            
+            ---
+            *Automated release notification*
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚀 Release ${version} - Deployment Tracking`,
+              body: body,
+              labels: ['release', 'deployment']
+            });
+
+      - name: Send Discord notification (if webhook configured)
+        if: env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🚀 New Release: ${{ needs.prepare-release.outputs.version }}",
+                "description": "MASH Backend has been released!",
+                "color": 5814783,
+                "fields": [
+                  {
+                    "name": "Version",
+                    "value": "${{ needs.prepare-release.outputs.version }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Docker Image",
+                    "value": "ghcr.io/${{ github.repository }}:${{ needs.prepare-release.outputs.version }}",
+                    "inline": false
+                  }
+                ],
+                "url": "https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.version }}"
+              }]
+            }' \
+            $DISCORD_WEBHOOK

@@ -1,13 +1,13 @@
 /**
  * Base Entity Class
- * 
+ *
  * Abstract class providing common fields and methods for all entities
  * Features:
  * - Auto-generated UUID
  * - Timestamp management (createdAt, updatedAt)
  * - Soft delete support (deletedAt)
  * - Serialization control
- * 
+ *
  * @abstract
  */
 export abstract class BaseEntity {
@@ -79,7 +79,7 @@ export abstract class BaseEntity {
 
     Object.keys(this).forEach((key) => {
       const value = (this as any)[key];
-      
+
       // Skip null/undefined values
       if (value === null || value === undefined) {
         return;

@@ -21,6 +21,7 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
 import { AvatarService } from './services/avatar.service';
@@ -34,8 +35,9 @@ import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { Verify2FADto } from './dto/verify-2fa.dto';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { FileValidationService } from '../../common/services/file-validation.service';
 
-@ApiTags('Profile')
+@ApiTags('profile')
 @Controller('profile')
 @UseGuards(ClerkAuthGuard)
 @ApiBearerAuth()
@@ -47,6 +49,7 @@ export class ProfileController {
     private readonly apiKeyService: ApiKeyService,
     private readonly securityLogService: SecurityLogService,
     private readonly twoFactorService: TwoFactorService,
+    private readonly fileValidationService: FileValidationService,
   ) {}
 
   @Get()
@@ -120,6 +123,7 @@ export class ProfileController {
   }
 
   @Post('avatar')
+  @Throttle({ medium: { limit: 10, ttl: 3600000 } }) // 10 uploads per hour
   @ApiOperation({ summary: 'Upload user avatar' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -129,8 +133,11 @@ export class ProfileController {
         avatar: {
           type: 'string',
           format: 'binary',
+          description:
+            'Avatar image file (JPEG, PNG, GIF, WebP, BMP, ICO) - Max 5MB',
         },
       },
+      required: ['avatar'],
     },
   })
   @ApiResponse({
@@ -146,16 +153,21 @@ export class ProfileController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid file or file validation failed',
+    description:
+      'Invalid file or file validation failed (e.g., wrong format, size exceeded, dangerous file type, MIME spoofing)',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized',
   })
+  @ApiResponse({
+    status: HttpStatus.TOO_MANY_REQUESTS,
+    description: 'Too many upload requests - Rate limit exceeded (10 per hour)',
+  })
   @UseInterceptors(
     FileInterceptor('avatar', {
       limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
+        fileSize: 10 * 1024 * 1024, // 10MB (matches FileValidationService limit)
       },
     }),
   )
@@ -163,6 +175,12 @@ export class ProfileController {
     @CurrentUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    // Validate file before processing (security layer)
+    // This validates: MIME type, file extension, file size, magic numbers, filename safety
+    await this.fileValidationService.validateImage(file, {
+      maxSize: 5 * 1024 * 1024, // 5MB limit for avatars
+    });
+
     const imageUrl = await this.avatarService.uploadAvatar(userId, file);
     return {
       imageUrl,
@@ -286,7 +304,9 @@ export class ProfileController {
   }
 
   @Delete('sessions')
-  @ApiOperation({ summary: 'Logout from all devices (revoke all sessions except current)' })
+  @ApiOperation({
+    summary: 'Logout from all devices (revoke all sessions except current)',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'All sessions revoked successfully',
@@ -338,9 +358,10 @@ export class ProfileController {
   }
 
   @Post('api-keys')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Generate a new API key',
-    description: '⚠️ The full API key will ONLY be shown once. Save it securely!',
+    description:
+      '⚠️ The full API key will ONLY be shown once. Save it securely!',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -355,9 +376,10 @@ export class ProfileController {
         scopes: { type: 'array', items: { type: 'string' } },
         expiresAt: { type: 'string', format: 'date-time', nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
-        warning: { 
-          type: 'string', 
-          example: 'This is the only time you will see the full API key. Please save it securely.' 
+        warning: {
+          type: 'string',
+          example:
+            'This is the only time you will see the full API key. Please save it securely.',
         },
       },
     },
@@ -417,7 +439,11 @@ export class ProfileController {
     @CurrentUser('id') userId: string,
     @Param('id') keyId: string,
   ) {
-    return this.apiKeyService.revokeApiKey(userId, keyId, 'User revoked API key');
+    return this.apiKeyService.revokeApiKey(
+      userId,
+      keyId,
+      'User revoked API key',
+    );
   }
 
   // ==================== Security Audit Trail ====================
@@ -425,7 +451,8 @@ export class ProfileController {
   @Get('security-log')
   @ApiOperation({
     summary: 'Get security audit trail',
-    description: 'View security events and login history with filtering options',
+    description:
+      'View security events and login history with filtering options',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -440,14 +467,29 @@ export class ProfileController {
             properties: {
               id: { type: 'string', example: 'cm5xyz789' },
               event: { type: 'string', example: 'LOGIN' },
-              severity: { type: 'string', example: 'INFO', enum: ['INFO', 'WARNING', 'ERROR', 'CRITICAL'] },
+              severity: {
+                type: 'string',
+                example: 'INFO',
+                enum: ['INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+              },
               ipAddress: { type: 'string', example: '192.168.1.100' },
-              userAgent: { type: 'string', example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...' },
+              userAgent: {
+                type: 'string',
+                example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...',
+              },
               metadata: {
                 type: 'object',
-                example: { device: 'Desktop', browser: 'Chrome', os: 'Windows' },
+                example: {
+                  device: 'Desktop',
+                  browser: 'Chrome',
+                  os: 'Windows',
+                },
               },
-              timestamp: { type: 'string', format: 'date-time', example: '2025-10-07T10:30:00.000Z' },
+              timestamp: {
+                type: 'string',
+                format: 'date-time',
+                example: '2025-10-07T10:30:00.000Z',
+              },
             },
           },
         },
@@ -467,13 +509,12 @@ export class ProfileController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized',
   })
-  async getSecurityLog(
-    @CurrentUser('id') userId: string,
-    @Req() req: any,
-  ) {
+  async getSecurityLog(@CurrentUser('id') userId: string, @Req() req: any) {
     // Extract query params
     const action = req.query?.action;
-    const dateFrom = req.query?.dateFrom ? new Date(req.query.dateFrom) : undefined;
+    const dateFrom = req.query?.dateFrom
+      ? new Date(req.query.dateFrom)
+      : undefined;
     const dateTo = req.query?.dateTo ? new Date(req.query.dateTo) : undefined;
     const severity = req.query?.severity;
     const page = req.query?.page ? parseInt(req.query.page, 10) : 1;
@@ -514,7 +555,8 @@ export class ProfileController {
         },
         otpauthUrl: {
           type: 'string',
-          example: 'otpauth://totp/MASH%20Backend%20(user@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MASH',
+          example:
+            'otpauth://totp/MASH%20Backend%20(user@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MASH',
           description: 'OTPAuth URL for manual entry',
         },
         message: { type: 'string' },
@@ -536,7 +578,8 @@ export class ProfileController {
   @Post('2fa/verify')
   @ApiOperation({
     summary: 'Enable 2FA - Step 2: Verify TOTP code',
-    description: 'Verify 6-digit TOTP code and enable 2FA. Returns backup codes (shown only once).',
+    description:
+      'Verify 6-digit TOTP code and enable 2FA. Returns backup codes (shown only once).',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -573,7 +616,8 @@ export class ProfileController {
   @Delete('2fa/disable')
   @ApiOperation({
     summary: 'Disable 2FA',
-    description: 'Disable two-factor authentication (clears secret and backup codes)',
+    description:
+      'Disable two-factor authentication (clears secret and backup codes)',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -582,7 +626,10 @@ export class ProfileController {
       type: 'object',
       properties: {
         disabled: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Two-factor authentication has been disabled' },
+        message: {
+          type: 'string',
+          example: 'Two-factor authentication has been disabled',
+        },
       },
     },
   })
@@ -601,7 +648,8 @@ export class ProfileController {
   @Post('2fa/backup-codes')
   @ApiOperation({
     summary: 'Regenerate backup codes',
-    description: 'Generate new backup codes (invalidates old ones). Shown only once.',
+    description:
+      'Generate new backup codes (invalidates old ones). Shown only once.',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,

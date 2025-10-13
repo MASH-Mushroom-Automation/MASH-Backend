@@ -4,20 +4,40 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { CacheService } from '../../common/services/cache.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryQueryDto } from './dto/category-query.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private prisma: PrismaService) {}
+  // Cache configuration
+  private readonly CATEGORY_CACHE_PREFIX = 'category';
+  private readonly CATEGORIES_LIST_CACHE_PREFIX = 'categories:list';
+  private readonly CATEGORY_TREE_CACHE_KEY = 'categories:tree';
+  private readonly CATEGORY_TTL = 600; // 10 minutes (categories don't change often)
+
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   /**
    * 1. Find all categories with pagination and filtering
+   * Phase 2: Cache category listings
    */
   async findAll(query: CategoryQueryDto) {
     const { page = 1, limit = 10, search, parentId, isActive } = query;
     const skip = (page - 1) * limit;
+
+    // Generate cache key
+    const cacheKey = `${this.CATEGORIES_LIST_CACHE_PREFIX}:${JSON.stringify(query)}`;
+
+    // Try cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const where: any = {};
 
@@ -63,7 +83,7 @@ export class CategoriesService {
       this.prisma.category.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: categories,
       meta: {
         total,
@@ -72,10 +92,19 @@ export class CategoriesService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache for 10 minutes
+    await this.cacheService.set(cacheKey, result, this.CATEGORY_TTL, [
+      'categories',
+      'categories:list',
+    ]);
+
+    return result;
   }
 
   /**
    * 2. Create new category
+   * Phase 2: Invalidate caches on create
    */
   async create(createCategoryDto: CreateCategoryDto) {
     const { slug, parentId } = createCategoryDto;
@@ -104,7 +133,7 @@ export class CategoriesService {
       }
     }
 
-    return this.prisma.category.create({
+    const category = await this.prisma.category.create({
       data: createCategoryDto,
       include: {
         parent: {
@@ -116,12 +145,24 @@ export class CategoriesService {
         },
       },
     });
+
+    // Invalidate category caches
+    await this.cacheService.invalidateByTags(['categories', 'categories:list']);
+
+    return category;
   }
 
   /**
    * 3. Get category tree (hierarchical structure)
+   * Phase 2: Cache category tree (critical for navigation)
    */
   async getCategoryTree() {
+    // Try cache first
+    const cached = await this.cacheService.get(this.CATEGORY_TREE_CACHE_KEY);
+    if (cached) {
+      return cached;
+    }
+
     // Get all active categories
     const categories = await this.prisma.category.findMany({
       where: { isActive: true },
@@ -138,13 +179,32 @@ export class CategoriesService {
         }));
     };
 
-    return buildTree();
+    const tree = buildTree();
+
+    // Cache for 10 minutes
+    await this.cacheService.set(
+      this.CATEGORY_TREE_CACHE_KEY,
+      tree,
+      this.CATEGORY_TTL,
+      ['categories', 'categories:tree'],
+    );
+
+    return tree;
   }
 
   /**
    * 4. Find one category by ID
+   * Phase 2: Cache individual categories
    */
   async findOne(id: string) {
+    const cacheKey = `${this.CATEGORY_CACHE_PREFIX}:${id}`;
+
+    // Try cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
@@ -170,11 +230,18 @@ export class CategoriesService {
       throw new NotFoundException(`Category with ID '${id}' not found`);
     }
 
+    // Cache for 10 minutes
+    await this.cacheService.set(cacheKey, category, this.CATEGORY_TTL, [
+      'categories',
+      `category:${id}`,
+    ]);
+
     return category;
   }
 
   /**
    * 5. Update category
+   * Phase 2: Invalidate caches on update
    */
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
     const category = await this.prisma.category.findUnique({
@@ -197,7 +264,6 @@ export class CategoriesService {
         );
       }
     }
-
     // Validate parent category if updating parentId
     if (updateCategoryDto.parentId) {
       // Prevent category from being its own parent
@@ -216,7 +282,7 @@ export class CategoriesService {
       }
     }
 
-    return this.prisma.category.update({
+    const updated = await this.prisma.category.update({
       where: { id },
       data: updateCategoryDto,
       include: {
@@ -236,10 +302,21 @@ export class CategoriesService {
         },
       },
     });
+
+    // Invalidate category caches
+    await this.cacheService.invalidateByTags([
+      'categories',
+      'categories:list',
+      'categories:tree',
+      `category:${id}`,
+    ]);
+
+    return updated;
   }
 
   /**
    * 6. Soft delete category
+   * Phase 2: Invalidate caches on delete
    */
   async remove(id: string) {
     const category = await this.prisma.category.findUnique({
@@ -261,33 +338,45 @@ export class CategoriesService {
     }
 
     // Soft delete by setting isActive = false
-    return this.prisma.category.update({
+    const deleted = await this.prisma.category.update({
       where: { id },
       data: { isActive: false },
     });
+
+    // Invalidate category caches
+    await this.cacheService.invalidateByTags([
+      'categories',
+      'categories:list',
+      'categories:tree',
+      `category:${id}`,
+    ]);
+
+    return deleted;
   }
 
   /**
    * 7. Get child categories
    */
   async getChildren(id: string) {
+    // ✅ FIX: Single query with include (eliminates N+1)
     const category = await this.prisma.category.findUnique({
       where: { id },
+      include: {
+        children: {
+          where: { isActive: true },
+          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        },
+        parent: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
     });
 
     if (!category) {
       throw new NotFoundException(`Category with ID '${id}' not found`);
     }
 
-    const children = await this.prisma.category.findMany({
-      where: {
-        parentId: id,
-        isActive: true,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-
-    return children;
+    return category.children;
   }
 
   /**

@@ -26,14 +26,38 @@ import { UpdatePriceDto } from './dto/update-price.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
+import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 
-@ApiTags('Products')
+@ApiTags('products')
 @Controller('products')
+@ThrottleEndpoint('STANDARD') // Standard CRUD operations - 100 req/min
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   // 1. GET /products - List all products with filters
   @Get()
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'slug',
+      'description',
+      'price',
+      'stock',
+      'minStock',
+      'sku',
+      'images',
+      'categoryId',
+      'isActive',
+      'isFeatured',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'name', 'price'],
+    defaultFields: ['id', 'name', 'slug', 'price', 'stock', 'images'],
+    maxFields: 15,
+  })
   @ApiOperation({ summary: 'List all products with filters and pagination' })
   @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
   async findAll(@Query() query: ProductQueryDto) {
@@ -58,6 +82,20 @@ export class ProductsController {
 
   // 3. GET /products/featured - Get featured products
   @Get('featured')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'slug',
+      'description',
+      'price',
+      'stock',
+      'images',
+      'categoryId',
+    ],
+    requiredFields: ['id', 'name', 'price'],
+    defaultFields: ['id', 'name', 'slug', 'price', 'images'],
+  })
   @ApiOperation({ summary: 'Get featured products' })
   @ApiResponse({
     status: 200,
@@ -69,6 +107,21 @@ export class ProductsController {
 
   // 4. GET /products/category/:categoryId - Get products by category
   @Get('category/:categoryId')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'slug',
+      'description',
+      'price',
+      'stock',
+      'images',
+      'categoryId',
+      'isActive',
+    ],
+    requiredFields: ['id', 'name', 'price'],
+    defaultFields: ['id', 'name', 'slug', 'price', 'stock', 'images'],
+  })
   @ApiOperation({ summary: 'Get products by category' })
   @ApiResponse({
     status: 200,
@@ -83,6 +136,35 @@ export class ProductsController {
 
   // 5. GET /products/:id - Get product by ID
   @Get(':id')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'name',
+      'slug',
+      'description',
+      'price',
+      'stock',
+      'minStock',
+      'sku',
+      'images',
+      'categoryId',
+      'isActive',
+      'isFeatured',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id'],
+    defaultFields: [
+      'id',
+      'name',
+      'slug',
+      'description',
+      'price',
+      'stock',
+      'images',
+      'categoryId',
+    ],
+  })
   @ApiOperation({ summary: 'Get product details by ID' })
   @ApiResponse({
     status: 200,

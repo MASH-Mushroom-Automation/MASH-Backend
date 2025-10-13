@@ -23,7 +23,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateUserProfileDto } from './dto/update-profile.dto';
 import { UserPreferencesDto } from './dto/user-preferences.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
@@ -32,25 +32,88 @@ import { UserFilterQueryDto } from './dto/user-filter-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
+import { FileValidationService } from '../../common/services/file-validation.service';
 
-@ApiTags('Users')
+@ApiTags('users')
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly fileValidationService: FileValidationService,
+  ) {}
 
   // 1. GET /users - List users (admin only)
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
-  @ApiOperation({ summary: 'List all users with pagination and filters' })
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'email',
+      'firstName',
+      'lastName',
+      'role',
+      'isActive',
+      'avatar',
+      'phone',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id', 'email'],
+    defaultFields: ['id', 'email', 'firstName', 'lastName', 'role', 'isActive'],
+    maxFields: 12,
+  })
+  @ApiOperation({
+    summary: 'List all users with pagination and filters',
+    description: `
+**Authentication Required**: This endpoint requires a valid JWT token with ADMIN or SUPER_ADMIN role.
+
+**How to test in Swagger**:
+1. Start the backend: \`npm run start:dev\`
+2. Login using POST /api/v1/auth/login
+3. Copy the 'accessToken' from response
+4. Click "Authorize" 🔒 button at top
+5. Paste token and click "Authorize"
+6. Now test this endpoint
+
+**Required Role**: ADMIN or SUPER_ADMIN
+    `,
+  })
   @ApiResponse({
     status: 200,
     description: 'Users retrieved successfully',
+    schema: {
+      example: {
+        success: true,
+        data: [
+          {
+            id: 'user_1',
+            email: 'admin@example.com',
+            firstName: 'Admin',
+            lastName: 'User',
+            role: 'ADMIN',
+            isActive: true,
+          },
+        ],
+        meta: {
+          total: 1,
+          page: 1,
+          limit: 10,
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access only' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - No token or invalid token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access only',
+  })
   async findAll(@Query() query: UserFilterQueryDto) {
     return this.usersService.findAll(query);
   }
@@ -59,17 +122,108 @@ export class UsersController {
   @Post()
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
-  @ApiOperation({ summary: 'Create new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access only' })
+  @ApiOperation({
+    summary: 'Create new user',
+    description: `
+**Authentication Required**: This endpoint requires a valid JWT token with ADMIN or SUPER_ADMIN role.
+
+**How to authenticate in Swagger**:
+1. First, login using POST /api/v1/auth/login or POST /api/v1/auth/register
+2. Copy the 'accessToken' from the response
+3. Click the "Authorize" button (🔒) at the top of this page
+4. Paste the token in the "Value" field
+5. Click "Authorize" then "Close"
+6. Now you can test this endpoint
+
+**Required Role**: ADMIN or SUPER_ADMIN
+    `,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User created successfully',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'user_2abc123xyz',
+          email: 'user@example.com',
+          username: 'john_doe',
+          firstName: 'John',
+          lastName: 'Doe',
+          role: 'USER',
+          isActive: true,
+          createdAt: '2024-12-15T10:30:00.000Z',
+          updatedAt: '2024-12-15T10:30:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data',
+    schema: {
+      example: {
+        success: false,
+        error: 'Validation failed',
+        message: ['email must be a valid email address'],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - No token or invalid token',
+    schema: {
+      example: {
+        success: false,
+        error: 'Unauthorized',
+        message: 'You must be logged in to access this endpoint',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access only',
+    schema: {
+      example: {
+        success: false,
+        error: 'Forbidden',
+        message: 'You need ADMIN role to access this endpoint',
+      },
+    },
+  })
   async create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   // 3. GET /users/:id - Get user details
   @Get(':id')
+  @SelectableFields({
+    allowedFields: [
+      'id',
+      'email',
+      'firstName',
+      'lastName',
+      'role',
+      'isActive',
+      'avatar',
+      'phone',
+      'emailVerified',
+      'twoFactorEnabled',
+      'createdAt',
+      'updatedAt',
+    ],
+    requiredFields: ['id'],
+    defaultFields: [
+      'id',
+      'email',
+      'firstName',
+      'lastName',
+      'role',
+      'isActive',
+      'avatar',
+    ],
+    maxFields: 15,
+  })
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'User retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -126,31 +280,43 @@ export class UsersController {
 
   // 7. PUT /users/:id/profile - Update profile
   @Put(':id/profile')
-  @ApiOperation({ summary: 'Update user profile' })
+  @ApiOperation({ summary: 'Update user profile (Admin)' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'User not found' })
   async updateProfile(
     @Param('id') id: string,
-    @Body() updateProfileDto: UpdateProfileDto,
+    @Body() updateProfileDto: UpdateUserProfileDto,
   ) {
     return this.usersService.updateProfile(id, updateProfileDto);
   }
 
   // 8. POST /users/:id/avatar - Upload avatar
   @Post(':id/avatar')
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      },
+    }),
+  )
   @ApiOperation({ summary: 'Upload user avatar image' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 200, description: 'Avatar uploaded successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid file' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Invalid file (wrong format, size exceeded, dangerous type, MIME spoofing)',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async uploadAvatar(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    // Validate file before processing (security layer)
+    await this.fileValidationService.validateImage(file, {
+      maxSize: 5 * 1024 * 1024, // 5MB limit for avatars
+    });
+
     return this.usersService.uploadAvatar(id, file);
   }
 

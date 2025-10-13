@@ -113,8 +113,8 @@ describe.skip('LoggingInterceptor', () => {
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
         next: () => {
-          const logCall = mockLogger.log.mock.calls.find(call => 
-            call[0].includes('Outgoing Response')
+          const logCall = mockLogger.log.mock.calls.find((call) =>
+            call[0].includes('Outgoing Response'),
           );
           expect(logCall[1].duration).toBeGreaterThanOrEqual(0);
           done();

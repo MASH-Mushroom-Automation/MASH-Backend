@@ -1,9 +1,13 @@
-import { NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 /**
  * Base Service Class
- * 
+ *
  * Abstract service providing common CRUD operations
  * Features:
  * - Generic CRUD methods
@@ -11,7 +15,7 @@ import { PrismaClient } from '@prisma/client';
  * - Filtering & sorting
  * - Error handling
  * - Soft delete support
- * 
+ *
  * @abstract
  * @template T - Entity type
  * @template CreateDto - DTO for creating entity
@@ -31,17 +35,19 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Find all entities with pagination
-   * 
+   *
    * @param options - Query options (page, limit, where, orderBy)
    * @returns Paginated list of entities
    */
-  async findAll(options: {
-    page?: number;
-    limit?: number;
-    where?: any;
-    orderBy?: any;
-    include?: any;
-  } = {}): Promise<{
+  async findAll(
+    options: {
+      page?: number;
+      limit?: number;
+      where?: any;
+      orderBy?: any;
+      include?: any;
+    } = {},
+  ): Promise<{
     data: T[];
     total: number;
     page: number;
@@ -86,7 +92,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Find one entity by ID
-   * 
+   *
    * @param id - Entity ID
    * @param include - Relations to include
    * @returns Entity or null
@@ -106,7 +112,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Find one entity by criteria
-   * 
+   *
    * @param where - Query criteria
    * @param include - Relations to include
    * @returns Entity or null
@@ -124,7 +130,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Create a new entity
-   * 
+   *
    * @param dto - Create DTO
    * @returns Created entity
    */
@@ -140,7 +146,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Update an entity
-   * 
+   *
    * @param id - Entity ID
    * @param dto - Update DTO
    * @returns Updated entity
@@ -161,7 +167,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Delete an entity (soft or hard delete)
-   * 
+   *
    * @param id - Entity ID
    * @param soft - Use soft delete (default: true)
    */
@@ -189,7 +195,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Restore a soft-deleted entity
-   * 
+   *
    * @param id - Entity ID
    * @returns Restored entity
    */
@@ -206,15 +212,13 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Bulk create entities
-   * 
+   *
    * @param dtos - Array of create DTOs
    * @returns Created entities
    */
   async bulkCreate(dtos: CreateDto[]): Promise<T[]> {
     try {
-      const results = await Promise.all(
-        dtos.map((dto) => this.create(dto))
-      );
+      const results = await Promise.all(dtos.map((dto) => this.create(dto)));
       return results;
     } catch (error) {
       this.handleError(error, 'bulkCreate');
@@ -223,14 +227,16 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Bulk update entities
-   * 
+   *
    * @param updates - Array of {id, data}
    * @returns Updated entities
    */
-  async bulkUpdate(updates: Array<{ id: string; data: UpdateDto }>): Promise<T[]> {
+  async bulkUpdate(
+    updates: Array<{ id: string; data: UpdateDto }>,
+  ): Promise<T[]> {
     try {
       const results = await Promise.all(
-        updates.map(({ id, data }) => this.update(id, data))
+        updates.map(({ id, data }) => this.update(id, data)),
       );
       return results;
     } catch (error) {
@@ -240,7 +246,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Count entities
-   * 
+   *
    * @param where - Query criteria
    * @returns Count
    */
@@ -254,7 +260,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Check if entity exists
-   * 
+   *
    * @param id - Entity ID
    * @returns Boolean
    */
@@ -272,7 +278,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Validate entity exists, throw NotFoundException if not
-   * 
+   *
    * @param entity - Entity
    * @param id - Entity ID (for error message)
    * @returns Entity
@@ -290,7 +296,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
   /**
    * Handle errors and throw appropriate exceptions
-   * 
+   *
    * @param error - Error object
    * @param operation - Operation name
    * @throws BadRequestException, InternalServerErrorException
@@ -303,20 +309,14 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
       switch (error.code) {
         case 'P2002':
           throw new BadRequestException(
-            `${this.entityName} with this unique field already exists`
+            `${this.entityName} with this unique field already exists`,
           );
         case 'P2025':
-          throw new NotFoundException(
-            `${this.entityName} not found`
-          );
+          throw new NotFoundException(`${this.entityName} not found`);
         case 'P2003':
-          throw new BadRequestException(
-            'Foreign key constraint failed'
-          );
+          throw new BadRequestException('Foreign key constraint failed');
         default:
-          throw new BadRequestException(
-            `Database error: ${error.message}`
-          );
+          throw new BadRequestException(`Database error: ${error.message}`);
       }
     }
 
@@ -330,7 +330,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
 
     // Generic error
     throw new InternalServerErrorException(
-      `Failed to ${operation} ${this.entityName}`
+      `Failed to ${operation} ${this.entityName}`,
     );
   }
 }

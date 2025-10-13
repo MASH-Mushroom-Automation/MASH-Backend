@@ -10,14 +10,14 @@ import { Prisma } from '@prisma/client';
 
 /**
  * Prisma Exception Filter
- * 
+ *
  * Catches Prisma database errors and converts them to user-friendly HTTP responses
  * Features:
  * - Maps Prisma error codes to HTTP status codes
  * - Hides internal database details
  * - Provides helpful error messages
  * - Handles all Prisma error types
- * 
+ *
  * Common Prisma Error Codes:
  * - P2002: Unique constraint violation
  * - P2025: Record not found
@@ -109,7 +109,9 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   /**
    * Handle Prisma known request errors with specific error codes
    */
-  private handleKnownRequestError(exception: Prisma.PrismaClientKnownRequestError): {
+  private handleKnownRequestError(
+    exception: Prisma.PrismaClientKnownRequestError,
+  ): {
     status: HttpStatus;
     message: string;
     code: string;

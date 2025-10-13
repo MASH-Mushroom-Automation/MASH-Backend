@@ -1,0 +1,45 @@
+/**
+ * Simple health-check script used by Docker HEALTHCHECK.
+ * It performs an HTTP GET against the running application's health endpoint
+ * and exits with code 0 on success (2xx), non-zero otherwise.
+ *
+ * This file is compiled to `dist/health-check.js` by `npm run build` and
+ * referenced by the Dockerfile HEALTHCHECK instruction.
+ */
+import http from 'http';
+
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const PATH = process.env.HEALTH_PATH || '/api/v1/health';
+const HOST = process.env.HEALTH_HOST || '127.0.0.1';
+const TIMEOUT_MS = 3000;
+
+function checkHealth(): Promise<number> {
+  const url = `http://${HOST}:${PORT}${PATH}`;
+
+  return new Promise((resolve) => {
+    const req = http.get(url, (res) => {
+      const ok = res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
+      res.resume();
+      resolve(ok ? 0 : 1);
+    });
+
+    req.on('error', () => resolve(1));
+    req.setTimeout(TIMEOUT_MS, () => {
+      req.destroy();
+      resolve(1);
+    });
+  });
+}
+
+(async () => {
+  const code = await checkHealth();
+  // Ensure any logs are flushed
+  if (code === 0) {
+    console.log(`OK: health endpoint reachable at http://${HOST}:${PORT}${PATH}`);
+    process.exit(0);
+  }
+
+  console.error(`FAIL: health endpoint unreachable at http://${HOST}:${PORT}${PATH}`);
+  process.exit(1);
+})();
+

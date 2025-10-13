@@ -10,7 +10,7 @@ import { Request, Response } from 'express';
 
 /**
  * All Exceptions Filter
- * 
+ *
  * Catch-all filter for any unhandled exceptions
  * Features:
  * - Catches all unexpected errors

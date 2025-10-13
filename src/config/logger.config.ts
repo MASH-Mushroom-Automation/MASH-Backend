@@ -4,7 +4,7 @@ import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 
 /**
  * Winston Logger Configuration
- * 
+ *
  * Features:
  * - Console transport for development
  * - File transport for production
@@ -22,27 +22,37 @@ const isProduction = process.env.NODE_ENV === 'production';
 const logDir = process.env.LOG_DIR || 'logs';
 
 // Custom log format
-const customFormat = winston.format.printf(({ timestamp, level, message, context, trace, correlationId, ...metadata }) => {
-  let msg = `${timestamp} [${level}] [${context || 'Application'}]`;
-  
-  if (correlationId) {
-    msg += ` [${correlationId}]`;
-  }
-  
-  msg += `: ${message}`;
-  
-  // Add metadata if present
-  if (Object.keys(metadata).length > 0) {
-    msg += ` ${JSON.stringify(metadata)}`;
-  }
-  
-  // Add stack trace for errors
-  if (trace) {
-    msg += `\n${trace}`;
-  }
-  
-  return msg;
-});
+const customFormat = winston.format.printf(
+  ({
+    timestamp,
+    level,
+    message,
+    context,
+    trace,
+    correlationId,
+    ...metadata
+  }) => {
+    let msg = `${timestamp} [${level}] [${context || 'Application'}]`;
+
+    if (correlationId) {
+      msg += ` [${correlationId}]`;
+    }
+
+    msg += `: ${message}`;
+
+    // Add metadata if present
+    if (Object.keys(metadata).length > 0) {
+      msg += ` ${JSON.stringify(metadata)}`;
+    }
+
+    // Add stack trace for errors
+    if (trace) {
+      msg += `\n${trace}`;
+    }
+
+    return msg;
+  },
+);
 
 // Console transport for development
 const consoleTransport = new winston.transports.Console({
@@ -106,24 +116,24 @@ const combinedFileTransport = new winston.transports.File({
  */
 export const createLoggerConfig = () => {
   const transports: winston.transport[] = [];
-  
+
   // Always add console in development
   if (isDevelopment) {
     transports.push(consoleTransport);
   }
-  
+
   // Add file transports in production or if LOG_TO_FILE is true
   if (isProduction || process.env.LOG_TO_FILE === 'true') {
     transports.push(fileTransport);
     transports.push(errorFileTransport);
     transports.push(combinedFileTransport);
   }
-  
+
   // If no transports, add console as fallback
   if (transports.length === 0) {
     transports.push(consoleTransport);
   }
-  
+
   return {
     level: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
     format: winston.format.combine(

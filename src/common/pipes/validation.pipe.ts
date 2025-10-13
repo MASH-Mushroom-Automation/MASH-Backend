@@ -9,7 +9,7 @@ import { plainToClass } from 'class-transformer';
 
 /**
  * Enhanced Validation Pipe
- * 
+ *
  * Extends NestJS ValidationPipe with custom error formatting
  * Features:
  * - Automatic DTO validation with class-validator

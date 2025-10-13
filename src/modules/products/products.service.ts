@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { CacheService } from '../../common/services/cache.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
@@ -13,10 +14,20 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly PRODUCT_CACHE_PREFIX = 'product';
+  private readonly PRODUCTS_LIST_CACHE_PREFIX = 'products:list';
+  private readonly PRODUCTS_SEARCH_CACHE_PREFIX = 'products:search';
+  private readonly PRODUCT_TTL = 600; // 10 minutes
+  private readonly SEARCH_TTL = 300; // 5 minutes (search results more volatile)
+
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   /**
    * Get all products with pagination and filters
+   * Phase 2 Task 2.2.1: Cache products catalog
    */
   async findAll(query: ProductQueryDto) {
     const {
@@ -29,6 +40,15 @@ export class ProductsService {
       sortOrder = 'desc',
       isFeatured,
     } = query;
+
+    // Generate cache key from query parameters
+    const cacheKey = `${this.PRODUCTS_LIST_CACHE_PREFIX}:${JSON.stringify(query)}`;
+
+    // Try cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const skip = (page - 1) * limit;
     const where: Prisma.ProductWhereInput = {};
@@ -72,7 +92,7 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: products,
       meta: {
         total,
@@ -81,10 +101,19 @@ export class ProductsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache for 10 minutes with tags
+    await this.cacheService.set(cacheKey, result, this.PRODUCT_TTL, [
+      'products',
+      'products:list',
+    ]);
+
+    return result;
   }
 
   /**
    * Create new product
+   * Phase 2: Invalidate product caches on create
    */
   async create(createProductDto: CreateProductDto) {
     const { slug, sku, ...rest } = createProductDto;
@@ -110,20 +139,38 @@ export class ProductsService {
       }
     }
 
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: {
         ...rest,
         slug: productSlug,
         sku,
       },
     });
+
+    // Invalidate product caches (including search results)
+    await this.cacheService.invalidateByTags([
+      'products',
+      'products:list',
+      'products:search',
+    ]);
+
+    return product;
   }
 
   /**
    * Get featured products
+   * Phase 2: Cache featured products
    */
   async getFeatured() {
-    return this.prisma.product.findMany({
+    const cacheKey = `${this.PRODUCTS_LIST_CACHE_PREFIX}:featured`;
+
+    // Try cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const products = await this.prisma.product.findMany({
       where: {
         isFeatured: true,
         isActive: true,
@@ -131,14 +178,32 @@ export class ProductsService {
       take: 10,
       orderBy: { createdAt: 'desc' },
     });
+
+    // Cache for 10 minutes
+    await this.cacheService.set(cacheKey, products, this.PRODUCT_TTL, [
+      'products',
+      'products:featured',
+    ]);
+
+    return products;
   }
 
   /**
    * Get products by category
+   * Phase 2: Cache category products
    */
   async getByCategory(categoryId: string, query: ProductQueryDto) {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
+
+    // Generate cache key
+    const cacheKey = `${this.PRODUCTS_LIST_CACHE_PREFIX}:category:${categoryId}:${JSON.stringify(query)}`;
+
+    // Try cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const where: Prisma.ProductWhereInput = {
       categories: {
@@ -158,7 +223,7 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: products,
       meta: {
         total,
@@ -167,12 +232,30 @@ export class ProductsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache for 10 minutes
+    await this.cacheService.set(cacheKey, result, this.PRODUCT_TTL, [
+      'products',
+      'products:category',
+      `category:${categoryId}`,
+    ]);
+
+    return result;
   }
 
   /**
    * Get product by ID
+   * Phase 2: Cache individual products
    */
   async findOne(id: string) {
+    const cacheKey = `${this.PRODUCT_CACHE_PREFIX}:${id}`;
+
+    // Try cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const product = await this.prisma.product.findUnique({
       where: { id },
     });
@@ -181,11 +264,18 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
+    // Cache for 10 minutes
+    await this.cacheService.set(cacheKey, product, this.PRODUCT_TTL, [
+      'products',
+      `product:${id}`,
+    ]);
+
     return product;
   }
 
   /**
    * Update product
+   * Phase 2: Invalidate caches on update
    */
   async update(id: string, updateProductDto: UpdateProductDto) {
     const { slug, sku, ...rest } = updateProductDto;
@@ -213,7 +303,7 @@ export class ProductsService {
       }
     }
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: {
         ...rest,
@@ -221,18 +311,39 @@ export class ProductsService {
         sku,
       },
     });
+
+    // Invalidate product caches (including search results)
+    await this.cacheService.invalidateByTags([
+      'products',
+      'products:list',
+      'products:search',
+      `product:${id}`,
+    ]);
+
+    return updated;
   }
 
   /**
    * Soft delete product
+   * Phase 2: Invalidate caches on delete
    */
   async remove(id: string) {
     await this.findOne(id); // Check if exists
 
-    return this.prisma.product.update({
+    const deleted = await this.prisma.product.update({
       where: { id },
       data: { isActive: false },
     });
+
+    // Invalidate product caches (including search results)
+    await this.cacheService.invalidateByTags([
+      'products',
+      'products:list',
+      'products:search',
+      `product:${id}`,
+    ]);
+
+    return deleted;
   }
 
   /**
@@ -276,9 +387,20 @@ export class ProductsService {
 
   /**
    * Search products
+   * Phase 2 Task 2.3.2: Cache search results
    */
   async search(term: string, query: ProductQueryDto) {
     const { page = 1, limit = 10 } = query;
+
+    // Generate cache key from search term and query parameters
+    const cacheKey = `${this.PRODUCTS_SEARCH_CACHE_PREFIX}:${term}:${JSON.stringify(query)}`;
+
+    // Try cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
@@ -302,7 +424,7 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: products,
       meta: {
         total,
@@ -311,18 +433,37 @@ export class ProductsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache search results for 5 minutes
+    await this.cacheService.set(cacheKey, result, this.SEARCH_TTL, [
+      'products',
+      'products:search',
+    ]);
+
+    return result;
   }
 
   /**
    * Toggle product active status
+   * Phase 2: Invalidate caches on status change
    */
   async toggleActive(id: string) {
     const product = await this.findOne(id);
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { isActive: !product.isActive },
     });
+
+    // Invalidate product caches (including search results)
+    await this.cacheService.invalidateByTags([
+      'products',
+      'products:list',
+      'products:search',
+      `product:${id}`,
+    ]);
+
+    return updated;
   }
 
   /**

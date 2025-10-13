@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsOptional,
 } from 'class-validator';
+import { IsStrongPassword } from '../../../common/validators';
 
 enum UserRole {
   USER = 'USER',
@@ -32,11 +33,19 @@ export class CreateUserDto {
 
   @ApiProperty({
     example: 'SecureP@ssw0rd',
-    description: 'User password (minimum 8 characters)',
+    description:
+      'User password (minimum 8 characters, must include uppercase, lowercase, numbers, and symbols)',
     minLength: 8,
   })
   @IsString()
   @MinLength(8)
+  @IsStrongPassword({
+    minLength: 8,
+    minLowercase: 1,
+    minUppercase: 1,
+    minNumbers: 1,
+    minSymbols: 1,
+  })
   password: string;
 
   @ApiProperty({

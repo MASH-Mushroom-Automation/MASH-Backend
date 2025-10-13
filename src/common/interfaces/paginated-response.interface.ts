@@ -2,9 +2,9 @@ import { ApiResponse, PaginationMetadata } from './api-response.interface';
 
 /**
  * Paginated Response Interface
- * 
+ *
  * Extends ApiResponse with pagination-specific properties
- * 
+ *
  * @template T - The type of items in the data array
  */
 export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {

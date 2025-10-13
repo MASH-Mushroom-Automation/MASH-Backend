@@ -1,14 +1,18 @@
 /**
  * Transformer Utility
- * 
+ *
  * Provides functions for transforming data between formats
  */
 
-import { ClassConstructor, plainToClass, classToPlain } from 'class-transformer';
+import {
+  ClassConstructor,
+  plainToClass,
+  classToPlain,
+} from 'class-transformer';
 
 /**
  * Transform plain object to DTO class instance
- * 
+ *
  * @param cls - DTO class
  * @param plain - Plain object
  * @returns DTO instance
@@ -19,7 +23,7 @@ export function toDto<T, V>(cls: ClassConstructor<T>, plain: V): T {
 
 /**
  * Transform array of plain objects to DTO class instances
- * 
+ *
  * @param cls - DTO class
  * @param plain - Array of plain objects
  * @returns Array of DTO instances
@@ -30,7 +34,7 @@ export function toDtoArray<T, V>(cls: ClassConstructor<T>, plain: V[]): T[] {
 
 /**
  * Transform DTO instance to plain object
- * 
+ *
  * @param dto - DTO instance
  * @returns Plain object
  */
@@ -40,7 +44,7 @@ export function toPlain<T>(dto: T): Record<string, any> {
 
 /**
  * Exclude specific properties from object
- * 
+ *
  * @param obj - Object
  * @param keys - Keys to exclude
  * @returns Object without excluded keys
@@ -50,17 +54,17 @@ export function exclude<T extends Record<string, any>, K extends keyof T>(
   keys: K[],
 ): Omit<T, K> {
   const result = { ...obj };
-  
+
   keys.forEach((key) => {
     delete result[key];
   });
-  
+
   return result;
 }
 
 /**
  * Pick specific properties from object
- * 
+ *
  * @param obj - Object
  * @param keys - Keys to pick
  * @returns Object with only picked keys
@@ -70,19 +74,19 @@ export function pick<T extends Record<string, any>, K extends keyof T>(
   keys: K[],
 ): Pick<T, K> {
   const result: any = {};
-  
+
   keys.forEach((key) => {
     if (key in obj) {
       result[key] = obj[key];
     }
   });
-  
+
   return result;
 }
 
 /**
  * Transform camelCase to snake_case
- * 
+ *
  * @param str - camelCase string
  * @returns snake_case string
  */
@@ -92,7 +96,7 @@ export function camelToSnake(str: string): string {
 
 /**
  * Transform snake_case to camelCase
- * 
+ *
  * @param str - snake_case string
  * @returns camelCase string
  */
@@ -102,19 +106,23 @@ export function snakeToCamel(str: string): string {
 
 /**
  * Transform object keys to camelCase
- * 
+ *
  * @param obj - Object with snake_case keys
  * @returns Object with camelCase keys
  */
 export function keysToCamel<T extends Record<string, any>>(obj: T): any {
   const result: any = {};
-  
+
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
       const camelKey = snakeToCamel(key);
       const value = obj[key];
-      
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
         result[camelKey] = keysToCamel(value);
       } else if (Array.isArray(value)) {
         result[camelKey] = value.map((item) =>
@@ -125,25 +133,29 @@ export function keysToCamel<T extends Record<string, any>>(obj: T): any {
       }
     }
   }
-  
+
   return result;
 }
 
 /**
  * Transform object keys to snake_case
- * 
+ *
  * @param obj - Object with camelCase keys
  * @returns Object with snake_case keys
  */
 export function keysToSnake<T extends Record<string, any>>(obj: T): any {
   const result: any = {};
-  
+
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
       const snakeKey = camelToSnake(key);
       const value = obj[key];
-      
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
         result[snakeKey] = keysToSnake(value);
       } else if (Array.isArray(value)) {
         result[snakeKey] = value.map((item) =>
@@ -154,13 +166,13 @@ export function keysToSnake<T extends Record<string, any>>(obj: T): any {
       }
     }
   }
-  
+
   return result;
 }
 
 /**
  * Deep clone an object
- * 
+ *
  * @param obj - Object to clone
  * @returns Cloned object
  */
@@ -170,7 +182,7 @@ export function deepClone<T>(obj: T): T {
 
 /**
  * Deep merge two objects
- * 
+ *
  * @param target - Target object
  * @param source - Source object
  * @returns Merged object
@@ -180,12 +192,12 @@ export function deepMerge<T extends Record<string, any>>(
   source: Partial<T>,
 ): T {
   const result = { ...target };
-  
+
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       const sourceValue = source[key];
       const targetValue = result[key];
-      
+
       if (
         typeof sourceValue === 'object' &&
         sourceValue !== null &&
@@ -200,6 +212,6 @@ export function deepMerge<T extends Record<string, any>>(
       }
     }
   }
-  
+
   return result;
 }

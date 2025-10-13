@@ -9,12 +9,14 @@ import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 import { DateRangeQueryDto } from './dto/date-range-query.dto';
 
-@ApiTags('Analytics')
-@Controller('api/v1/analytics')
+@ApiTags('analytics')
+@Controller('analytics')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
+@ThrottleEndpoint('EXPENSIVE') // All analytics endpoints limited to 10 req/min
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 

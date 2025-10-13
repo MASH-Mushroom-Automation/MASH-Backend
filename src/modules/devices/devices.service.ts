@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { MqttService } from './mqtt.service';
 import { DevicesGateway } from './devices.gateway';
+import { CacheService } from '../../common/services/cache.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { DeviceFilterQueryDto } from './dto/device-filter-query.dto';
@@ -21,15 +22,34 @@ import { DeviceAnalyticsQueryDto } from './dto/device-analytics-query.dto';
 export class DevicesService {
   private readonly logger = new Logger(DevicesService.name);
 
+  // Cache configuration
+  private readonly DEVICE_CACHE_PREFIX = 'device';
+  private readonly DEVICES_LIST_CACHE_PREFIX = 'devices:list';
+  private readonly DEVICE_CONFIG_CACHE_PREFIX = 'device:config';
+  private readonly USER_DEVICES_CACHE_PREFIX = 'devices:user';
+  private readonly DEVICE_TTL = 300; // 5 minutes (device status changes frequently)
+  private readonly DEVICE_CONFIG_TTL = 600; // 10 minutes (configuration changes less frequently)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mqttService: MqttService,
     private readonly devicesGateway: DevicesGateway,
+    private readonly cacheService: CacheService,
   ) {}
 
   // ========== Device CRUD ==========
 
   async findAll(query: DeviceFilterQueryDto, currentUser: any) {
+    // Generate cache key based on query parameters and user context
+    const cacheKey = `${this.DEVICES_LIST_CACHE_PREFIX}:${currentUser.id}:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for devices list: ${cacheKey}`);
+      return cached;
+    }
+
     const {
       page = 1,
       limit = 10,
@@ -89,7 +109,7 @@ export class DevicesService {
       this.prisma.device.count({ where }),
     ]);
 
-    return {
+    const result = {
       data: devices,
       meta: {
         total,
@@ -98,6 +118,14 @@ export class DevicesService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache the result with 5-minute TTL
+    await this.cacheService.set(cacheKey, result, this.DEVICE_TTL, [
+      'devices',
+      'devices:list',
+    ]);
+
+    return result;
   }
 
   async create(createDeviceDto: CreateDeviceDto, currentUser: any) {
@@ -130,11 +158,33 @@ export class DevicesService {
       },
     });
 
+    // Invalidate devices list caches
+    await this.cacheService.invalidateByTags(['devices', 'devices:list']);
+
     this.logger.log(`Device created: ${device.id} - ${device.name}`);
     return device;
   }
 
   async findOne(id: string, currentUser: any) {
+    // Generate cache key
+    const cacheKey = `${this.DEVICE_CACHE_PREFIX}:${id}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) {
+      // Still need to check permissions for cached data
+      if (
+        cached.userId !== currentUser.id &&
+        !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
+      ) {
+        throw new ForbiddenException(
+          'You do not have permission to view this device',
+        );
+      }
+      this.logger.debug(`Cache hit for device: ${cacheKey}`);
+      return cached;
+    }
+
     const device = await this.prisma.device.findUnique({
       where: { id },
       include: {
@@ -170,6 +220,12 @@ export class DevicesService {
       );
     }
 
+    // Cache the result with 5-minute TTL
+    await this.cacheService.set(cacheKey, device, this.DEVICE_TTL, [
+      'devices',
+      `device:${id}`,
+    ]);
+
     return device;
   }
 
@@ -185,6 +241,13 @@ export class DevicesService {
       },
     });
 
+    // Invalidate device caches
+    await this.cacheService.invalidateByTags([
+      'devices',
+      'devices:list',
+      `device:${id}`,
+    ]);
+
     this.logger.log(`Device updated: ${id}`);
     return updated;
   }
@@ -195,6 +258,13 @@ export class DevicesService {
       where: { id },
       data: { isActive: false },
     });
+
+    // Invalidate device caches
+    await this.cacheService.invalidateByTags([
+      'devices',
+      'devices:list',
+      `device:${id}`,
+    ]);
 
     this.logger.log(`Device deleted: ${id}`);
     return { message: 'Device deleted successfully', device };
@@ -207,6 +277,13 @@ export class DevicesService {
       where: { id },
       data: { isActive: !device.isActive },
     });
+
+    // Invalidate device caches
+    await this.cacheService.invalidateByTags([
+      'devices',
+      'devices:list',
+      `device:${id}`,
+    ]);
 
     return {
       message: `Device ${updated.isActive ? 'activated' : 'deactivated'}`,
@@ -250,6 +327,9 @@ export class DevicesService {
         where: { id: deviceCommand.id },
         data: { status: 'sent' },
       });
+
+      // Invalidate device cache (command history changed)
+      await this.cacheService.invalidateByTags([`device:${id}`]);
 
       this.logger.log(`Command sent to device ${id}: ${commandDto.command}`);
 

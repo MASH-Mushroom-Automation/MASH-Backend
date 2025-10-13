@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 
 /**
  * TwoFactorService
- * 
+ *
  * Manages two-factor authentication (2FA) with TOTP.
  * Provides methods for enabling/disabling 2FA, verifying TOTP codes, and managing backup codes.
  */
@@ -36,7 +36,9 @@ export class TwoFactorService {
 
     // Check if 2FA is already enabled
     if (user.twoFactorEnabled) {
-      throw new BadRequestException('Two-factor authentication is already enabled');
+      throw new BadRequestException(
+        'Two-factor authentication is already enabled',
+      );
     }
 
     // Generate TOTP secret
@@ -61,7 +63,8 @@ export class TwoFactorService {
       qrCodeUrl,
       secret: secret.base32,
       otpauthUrl: secret.otpauth_url,
-      message: 'Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)',
+      message:
+        'Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)',
     };
   }
 
@@ -82,11 +85,15 @@ export class TwoFactorService {
     }
 
     if (!user.twoFactorSecret) {
-      throw new BadRequestException('Two-factor authentication setup not started. Call enable2FA first.');
+      throw new BadRequestException(
+        'Two-factor authentication setup not started. Call enable2FA first.',
+      );
     }
 
     if (user.twoFactorEnabled) {
-      throw new BadRequestException('Two-factor authentication is already enabled');
+      throw new BadRequestException(
+        'Two-factor authentication is already enabled',
+      );
     }
 
     // Verify TOTP code
@@ -98,7 +105,9 @@ export class TwoFactorService {
     });
 
     if (!verified) {
-      throw new BadRequestException('Invalid verification code. Please try again.');
+      throw new BadRequestException(
+        'Invalid verification code. Please try again.',
+      );
     }
 
     // Generate 10 backup codes
@@ -124,7 +133,8 @@ export class TwoFactorService {
     return {
       enabled: true,
       backupCodes,
-      message: '⚠️ Two-factor authentication enabled! Save these backup codes in a secure place. They will only be shown once.',
+      message:
+        '⚠️ Two-factor authentication enabled! Save these backup codes in a secure place. They will only be shown once.',
     };
   }
 
@@ -203,7 +213,8 @@ export class TwoFactorService {
 
     return {
       backupCodes,
-      message: '⚠️ New backup codes generated! Save these in a secure place. They will only be shown once.',
+      message:
+        '⚠️ New backup codes generated! Save these in a secure place. They will only be shown once.',
     };
   }
 

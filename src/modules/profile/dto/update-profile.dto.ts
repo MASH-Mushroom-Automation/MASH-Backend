@@ -1,6 +1,13 @@
-import { IsOptional, IsString, IsPhoneNumber, MinLength, MaxLength } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
+import { ApiPropertyOptional, ApiExtraModels } from '@nestjs/swagger';
+import { IsValidPhone } from '../../../common/validators';
 
+/**
+ * DTO for updating user's own profile
+ * Used in ProfileModule for authenticated user self-service updates
+ * @schema UserSelfProfileUpdate
+ */
+@ApiExtraModels()
 export class UpdateProfileDto {
   @ApiPropertyOptional({
     description: 'User first name',
@@ -27,11 +34,13 @@ export class UpdateProfileDto {
   lastName?: string;
 
   @ApiPropertyOptional({
-    description: 'User phone number (E.164 format recommended)',
+    description:
+      'User phone number (Philippine mobile format: 09XXXXXXXXX or +639XXXXXXXXX)',
     example: '+639123456789',
   })
   @IsOptional()
   @IsString()
+  @IsValidPhone({ message: 'Invalid Philippine phone number format' })
   phoneNumber?: string;
 
   @ApiPropertyOptional({

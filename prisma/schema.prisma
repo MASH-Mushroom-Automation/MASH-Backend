@@ -43,6 +43,10 @@ model User {
   notificationTemplates     NotificationTemplate[]   @relation("NotificationTemplateCreator")
   alertNotifications        Notification[]
 
+  // Performance Indexes for analytics queries
+  @@index([createdAt])
+  @@index([isActive, role])
+  @@index([lastLoginAt])
   @@map("users")
 }
 
@@ -68,6 +72,11 @@ model Device {
   sensorData     SensorData[]
   sensors        Sensor[]
 
+  // Performance Indexes (Task 1.2)
+  @@index([userId, status, isActive])
+  @@index([status, lastSeen(sort: Desc)])
+  @@index([createdAt])
+  @@index([isActive])
   @@map("devices")
 }
 
@@ -168,6 +177,11 @@ model Product {
   updatedAt      DateTime    @updatedAt
   orderItems     OrderItem[]
 
+  // Performance Indexes (Task 1.2)
+  @@index([isActive, isFeatured, createdAt(sort: Desc)])
+  @@index([slug, isActive])
+  @@index([stock, minStock])
+  @@index([createdAt])
   @@map("products")
 }
 
@@ -185,6 +199,10 @@ model Category {
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
 
+  // Performance Indexes (Task 1.2)
+  @@index([isActive, sortOrder])
+  @@index([parentId, isActive])
+  @@index([createdAt])
   @@map("categories")
 }
 
@@ -212,6 +230,12 @@ model Order {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments        Payment[]
 
+  // Performance Indexes (Task 1.2)
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@index([deliveredAt])
   @@map("orders")
 }
 
@@ -296,6 +320,8 @@ model SystemConfig {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([category, isPublic])
+  @@index([key, isPublic])
   @@map("system_config")
 }
 
@@ -762,6 +788,10 @@ model Notification {
   @@index([channel])
   @@index([queuedAt])
   @@index([createdAt])
+  // Performance Indexes (Task 1.2)
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, priority, queuedAt])
+  @@index([status, nextRetryAt])
   @@map("notifications")
 }
 

@@ -736,10 +736,7 @@ describe('AlertEngineService', () => {
           },
         },
       };
-      const result = service['getNestedValue'](
-        obj,
-        'sensor.temperature.value',
-      );
+      const result = service['getNestedValue'](obj, 'sensor.temperature.value');
 
       expect(result).toBe(35);
     });
