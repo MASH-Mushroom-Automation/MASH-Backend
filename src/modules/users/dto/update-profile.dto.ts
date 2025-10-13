@@ -1,7 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, MaxLength } from 'class-validator';
 
-export class UpdateProfileDto {
+/**
+ * DTO for updating user profile by admin
+ * Used in UsersModule for administrative user management
+ */
+export class UpdateUserProfileDto {
   @ApiProperty({
     example: 'John',
     description: 'User first name',

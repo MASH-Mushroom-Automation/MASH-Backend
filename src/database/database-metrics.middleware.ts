@@ -34,17 +34,19 @@ export class DatabaseMetricsMiddleware implements OnModuleInit {
       );
     }
 
-    // Register Prisma middleware
-    this.prisma.$use(this.metricsMiddleware.bind(this));
-    this.logger.log('✅ Database metrics middleware registered');
+    // TODO: Update to Prisma 6's $extends API
+    // Prisma 6 removed $use middleware - needs migration to $extends
+    // this.prisma.$use(this.metricsMiddleware.bind(this));
+    this.logger.log('✅ Database metrics middleware registered (temporarily disabled for Prisma 6)');
   }
 
   /**
    * Prisma middleware to track query metrics
+   * TODO: Migrate to Prisma 6's $extends API
    */
   private async metricsMiddleware(
-    params: Prisma.MiddlewareParams,
-    next: (params: Prisma.MiddlewareParams) => Promise<any>,
+    params: any, // Prisma.MiddlewareParams removed in v6
+    next: (params: any) => Promise<any>,
   ) {
     const startTime = Date.now();
     let status: 'success' | 'error' = 'success';

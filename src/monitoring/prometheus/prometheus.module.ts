@@ -19,7 +19,6 @@ import { PrometheusModule as NestPrometheusModule } from '@willsoto/nestjs-prome
 import { PrometheusService } from './prometheus.service';
 import { PrometheusController } from './prometheus.controller';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
-import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 
 @Module({
@@ -41,7 +40,6 @@ import { CacheService } from '../../common/services/cache.service';
   providers: [
     PrometheusService,
     MetricsInterceptor,
-    PrismaService,
     CacheService,
   ],
   exports: [PrometheusService, MetricsInterceptor],

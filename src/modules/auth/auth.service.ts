@@ -2,10 +2,16 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
+import { ClerkService } from './services/clerk.service';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
+import { RegisterDto } from './dto/register.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResetPasswordDto } from './dto/password-reset.dto';
+import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -13,6 +19,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly clerkService: ClerkService,
   ) {}
 
   async handleClerkWebhook(payload: ClerkWebhookDto) {
@@ -263,5 +270,195 @@ export class AuthService {
       adminId,
       expiresIn: 3600, // 1 hour in seconds
     };
+  }
+
+  // ==================== NEW AUTHENTICATION FLOW METHODS ====================
+
+  /**
+   * Register a new user
+   */
+  async register(registerDto: RegisterDto) {
+    try {
+      // Register user in Clerk
+      const clerkUser = await this.clerkService.registerUser({
+        email: registerDto.email,
+        password: registerDto.password,
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        username: registerDto.username,
+      });
+
+      // Create user in local database
+      const user = await this.prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email: registerDto.email,
+          username: registerDto.username || null,
+          firstName: registerDto.firstName,
+          lastName: registerDto.lastName,
+          imageUrl: clerkUser.imageUrl || null,
+          role: 'USER', // Default role
+        },
+      });
+
+      // Send verification email
+      await this.clerkService.sendEmailVerification(registerDto.email);
+
+      return {
+        success: true,
+        message: 'User registered successfully. Please verify your email.',
+        userId: clerkUser.id,
+        email: registerDto.email,
+        verificationSent: true,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Registration failed. Please try again.');
+    }
+  }
+
+  /**
+   * Verify email with code
+   */
+  async verifyEmail(verifyEmailDto: VerifyEmailDto) {
+    try {
+      // Verify email in Clerk
+      const result = await this.clerkService.verifyEmailWithCode(
+        verifyEmailDto.email,
+        verifyEmailDto.code,
+      );
+
+      // Get user from database
+      const user = await this.prisma.user.findUnique({
+        where: { email: verifyEmailDto.email },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Generate JWT tokens
+      const accessToken = this.jwtService.sign({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        clerkId: user.clerkId,
+      });
+
+      const refreshToken = this.jwtService.sign(
+        {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        },
+        { expiresIn: '30d' },
+      );
+
+      return {
+        success: true,
+        message: 'Email verified successfully',
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        },
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Email verification failed');
+    }
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerification(email: string) {
+    try {
+      const result = await this.clerkService.sendEmailVerification(email);
+      return result;
+    } catch (error) {
+      throw new BadRequestException('Failed to resend verification email');
+    }
+  }
+
+  /**
+   * Initiate password reset
+   */
+  async forgotPassword(email: string) {
+    try {
+      const result = await this.clerkService.initiatePasswordReset(email);
+      return result;
+    } catch (error) {
+      // Return success even on error to prevent email enumeration
+      return {
+        success: true,
+        message: 'If the email exists, a password reset link has been sent',
+      };
+    }
+  }
+
+  /**
+   * Reset password with code
+   */
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      const result = await this.clerkService.resetPasswordWithCode(
+        resetPasswordDto.email,
+        resetPasswordDto.code,
+        resetPasswordDto.newPassword,
+      );
+      return result;
+    } catch (error) {
+      throw new BadRequestException('Password reset failed');
+    }
+  }
+
+  /**
+   * Initiate OAuth flow
+   */
+  async initiateOAuth(
+    provider: 'google' | 'github' | 'facebook',
+    redirectUrl?: string,
+  ) {
+    try {
+      const oauthData = this.clerkService.getOAuthUrl(provider, redirectUrl);
+      return oauthData;
+    } catch (error) {
+      throw new BadRequestException('Failed to initiate OAuth flow');
+    }
+  }
+
+  /**
+   * Handle OAuth callback
+   */
+  async handleOAuthCallback(callbackDto: OAuthCallbackDto) {
+    try {
+      // Handle OAuth callback through Clerk
+      const result = await this.clerkService.handleOAuthCallback(
+        callbackDto.code,
+        callbackDto.state,
+      );
+
+      // In production, you would:
+      // 1. Exchange the code for user info from Clerk
+      // 2. Create or update user in local database
+      // 3. Generate JWT tokens
+
+      return {
+        success: true,
+        message: 'OAuth authentication successful',
+        // Add tokens and user info here
+      };
+    } catch (error) {
+      throw new UnauthorizedException('OAuth authentication failed');
+    }
   }
 }

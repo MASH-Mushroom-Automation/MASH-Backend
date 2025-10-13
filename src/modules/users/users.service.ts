@@ -8,7 +8,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateUserProfileDto } from './dto/update-profile.dto';
 import { UserPreferencesDto } from './dto/user-preferences.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
@@ -309,7 +309,7 @@ export class UsersService {
    * Update user profile
    * Phase 2: Invalidate caches on profile update
    */
-  async updateProfile(id: string, updateProfileDto: UpdateProfileDto) {
+  async updateProfile(id: string, updateProfileDto: UpdateUserProfileDto) {
     // Update profile-specific fields only
     // Note: bio field doesn't exist in schema - only firstName, lastName, phone are valid
     const updated = await this.prisma.user.update({

@@ -43,6 +43,10 @@ model User {
   notificationTemplates     NotificationTemplate[]   @relation("NotificationTemplateCreator")
   alertNotifications        Notification[]
 
+  // Performance Indexes for analytics queries
+  @@index([createdAt])
+  @@index([isActive, role])
+  @@index([lastLoginAt])
   @@map("users")
 }
 
@@ -71,6 +75,8 @@ model Device {
   // Performance Indexes (Task 1.2)
   @@index([userId, status, isActive])
   @@index([status, lastSeen(sort: Desc)])
+  @@index([createdAt])
+  @@index([isActive])
   @@map("devices")
 }
 
@@ -175,6 +181,7 @@ model Product {
   @@index([isActive, isFeatured, createdAt(sort: Desc)])
   @@index([slug, isActive])
   @@index([stock, minStock])
+  @@index([createdAt])
   @@map("products")
 }
 
@@ -195,6 +202,7 @@ model Category {
   // Performance Indexes (Task 1.2)
   @@index([isActive, sortOrder])
   @@index([parentId, isActive])
+  @@index([createdAt])
   @@map("categories")
 }
 
@@ -226,6 +234,8 @@ model Order {
   @@index([userId, status, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([orderNumber])
+  @@index([createdAt])
+  @@index([deliveredAt])
   @@map("orders")
 }
 
@@ -310,6 +320,8 @@ model SystemConfig {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([category, isPublic])
+  @@index([key, isPublic])
   @@map("system_config")
 }
 

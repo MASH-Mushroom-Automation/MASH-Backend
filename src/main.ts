@@ -69,40 +69,119 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix('api/v1');
 
-  // Swagger documentation (only in development)
-  if (nodeEnv === 'development') {
-    const config = new DocumentBuilder()
-      .setTitle('MASH Backend API')
-      .setDescription(
-        'Mushroom Automation with Smart Hydro-environment Backend API',
-      )
-      .setVersion('1.0')
-      .addTag('auth', 'Authentication endpoints')
-      .addTag('users', 'User management endpoints')
-      .addTag('devices', 'IoT device management endpoints')
-      .addTag('sensors', 'Sensor data endpoints')
-      .addTag('orders', 'Order management endpoints')
-      .addTag('products', 'Product catalog endpoints')
-      .addTag('analytics', 'Analytics and reporting endpoints')
-      .addTag('admin', 'Administrative endpoints')
-      .addBearerAuth()
-      .addServer('http://localhost:3000', 'Development server')
-      .addServer('https://api.mash-backend.com', 'Production server')
-      .build();
+  // 📚 Swagger/OpenAPI documentation
+  const config = new DocumentBuilder()
+    .setTitle('MASH Backend API')
+    .setDescription(
+      `# Mushroom Automation with Smart Hydro-environment Backend API
 
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/docs', app, document, {
-      swaggerOptions: {
-        persistAuthorization: true,
-        tagsSorter: 'alpha',
-        operationsSorter: 'alpha',
+## Features
+- 🔐 **Authentication**: Clerk-based auth with OAuth support (Google, GitHub, Facebook)
+- 📊 **IoT Monitoring**: Real-time device and sensor data management
+- 🛒 **E-commerce**: Complete product catalog and order management system
+- 📈 **Analytics**: Advanced reporting and business intelligence
+- 🔔 **Notifications**: Multi-channel (Email, SMS, Push) notification system
+- ⚡ **Performance**: Redis caching, rate limiting, and connection pooling
+- 📡 **Real-time**: WebSocket support for live updates
+- 🔍 **Monitoring**: Prometheus metrics and OpenTelemetry tracing
+
+## Quick Start
+1. **Health Check**: \`GET /api/v1/health\`
+2. **Register**: \`POST /api/v1/auth/register\`
+3. **Login**: \`POST /api/v1/auth/login\`
+4. **Get Current User**: \`GET /api/v1/auth/me\` (requires Bearer token)
+
+## Authentication
+All protected endpoints require a Bearer token in the Authorization header:
+\`\`\`
+Authorization: Bearer YOUR_ACCESS_TOKEN
+\`\`\`
+
+Obtain tokens via:
+- Email/Password login (\`/api/v1/auth/login\`)
+- OAuth providers (\`/api/v1/auth/oauth/{google|github|facebook}\`)
+
+## Rate Limiting
+- **Registration**: 3 requests per minute
+- **Login**: 5 requests per minute  
+- **Password Reset**: 3 requests per 5 minutes
+- **General API**: 100 requests per 15 minutes
+
+## Support
+- Email: pp.namias@gmail.com
+- GitHub: https://github.com/MASH-Mushroom-Automation/MASH-Backend
+      `,
+    )
+    .setVersion('1.0.0')
+    .setContact(
+      'MASH Development Team',
+      'https://github.com/MASH-Mushroom-Automation',
+      'pp.namias@gmail.com',
+    )
+    .setLicense('MIT', 'https://opensource.org/licenses/MIT')
+    .addTag('root', 'Root API information endpoint')
+    .addTag('health', 'System health and monitoring endpoints')
+    .addTag('auth', 'Authentication and authorization endpoints')
+    .addTag('profile', 'User profile management endpoints')
+    .addTag('users', 'User management endpoints (Admin)')
+    .addTag('devices', 'IoT device management endpoints')
+    .addTag('sensors', 'Sensor data collection and retrieval endpoints')
+    .addTag('products', 'Product catalog management endpoints')
+    .addTag('orders', 'Order processing and management endpoints')
+    .addTag('categories', 'Product category management endpoints')
+    .addTag('analytics', 'Analytics and reporting endpoints')
+    .addTag('notifications', 'Notification management endpoints')
+    .addTag('admin', 'Administrative endpoints (Super Admin only)')
+    .addTag('metrics', 'Prometheus metrics endpoints')
+    .addTag('cache', 'Cache monitoring and management endpoints')
+    .addTag('alerts', 'Alert rules and monitoring endpoints')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Enter JWT token obtained from login or OAuth',
+        in: 'header',
       },
-    });
+      'access-token',
+    )
+    .addServer(`http://localhost:${port}`, 'Development Server')
+    .addServer('https://api.mash-backend.com', 'Production Server (Future)')
+    .build();
 
-    logger.log(
-      `📚 API Documentation available at: http://localhost:${port}/api/docs`,
-    );
-  }
+  const document = SwaggerModule.createDocument(app, config, {
+    operationIdFactory: (controllerKey: string, methodKey: string) =>
+      methodKey,
+    deepScanRoutes: true,
+  });
+
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'MASH Backend API - Documentation',
+    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info { margin: 50px 0 }
+      .swagger-ui .info .title { font-size: 36px }
+    `,
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+      docExpansion: 'none',
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 3,
+      tryItOutEnabled: true,
+    },
+  });
+
+  logger.log(
+    `📚 Swagger API Documentation: http://localhost:${port}/api/docs`,
+  );
 
   // Graceful shutdown
   app.enableShutdownHooks();

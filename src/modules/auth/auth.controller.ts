@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,15 +23,278 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { FirebaseAuthGuard } from './guards/firebase-auth.guard';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
+import {
+  VerifyEmailDto,
+  ResendVerificationDto,
+} from './dto/verify-email.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/password-reset.dto';
+import { OAuthCallbackDto, OAuthInitiateDto } from './dto/oauth.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { AuditAction } from '../../common/services/audit-log.service';
+import { Public } from './decorators/public.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  // ==================== AUTHENTICATION FLOW ====================
+
+  @Post('register')
+  @Public()
+  @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  @HttpCode(HttpStatus.CREATED)
+  @AuditLog({
+    action: AuditAction.USER_CREATE,
+    entity: 'User',
+    getEntityId: (args) => args[0]?.email,
+  })
+  @ApiOperation({
+    summary: 'Register new user',
+    description:
+      'Create a new user account with email, password, and profile information. Sends email verification code.',
+  })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully. Verification email sent.',
+    schema: {
+      example: {
+        success: true,
+        message: 'User registered successfully. Please verify your email.',
+        userId: 'user_2abc123xyz',
+        email: 'john.doe@example.com',
+        verificationSent: true,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input or user already exists',
+  })
+  @ApiResponse({ status: 429, description: 'Too many registration attempts' })
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
+  }
+
+  @Post('verify-email')
+  @Public()
+  @Throttle({ short: { limit: 5, ttl: 60000 } }) // 5 requests per minute
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verify email with code',
+    description:
+      'Verify user email address using the 6-digit code sent to their email',
+  })
+  @ApiBody({ type: VerifyEmailDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Email verified successfully',
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          id: 'user_2abc123xyz',
+          email: 'john.doe@example.com',
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid verification code' })
+  @ApiResponse({ status: 429, description: 'Too many verification attempts' })
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
+  }
+
+  @Post('resend-verification')
+  @Public()
+  @Throttle({ short: { limit: 3, ttl: 300000 } }) // 3 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend verification email',
+    description: 'Resend verification code to user email',
+  })
+  @ApiBody({ type: ResendVerificationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification email sent successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Verification email sent successfully',
+        email: 'john.doe@example.com',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'User not found or already verified' })
+  @ApiResponse({ status: 429, description: 'Too many resend attempts' })
+  async resendVerification(@Body() resendDto: ResendVerificationDto) {
+    return this.authService.resendVerification(resendDto.email);
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @Throttle({ short: { limit: 3, ttl: 300000 } }) // 3 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request password reset',
+    description:
+      'Send password reset code to user email. Does not reveal if email exists.',
+  })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset email sent if user exists',
+    schema: {
+      example: {
+        success: true,
+        message:
+          'If the email exists, a password reset link has been sent',
+      },
+    },
+  })
+  @ApiResponse({ status: 429, description: 'Too many reset requests' })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Post('reset-password')
+  @Public()
+  @Throttle({ short: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset password with code',
+    description: 'Reset user password using the code sent to their email',
+  })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Password reset successfully',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid reset code or user not found' })
+  @ApiResponse({ status: 429, description: 'Too many reset attempts' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  // ==================== OAUTH FLOW ====================
+
+  @Get('oauth/google')
+  @Public()
+  @ApiOperation({
+    summary: 'Initiate Google OAuth flow',
+    description:
+      'Get Google OAuth authorization URL. Redirect user to this URL to start OAuth flow.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OAuth URL generated successfully',
+    schema: {
+      example: {
+        url: 'https://accounts.clerk.dev/sign-in?redirect_url=...',
+        provider: 'google',
+        state: 'abc123xyz...',
+      },
+    },
+  })
+  async initiateGoogleOAuth(@Query() query: OAuthInitiateDto) {
+    return this.authService.initiateOAuth('google', query.redirectUrl);
+  }
+
+  @Get('oauth/github')
+  @Public()
+  @ApiOperation({
+    summary: 'Initiate GitHub OAuth flow',
+    description:
+      'Get GitHub OAuth authorization URL. Redirect user to this URL to start OAuth flow.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OAuth URL generated successfully',
+    schema: {
+      example: {
+        url: 'https://accounts.clerk.dev/sign-in?redirect_url=...',
+        provider: 'github',
+        state: 'def456xyz...',
+      },
+    },
+  })
+  async initiateGitHubOAuth(@Query() query: OAuthInitiateDto) {
+    return this.authService.initiateOAuth('github', query.redirectUrl);
+  }
+
+  @Get('oauth/facebook')
+  @Public()
+  @ApiOperation({
+    summary: 'Initiate Facebook OAuth flow',
+    description:
+      'Get Facebook OAuth authorization URL. Redirect user to this URL to start OAuth flow.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OAuth URL generated successfully',
+    schema: {
+      example: {
+        url: 'https://accounts.clerk.dev/sign-in?redirect_url=...',
+        provider: 'facebook',
+        state: 'ghi789xyz...',
+      },
+    },
+  })
+  async initiateFacebookOAuth(@Query() query: OAuthInitiateDto) {
+    return this.authService.initiateOAuth('facebook', query.redirectUrl);
+  }
+
+  @Post('oauth/callback')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Handle OAuth callback',
+    description:
+      'Process OAuth callback with authorization code. Called by OAuth provider.',
+  })
+  @ApiBody({ type: OAuthCallbackDto })
+  @ApiResponse({
+    status: 200,
+    description: 'OAuth authentication successful',
+    schema: {
+      example: {
+        success: true,
+        message: 'OAuth authentication successful',
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          id: 'user_2abc123xyz',
+          email: 'john.doe@example.com',
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'OAuth authentication failed' })
+  async handleOAuthCallback(@Body() callbackDto: OAuthCallbackDto) {
+    return this.authService.handleOAuthCallback(callbackDto);
+  }
+
+  // ==================== EXISTING ENDPOINTS ====================
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
