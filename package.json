@@ -31,6 +31,8 @@
     "db:migrate": "npx prisma migrate dev",
     "db:reset": "npx prisma migrate reset",
     "db:seed": "npx prisma db seed",
+    "db:deploy": "npx prisma migrate deploy",
+    "start:prod:migrate": "npm run db:deploy && node dist/main.js",
     "db:studio": "npx prisma studio",
     "postman:test": "newman run postman/00-Master-Complete-API-Collection.postman_collection.json -e postman/MASH-backend.postman_environment.json",
     "postman:auth": "newman run postman/01-Authentication-API.postman_collection.json -e postman/MASH-backend.postman_environment.json",

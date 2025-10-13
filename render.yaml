@@ -1,6 +1,8 @@
 # Render Blueprint for MASH Backend
 # This file enables one-click deployment to Render.com
 # Deploy: https://dashboard.render.com/select-repo?type=blueprint
+# See docs/Render_Deployment.md for detailed deployment guide and troubleshooting.
+# See deploy/.env.render.example for a complete environment variable template.
 
 services:
   # PostgreSQL Database
