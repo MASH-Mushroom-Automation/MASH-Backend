@@ -128,14 +128,12 @@ export class EmailTemplateService {
         'Your Password Has Been Changed - MASH',
       [EmailTemplateType.RESEND_VERIFICATION]:
         'Verify Your Email - Action Required',
-      [EmailTemplateType.ACCOUNT_LOCKED]:
-        'Account Security Alert - MASH',
+      [EmailTemplateType.ACCOUNT_LOCKED]: 'Account Security Alert - MASH',
       [EmailTemplateType.TWO_FACTOR_AUTH]:
         'Your Two-Factor Authentication Code - MASH',
       [EmailTemplateType.PASSWORD_RESET_SUCCESS]:
         'Password Reset Successful - MASH',
-      [EmailTemplateType.EMAIL_CHANGED]:
-        'Email Address Changed - MASH',
+      [EmailTemplateType.EMAIL_CHANGED]: 'Email Address Changed - MASH',
       [EmailTemplateType.ACCOUNT_DELETION]:
         'Account Deletion Confirmation - MASH',
       [EmailTemplateType.WELCOME]: 'Welcome to MASH! 🍄',

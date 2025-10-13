@@ -24,14 +24,8 @@ import { FirebaseAuthGuard } from './guards/firebase-auth.guard';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
-import {
-  VerifyEmailDto,
-  ResendVerificationDto,
-} from './dto/verify-email.dto';
-import {
-  ForgotPasswordDto,
-  ResetPasswordDto,
-} from './dto/password-reset.dto';
+import { VerifyEmailDto, ResendVerificationDto } from './dto/verify-email.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { OAuthCallbackDto, OAuthInitiateDto } from './dto/oauth.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -58,7 +52,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register new user',
     description:
-      'Create a new user account with email, password, and profile information. Sends email verification code.',
+      'Create a new user account with email, password, and profile information. Automatically generates a DiceBear avatar. Sends email verification code.',
   })
   @ApiBody({ type: RegisterDto })
   @ApiResponse({
@@ -70,6 +64,9 @@ export class AuthController {
         message: 'User registered successfully. Please verify your email.',
         userId: 'user_2abc123xyz',
         email: 'john.doe@example.com',
+        username: 'johndoe',
+        avatarUrl:
+          'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=johndoe',
         verificationSent: true,
       },
     },
@@ -137,7 +134,10 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'User not found or already verified' })
+  @ApiResponse({
+    status: 400,
+    description: 'User not found or already verified',
+  })
   @ApiResponse({ status: 429, description: 'Too many resend attempts' })
   async resendVerification(@Body() resendDto: ResendVerificationDto) {
     return this.authService.resendVerification(resendDto.email);
@@ -159,8 +159,7 @@ export class AuthController {
     schema: {
       example: {
         success: true,
-        message:
-          'If the email exists, a password reset link has been sent',
+        message: 'If the email exists, a password reset link has been sent',
       },
     },
   })
@@ -188,7 +187,10 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Invalid reset code or user not found' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid reset code or user not found',
+  })
   @ApiResponse({ status: 429, description: 'Too many reset attempts' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);

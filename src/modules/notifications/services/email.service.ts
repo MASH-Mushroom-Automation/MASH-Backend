@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { EmailTemplateService, EmailTemplateType } from './email-template.service';
+import {
+  EmailTemplateService,
+  EmailTemplateType,
+} from './email-template.service';
 
 export interface SendEmailOptions {
   to: string;
@@ -46,10 +49,11 @@ export class EmailService {
   async sendTemplatedEmail(options: SendEmailOptions): Promise<void> {
     try {
       // Render the template with variables
-      const { html, text, subject } = await this.emailTemplateService.renderTemplate(
-        options.templateType,
-        options.variables,
-      );
+      const { html, text, subject } =
+        await this.emailTemplateService.renderTemplate(
+          options.templateType,
+          options.variables,
+        );
 
       // Use provided subject or template subject
       const emailSubject = options.subject || subject;
@@ -63,7 +67,9 @@ export class EmailService {
         html: html,
       });
 
-      this.logger.log(`Email sent successfully to ${options.to}: ${info.messageId}`);
+      this.logger.log(
+        `Email sent successfully to ${options.to}: ${info.messageId}`,
+      );
     } catch (error) {
       this.logger.error(`Failed to send email to ${options.to}:`, error);
       throw error;
@@ -154,10 +160,7 @@ export class EmailService {
       to,
       templateType: EmailTemplateType.TWO_FACTOR_AUTH,
       variables: {
-        ...this.emailTemplateService.getTwoFactorAuthVariables(
-          firstName,
-          code,
-        ),
+        ...this.emailTemplateService.getTwoFactorAuthVariables(firstName, code),
         expiresIn, // Override with custom expiration
         year: new Date().getFullYear().toString(),
       },
@@ -202,8 +205,10 @@ export class EmailService {
         firstName,
         dashboardUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl:
+          `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        privacyUrl:
+          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
         termsUrl: `${process.env.APP_URL}/terms` || 'https://mash.com/terms',
       },
     });
@@ -233,9 +238,12 @@ export class EmailService {
         ipAddress,
         unlockUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl:
+          `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        securityUrl:
+          `${process.env.APP_URL}/security` || 'https://mash.com/security',
+        privacyUrl:
+          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
       },
     });
   }
@@ -262,9 +270,12 @@ export class EmailService {
         device,
         signInUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl:
+          `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        securityUrl:
+          `${process.env.APP_URL}/security` || 'https://mash.com/security',
+        privacyUrl:
+          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
       },
     });
   }
@@ -293,9 +304,12 @@ export class EmailService {
       location,
       accountUrl,
       homeUrl: process.env.APP_URL || 'https://mash.com',
-      supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-      securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
-      privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+      supportUrl:
+        `${process.env.APP_URL}/support` || 'https://mash.com/support',
+      securityUrl:
+        `${process.env.APP_URL}/security` || 'https://mash.com/security',
+      privacyUrl:
+        `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
     };
 
     // Send to old email
@@ -339,8 +353,10 @@ export class EmailService {
         downloadDataUrl,
         feedbackUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl:
+          `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        privacyUrl:
+          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
         termsUrl: `${process.env.APP_URL}/terms` || 'https://mash.com/terms',
       },
     });
@@ -364,7 +380,9 @@ export class EmailService {
         html,
       });
 
-      this.logger.log(`Raw email sent successfully to ${to}: ${info.messageId}`);
+      this.logger.log(
+        `Raw email sent successfully to ${to}: ${info.messageId}`,
+      );
     } catch (error) {
       this.logger.error(`Failed to send raw email to ${to}:`, error);
       throw error;

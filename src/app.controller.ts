@@ -8,12 +8,13 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get backend API information',
-    description: 'Returns comprehensive information about the MASH Backend API including available endpoints, documentation links, and system status'
+    description:
+      'Returns comprehensive information about the MASH Backend API including available endpoints, documentation links, and system status',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Backend information retrieved successfully',
     schema: {
       type: 'object',
@@ -23,23 +24,29 @@ export class AppController {
         description: { type: 'string' },
         status: { type: 'string', example: 'operational' },
         timestamp: { type: 'string', format: 'date-time' },
-        documentation: { 
+        documentation: {
           type: 'object',
           properties: {
-            swagger: { type: 'string', example: 'http://localhost:3000/api/docs' },
-            postman: { type: 'string', example: 'Available in /postman directory' }
-          }
+            swagger: {
+              type: 'string',
+              example: 'http://localhost:3000/api/docs',
+            },
+            postman: {
+              type: 'string',
+              example: 'Available in /postman directory',
+            },
+          },
         },
         endpoints: {
           type: 'object',
           properties: {
             health: { type: 'string', example: '/api/v1/health' },
             metrics: { type: 'string', example: '/api/v1/metrics' },
-            auth: { type: 'string', example: '/api/v1/auth' }
-          }
-        }
-      }
-    }
+            auth: { type: 'string', example: '/api/v1/auth' },
+          },
+        },
+      },
+    },
   })
   getApiInfo(): object {
     return this.appService.getApiInfo();

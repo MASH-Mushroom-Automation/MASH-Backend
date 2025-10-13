@@ -23,13 +23,10 @@ export class RegisterDto {
   })
   @IsString()
   @MinLength(8)
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    {
-      message:
-        'Password must contain uppercase, lowercase, number and special character',
-    },
-  )
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+    message:
+      'Password must contain uppercase, lowercase, number and special character',
+  })
   password: string;
 
   @ApiProperty({ example: 'John', description: 'User first name' })
@@ -54,7 +51,8 @@ export class RegisterDto {
   @MinLength(3)
   @MaxLength(30)
   @Matches(/^[a-zA-Z0-9_-]+$/, {
-    message: 'Username can only contain letters, numbers, underscores and hyphens',
+    message:
+      'Username can only contain letters, numbers, underscores and hyphens',
   })
   username?: string;
 }

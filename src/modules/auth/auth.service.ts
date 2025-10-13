@@ -3,10 +3,12 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
 import { ClerkService } from './services/clerk.service';
+import { EmailService } from '../notifications/services/email.service';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -16,10 +18,13 @@ import { TokenResponse } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly clerkService: ClerkService,
+    private readonly emailService: EmailService,
   ) {}
 
   async handleClerkWebhook(payload: ClerkWebhookDto) {
@@ -288,7 +293,13 @@ export class AuthService {
         username: registerDto.username,
       });
 
-      // Create user in local database
+      // Generate DiceBear avatar URL based on username or email
+      // Uses bottts-neutral style for consistent, professional avatars
+      const avatarSeed =
+        registerDto.username || registerDto.email.split('@')[0];
+      const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
+
+      // Create user in local database with generated avatar
       const user = await this.prisma.user.create({
         data: {
           clerkId: clerkUser.id,
@@ -296,19 +307,46 @@ export class AuthService {
           username: registerDto.username || null,
           firstName: registerDto.firstName,
           lastName: registerDto.lastName,
-          imageUrl: clerkUser.imageUrl || null,
+          imageUrl: diceBearAvatarUrl, // Use DiceBear avatar instead of Clerk's
           role: 'USER', // Default role
         },
       });
 
-      // Send verification email
+      this.logger.log(
+        `✅ Generated DiceBear avatar for ${registerDto.email}: ${diceBearAvatarUrl}`,
+      );
+
+      // Send Clerk verification email (primary verification)
       await this.clerkService.sendEmailVerification(registerDto.email);
+
+      // Send MASH-branded verification email (non-blocking)
+      // This provides a better user experience with our custom branding
+      try {
+        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(registerDto.email)}`;
+        await this.emailService.sendVerificationEmail(
+          registerDto.email,
+          registerDto.firstName,
+          verificationLink,
+          '24 hours',
+        );
+        this.logger.log(
+          `✅ MASH verification email sent to: ${registerDto.email}`,
+        );
+      } catch (emailError) {
+        // Don't fail registration if custom email fails
+        this.logger.warn(
+          `⚠️ Failed to send MASH verification email to ${registerDto.email}:`,
+          emailError.message,
+        );
+      }
 
       return {
         success: true,
         message: 'User registered successfully. Please verify your email.',
         userId: clerkUser.id,
         email: registerDto.email,
+        username: registerDto.username || null,
+        avatarUrl: diceBearAvatarUrl, // DiceBear avatar URL
         verificationSent: true,
       };
     } catch (error) {

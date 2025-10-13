@@ -37,11 +37,7 @@ import { CacheService } from '../../common/services/cache.service';
     }),
   ],
   controllers: [PrometheusController],
-  providers: [
-    PrometheusService,
-    MetricsInterceptor,
-    CacheService,
-  ],
+  providers: [PrometheusService, MetricsInterceptor, CacheService],
   exports: [PrometheusService, MetricsInterceptor],
 })
 export class PrometheusModule {}

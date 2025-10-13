@@ -15,12 +15,14 @@ import { ViolationTrackerService } from './services/violation-tracker.service';
 import { ClerkAuthGuard } from './guards/clerk-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
+import { NotificationsModule } from '../notifications/notifications.module';
 import clerkConfig from '../../config/clerk.config';
 
 @Module({
   imports: [
     ConfigModule.forFeature(clerkConfig),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    NotificationsModule, // Import NotificationsModule for email service
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

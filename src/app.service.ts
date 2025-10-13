@@ -97,7 +97,8 @@ export class AppService {
       support: {
         email: 'pp.namias@gmail.com',
         repository: 'https://github.com/MASH-Mushroom-Automation/MASH-Backend',
-        issues: 'https://github.com/MASH-Mushroom-Automation/MASH-Backend/issues',
+        issues:
+          'https://github.com/MASH-Mushroom-Automation/MASH-Backend/issues',
       },
 
       uptime: {

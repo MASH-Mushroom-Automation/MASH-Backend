@@ -18,7 +18,8 @@ function checkHealth(): Promise<number> {
 
   return new Promise((resolve) => {
     const req = http.get(url, (res) => {
-      const ok = res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
+      const ok =
+        res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
       res.resume();
       resolve(ok ? 0 : 1);
     });
@@ -35,11 +36,14 @@ function checkHealth(): Promise<number> {
   const code = await checkHealth();
   // Ensure any logs are flushed
   if (code === 0) {
-    console.log(`OK: health endpoint reachable at http://${HOST}:${PORT}${PATH}`);
+    console.log(
+      `OK: health endpoint reachable at http://${HOST}:${PORT}${PATH}`,
+    );
     process.exit(0);
   }
 
-  console.error(`FAIL: health endpoint unreachable at http://${HOST}:${PORT}${PATH}`);
+  console.error(
+    `FAIL: health endpoint unreachable at http://${HOST}:${PORT}${PATH}`,
+  );
   process.exit(1);
 })();
-

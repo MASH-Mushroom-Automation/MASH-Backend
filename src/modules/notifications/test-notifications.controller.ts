@@ -1,5 +1,10 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiExcludeController } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiExcludeController,
+} from '@nestjs/swagger';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
 import { EmailService } from './services/email.service';
 
@@ -175,9 +180,7 @@ export class TestNotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Test verification email template' })
   @ApiResponse({ status: 200, description: 'Verification email sent' })
-  async testVerificationEmail(
-    @Body() dto: { to: string; firstName?: string },
-  ) {
+  async testVerificationEmail(@Body() dto: { to: string; firstName?: string }) {
     try {
       await this.emailService.sendVerificationEmail(
         dto.to,
@@ -490,9 +493,7 @@ export class TestNotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Test all email templates' })
   @ApiResponse({ status: 200, description: 'All email templates sent' })
-  async testAllEmailTemplates(
-    @Body() dto: { to: string; firstName?: string },
-  ) {
+  async testAllEmailTemplates(@Body() dto: { to: string; firstName?: string }) {
     const results: Array<{ template: string; status: string }> = [];
     const firstName = dto.firstName || 'Test User';
 
