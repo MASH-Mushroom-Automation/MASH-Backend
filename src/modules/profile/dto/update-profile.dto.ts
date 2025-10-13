@@ -1,7 +1,13 @@
 import { IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, ApiExtraModels } from '@nestjs/swagger';
 import { IsValidPhone } from '../../../common/validators';
 
+/**
+ * DTO for updating user's own profile
+ * Used in ProfileModule for authenticated user self-service updates
+ * @schema UserSelfProfileUpdate
+ */
+@ApiExtraModels()
 export class UpdateProfileDto {
   @ApiPropertyOptional({
     description: 'User first name',

@@ -8,21 +8,23 @@ export class AppService {
   getApiInfo(): object {
     const port = this.configService.get<number>('PORT', 3000);
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
-    const baseUrl = nodeEnv === 'production' 
-      ? 'https://api.mash-backend.com' 
-      : `http://localhost:${port}`;
+    const baseUrl =
+      nodeEnv === 'production'
+        ? 'https://mash-backend.onrender.com'
+        : `http://localhost:${port}`;
 
     return {
       name: 'MASH Backend API',
       fullName: 'Mushroom Automation with Smart Hydro-environment',
       version: '1.0.0',
-      description: 'Production-ready NestJS backend for IoT mushroom cultivation management system with real-time monitoring, e-commerce, and analytics',
+      description:
+        'Production-ready NestJS backend for IoT mushroom cultivation management system with real-time monitoring, e-commerce, and analytics',
       status: 'operational',
       environment: nodeEnv,
       timestamp: new Date().toISOString(),
-      
+
       documentation: {
-        swagger: nodeEnv === 'development' ? `${baseUrl}/api/docs` : 'Available in production environment',
+        swagger: `${baseUrl}/api/docs`,
         postman: 'Collection available in /postman directory',
         github: 'https://github.com/MASH-Mushroom-Automation/MASH-Backend',
       },
