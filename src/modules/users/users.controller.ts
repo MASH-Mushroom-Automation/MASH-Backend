@@ -66,13 +66,54 @@ export class UsersController {
     defaultFields: ['id', 'email', 'firstName', 'lastName', 'role', 'isActive'],
     maxFields: 12,
   })
-  @ApiOperation({ summary: 'List all users with pagination and filters' })
+  @ApiOperation({
+    summary: 'List all users with pagination and filters',
+    description: `
+**Authentication Required**: This endpoint requires a valid JWT token with ADMIN or SUPER_ADMIN role.
+
+**How to test in Swagger**:
+1. Start the backend: \`npm run start:dev\`
+2. Login using POST /api/v1/auth/login
+3. Copy the 'accessToken' from response
+4. Click "Authorize" 🔒 button at top
+5. Paste token and click "Authorize"
+6. Now test this endpoint
+
+**Required Role**: ADMIN or SUPER_ADMIN
+    `,
+  })
   @ApiResponse({
     status: 200,
     description: 'Users retrieved successfully',
+    schema: {
+      example: {
+        success: true,
+        data: [
+          {
+            id: 'user_1',
+            email: 'admin@example.com',
+            firstName: 'Admin',
+            lastName: 'User',
+            role: 'ADMIN',
+            isActive: true,
+          },
+        ],
+        meta: {
+          total: 1,
+          page: 1,
+          limit: 10,
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access only' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - No token or invalid token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access only',
+  })
   async findAll(@Query() query: UserFilterQueryDto) {
     return this.usersService.findAll(query);
   }
@@ -81,11 +122,75 @@ export class UsersController {
   @Post()
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
-  @ApiOperation({ summary: 'Create new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access only' })
+  @ApiOperation({
+    summary: 'Create new user',
+    description: `
+**Authentication Required**: This endpoint requires a valid JWT token with ADMIN or SUPER_ADMIN role.
+
+**How to authenticate in Swagger**:
+1. First, login using POST /api/v1/auth/login or POST /api/v1/auth/register
+2. Copy the 'accessToken' from the response
+3. Click the "Authorize" button (🔒) at the top of this page
+4. Paste the token in the "Value" field
+5. Click "Authorize" then "Close"
+6. Now you can test this endpoint
+
+**Required Role**: ADMIN or SUPER_ADMIN
+    `,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User created successfully',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          id: 'user_2abc123xyz',
+          email: 'user@example.com',
+          username: 'john_doe',
+          firstName: 'John',
+          lastName: 'Doe',
+          role: 'USER',
+          isActive: true,
+          createdAt: '2024-12-15T10:30:00.000Z',
+          updatedAt: '2024-12-15T10:30:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data',
+    schema: {
+      example: {
+        success: false,
+        error: 'Validation failed',
+        message: ['email must be a valid email address'],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - No token or invalid token',
+    schema: {
+      example: {
+        success: false,
+        error: 'Unauthorized',
+        message: 'You must be logged in to access this endpoint',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin access only',
+    schema: {
+      example: {
+        success: false,
+        error: 'Forbidden',
+        message: 'You need ADMIN role to access this endpoint',
+      },
+    },
+  })
   async create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
