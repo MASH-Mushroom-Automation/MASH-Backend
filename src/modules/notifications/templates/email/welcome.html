@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to MASH</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .features {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .features h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 18px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-list li::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .tips {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .tips h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer-links {
+            margin: 15px 0;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .greeting {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">🍄</div>
+            <h1>Welcome to MASH</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Welcome, {{firstName}}! 🎉
+            </div>
+            
+            <p class="message">
+                Thank you for joining <strong>MASH - Mushroom Automation Smart Home</strong>! 
+                We're thrilled to have you as part of our community.
+            </p>
+            
+            <p class="message">
+                Your account has been successfully created and you're all set to start 
+                automating your mushroom cultivation with smart technology.
+            </p>
+
+            <div style="text-align: center;">
+                <a href="{{dashboardUrl}}" class="button">
+                    🚀 Get Started
+                </a>
+            </div>
+
+            <div class="features">
+                <h3>What You Can Do Now:</h3>
+                <ul class="feature-list">
+                    <li><strong>Connect Your Devices</strong> - Link your IoT sensors and actuators</li>
+                    <li><strong>Monitor in Real-Time</strong> - Track temperature, humidity, and more</li>
+                    <li><strong>Set Up Automation</strong> - Create smart rules for optimal growth</li>
+                    <li><strong>Receive Alerts</strong> - Get notified about important events</li>
+                    <li><strong>Analyze Data</strong> - View detailed reports and insights</li>
+                </ul>
+            </div>
+
+            <div class="tips">
+                <h4>💡 Quick Start Tips:</h4>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Complete your profile to personalize your experience</li>
+                    <li>Add your first device to start monitoring</li>
+                    <li>Explore our dashboard to see all available features</li>
+                    <li>Check out our tutorials for guidance</li>
+                </ul>
+            </div>
+
+            <p class="message">
+                If you have any questions or need assistance, our support team is here to help. 
+                Don't hesitate to reach out!
+            </p>
+
+            <p class="message">
+                Happy farming! 🌱
+            </p>
+
+            <p class="message" style="color: #6c757d; font-size: 14px;">
+                Best regards,<br>
+                <strong>The MASH Team</strong>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 MASH - Mushroom Automation Smart Home. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="{{homeUrl}}">Home</a> |
+                <a href="{{supportUrl}}">Support</a> |
+                <a href="{{privacyUrl}}">Privacy Policy</a> |
+                <a href="{{termsUrl}}">Terms of Service</a>
+            </div>
+            <p style="margin-top: 15px;">
+                Follow us: 
+                <a href="#" style="margin: 0 5px;">Facebook</a> |
+                <a href="#" style="margin: 0 5px;">Twitter</a> |
+                <a href="#" style="margin: 0 5px;">Instagram</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
