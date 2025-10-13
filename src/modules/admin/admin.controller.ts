@@ -25,7 +25,7 @@ import { AuditLogQueryDto } from './dto/audit-log-query.dto';
 import { SystemConfigDto } from './dto/system-config.dto';
 import { MaintenanceDto } from './dto/maintenance.dto';
 
-@ApiTags('Admin')
+@ApiTags('admin')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')

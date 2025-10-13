@@ -29,7 +29,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
 import * as nodemailer from 'nodemailer';
 
-@ApiTags('Notifications')
+@ApiTags('notifications')
 @Controller('notifications')
 @ApiBearerAuth()
 export class NotificationsController {

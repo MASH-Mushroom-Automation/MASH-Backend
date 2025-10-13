@@ -25,7 +25,7 @@ import { PrometheusService } from './prometheus.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 
-@ApiTags('Metrics')
+@ApiTags('metrics')
 @Controller('metrics')
 @ThrottleEndpoint('CHEAP') // Metrics scraping is frequent - 1000 req/min
 export class PrometheusController {

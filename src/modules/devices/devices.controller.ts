@@ -30,7 +30,7 @@ import { FirmwareUpdateDto } from './dto/firmware-update.dto';
 import { SensorCalibrationDto } from './dto/sensor-calibration.dto';
 import { DeviceAnalyticsQueryDto } from './dto/device-analytics-query.dto';
 
-@ApiTags('Devices')
+@ApiTags('devices')
 @Controller('devices')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

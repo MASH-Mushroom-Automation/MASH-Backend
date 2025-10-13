@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../database/prisma.service';
 import { ThrottleEndpoint } from '../common/decorators/throttle-endpoint.decorator';
 
@@ -6,6 +7,7 @@ import { ThrottleEndpoint } from '../common/decorators/throttle-endpoint.decorat
  * Health Check Controller
  * Provides endpoints to monitor application and database health
  */
+@ApiTags('health')
 @Controller('health')
 @ThrottleEndpoint('CHEAP') // Health checks are lightweight - 1000 req/min
 export class HealthController {

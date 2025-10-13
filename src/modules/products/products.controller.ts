@@ -29,7 +29,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 
-@ApiTags('Products')
+@ApiTags('products')
 @Controller('products')
 @ThrottleEndpoint('STANDARD') // Standard CRUD operations - 100 req/min
 export class ProductsController {

@@ -28,7 +28,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 
-@ApiTags('Orders')
+@ApiTags('orders')
 @Controller('orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()

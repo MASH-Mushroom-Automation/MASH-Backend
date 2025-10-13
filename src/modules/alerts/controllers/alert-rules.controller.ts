@@ -29,7 +29,7 @@ import { UpdateAlertRuleDto } from '../dto/update-alert-rule.dto';
  *
  * @tag Alerts
  */
-@ApiTags('Alert Rules')
+@ApiTags('alerts')
 @Controller('alerts/rules')
 // @UseGuards(JwtAuthGuard) // Uncomment when auth is ready
 // @ApiBearerAuth()

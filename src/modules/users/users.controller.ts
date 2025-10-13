@@ -35,7 +35,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 import { FileValidationService } from '../../common/services/file-validation.service';
 
-@ApiTags('Users')
+@ApiTags('users')
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

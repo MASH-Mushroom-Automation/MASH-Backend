@@ -24,7 +24,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 
-@ApiTags('Categories')
+@ApiTags('categories')
 @Controller('categories')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

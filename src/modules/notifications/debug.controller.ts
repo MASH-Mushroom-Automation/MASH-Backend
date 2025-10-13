@@ -1,7 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiExcludeController } from '@nestjs/swagger';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
 
+@ApiExcludeController() // Hide from Swagger docs (debug endpoint)
 @ApiTags('Debug')
 @Controller('debug')
 export class DebugController {

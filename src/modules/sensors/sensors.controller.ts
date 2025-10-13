@@ -29,7 +29,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 
-@ApiTags('Sensors')
+@ApiTags('sensors')
 @Controller('sensors')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

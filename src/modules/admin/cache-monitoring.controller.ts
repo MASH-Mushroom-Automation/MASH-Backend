@@ -27,7 +27,7 @@ import { FirebaseAuthGuard } from '../auth/guards/firebase-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 
-@ApiTags('Cache Monitoring')
+@ApiTags('cache')
 @ApiBearerAuth()
 @Controller('cache')
 @UseGuards(FirebaseAuthGuard, PermissionsGuard)

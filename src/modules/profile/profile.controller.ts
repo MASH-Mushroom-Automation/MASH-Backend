@@ -37,7 +37,7 @@ import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FileValidationService } from '../../common/services/file-validation.service';
 
-@ApiTags('Profile')
+@ApiTags('profile')
 @Controller('profile')
 @UseGuards(ClerkAuthGuard)
 @ApiBearerAuth()

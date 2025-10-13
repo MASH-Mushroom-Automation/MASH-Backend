@@ -1,7 +1,8 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiExcludeController } from '@nestjs/swagger';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
 
+@ApiExcludeController() // Hide from Swagger docs (test endpoint)
 @ApiTags('SMS & Push Testing')
 @Controller('test-notifications')
 export class TestNotificationsController {
