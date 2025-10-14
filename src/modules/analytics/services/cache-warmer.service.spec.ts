@@ -67,7 +67,10 @@ describe('CacheWarmerService', () => {
 
     it('should not warm cache when disabled', async () => {
       configService.get.mockReturnValue('false');
-      const newService = new CacheWarmerService(analyticsService, configService);
+      const newService = new CacheWarmerService(
+        analyticsService,
+        configService,
+      );
 
       await newService.warmPopularQueries();
 
@@ -76,13 +79,17 @@ describe('CacheWarmerService', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      analyticsService.getDashboardStats.mockRejectedValue(new Error('Database error'));
+      analyticsService.getDashboardStats.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       await expect(service.warmPopularQueries()).resolves.not.toThrow();
     });
 
     it('should continue warming other queries if one fails', async () => {
-      analyticsService.getDashboardStats.mockRejectedValueOnce(new Error('Failed'));
+      analyticsService.getDashboardStats.mockRejectedValueOnce(
+        new Error('Failed'),
+      );
 
       await service.warmPopularQueries();
 

@@ -7,6 +7,8 @@ import { AnalyticsGateway } from './gateways/analytics.gateway';
 import { RealtimeAnalyticsService } from './services/realtime-analytics.service';
 import { BatchProcessorService } from './services/batch-processor.service';
 import { CacheWarmerService } from './services/cache-warmer.service';
+import { ReportBuilderService } from './services/report-builder.service';
+import { ChartDataService } from './services/chart-data.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -18,6 +20,8 @@ import { CacheWarmerService } from './services/cache-warmer.service';
     RealtimeAnalyticsService,
     BatchProcessorService,
     CacheWarmerService,
+    ReportBuilderService,
+    ChartDataService,
   ],
   exports: [AnalyticsService, RealtimeAnalyticsService],
 })
