@@ -42,6 +42,11 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
+  // Serve static files for auth pages (HTML, CSS, JS)
+  app.useStaticAssets(join(__dirname, '..', 'src', 'public'), {
+    prefix: '/public/',
+  });
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
