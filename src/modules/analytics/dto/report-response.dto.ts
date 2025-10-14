@@ -33,9 +33,6 @@ export class ReportResponseDto {
   @ApiProperty({ description: 'Last update timestamp' })
   updatedAt: Date;
 
-  @ApiPropertyOptional({ description: 'Last execution timestamp' })
-  lastExecutedAt?: Date;
-
   @ApiProperty({ description: 'Total execution count' })
   executionCount: number;
 }

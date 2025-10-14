@@ -12,6 +12,7 @@ import {
   ReportExecution,
   ReportType,
   ExecutionStatus,
+  Prisma,
 } from '@prisma/client';
 
 interface ReportFilters {
@@ -207,7 +208,7 @@ export class ReportBuilderService {
 
     try {
       // Execute report based on type
-      const configuration = report.configuration as ReportConfiguration;
+      const configuration = report.configuration as unknown as ReportConfiguration;
       const filters = executeDto?.overrideFilters
         ? { ...configuration.filters, ...executeDto.overrideFilters }
         : configuration.filters;
@@ -250,12 +251,6 @@ export class ReportBuilderService {
             new Date().getTime() - new Date(execution.startedAt).getTime(),
           resultData: resultData as any,
         },
-      });
-
-      // Update report last executed timestamp
-      await this.prisma.report.update({
-        where: { id: reportId },
-        data: { lastExecutedAt: new Date() },
       });
 
       return this.toReportExecutionResponseDto(completed);
@@ -301,7 +296,7 @@ export class ReportBuilderService {
     const reports = await this.prisma.report.findMany({
       where: {
         isActive: true,
-        schedule: { not: null },
+        schedule: { not: Prisma.JsonNull },
       },
     });
 
@@ -340,12 +335,12 @@ export class ReportBuilderService {
 
     return {
       totalSales: sales.length,
-      totalRevenue: sales.reduce((sum, order) => sum + order.totalPrice, 0),
+      totalRevenue: sales.reduce((sum, order) => sum + Number(order.total), 0),
       sales: sales.map((order) => ({
         orderId: order.id,
         date: order.createdAt,
         customer: order.user.email,
-        amount: order.totalPrice,
+        amount: Number(order.total),
         items: order.orderItems.length,
       })),
     };
@@ -363,17 +358,17 @@ export class ReportBuilderService {
     const revenue = await this.prisma.order.aggregate({
       where: {
         createdAt: { gte: new Date(start), lte: new Date(end) },
-        status: { in: ['COMPLETED', 'DELIVERED'] },
+        status: { in: ['DELIVERED'] },
       },
-      _sum: { totalPrice: true },
+      _sum: { total: true },
       _count: true,
-      _avg: { totalPrice: true },
+      _avg: { total: true },
     });
 
     return {
-      totalRevenue: revenue._sum.totalPrice || 0,
+      totalRevenue: Number(revenue._sum.total || 0),
       totalOrders: revenue._count,
-      averageOrderValue: revenue._avg.totalPrice || 0,
+      averageOrderValue: Number(revenue._avg.total || 0),
       period: { start, end },
     };
   }
@@ -393,14 +388,14 @@ export class ReportBuilderService {
         createdAt: { gte: new Date(start), lte: new Date(end) },
       },
       _count: true,
-      _sum: { totalPrice: true },
+      _sum: { total: true },
     });
 
     return {
       ordersByStatus: orders.map((group) => ({
         status: group.status,
         count: group._count,
-        totalRevenue: group._sum.totalPrice || 0,
+        totalRevenue: Number(group._sum.total || 0),
       })),
     };
   }
@@ -419,7 +414,7 @@ export class ReportBuilderService {
       where: {
         order: {
           createdAt: { gte: new Date(start), lte: new Date(end) },
-          status: { in: ['COMPLETED', 'DELIVERED'] },
+          status: { in: ['DELIVERED'] },
         },
       },
       _sum: { quantity: true, price: true },
@@ -438,8 +433,8 @@ export class ReportBuilderService {
         return {
           productId: item.productId,
           productName: product?.name || 'Unknown',
-          quantitySold: item._sum.quantity || 0,
-          revenue: item._sum.price || 0,
+          quantitySold: item._sum?.quantity || 0,
+          revenue: item._sum?.price || 0,
           orderCount: item._count,
         };
       }),
@@ -520,15 +515,14 @@ export class ReportBuilderService {
     return {
       id: report.id,
       name: report.name,
-      description: report.description,
+      description: report.description ?? undefined,
       type: report.type,
-      configuration: report.configuration as ReportConfiguration,
+      configuration: report.configuration as unknown as ReportConfiguration,
       schedule: report.schedule as any,
       isActive: report.isActive,
       createdBy: report.createdBy,
       createdAt: report.createdAt,
       updatedAt: report.updatedAt,
-      lastExecutedAt: report.lastExecutedAt,
       executionCount: 0, // Would need to count from ReportExecution table
     };
   }
@@ -544,12 +538,12 @@ export class ReportBuilderService {
       reportId: execution.reportId,
       status: execution.status,
       startedAt: execution.startedAt,
-      completedAt: execution.completedAt,
-      duration: execution.duration,
+      completedAt: execution.completedAt ?? undefined,
+      duration: execution.duration ?? undefined,
       resultData: execution.resultData,
-      resultUrl: execution.resultUrl,
-      errorMessage: execution.errorMessage,
-      executedBy: execution.executedBy,
+      resultUrl: execution.resultUrl ?? undefined,
+      errorMessage: execution.errorMessage ?? undefined,
+      executedBy: execution.executedBy ?? '',
     };
   }
 }

@@ -119,7 +119,15 @@ export class BatchProcessorService {
           },
           take: 10,
         }),
-        this.prisma.sensorData.count({ where }),
+        // SensorData uses different where clause structure
+        this.prisma.sensorData.count({
+          where: {
+            timestamp: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+        }),
       ]);
 
     return {
