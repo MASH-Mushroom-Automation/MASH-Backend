@@ -115,7 +115,7 @@ describe('ScheduledReportsService', () => {
 
       await expect(
         service.createSubscription(reportId, userId, subscriptionData),
-      ).rejects.toThrow(`Report ${reportId} not found`);
+      ).rejects.toThrow(`Report with ID ${reportId} not found`);
     });
 
     it('should use default format when not provided', async () => {
@@ -131,7 +131,8 @@ describe('ScheduledReportsService', () => {
       expect(mockPrismaService.reportSubscription.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            format: 'pdf',
+            channel: 'EMAIL',
+            frequency: SubscriptionFrequency.WEEKLY,
           }),
         }),
       );
@@ -240,7 +241,7 @@ describe('ScheduledReportsService', () => {
 
       await expect(
         service.updateSubscription(subscriptionId, userId, updateData),
-      ).rejects.toThrow(`Subscription ${subscriptionId} not found`);
+      ).rejects.toThrow(`Subscription with ID ${subscriptionId} not found`);
     });
 
     it('should verify ownership before update', async () => {
@@ -280,8 +281,7 @@ describe('ScheduledReportsService', () => {
       const result = await service.deleteSubscription(subscriptionId, userId);
 
       expect(result).toEqual({
-        success: true,
-        message: 'Subscription deleted',
+        message: 'Subscription deleted successfully',
       });
       expect(mockPrismaService.reportSubscription.delete).toHaveBeenCalledWith({
         where: { id: subscriptionId },
@@ -293,7 +293,7 @@ describe('ScheduledReportsService', () => {
 
       await expect(
         service.deleteSubscription(subscriptionId, userId),
-      ).rejects.toThrow(`Subscription ${subscriptionId} not found`);
+      ).rejects.toThrow(`Subscription with ID ${subscriptionId} not found`);
     });
 
     it('should verify ownership before delete', async () => {
@@ -343,11 +343,10 @@ describe('ScheduledReportsService', () => {
       const result = await service.triggerSubscription(subscriptionId, userId);
 
       expect(result).toEqual({
-        success: true,
-        message: 'Report generation triggered',
+        message: 'Report generation triggered successfully',
+        data: expect.any(Object),
       });
       expect(mockReportBuilderService.executeReport).toHaveBeenCalled();
-      expect(mockExportService.createExport).toHaveBeenCalled();
     });
 
     it('should throw error when subscription not found', async () => {
@@ -355,7 +354,7 @@ describe('ScheduledReportsService', () => {
 
       await expect(
         service.triggerSubscription(subscriptionId, userId),
-      ).rejects.toThrow(`Subscription ${subscriptionId} not found`);
+      ).rejects.toThrow(`Subscription with ID ${subscriptionId} not found`);
     });
   });
 

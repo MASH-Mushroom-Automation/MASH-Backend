@@ -174,7 +174,7 @@ export class ScheduledReportsService {
    * Process daily subscriptions (runs at 6 AM daily)
    */
   @Cron(CronExpression.EVERY_DAY_AT_6AM)
-  async processDailyReports() {
+  async generateDailyReports() {
     if (!this.cronEnabled) {
       return;
     }
@@ -207,7 +207,7 @@ export class ScheduledReportsService {
    * Process weekly subscriptions (runs every Monday at 6 AM)
    */
   @Cron(CronExpression.MONDAY_TO_FRIDAY_AT_6AM)
-  async processWeeklyReports() {
+  async generateWeeklyReports() {
     if (!this.cronEnabled) {
       return;
     }
@@ -246,7 +246,7 @@ export class ScheduledReportsService {
    * Process monthly subscriptions (runs on 1st of month at 6 AM)
    */
   @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
-  async processMonthlyReports() {
+  async generateMonthlyReports() {
     if (!this.cronEnabled) {
       return;
     }
