@@ -78,7 +78,7 @@ export class ExcelExportService {
       worksheet.columns.forEach((column, index) => {
         if (!column) return;
         let maxLength = 0;
-        column.eachCell({ includeEmpty: false }, (cell) => {
+        column?.eachCell?.({ includeEmpty: false }, (cell) => {
           const cellValue = cell.value?.toString() || '';
           maxLength = Math.max(maxLength, cellValue.length);
         });
@@ -164,8 +164,9 @@ export class ExcelExportService {
 
         // Auto-fit columns
         worksheet.columns.forEach((column) => {
+          if (!column) return;
           let maxLength = 0;
-          column.eachCell({ includeEmpty: false }, (cell) => {
+          column?.eachCell?.({ includeEmpty: false }, (cell) => {
             const cellValue = cell.value?.toString() || '';
             maxLength = Math.max(maxLength, cellValue.length);
           });

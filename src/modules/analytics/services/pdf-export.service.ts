@@ -130,8 +130,8 @@ export class PdfExportService {
       doc.end();
 
       // Wait for write to complete
-      await new Promise((resolve, reject) => {
-        stream.on('finish', resolve);
+      await new Promise<void>((resolve, reject) => {
+        stream.on('finish', () => resolve());
         stream.on('error', reject);
       });
 

@@ -39,10 +39,6 @@ export class DrillDownService {
     // Get products in this category
     const products = await this.prisma.product.findMany({
       where: {
-        categories: {
-          path: ['$'],
-          array_contains: categoryId,
-        },
         isActive: true,
       },
       select: {
@@ -52,36 +48,49 @@ export class DrillDownService {
         stock: true,
         isActive: true,
         isFeatured: true,
-        orderItems: {
-          where: {
-            order: {
-              status: OrderStatus.DELIVERED,
-              createdAt: { gte: startDate, lte: endDate },
-            },
-          },
-          select: {
-            quantity: true,
-            price: true,
-            total: true,
-          },
+        categories: true,
+      },
+    });
+
+    // Filter products by category in memory (since categories is Json[])
+    const filteredProducts = products.filter((p) => {
+      const cats = p.categories as any[];
+      return (
+        cats && cats.some((c: any) => c?.id === categoryId || c === categoryId)
+      );
+    });
+
+    // Get order items for these products
+    const productIds = filteredProducts.map((p) => p.id);
+    const orderItems = await this.prisma.orderItem.findMany({
+      where: {
+        productId: { in: productIds },
+        order: {
+          status: OrderStatus.DELIVERED,
+          createdAt: { gte: startDate, lte: endDate },
         },
+      },
+      select: {
+        productId: true,
+        quantity: true,
+        price: true,
+        total: true,
       },
     });
 
     // Calculate metrics for each product
-    const productMetrics = products.map((product) => {
-      const orderItems = product.orderItems;
-      const totalQuantitySold = orderItems.reduce(
+    const productMetrics = filteredProducts.map((product) => {
+      const items = orderItems.filter((item) => item.productId === product.id);
+      const totalQuantitySold = items.reduce(
         (sum, item) => sum + item.quantity,
         0,
       );
-      const totalRevenue = orderItems.reduce(
+      const totalRevenue = items.reduce(
         (sum, item) => sum + Number(item.total),
         0,
       );
-      const orderCount = orderItems.length;
-      const avgOrderValue =
-        orderCount > 0 ? totalRevenue / orderCount : 0;
+      const orderCount = items.length;
+      const avgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
 
       return {
         product: {
@@ -381,10 +390,7 @@ export class DrillDownService {
     });
 
     // Calculate user metrics
-    const totalSpent = orderDetails.reduce(
-      (sum, o) => sum + o.order.total,
-      0,
-    );
+    const totalSpent = orderDetails.reduce((sum, o) => sum + o.order.total, 0);
     const avgOrderValue =
       orderDetails.length > 0 ? totalSpent / orderDetails.length : 0;
     const totalItems = orderDetails.reduce(

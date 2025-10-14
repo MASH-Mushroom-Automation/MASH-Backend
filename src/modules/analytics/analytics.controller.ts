@@ -538,10 +538,13 @@ export class AnalyticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
+    const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const defaultEnd = new Date();
+
     return this.drillDownService.categoryToProducts(
       categoryId,
-      startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined,
+      startDate ? new Date(startDate) : defaultStart,
+      endDate ? new Date(endDate) : defaultEnd,
     );
   }
 
@@ -560,10 +563,13 @@ export class AnalyticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
+    const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const defaultEnd = new Date();
+
     return this.drillDownService.productToOrders(
       productId,
-      startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined,
+      startDate ? new Date(startDate) : defaultStart,
+      endDate ? new Date(endDate) : defaultEnd,
     );
   }
 
@@ -582,10 +588,13 @@ export class AnalyticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
+    const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const defaultEnd = new Date();
+
     return this.drillDownService.userToOrders(
       userId,
-      startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined,
+      startDate ? new Date(startDate) : defaultStart,
+      endDate ? new Date(endDate) : defaultEnd,
     );
   }
 
@@ -642,7 +651,10 @@ export class AnalyticsController {
     status: 200,
     description: 'Subscription deleted successfully',
   })
-  async deleteSubscription(@Param('id') subscriptionId: string, @Request() req) {
+  async deleteSubscription(
+    @Param('id') subscriptionId: string,
+    @Request() req,
+  ) {
     return this.scheduledReportsService.deleteSubscription(
       subscriptionId,
       req.user.id,
