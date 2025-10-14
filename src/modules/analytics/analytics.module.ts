@@ -9,6 +9,10 @@ import { BatchProcessorService } from './services/batch-processor.service';
 import { CacheWarmerService } from './services/cache-warmer.service';
 import { ReportBuilderService } from './services/report-builder.service';
 import { ChartDataService } from './services/chart-data.service';
+import { ExportService } from './services/export.service';
+import { CsvExportService } from './services/csv-export.service';
+import { ExcelExportService } from './services/excel-export.service';
+import { PdfExportService } from './services/pdf-export.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -22,7 +26,11 @@ import { ChartDataService } from './services/chart-data.service';
     CacheWarmerService,
     ReportBuilderService,
     ChartDataService,
+    ExportService,
+    CsvExportService,
+    ExcelExportService,
+    PdfExportService,
   ],
-  exports: [AnalyticsService, RealtimeAnalyticsService],
+  exports: [AnalyticsService, RealtimeAnalyticsService, ExportService],
 })
 export class AnalyticsModule {}

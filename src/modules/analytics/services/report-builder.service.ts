@@ -208,7 +208,8 @@ export class ReportBuilderService {
 
     try {
       // Execute report based on type
-      const configuration = report.configuration as unknown as ReportConfiguration;
+      const configuration =
+        report.configuration as unknown as ReportConfiguration;
       const filters = executeDto?.overrideFilters
         ? { ...configuration.filters, ...executeDto.overrideFilters }
         : configuration.filters;

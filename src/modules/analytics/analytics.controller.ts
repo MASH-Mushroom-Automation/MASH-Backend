@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -28,6 +29,7 @@ import {
   ReportResponseDto,
   ReportExecutionResponseDto,
 } from './dto/report-response.dto';
+import { ExportConfigDto, ExportResponseDto } from './dto/export-config.dto';
 import { ReportType } from '@prisma/client';
 
 @ApiTags('analytics')
@@ -352,5 +354,54 @@ export class AnalyticsController {
       dateRange,
       groupBy,
     );
+  }
+
+  // Export Engine Endpoints
+
+  @Post('export')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Create a new data export' })
+  @ApiResponse({
+    status: 201,
+    description: 'Export created successfully',
+    type: ExportResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid export configuration' })
+  async createExport(@Body() config: ExportConfigDto) {
+    return this.analyticsService.createExport(config);
+  }
+
+  @Get('export/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Get export status and metadata' })
+  @ApiResponse({
+    status: 200,
+    description: 'Export status retrieved',
+    type: ExportResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Export not found' })
+  async getExportStatus(@Param('id') id: string) {
+    return this.analyticsService.getExportStatus(id);
+  }
+
+  @Get('exports')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'List all exports' })
+  @ApiResponse({
+    status: 200,
+    description: 'All exports retrieved',
+    type: [ExportResponseDto],
+  })
+  async listExports() {
+    return this.analyticsService.listExports();
+  }
+
+  @Delete('export/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Delete an export' })
+  @ApiResponse({ status: 200, description: 'Export deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Export not found' })
+  async deleteExport(@Param('id') id: string) {
+    return this.analyticsService.deleteExport(id);
   }
 }

@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 import { DateRangeQueryDto, TimeInterval } from './dto/date-range-query.dto';
 import { OrderStatus } from '@prisma/client';
+import { ExportService } from './services/export.service';
+import { ExportConfigDto, ExportResponseDto } from './dto/export-config.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -23,6 +25,8 @@ export class AnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
+    @Inject(forwardRef(() => ExportService))
+    private readonly exportService: ExportService,
   ) {}
 
   async getDashboardStats(query: DateRangeQueryDto) {
@@ -711,5 +715,24 @@ export class AnalyticsService {
     });
 
     return Object.values(grouped);
+  }
+
+  // Export Engine Methods (delegate to ExportService)
+
+  async createExport(config: ExportConfigDto): Promise<ExportResponseDto> {
+    return this.exportService.exportData(config);
+  }
+
+  async getExportStatus(exportId: string): Promise<ExportResponseDto> {
+    return this.exportService.getExportStatus(exportId);
+  }
+
+  async listExports(): Promise<ExportResponseDto[]> {
+    return this.exportService.listExports();
+  }
+
+  async deleteExport(exportId: string): Promise<{ success: boolean }> {
+    await this.exportService.deleteExport(exportId);
+    return { success: true };
   }
 }
