@@ -249,6 +249,10 @@ model OrderItem {
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
 
+  // Analytics indexes for product performance queries
+  @@index([productId])
+  @@index([orderId])
+  @@index([productId, orderId])
   @@map("order_items")
 }
 
@@ -870,3 +874,99 @@ model AlertEscalationPolicy {
 // - alertRecipients        AlertRuleRecipient[]     @relation("AlertRecipient")
 // - alertAcknowledgments   AlertAcknowledgment[]    @relation("AlertAcknowledgmentUser")
 // - notificationTemplates  NotificationTemplate[]   @relation("NotificationTemplateCreator")
+
+// ============================================
+// 8. ANALYTICS & REPORTING MODELS
+// ============================================
+model Report {
+  id              String              @id @default(uuid())
+  name            String              // Report name
+  description     String?             // Report description
+  type            ReportType          // Report type (sales, users, products, etc.)
+  configuration   Json                // Report configuration (filters, grouping, etc.)
+  schedule        Json?               // Schedule configuration for automated reports
+  isActive        Boolean             @default(true)
+  createdBy       String              // User who created the report
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  // Relations
+  executions      ReportExecution[]
+  subscriptions   ReportSubscription[]
+  
+  @@index([type])
+  @@index([createdBy])
+  @@index([isActive, type])
+  @@map("reports")
+}
+
+model ReportExecution {
+  id              String            @id @default(uuid())
+  reportId        String            // Report being executed
+  status          ExecutionStatus   @default(PENDING)
+  startedAt       DateTime          @default(now())
+  completedAt     DateTime?         // When execution completed
+  duration        Int?              // Execution time in milliseconds
+  resultData      Json?             // Execution result data
+  resultUrl       String?           // URL to exported file (if applicable)
+  errorMessage    String?           // Error message if failed
+  executedBy      String?           // User who triggered (null for scheduled)
+  
+  // Relations
+  report          Report            @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@index([reportId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([reportId, status])
+  @@map("report_executions")
+}
+
+model ReportSubscription {
+  id              String              @id @default(uuid())
+  reportId        String              // Report being subscribed to
+  userId          String              // Subscriber user
+  channel         NotificationChannel // Delivery channel
+  frequency       SubscriptionFrequency // How often to receive
+  isActive        Boolean             @default(true)
+  lastSentAt      DateTime?           // Last time report was sent
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  // Relations
+  report          Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@unique([reportId, userId, channel])
+  @@index([reportId])
+  @@index([userId])
+  @@index([isActive, frequency])
+  @@map("report_subscriptions")
+}
+
+// ============================================
+// ANALYTICS ENUMS
+// ============================================
+enum ReportType {
+  SALES
+  REVENUE
+  USERS
+  PRODUCTS
+  ORDERS
+  DEVICES
+  CUSTOM
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SubscriptionFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  REAL_TIME
+}
