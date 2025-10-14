@@ -23,6 +23,8 @@ import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.deco
 import { DateRangeQueryDto } from './dto/date-range-query.dto';
 import { ReportBuilderService } from './services/report-builder.service';
 import { ChartDataService } from './services/chart-data.service';
+import { ForecastService } from './services/forecast.service';
+import { ComparisonService } from './services/comparison.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ExecuteReportDto } from './dto/execute-report.dto';
 import {
@@ -42,6 +44,8 @@ export class AnalyticsController {
     private readonly analyticsService: AnalyticsService,
     private readonly reportBuilderService: ReportBuilderService,
     private readonly chartDataService: ChartDataService,
+    private readonly forecastService: ForecastService,
+    private readonly comparisonService: ComparisonService,
   ) {}
 
   @Get('dashboard')
@@ -403,5 +407,112 @@ export class AnalyticsController {
   @ApiResponse({ status: 404, description: 'Export not found' })
   async deleteExport(@Param('id') id: string) {
     return this.analyticsService.deleteExport(id);
+  }
+
+  // Predictive Analytics Endpoints
+
+  @Get('forecast/revenue')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Forecast revenue for next N days' })
+  @ApiResponse({ status: 200, description: 'Revenue forecast generated' })
+  async forecastRevenue(@Query('days') days?: number) {
+    return this.forecastService.forecastRevenue(
+      days ? parseInt(days.toString()) : 30,
+    );
+  }
+
+  @Get('forecast/demand')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Predict product demand' })
+  @ApiResponse({ status: 200, description: 'Demand prediction generated' })
+  async predictDemand(
+    @Query('productId') productId?: string,
+    @Query('days') days?: number,
+  ) {
+    return this.forecastService.predictDemand(
+      productId,
+      days ? parseInt(days.toString()) : 30,
+    );
+  }
+
+  @Get('forecast/anomalies')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Detect anomalies in data patterns' })
+  @ApiResponse({ status: 200, description: 'Anomalies detected' })
+  async detectAnomalies(
+    @Query('type') type?: 'revenue' | 'orders' | 'users',
+    @Query('days') days?: number,
+  ) {
+    return this.forecastService.detectAnomalies(
+      type || 'revenue',
+      days ? parseInt(days.toString()) : 30,
+    );
+  }
+
+  // Comparative Analytics Endpoints
+
+  @Get('comparison/periods')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Compare metrics between two time periods' })
+  @ApiResponse({ status: 200, description: 'Period comparison generated' })
+  async comparePeriods(
+    @Query('metric') metric: 'revenue' | 'orders' | 'users' | 'products',
+    @Query('currentStart') currentStart: string,
+    @Query('currentEnd') currentEnd: string,
+    @Query('previousStart') previousStart: string,
+    @Query('previousEnd') previousEnd: string,
+  ) {
+    return this.comparisonService.comparePeriods(
+      metric,
+      new Date(currentStart),
+      new Date(currentEnd),
+      new Date(previousStart),
+      new Date(previousEnd),
+    );
+  }
+
+  @Get('comparison/cohorts')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Analyze user cohorts' })
+  @ApiResponse({ status: 200, description: 'Cohort analysis generated' })
+  async analyzeCohorts(
+    @Query('type') type?: 'weekly' | 'monthly',
+    @Query('months') months?: number,
+  ) {
+    return this.comparisonService.analyzeCohorts(
+      type || 'monthly',
+      months ? parseInt(months.toString()) : 6,
+    );
+  }
+
+  @Get('comparison/products')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Compare product performance' })
+  @ApiResponse({ status: 200, description: 'Product comparison generated' })
+  async compareProducts(
+    @Query('productIds') productIds: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    const ids = productIds.split(',');
+    return this.comparisonService.compareProducts(
+      ids,
+      new Date(startDate),
+      new Date(endDate),
+    );
+  }
+
+  @Get('comparison/categories')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Compare category performance' })
+  @ApiResponse({ status: 200, description: 'Category comparison generated' })
+  async compareCategories(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.comparisonService.compareCategories(
+      new Date(startDate),
+      new Date(endDate),
+    );
   }
 }

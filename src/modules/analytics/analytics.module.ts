@@ -13,6 +13,8 @@ import { ExportService } from './services/export.service';
 import { CsvExportService } from './services/csv-export.service';
 import { ExcelExportService } from './services/excel-export.service';
 import { PdfExportService } from './services/pdf-export.service';
+import { ForecastService } from './services/forecast.service';
+import { ComparisonService } from './services/comparison.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -30,7 +32,15 @@ import { PdfExportService } from './services/pdf-export.service';
     CsvExportService,
     ExcelExportService,
     PdfExportService,
+    ForecastService,
+    ComparisonService,
   ],
-  exports: [AnalyticsService, RealtimeAnalyticsService, ExportService],
+  exports: [
+    AnalyticsService,
+    RealtimeAnalyticsService,
+    ExportService,
+    ForecastService,
+    ComparisonService,
+  ],
 })
 export class AnalyticsModule {}
