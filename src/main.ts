@@ -42,14 +42,21 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  // Serve static files for auth pages (HTML, CSS, JS)
-  app.useStaticAssets(join(__dirname, '..', 'src', 'public'), {
-    prefix: '/public/',
-  });
-
+  // Get config service and environment variables first
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+
+  // Serve static files for auth pages (HTML, CSS, JS)
+  // In production (dist), public folder is copied to dist/public
+  // In development, it's at src/public
+  const publicPath =
+    nodeEnv === 'production'
+      ? join(__dirname, '..', 'public')
+      : join(__dirname, '..', 'src', 'public');
+  app.useStaticAssets(publicPath, {
+    prefix: '/public/',
+  });
 
   // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
@@ -71,8 +78,17 @@ async function bootstrap() {
 
   // Note: Global validation pipes are registered in CommonModule
 
-  // API prefix
-  app.setGlobalPrefix('api/v1');
+  // API prefix - exclude auth HTML pages from the prefix
+  app.setGlobalPrefix('api/v1', {
+    exclude: [
+      '/',
+      '/register',
+      '/verify',
+      '/forgot-password',
+      '/reset-password',
+      '/dashboard',
+    ],
+  });
 
   // Swagger/OpenAPI documentation
   const config = new DocumentBuilder()

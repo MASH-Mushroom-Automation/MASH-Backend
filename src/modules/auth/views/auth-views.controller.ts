@@ -5,15 +5,27 @@ import { join } from 'path';
 /**
  * Auth Views Controller
  * Serves HTML pages for authentication flows
+ * 
+ * Note: In development, files are served from src/public/
+ * In production (dist), files are served from dist/public/
  */
 @Controller()
 export class AuthViewsController {
+  private getPublicPath(): string {
+    // In dist: __dirname = dist/modules/auth/views
+    // We need: dist/public or src/public
+    const isDev = process.env.NODE_ENV !== 'production';
+    return isDev
+      ? join(__dirname, '../../../../src/public')
+      : join(__dirname, '../../../public');
+  }
+
   /**
    * Serve login page at root URL
    */
   @Get('/')
   serveLogin(@Res() res: Response) {
-    return res.sendFile(join(__dirname, '../../../public/auth/login.html'));
+    return res.sendFile(join(this.getPublicPath(), 'auth/login.html'));
   }
 
   /**
@@ -21,7 +33,7 @@ export class AuthViewsController {
    */
   @Get('/register')
   serveRegister(@Res() res: Response) {
-    return res.sendFile(join(__dirname, '../../../public/auth/register.html'));
+    return res.sendFile(join(this.getPublicPath(), 'auth/register.html'));
   }
 
   /**
@@ -29,9 +41,7 @@ export class AuthViewsController {
    */
   @Get('/verify')
   serveVerify(@Res() res: Response) {
-    return res.sendFile(
-      join(__dirname, '../../../public/auth/verify-email.html'),
-    );
+    return res.sendFile(join(this.getPublicPath(), 'auth/verify-email.html'));
   }
 
   /**
@@ -40,7 +50,7 @@ export class AuthViewsController {
   @Get('/forgot-password')
   serveForgotPassword(@Res() res: Response) {
     return res.sendFile(
-      join(__dirname, '../../../public/auth/forgot-password.html'),
+      join(this.getPublicPath(), 'auth/forgot-password.html'),
     );
   }
 
@@ -50,7 +60,7 @@ export class AuthViewsController {
   @Get('/reset-password')
   serveResetPassword(@Res() res: Response) {
     return res.sendFile(
-      join(__dirname, '../../../public/auth/reset-password.html'),
+      join(this.getPublicPath(), 'auth/reset-password.html'),
     );
   }
 
@@ -59,6 +69,6 @@ export class AuthViewsController {
    */
   @Get('/dashboard')
   serveDashboard(@Res() res: Response) {
-    return res.sendFile(join(__dirname, '../../../public/auth/dashboard.html'));
+    return res.sendFile(join(this.getPublicPath(), 'auth/dashboard.html'));
   }
 }
