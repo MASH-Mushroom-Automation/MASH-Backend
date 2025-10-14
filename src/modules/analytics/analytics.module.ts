@@ -15,6 +15,8 @@ import { ExcelExportService } from './services/excel-export.service';
 import { PdfExportService } from './services/pdf-export.service';
 import { ForecastService } from './services/forecast.service';
 import { ComparisonService } from './services/comparison.service';
+import { DrillDownService } from './services/drilldown.service';
+import { ScheduledReportsService } from './services/scheduled-reports.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -34,6 +36,8 @@ import { ComparisonService } from './services/comparison.service';
     PdfExportService,
     ForecastService,
     ComparisonService,
+    DrillDownService,
+    ScheduledReportsService,
   ],
   exports: [
     AnalyticsService,

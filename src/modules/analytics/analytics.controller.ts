@@ -25,6 +25,8 @@ import { ReportBuilderService } from './services/report-builder.service';
 import { ChartDataService } from './services/chart-data.service';
 import { ForecastService } from './services/forecast.service';
 import { ComparisonService } from './services/comparison.service';
+import { DrillDownService } from './services/drilldown.service';
+import { ScheduledReportsService } from './services/scheduled-reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ExecuteReportDto } from './dto/execute-report.dto';
 import {
@@ -46,6 +48,8 @@ export class AnalyticsController {
     private readonly chartDataService: ChartDataService,
     private readonly forecastService: ForecastService,
     private readonly comparisonService: ComparisonService,
+    private readonly drillDownService: DrillDownService,
+    private readonly scheduledReportsService: ScheduledReportsService,
   ) {}
 
   @Get('dashboard')
@@ -513,6 +517,155 @@ export class AnalyticsController {
     return this.comparisonService.compareCategories(
       new Date(startDate),
       new Date(endDate),
+    );
+  }
+
+  // ==================== Day 6: Drill-Down Analytics ====================
+
+  @Get('drilldown/category/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Drill down from category to products',
+    description:
+      'Get detailed product performance metrics for a specific category',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category drill-down data retrieved successfully',
+  })
+  async drillDownCategory(
+    @Param('id') categoryId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.drillDownService.categoryToProducts(
+      categoryId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
+
+  @Get('drilldown/product/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Drill down from product to orders',
+    description: 'Get detailed order information for a specific product',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Product drill-down data retrieved successfully',
+  })
+  async drillDownProduct(
+    @Param('id') productId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.drillDownService.productToOrders(
+      productId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
+
+  @Get('drilldown/user/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Drill down from user to orders',
+    description: 'Get detailed order history for a specific user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User drill-down data retrieved successfully',
+  })
+  async drillDownUser(
+    @Param('id') userId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.drillDownService.userToOrders(
+      userId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
+
+  // ==================== Day 6: Scheduled Reports ====================
+
+  @Post('reports/subscribe')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Subscribe to scheduled report',
+    description: 'Create a new subscription for automated report delivery',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription created successfully',
+  })
+  async createReportSubscription(
+    @Request() req,
+    @Body()
+    data: {
+      reportId: string;
+      frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+      format?: string;
+      recipients?: string[];
+    },
+  ) {
+    return this.scheduledReportsService.createSubscription(
+      data.reportId,
+      req.user.id,
+      data,
+    );
+  }
+
+  @Get('reports/subscriptions')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Get user subscriptions',
+    description: 'List all report subscriptions for the current user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscriptions retrieved successfully',
+  })
+  async getSubscriptions(@Request() req) {
+    return this.scheduledReportsService.getUserSubscriptions(req.user.id);
+  }
+
+  @Delete('reports/subscribe/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Cancel subscription',
+    description: 'Delete a report subscription',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription deleted successfully',
+  })
+  async deleteSubscription(@Param('id') subscriptionId: string, @Request() req) {
+    return this.scheduledReportsService.deleteSubscription(
+      subscriptionId,
+      req.user.id,
+    );
+  }
+
+  @Post('reports/subscribe/:id/trigger')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Manually trigger subscription',
+    description: 'Generate and send report immediately for a subscription',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Report generation triggered successfully',
+  })
+  async triggerSubscription(
+    @Param('id') subscriptionId: string,
+    @Request() req,
+  ) {
+    return this.scheduledReportsService.triggerSubscription(
+      subscriptionId,
+      req.user.id,
     );
   }
 }
