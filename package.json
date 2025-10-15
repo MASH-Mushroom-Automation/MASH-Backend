@@ -36,7 +36,8 @@
     "db:studio": "npx prisma studio",
     "postman:test": "newman run postman/00-Master-Complete-API-Collection.postman_collection.json -e postman/MASH-backend.postman_environment.json",
     "postman:auth": "newman run postman/01-Authentication-API.postman_collection.json -e postman/MASH-backend.postman_environment.json",
-    "postman:orders": "newman run postman/04-Orders-API.postman_collection.json -e postman/MASH-backend.postman_environment.json"
+    "postman:orders": "newman run postman/04-Orders-API.postman_collection.json -e postman/MASH-backend.postman_environment.json",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.901.0",
@@ -145,6 +146,7 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
+    "husky": "^9.1.7",
     "jest": "^30.0.0",
     "jest-extended": "^4.0.2",
     "jest-junit": "^16.0.0",
