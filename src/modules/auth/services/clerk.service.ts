@@ -18,27 +18,40 @@ export class ClerkService {
   constructor(private configService: ConfigService) {
     const secretKey = this.configService.get<string>('clerk.secretKey');
     const webhookSecret = this.configService.get<string>('clerk.webhookSecret');
+    const clerkEnabled = this.configService.get<boolean>('CLERK_ENABLED', true);
 
-    if (!secretKey) {
-      this.logger.warn('⚠️ Clerk secret key not configured');
-      throw new Error('CLERK_SECRET_KEY is required');
+    // Gracefully handle missing/invalid Clerk configuration
+    if (!clerkEnabled || !secretKey || secretKey.includes('disabled') || secretKey.includes('placeholder')) {
+      this.logger.warn('⚠️ Clerk is disabled or not configured - Authentication features will be limited');
+      this.webhookSecret = '';
+      // Create a dummy client to prevent crashes (won't be used)
+      this.clerkClient = null as any;
+      return;
     }
 
-    if (!webhookSecret) {
-      this.logger.warn('⚠️ Clerk webhook secret not configured');
+    if (!webhookSecret || webhookSecret.includes('disabled')) {
+      this.logger.warn('⚠️ Clerk webhook secret not configured - Webhooks will not work');
       this.webhookSecret = '';
     } else {
       this.webhookSecret = webhookSecret;
     }
 
-    this.clerkClient = createClerkClient({ secretKey });
-    this.logger.log('✅ Clerk client initialized');
+    try {
+      this.clerkClient = createClerkClient({ secretKey });
+      this.logger.log('✅ Clerk client initialized');
+    } catch (error) {
+      this.logger.error('❌ Failed to initialize Clerk client:', error);
+      this.clerkClient = null as any;
+    }
   }
 
   /**
    * Get Clerk client instance
    */
   getClient(): ClerkClient {
+    if (!this.clerkClient) {
+      throw new Error('Clerk client is not initialized - check your configuration');
+    }
     return this.clerkClient;
   }
 
@@ -49,6 +62,11 @@ export class ClerkService {
     payload: string,
     headers: Record<string, string>,
   ): Promise<any> {
+    if (!this.webhookSecret) {
+      this.logger.error('❌ Webhook secret not configured');
+      throw new UnauthorizedException('Webhook verification not configured');
+    }
+    
     try {
       const wh = new Webhook(this.webhookSecret);
       const evt = wh.verify(payload, headers);

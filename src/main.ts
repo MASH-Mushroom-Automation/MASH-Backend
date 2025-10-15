@@ -248,6 +248,11 @@ All protected endpoints require a Bearer token in the Authorization header.
 }
 
 bootstrap().catch((error) => {
+  console.error('❌ FATAL ERROR DURING BOOTSTRAP:');
+  console.error('Error type:', typeof error);
+  console.error('Error:', error);
+  console.error('Stack:', error?.stack);
+  console.error('Message:', error?.message);
   Logger.error('Error starting application', error, 'Bootstrap');
   process.exit(1);
 });
