@@ -19,7 +19,7 @@ We take the security of MASH-Backend seriously. If you discover a security vulne
 
 Instead, please report security issues privately by:
 
-1. **Email**: Send details to [security@example.com](mailto:security@example.com)
+1. **Email**: Send details to [mash.mushroom.automation@gmail.com](mailto:mash.mushroom.automation@gmail.com)
 2. **GitHub Security Advisory**: Use [GitHub's private vulnerability reporting](https://github.com/MASH-Mushroom-Automation/MASH-Backend/security/advisories/new)
 
 ### 📝 What to Include
@@ -152,8 +152,8 @@ Please include the following information in your report:
 
 ## Security Contacts
 
-- **Security Team**: security@example.com
-- **Project Maintainers**: Listed in [CODEOWNERS](./CODEOWNERS)
+- **Security Team**: mash.mushroom.automation@gmail.com
+- **Project Maintainers**: Listed in [CODEOWNERS](./.github/CODEOWNERS)
 - **Security Advisories**: [GitHub Security Advisories](https://github.com/MASH-Mushroom-Automation/MASH-Backend/security/advisories)
 
 ## Acknowledgments
