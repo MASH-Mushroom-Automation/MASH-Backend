@@ -462,17 +462,21 @@ export class ChartDataService {
   /**
    * Get revenue by category
    * Note: Product.categories is a Json array, not a relation
-   * This method needs to be refactored to support Json array filtering
+   * Uses Prisma JSON filtering with array_contains to filter products by category
    */
   private async getRevenueByCategory(
     categoryId: string,
     dateRange: DateRange,
   ): Promise<number> {
-    // TODO: Implement Json array filtering for Product.categories
-    // For now, return aggregate without category filter
+    // Use Prisma JSON filtering for Product.categories array
     const result = await this.prisma.orderItem.aggregate({
       where: {
-        // product: { categoryId }, // Product doesn't have categoryId field
+        product: {
+          categories: {
+            path: [],
+            array_contains: categoryId,
+          } as any, // Type assertion needed for Prisma JSON filtering
+        },
         order: {
           createdAt: { gte: dateRange.start, lte: dateRange.end },
           status: { in: ['DELIVERED'] },
@@ -487,22 +491,26 @@ export class ChartDataService {
   /**
    * Get orders by category
    * Note: Product.categories is a Json array, not a relation
-   * This method needs to be refactored to support Json array filtering
+   * Uses Prisma JSON filtering with array_contains to filter products by category
    */
   private async getOrdersByCategory(
     categoryId: string,
     dateRange: DateRange,
   ): Promise<number> {
-    // TODO: Implement Json array filtering for Product.categories
-    // For now, return count without category filter
+    // Use Prisma JSON filtering for Product.categories array
     return this.prisma.order.count({
       where: {
         createdAt: { gte: dateRange.start, lte: dateRange.end },
-        // orderItems: {
-        //   some: {
-        //     product: { categoryId }, // Product doesn't have categoryId field
-        //   },
-        // },
+        orderItems: {
+          some: {
+            product: {
+              categories: {
+                path: [],
+                array_contains: categoryId,
+              } as any, // Type assertion needed for Prisma JSON filtering
+            },
+          },
+        },
       },
     });
   }
@@ -510,17 +518,21 @@ export class ChartDataService {
   /**
    * Get products sold by category
    * Note: Product.categories is a Json array, not a relation
-   * This method needs to be refactored to support Json array filtering
+   * Uses Prisma JSON filtering with array_contains to filter products by category
    */
   private async getProductsSoldByCategory(
     categoryId: string,
     dateRange: DateRange,
   ): Promise<number> {
-    // TODO: Implement Json array filtering for Product.categories
-    // For now, return aggregate without category filter
+    // Use Prisma JSON filtering for Product.categories array
     const result = await this.prisma.orderItem.aggregate({
       where: {
-        // product: { categoryId }, // Product doesn't have categoryId field
+        product: {
+          categories: {
+            path: [],
+            array_contains: categoryId,
+          } as any, // Type assertion needed for Prisma JSON filtering
+        },
         order: {
           createdAt: { gte: dateRange.start, lte: dateRange.end },
           status: { in: ['DELIVERED'] },
