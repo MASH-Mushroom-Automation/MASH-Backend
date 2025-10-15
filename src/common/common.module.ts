@@ -32,6 +32,9 @@ import { CacheManagerService } from './services/cache-manager.service';
 // Utilities
 import { CustomLogger } from './utils/logger.util';
 
+// Controllers
+import { CsrfTokenController } from './controllers/csrf-token.controller';
+
 // Logger configuration
 import { loggerConfig } from '../config/logger.config';
 
@@ -53,6 +56,10 @@ import { loggerConfig } from '../config/logger.config';
   imports: [
     // Winston Logger Module
     WinstonModule.forRoot(loggerConfig),
+  ],
+  controllers: [
+    // CSRF Token Controller - Provides CSRF token endpoints
+    CsrfTokenController,
   ],
   providers: [
     // Services (Issue #23 - Enterprise Security, #24 - Performance Optimization)
