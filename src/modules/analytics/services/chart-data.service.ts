@@ -6,6 +6,8 @@ import {
   startOfWeek,
   startOfMonth,
   endOfDay,
+  endOfWeek,
+  endOfMonth,
   format,
   eachDayOfInterval,
   eachWeekOfInterval,
@@ -482,10 +484,10 @@ export class ChartDataService {
           status: { in: ['DELIVERED'] },
         },
       },
-      _sum: { price: true },
+      _sum: { total: true }, // Sum line totals (price × quantity), not unit price
     });
 
-    return Number(result._sum?.price || 0);
+    return Number(result._sum?.total || 0);
   }
 
   /**
@@ -607,7 +609,7 @@ export class ChartDataService {
           status: { in: ['DELIVERED'] },
         },
       },
-      _sum: { quantity: true, price: true },
+      _sum: { quantity: true, total: true }, // Include total (price × quantity) for revenue
       orderBy: { _sum: { quantity: 'desc' } },
       take: 10,
     });
@@ -623,7 +625,7 @@ export class ChartDataService {
       }),
       values:
         metric === 'revenue'
-          ? topProducts.map((item) => Number(item._sum?.price || 0))
+          ? topProducts.map((item) => Number(item._sum?.total || 0)) // Sum line totals, not unit price
           : topProducts.map((item) => item._sum?.quantity || 0),
     };
   }
@@ -649,7 +651,14 @@ export class ChartDataService {
    * Get end of period
    */
   private getEndOfPeriod(date: Date, groupBy: 'day' | 'week' | 'month'): Date {
-    return this.getStartOfPeriod(date, groupBy);
+    switch (groupBy) {
+      case 'day':
+        return endOfDay(date);
+      case 'week':
+        return endOfWeek(date);
+      case 'month':
+        return endOfMonth(date);
+    }
   }
 
   /**

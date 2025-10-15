@@ -2,7 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
-import { subDays, subWeeks, subMonths, startOfDay, endOfDay } from 'date-fns';
+import {
+  subDays,
+  subWeeks,
+  subMonths,
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  endOfMonth,
+} from 'date-fns';
 
 @Injectable()
 export class BatchProcessorService {
@@ -76,8 +84,8 @@ export class BatchProcessorService {
     try {
       const lastMonth = subMonths(new Date(), 1);
       const report = await this.generateReport(
-        startOfDay(lastMonth),
-        endOfDay(lastMonth),
+        startOfMonth(lastMonth), // Start of entire month
+        endOfMonth(lastMonth), // End of entire month
         'monthly',
       );
 

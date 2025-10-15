@@ -150,7 +150,7 @@ export class PrismaService
   /**
    * Execute query with timeout
    * Automatically cancels queries that exceed the configured timeout
-   * 
+   *
    * Usage:
    * ```typescript
    * const result = await prismaService.withTimeout(
@@ -158,7 +158,7 @@ export class PrismaService
    *   'findMany products'
    * );
    * ```
-   * 
+   *
    * @param promise - The Prisma query promise to execute
    * @param queryDescription - Description of the query for logging
    * @param customTimeoutMs - Optional custom timeout (overrides default)

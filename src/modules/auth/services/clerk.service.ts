@@ -21,8 +21,15 @@ export class ClerkService {
     const clerkEnabled = this.configService.get<boolean>('CLERK_ENABLED', true);
 
     // Gracefully handle missing/invalid Clerk configuration
-    if (!clerkEnabled || !secretKey || secretKey.includes('disabled') || secretKey.includes('placeholder')) {
-      this.logger.warn('⚠️ Clerk is disabled or not configured - Authentication features will be limited');
+    if (
+      !clerkEnabled ||
+      !secretKey ||
+      secretKey.includes('disabled') ||
+      secretKey.includes('placeholder')
+    ) {
+      this.logger.warn(
+        '⚠️ Clerk is disabled or not configured - Authentication features will be limited',
+      );
       this.webhookSecret = '';
       // Create a dummy client to prevent crashes (won't be used)
       this.clerkClient = null as any;
@@ -30,7 +37,9 @@ export class ClerkService {
     }
 
     if (!webhookSecret || webhookSecret.includes('disabled')) {
-      this.logger.warn('⚠️ Clerk webhook secret not configured - Webhooks will not work');
+      this.logger.warn(
+        '⚠️ Clerk webhook secret not configured - Webhooks will not work',
+      );
       this.webhookSecret = '';
     } else {
       this.webhookSecret = webhookSecret;
@@ -50,7 +59,9 @@ export class ClerkService {
    */
   getClient(): ClerkClient {
     if (!this.clerkClient) {
-      throw new Error('Clerk client is not initialized - check your configuration');
+      throw new Error(
+        'Clerk client is not initialized - check your configuration',
+      );
     }
     return this.clerkClient;
   }
@@ -66,7 +77,7 @@ export class ClerkService {
       this.logger.error('❌ Webhook secret not configured');
       throw new UnauthorizedException('Webhook verification not configured');
     }
-    
+
     try {
       const wh = new Webhook(this.webhookSecret);
       const evt = wh.verify(payload, headers);

@@ -58,13 +58,38 @@ export class AnalyticsGateway
   }
 
   private startMetricsEmission() {
-    // Emit metrics every 5 seconds
-    this.metricsInterval = setInterval(async () => {
-      const metrics = await this.realtimeService.getLiveMetrics();
-      this.server.to('dashboard').emit('dashboard:metrics', metrics);
+    let isRunning = false;
 
-      const sales = await this.realtimeService.getLiveSalesData();
-      this.server.to('sales').emit('sales:data', sales);
+    // Emit metrics every 5 seconds
+    this.metricsInterval = setInterval(() => {
+      // Prevent overlapping runs
+      if (isRunning) {
+        this.logger.warn(
+          'Skipping metrics emission - previous cycle still running',
+        );
+        return;
+      }
+
+      isRunning = true;
+
+      // Execute async operations with proper error handling (void = fire-and-forget)
+      void (async () => {
+        try {
+          const metrics = await this.realtimeService.getLiveMetrics();
+          this.server.to('dashboard').emit('dashboard:metrics', metrics);
+
+          const sales = await this.realtimeService.getLiveSalesData();
+          this.server.to('sales').emit('sales:data', sales);
+        } catch (error) {
+          this.logger.error('Failed to emit metrics', error);
+          this.server.to('dashboard').emit('dashboard:error', {
+            message: 'Failed to fetch metrics',
+            timestamp: new Date(),
+          });
+        } finally {
+          isRunning = false;
+        }
+      })();
     }, 5000);
   }
 

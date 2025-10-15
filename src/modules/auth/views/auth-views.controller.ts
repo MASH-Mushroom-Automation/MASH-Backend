@@ -5,7 +5,7 @@ import { join } from 'path';
 /**
  * Auth Views Controller
  * Serves HTML pages for authentication flows
- * 
+ *
  * Note: In development, files are served from src/public/
  * In production (dist), files are served from dist/public/
  */
@@ -59,9 +59,7 @@ export class AuthViewsController {
    */
   @Get('/reset-password')
   serveResetPassword(@Res() res: Response) {
-    return res.sendFile(
-      join(this.getPublicPath(), 'auth/reset-password.html'),
-    );
+    return res.sendFile(join(this.getPublicPath(), 'auth/reset-password.html'));
   }
 
   /**
