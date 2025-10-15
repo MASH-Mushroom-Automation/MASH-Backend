@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "mash-mushroom-automation",
+        "projectKey": "MASH-Mushroom-Automation_MASH-Backend"
+    }
+}

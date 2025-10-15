@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - MASH Backend</title>
+    <link rel="stylesheet" href="/public/assets/css/auth.css" />
+    <style>
+      .dashboard-container {
+        min-height: 100vh;
+        background-color: #f9fafb;
+        padding: 24px;
+      }
+
+      .dashboard-header {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .dashboard-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .card {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 16px;
+      }
+
+      .profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin-bottom: 16px;
+      }
+
+      .profile-info {
+        margin-bottom: 12px;
+      }
+
+      .profile-label {
+        font-size: 12px;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .profile-value {
+        font-size: 14px;
+        color: #111827;
+        margin-top: 4px;
+      }
+
+      .session-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .session-item:last-child {
+        border-bottom: none;
+      }
+
+      .api-tester {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .method-selector {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .method-btn {
+        padding: 8px 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+
+      .method-btn.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+
+      .endpoint-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      .request-body {
+        width: 100%;
+        min-height: 200px;
+        padding: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        resize: vertical;
+      }
+
+      .response-container {
+        margin-top: 24px;
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        min-height: 200px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .response-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .response-status {
+        font-size: 14px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 4px;
+      }
+
+      .status-success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .status-error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .response-body {
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #111827;
+      }
+
+      .token-display {
+        background: #f9fafb;
+        padding: 12px;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        word-break: break-all;
+        margin-top: 8px;
+        max-height: 100px;
+        overflow-y: auto;
+      }
+
+      .copy-btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: 8px;
+      }
+
+      .copy-btn:hover {
+        background: #2563eb;
+      }
+
+      @media (max-width: 768px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .dashboard-header {
+          flex-direction: column;
+          gap: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Header -->
+      <div class="dashboard-header">
+        <div>
+          <div class="dashboard-title">🍄 MASH Dashboard</div>
+          <p style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+            Welcome back, <span id="user-name" style="font-weight: 600;"></span>
+          </p>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 24px;">
+          Logout
+        </button>
+      </div>
+
+      <!-- Dashboard Grid -->
+      <div class="dashboard-grid">
+        <!-- User Profile Card -->
+        <div class="card">
+          <div class="card-title">Your Profile</div>
+          <img id="user-avatar" src="" alt="Avatar" class="profile-avatar" />
+
+          <div class="profile-info">
+            <div class="profile-label">Email</div>
+            <div class="profile-value" id="user-email">Loading...</div>
+          </div>
+
+          <div class="profile-info">
+            <div class="profile-label">Username</div>
+            <div class="profile-value" id="user-username">Loading...</div>
+          </div>
+
+          <div class="profile-info">
+            <div class="profile-label">Role</div>
+            <div class="profile-value" id="user-role">Loading...</div>
+          </div>
+
+          <div class="profile-info">
+            <div class="profile-label">Status</div>
+            <div class="profile-value">
+              <span id="email-verified" style="padding: 2px 8px; border-radius: 4px; font-size: 12px;"></span>
+            </div>
+          </div>
+
+          <div class="profile-info">
+            <div class="profile-label">Member Since</div>
+            <div class="profile-value" id="user-created">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Session Info Card -->
+        <div class="card">
+          <div class="card-title">Session Information</div>
+
+          <div class="session-item">
+            <div>
+              <div class="profile-label">User ID</div>
+              <div class="profile-value" id="session-user-id">Loading...</div>
+            </div>
+            <button class="copy-btn" onclick="copyToClipboard('session-user-id')">Copy</button>
+          </div>
+
+          <div class="session-item">
+            <div>
+              <div class="profile-label">Access Token</div>
+              <div class="token-display" id="session-token">Loading...</div>
+            </div>
+            <button class="copy-btn" onclick="copyToClipboard('session-token')">Copy</button>
+          </div>
+
+          <div class="session-item">
+            <div>
+              <div class="profile-label">Token Expiry</div>
+              <div class="profile-value" id="session-expiry">Loading...</div>
+            </div>
+          </div>
+
+          <div class="session-item">
+            <div>
+              <div class="profile-label">Session Status</div>
+              <div class="profile-value">
+                <span style="color: #10b981; font-weight: 600;">● Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Testing Interface -->
+      <div class="api-tester">
+        <div class="card-title">API Testing Interface</div>
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 24px;">
+          Test backend API endpoints with your authenticated session
+        </p>
+
+        <!-- Method Selector -->
+        <div class="method-selector">
+          <button class="method-btn active" data-method="GET">GET</button>
+          <button class="method-btn" data-method="POST">POST</button>
+          <button class="method-btn" data-method="PUT">PUT</button>
+          <button class="method-btn" data-method="PATCH">PATCH</button>
+          <button class="method-btn" data-method="DELETE">DELETE</button>
+        </div>
+
+        <!-- Endpoint Input -->
+        <input
+          type="text"
+          class="endpoint-input"
+          id="endpoint-input"
+          placeholder="/auth/me"
+          value="/auth/me"
+        />
+
+        <!-- Request Body (for POST/PUT/PATCH) -->
+        <div id="request-body-container" style="display: none;">
+          <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+            Request Body (JSON)
+          </label>
+          <textarea
+            class="request-body"
+            id="request-body"
+            placeholder='{\n  "key": "value"\n}'
+          ></textarea>
+        </div>
+
+        <!-- Send Button -->
+        <button id="send-request-btn" class="btn btn-primary btn-full-width" style="margin-top: 16px;">
+          Send Request
+        </button>
+
+        <!-- Response Container -->
+        <div class="response-container" id="response-container" style="display: none;">
+          <div class="response-header">
+            <div style="font-size: 14px; font-weight: 600; color: #111827;">Response</div>
+            <div>
+              <span class="response-status" id="response-status"></span>
+              <button class="copy-btn" onclick="copyResponse()">Copy Response</button>
+            </div>
+          </div>
+          <pre class="response-body" id="response-body"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/public/assets/js/api-client.js"></script>
+    <script src="/public/assets/js/auth.js"></script>
+    <script>
+      // Protect route - require authentication
+      protectRoute();
+
+      let currentMethod = 'GET';
+      let currentUser = null;
+
+      // Load user data on page load
+      async function loadUserData() {
+        try {
+          const user = await fetchCurrentUser();
+          currentUser = user;
+
+          // Update profile UI
+          document.getElementById('user-name').textContent = user.firstName || user.username;
+          document.getElementById('user-avatar').src = user.avatarUrl || 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + user.username;
+          document.getElementById('user-email').textContent = user.email;
+          document.getElementById('user-username').textContent = user.username;
+          document.getElementById('user-role').textContent = user.role || 'USER';
+          document.getElementById('session-user-id').textContent = user.id;
+
+          // Email verification badge
+          const verifiedBadge = document.getElementById('email-verified');
+          if (user.emailVerified) {
+            verifiedBadge.textContent = '✓ Verified';
+            verifiedBadge.style.background = '#d1fae5';
+            verifiedBadge.style.color = '#065f46';
+          } else {
+            verifiedBadge.textContent = '⚠ Not Verified';
+            verifiedBadge.style.background = '#fed7aa';
+            verifiedBadge.style.color = '#9a3412';
+          }
+
+          // Format created date
+          const createdDate = new Date(user.createdAt);
+          document.getElementById('user-created').textContent = createdDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+
+          // Display token info
+          const token = getToken();
+          document.getElementById('session-token').textContent = token;
+
+          // Decode token to get expiry
+          const decoded = decodeJWT(token);
+          if (decoded && decoded.exp) {
+            const expiryDate = new Date(decoded.exp * 1000);
+            document.getElementById('session-expiry').textContent = expiryDate.toLocaleString();
+          }
+        } catch (error) {
+          console.error('Failed to load user data:', error);
+          showError('error-message', 'Failed to load user data. Redirecting to login...');
+          setTimeout(() => {
+            logout();
+          }, 2000);
+        }
+      }
+
+      // Load user data
+      loadUserData();
+
+      // Logout button
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to logout?')) {
+          logout();
+        }
+      });
+
+      // Method selector
+      document.querySelectorAll('.method-btn').forEach((btn) => {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.method-btn').forEach((b) => b.classList.remove('active'));
+          this.classList.add('active');
+          currentMethod = this.dataset.method;
+
+          // Show/hide request body based on method
+          const requestBodyContainer = document.getElementById('request-body-container');
+          if (['POST', 'PUT', 'PATCH'].includes(currentMethod)) {
+            requestBodyContainer.style.display = 'block';
+          } else {
+            requestBodyContainer.style.display = 'none';
+          }
+        });
+      });
+
+      // Send API request
+      document.getElementById('send-request-btn').addEventListener('click', async function () {
+        const endpoint = document.getElementById('endpoint-input').value.trim();
+        const requestBody = document.getElementById('request-body').value.trim();
+
+        if (!endpoint) {
+          alert('Please enter an endpoint');
+          return;
+        }
+
+        // Show loading
+        this.disabled = true;
+        this.textContent = 'Sending...';
+
+        try {
+          let response;
+          const hasBody = ['POST', 'PUT', 'PATCH'].includes(currentMethod) && requestBody;
+
+          if (currentMethod === 'GET') {
+            response = await apiClient.get(endpoint);
+          } else if (currentMethod === 'POST') {
+            const body = hasBody ? JSON.parse(requestBody) : {};
+            response = await apiClient.post(endpoint, body);
+          } else if (currentMethod === 'PUT') {
+            const body = hasBody ? JSON.parse(requestBody) : {};
+            response = await apiClient.put(endpoint, body);
+          } else if (currentMethod === 'PATCH') {
+            const body = hasBody ? JSON.parse(requestBody) : {};
+            response = await apiClient.patch(endpoint, body);
+          } else if (currentMethod === 'DELETE') {
+            response = await apiClient.delete(endpoint);
+          }
+
+          // Display response
+          displayResponse(200, response);
+        } catch (error) {
+          displayResponse(error.status || 500, error.data || { error: error.message });
+        } finally {
+          this.disabled = false;
+          this.textContent = 'Send Request';
+        }
+      });
+
+      // Display API response
+      function displayResponse(status, data) {
+        const container = document.getElementById('response-container');
+        const statusEl = document.getElementById('response-status');
+        const bodyEl = document.getElementById('response-body');
+
+        container.style.display = 'block';
+
+        // Status badge
+        statusEl.textContent = `${status} ${getStatusText(status)}`;
+        statusEl.className = 'response-status ' + (status >= 200 && status < 300 ? 'status-success' : 'status-error');
+
+        // Format response body
+        bodyEl.textContent = JSON.stringify(data, null, 2);
+
+        // Scroll to response
+        container.scrollIntoView({ behavior: 'smooth' });
+      }
+
+      // Get HTTP status text
+      function getStatusText(status) {
+        const statusTexts = {
+          200: 'OK',
+          201: 'Created',
+          204: 'No Content',
+          400: 'Bad Request',
+          401: 'Unauthorized',
+          403: 'Forbidden',
+          404: 'Not Found',
+          500: 'Internal Server Error',
+        };
+        return statusTexts[status] || 'Unknown';
+      }
+
+      // Copy to clipboard
+      function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(text);
+        alert('Copied to clipboard!');
+      }
+
+      // Copy response
+      function copyResponse() {
+        const text = document.getElementById('response-body').textContent;
+        navigator.clipboard.writeText(text);
+        alert('Response copied to clipboard!');
+      }
+    </script>
+  </body>
+</html>

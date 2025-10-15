@@ -15,11 +15,13 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
   private isConnected = false;
+  private readonly queryTimeoutMs: number; // Query timeout in milliseconds
 
   // Query performance tracking
   private queryStats = {
     totalQueries: 0,
     slowQueries: 0,
+    timedOutQueries: 0,
     totalDuration: 0,
     slowestQuery: { duration: 0, query: '' },
   };
@@ -34,6 +36,13 @@ export class PrismaService
       ],
       errorFormat: 'pretty',
     });
+
+    // Get query timeout from environment variable (default: 30 seconds)
+    const timeoutFromEnv = parseInt(
+      process.env.DATABASE_QUERY_TIMEOUT_MS || '30000',
+      10,
+    );
+    this.queryTimeoutMs = timeoutFromEnv > 0 ? timeoutFromEnv : 30000;
 
     // 🚀 Enhanced query performance monitoring (Task 1.1.1)
     this.$on('query', (e: Prisma.QueryEvent) => {
@@ -131,10 +140,65 @@ export class PrismaService
     this.queryStats = {
       totalQueries: 0,
       slowQueries: 0,
+      timedOutQueries: 0,
       totalDuration: 0,
       slowestQuery: { duration: 0, query: '' },
     };
     this.logger.log('Query statistics reset');
+  }
+
+  /**
+   * Execute query with timeout
+   * Automatically cancels queries that exceed the configured timeout
+   *
+   * Usage:
+   * ```typescript
+   * const result = await prismaService.withTimeout(
+   *   prismaService.product.findMany({ where: { active: true } }),
+   *   'findMany products'
+   * );
+   * ```
+   *
+   * @param promise - The Prisma query promise to execute
+   * @param queryDescription - Description of the query for logging
+   * @param customTimeoutMs - Optional custom timeout (overrides default)
+   * @returns Query result
+   * @throws Error if query times out
+   */
+  async withTimeout<T>(
+    promise: Promise<T>,
+    queryDescription: string,
+    customTimeoutMs?: number,
+  ): Promise<T> {
+    const timeoutMs = customTimeoutMs || this.queryTimeoutMs;
+
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        setTimeout(() => {
+          this.queryStats.timedOutQueries++;
+          this.logger.error(
+            `Query timeout after ${timeoutMs}ms: ${queryDescription}`,
+          );
+          reject(
+            new Error(
+              `Query timeout: ${queryDescription} exceeded ${timeoutMs}ms`,
+            ),
+          );
+        }, timeoutMs);
+      }),
+    ]);
+  }
+
+  /**
+   * Get query timeout configuration
+   */
+  getQueryTimeout() {
+    return {
+      timeout: this.queryTimeoutMs,
+      timeoutFormatted: `${this.queryTimeoutMs}ms`,
+      timedOutQueries: this.queryStats.timedOutQueries,
+    };
   }
 
   async onModuleInit() {

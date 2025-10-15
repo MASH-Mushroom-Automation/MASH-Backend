@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Email - MASH Backend</title>
+    <link rel="stylesheet" href="/public/assets/css/auth.css" />
+  </head>
+  <body>
+    <div class="auth-container">
+      <div class="auth-card">
+        <!-- Logo & Title -->
+        <div class="auth-logo">
+          <h1>🍄 MASH</h1>
+        </div>
+
+        <!-- Header -->
+        <div class="auth-header">
+          <h2>Verify Your Email</h2>
+          <p>We've sent a 6-digit code to</p>
+          <p style="font-weight: 600; color: #3b82f6; margin-top: 8px;" id="email-display"></p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="message message-error"></div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="message message-success"></div>
+
+        <!-- OTP Input -->
+        <form id="verify-form">
+          <div class="otp-container">
+            <input type="text" class="otp-input" id="otp1" maxlength="1" pattern="[0-9]" required />
+            <input type="text" class="otp-input" id="otp2" maxlength="1" pattern="[0-9]" required />
+            <input type="text" class="otp-input" id="otp3" maxlength="1" pattern="[0-9]" required />
+            <input type="text" class="otp-input" id="otp4" maxlength="1" pattern="[0-9]" required />
+            <input type="text" class="otp-input" id="otp5" maxlength="1" pattern="[0-9]" required />
+            <input type="text" class="otp-input" id="otp6" maxlength="1" pattern="[0-9]" required />
+          </div>
+
+          <!-- Timer -->
+          <div class="timer" id="timer-container">
+            <p>Resend code in <span class="timer-value" id="timer">60</span> seconds</p>
+          </div>
+
+          <!-- Resend Button -->
+          <div style="text-align: center; margin-bottom: 24px;">
+            <button
+              type="button"
+              id="resend-btn"
+              class="btn btn-secondary"
+              style="padding: 8px 24px; font-size: 14px;"
+              disabled
+            >
+              Resend Code
+            </button>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="verify-btn" class="btn btn-primary btn-full-width">
+            Verify Email
+          </button>
+        </form>
+
+        <!-- Change Email Link -->
+        <div class="auth-link" style="margin-top: 16px;">
+          Wrong email? <a href="/register">Change email</a>
+        </div>
+
+        <!-- Back to Login -->
+        <div class="auth-link" style="margin-top: 8px;">
+          <a href="/">Back to login</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/public/assets/js/api-client.js"></script>
+    <script src="/public/assets/js/auth.js"></script>
+    <script>
+      // Get email from URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const email = urlParams.get('email');
+
+      if (!email) {
+        showError('error-message', 'Email parameter is missing. Redirecting...');
+        setTimeout(() => {
+          window.location.href = '/register';
+        }, 2000);
+      }
+
+      // Display email
+      document.getElementById('email-display').textContent = email;
+
+      // OTP Input handling
+      const otpInputs = document.querySelectorAll('.otp-input');
+
+      // Auto-focus next input
+      otpInputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+          const value = e.target.value;
+
+          // Allow only numbers
+          if (!/^[0-9]$/.test(value)) {
+            e.target.value = '';
+            return;
+          }
+
+          // Auto-focus next input
+          if (value && index < otpInputs.length - 1) {
+            otpInputs[index + 1].focus();
+          }
+
+          // Auto-submit when all fields are filled
+          if (index === otpInputs.length - 1 && value) {
+            const allFilled = Array.from(otpInputs).every((input) => input.value);
+            if (allFilled) {
+              document.getElementById('verify-form').dispatchEvent(new Event('submit'));
+            }
+          }
+        });
+
+        // Handle backspace
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !e.target.value && index > 0) {
+            otpInputs[index - 1].focus();
+          }
+        });
+
+        // Handle paste
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
+
+          if (pastedData.length === 6) {
+            otpInputs.forEach((input, i) => {
+              input.value = pastedData[i] || '';
+            });
+            otpInputs[5].focus();
+
+            // Auto-submit after paste
+            setTimeout(() => {
+              document.getElementById('verify-form').dispatchEvent(new Event('submit'));
+            }, 100);
+          }
+        });
+      });
+
+      // Focus first input on load
+      otpInputs[0].focus();
+
+      // Timer countdown
+      let timeLeft = 60;
+      const timerElement = document.getElementById('timer');
+      const resendBtn = document.getElementById('resend-btn');
+
+      const timerInterval = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          resendBtn.disabled = false;
+          document.getElementById('timer-container').innerHTML =
+            '<p style="color: #ef4444;">Code expired. Please resend.</p>';
+        }
+      }, 1000);
+
+      // Verify form submission
+      document.getElementById('verify-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        // Get OTP code
+        const code = Array.from(otpInputs)
+          .map((input) => input.value)
+          .join('');
+
+        if (code.length !== 6) {
+          showError('error-message', 'Please enter the complete 6-digit code');
+          return;
+        }
+
+        // Show loading state
+        showLoading('verify-btn');
+
+        try {
+          // Call backend verify API
+          const response = await apiClient.post('/auth/verify-email', {
+            email,
+            code,
+          });
+
+          // Save tokens if provided
+          if (response.accessToken) {
+            saveTokens(response.accessToken, response.refreshToken);
+          }
+
+          // Save user data if provided
+          if (response.user) {
+            saveUser(response.user);
+          }
+
+          // Show success message
+          showSuccess('success-message', '✓ Email verified successfully! Redirecting...');
+
+          // Stop timer
+          clearInterval(timerInterval);
+
+          // Redirect to dashboard after 2 seconds
+          setTimeout(() => {
+            redirectToDashboard();
+          }, 2000);
+        } catch (error) {
+          hideLoading('verify-btn');
+          const errorMessage = error.data?.message || error.message || 'Verification failed. Please try again.';
+          showError('error-message', errorMessage);
+
+          // Clear OTP inputs
+          otpInputs.forEach((input) => (input.value = ''));
+          otpInputs[0].focus();
+        }
+      });
+
+      // Resend verification code
+      document.getElementById('resend-btn').addEventListener('click', async function () {
+        this.disabled = true;
+        showLoading('resend-btn');
+
+        try {
+          const response = await apiClient.post('/auth/resend-verification', {
+            email,
+          });
+
+          hideLoading('resend-btn');
+          showSuccess('success-message', response.message || 'Verification code resent successfully');
+
+          // Reset timer
+          timeLeft = 60;
+          timerElement.textContent = timeLeft;
+          document.getElementById('timer-container').innerHTML =
+            'Resend code in <span class="timer-value" id="timer">60</span> seconds';
+
+          // Restart timer
+          clearInterval(timerInterval);
+          const newTimerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+              clearInterval(newTimerInterval);
+              resendBtn.disabled = false;
+              document.getElementById('timer-container').innerHTML =
+                '<p style="color: #ef4444;">Code expired. Please resend.</p>';
+            }
+          }, 1000);
+
+          // Clear OTP inputs
+          otpInputs.forEach((input) => (input.value = ''));
+          otpInputs[0].focus();
+        } catch (error) {
+          hideLoading('resend-btn');
+          this.disabled = false;
+          const errorMessage = error.data?.message || error.message || 'Failed to resend code. Please try again.';
+          showError('error-message', errorMessage);
+        }
+      });
+
+      // Check if already logged in
+      if (isAuthenticated()) {
+        redirectToDashboard();
+      }
+    </script>
+  </body>
+</html>

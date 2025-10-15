@@ -1,0 +1,64 @@
+# CODEOWNERS file for MASH-Backend
+# This file defines the code owners for different parts of the repository.
+# Code owners are automatically requested for review when someone opens a pull request that modifies code that they own.
+# The last matching pattern takes precedence.
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+# These users will be requested for review when someone opens a pull request
+* @MASH-Mushroom-Automation/maintainers
+
+# Security-related files
+/SECURITY.md @MASH-Mushroom-Automation/security-team
+/.github/workflows/ @MASH-Mushroom-Automation/devops-team
+
+# Core application code
+/src/ @MASH-Mushroom-Automation/backend-team
+
+# Authentication & Authorization
+/src/modules/auth/ @MASH-Mushroom-Automation/security-team
+/src/common/guards/ @MASH-Mushroom-Automation/security-team
+/src/common/decorators/ @MASH-Mushroom-Automation/security-team
+
+# Database & Prisma
+/prisma/ @MASH-Mushroom-Automation/database-team
+/src/database/ @MASH-Mushroom-Automation/database-team
+
+# Analytics & Business Intelligence
+/src/modules/analytics/ @MASH-Mushroom-Automation/analytics-team
+
+# DevOps & Infrastructure
+/docker-compose*.yml @MASH-Mushroom-Automation/devops-team
+/Dockerfile* @MASH-Mushroom-Automation/devops-team
+/render.yaml @MASH-Mushroom-Automation/devops-team
+/.github/ @MASH-Mushroom-Automation/devops-team
+
+# Monitoring & Observability
+/prometheus/ @MASH-Mushroom-Automation/monitoring-team
+/grafana/ @MASH-Mushroom-Automation/monitoring-team
+/src/monitoring/ @MASH-Mushroom-Automation/monitoring-team
+
+# Testing
+/test/ @MASH-Mushroom-Automation/qa-team
+*.spec.ts @MASH-Mushroom-Automation/qa-team
+*.int-spec.ts @MASH-Mushroom-Automation/qa-team
+
+# Documentation
+/docs/ @MASH-Mushroom-Automation/documentation-team
+/documents/ @MASH-Mushroom-Automation/documentation-team
+*.md @MASH-Mushroom-Automation/documentation-team
+
+# Configuration files
+/.env.example @MASH-Mushroom-Automation/devops-team
+/package.json @MASH-Mushroom-Automation/maintainers
+/tsconfig*.json @MASH-Mushroom-Automation/maintainers
+/nest-cli.json @MASH-Mushroom-Automation/maintainers
+
+# API Collections
+/postman/ @MASH-Mushroom-Automation/api-team
+
+# Individual maintainers (replace with actual GitHub usernames)
+# If you don't have teams, you can list individual users like this:
+# * @username1 @username2
+# /src/modules/auth/ @security-lead
+# /prisma/ @database-lead

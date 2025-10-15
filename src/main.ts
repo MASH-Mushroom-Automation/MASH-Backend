@@ -9,11 +9,15 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { join } from 'path';
 import { CustomLogger } from './common/utils/logger.util';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
+import { CsrfProtectionMiddleware } from './common/middleware/csrf-protection.middleware';
 import { getHelmetConfig } from './config/helmet.config';
+import { getCompressionConfig } from './config/compression.config';
 import { getCorsConfig } from './config/cors.config';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { AuditLogService } from './common/services/audit-log.service';
@@ -37,20 +41,44 @@ async function bootstrap() {
   const requestLoggerMiddleware = new RequestLoggerMiddleware();
   app.use(requestLoggerMiddleware.use.bind(requestLoggerMiddleware));
 
+  // Security headers middleware - Additional OWASP-recommended headers
+  const securityHeadersMiddleware = new SecurityHeadersMiddleware();
+  app.use(securityHeadersMiddleware.use.bind(securityHeadersMiddleware));
+
+  // Cookie parser middleware - Required for CSRF protection
+  app.use(cookieParser());
+
+  // CSRF protection middleware - Protects against Cross-Site Request Forgery attacks
+  // Note: Must be applied AFTER cookie-parser and BEFORE routes
+  const csrfProtectionMiddleware = new CsrfProtectionMiddleware();
+  app.use(csrfProtectionMiddleware.use.bind(csrfProtectionMiddleware));
+
   // Serve static files (for uploaded avatars)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
 
+  // Get config service and environment variables first
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
+  // Serve static files for auth pages (HTML, CSS, JS)
+  // In production (dist), public folder is copied to dist/public
+  // In development, it's at src/public
+  const publicPath =
+    nodeEnv === 'production'
+      ? join(__dirname, '..', 'public')
+      : join(__dirname, '..', 'src', 'public');
+  app.useStaticAssets(publicPath, {
+    prefix: '/public/',
+  });
+
   // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
 
-  // Compression middleware - Reduce response size
-  app.use(compression());
+  // Compression middleware - Optimized response compression with threshold and filtering
+  app.use(compression(getCompressionConfig(nodeEnv)));
 
   // CORS configuration - Cross-origin resource sharing
   const corsOrigins = configService.get<string>('CORS_ORIGINS');
@@ -66,8 +94,17 @@ async function bootstrap() {
 
   // Note: Global validation pipes are registered in CommonModule
 
-  // API prefix
-  app.setGlobalPrefix('api/v1');
+  // API prefix - exclude auth HTML pages from the prefix
+  app.setGlobalPrefix('api/v1', {
+    exclude: [
+      '/',
+      '/register',
+      '/verify',
+      '/forgot-password',
+      '/reset-password',
+      '/dashboard',
+    ],
+  });
 
   // Swagger/OpenAPI documentation
   const config = new DocumentBuilder()
@@ -227,6 +264,11 @@ All protected endpoints require a Bearer token in the Authorization header.
 }
 
 bootstrap().catch((error) => {
+  console.error('❌ FATAL ERROR DURING BOOTSTRAP:');
+  console.error('Error type:', typeof error);
+  console.error('Error:', error);
+  console.error('Stack:', error?.stack);
+  console.error('Message:', error?.message);
   Logger.error('Error starting application', error, 'Bootstrap');
   process.exit(1);
 });

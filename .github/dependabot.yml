@@ -1,0 +1,129 @@
+version: 2
+updates:
+  # Enable version updates for npm (Node.js/NestJS dependencies)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Manila"
+    open-pull-requests-limit: 10
+    assignees:
+      - "MASH-Mushroom-Automation/maintainers"
+    labels:
+      - "dependencies"
+      - "automated"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Ignore major updates for critical packages (require manual review)
+    ignore:
+      # NestJS - major versions may have breaking changes
+      - dependency-name: "@nestjs/*"
+        update-types: ["version-update:semver-major"]
+      # Prisma - major versions require schema migrations
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+      # Node.js types - let's control this manually
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    # Group related updates together for easier review
+    groups:
+      nestjs-core:
+        patterns:
+          - "@nestjs/common"
+          - "@nestjs/core"
+          - "@nestjs/platform-express"
+          - "@nestjs/platform-socket.io"
+      nestjs-modules:
+        patterns:
+          - "@nestjs/config"
+          - "@nestjs/jwt"
+          - "@nestjs/passport"
+          - "@nestjs/schedule"
+          - "@nestjs/swagger"
+          - "@nestjs/throttler"
+          - "@nestjs/websockets"
+      nestjs-testing:
+        patterns:
+          - "@nestjs/testing"
+          - "@nestjs/schematics"
+          - "@nestjs/cli"
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/client"
+      socket-io:
+        patterns:
+          - "socket.io"
+          - "socket.io-client"
+          - "@types/socket.io"
+      bull:
+        patterns:
+          - "bull"
+          - "@nestjs/bull"
+          - "bullmq"
+      testing:
+        patterns:
+          - "jest"
+          - "@types/jest"
+          - "ts-jest"
+          - "supertest"
+          - "@types/supertest"
+      linting:
+        patterns:
+          - "eslint"
+          - "@typescript-eslint/*"
+          - "prettier"
+      types:
+        patterns:
+          - "@types/*"
+      firebase:
+        patterns:
+          - "firebase-admin"
+          - "firebase"
+      monitoring:
+        patterns:
+          - "prom-client"
+          - "@opentelemetry/*"
+      security:
+        patterns:
+          - "helmet"
+          - "bcrypt"
+          - "@types/bcrypt"
+          - "class-validator"
+          - "class-transformer"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Manila"
+    labels:
+      - "ci/cd"
+      - "automated"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+
+  # Enable version updates for Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Manila"
+    labels:
+      - "docker"
+      - "automated"
+      - "infrastructure"
+    commit-message:
+      prefix: "chore(docker)"

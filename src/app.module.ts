@@ -15,6 +15,7 @@ import { getThrottlerConfig } from './common/config/throttler.config';
 
 // Import modules (will be created)
 import { AuthModule } from './modules/auth/auth.module';
+import { AuthViewsModule } from './modules/auth/views/auth-views.module';
 // import { UsersModule } from './modules/users/users.module';
 // import { DevicesModule } from './modules/devices/devices.module';
 // import { SensorsModule } from './modules/sensors/sensors.module';
@@ -87,6 +88,7 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     // Feature modules
     AuthModule,
+    AuthViewsModule, // 🆕 HTML views for auth pages
 
     ProfileModule,
 
