@@ -114,7 +114,7 @@
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
     "svix": "^1.76.1",
-    "twilio": "^5.10.2",
+    "twilio": "^5.10.3",
     "uuid": "^8.3.2",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
