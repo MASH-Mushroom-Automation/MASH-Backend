@@ -104,7 +104,7 @@ jobs:
 
       # Grype Scanner - Additional vulnerability scanning
       - name: Run Grype vulnerability scanner
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         id: grype-scan
         continue-on-error: true
         with:
