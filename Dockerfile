@@ -1,5 +1,6 @@
 # Multi-stage Docker build for MASH Backend
 # Stage 1: Build stage
+# Updated: Fixes Railway deployment by preventing lifecycle scripts in production
 FROM node:20-alpine AS builder
 
 # Set working directory
