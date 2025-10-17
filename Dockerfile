@@ -45,11 +45,14 @@ COPY prisma ./prisma/
 # --ignore-scripts prevents running package lifecycle scripts in the production image
 RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts && npm cache clean --force
 
-# Generate Prisma Client in production stage
-RUN npx prisma generate
-
 # Copy built application from builder stage
+# Prisma client artifacts are generated in the builder (where dev deps are present).
+# We avoid running `npx prisma generate` in production because `prisma` CLI is a devDependency
+# and we install production deps with `--omit=dev --ignore-scripts` to prevent lifecycle scripts
+# (e.g. husky prepare). Instead copy the generated prisma artifacts from the builder.
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy scripts folder (if it exists)
 COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
