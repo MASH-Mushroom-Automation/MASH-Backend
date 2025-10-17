@@ -40,8 +40,10 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install production dependencies only
-RUN npm ci --legacy-peer-deps --only=production && npm cache clean --force
+# Install production dependencies only (skip lifecycle scripts such as `prepare`/husky)
+# --omit=dev replaces the deprecated --only=production flag
+# --ignore-scripts prevents running package lifecycle scripts in the production image
+RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts && npm cache clean --force
 
 # Generate Prisma Client in production stage
 RUN npx prisma generate
