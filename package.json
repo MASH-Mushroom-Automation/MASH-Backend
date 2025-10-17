@@ -53,6 +53,7 @@
     "@nestjs/config": "^2.3.4",
     "@nestjs/core": "^7.6.18",
     "@nestjs/jwt": "^8.0.1",
+    "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^8.2.2",
     "@nestjs/platform-express": "^7.6.18",
     "@nestjs/platform-socket.io": "^7.6.18",
