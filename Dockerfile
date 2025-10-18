@@ -58,8 +58,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy scripts folder (if it exists)
 COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
 
-# Create logs directory with proper permissions
-RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/uploads/exports /app/uploads/temp && \
+    chown -R appuser:appuser /app/logs /app/uploads
 
 # Set ownership of copied files
 RUN chown -R appuser:appuser /app/dist /app/node_modules /app/prisma

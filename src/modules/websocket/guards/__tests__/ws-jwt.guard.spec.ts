@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ExecutionContext } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
@@ -79,7 +80,9 @@ describe('WsJwtGuard', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+      .compile();
 
     guard = module.get<WsJwtGuard>(WsJwtGuard);
     jwtService = module.get<JwtService>(JwtService);

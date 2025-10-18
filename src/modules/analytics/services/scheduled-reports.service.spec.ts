@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { ScheduledReportsService } from './scheduled-reports.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { ReportBuilderService } from './report-builder.service';
@@ -44,7 +45,11 @@ describe('ScheduledReportsService', () => {
         { provide: ReportBuilderService, useValue: mockReportBuilderService },
         { provide: ExportService, useValue: mockExportService },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     service = module.get<ScheduledReportsService>(ScheduledReportsService);
     prismaService = module.get<PrismaService>(PrismaService);

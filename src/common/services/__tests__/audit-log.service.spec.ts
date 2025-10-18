@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { AuditLogService, AuditAction } from '../audit-log.service';
 import { PrismaService } from '../../../database/prisma.service';
 
@@ -23,7 +24,9 @@ describe('AuditLogService', () => {
           useValue: mockPrismaService,
         },
       ],
-    }).compile();
+    })
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+      .compile();
 
     service = module.get<AuditLogService>(AuditLogService);
     prismaService = module.get<PrismaService>(PrismaService);

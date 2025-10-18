@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { Server } from 'socket.io';
@@ -83,7 +84,9 @@ describe('MainGateway', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+      .compile();
 
     gateway = module.get<MainGateway>(MainGateway);
     connectionManager = module.get<ConnectionManagerService>(
