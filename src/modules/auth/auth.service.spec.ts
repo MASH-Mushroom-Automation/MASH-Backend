@@ -11,11 +11,29 @@ import { PrismaService } from '../../database/prisma.service';
 import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { createMockPrismaService } from '../../../test/mocks/prisma.mock';
 import { mock } from 'jest-mock-extended';
+import { ClerkService } from './services/clerk.service';
+import { EmailService } from '../notifications/services/email.service';
 
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: ReturnType<typeof createMockPrismaService>;
   let jwtService: jest.Mocked<JwtService>;
+
+  // Mock ClerkService
+  const mockClerkService = {
+    verifyToken: jest.fn(),
+    getUser: jest.fn(),
+    updateUser: jest.fn(),
+    deleteUser: jest.fn(),
+  };
+
+  // Mock EmailService
+  const mockEmailService = {
+    sendEmail: jest.fn(),
+    sendWelcomeEmail: jest.fn(),
+    sendPasswordResetEmail: jest.fn(),
+    sendVerificationEmail: jest.fn(),
+  };
 
   beforeEach(async () => {
     prisma = createMockPrismaService();
@@ -31,6 +49,14 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: jwtService,
+        },
+        {
+          provide: ClerkService,
+          useValue: mockClerkService,
+        },
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
         },
       ],
     })
