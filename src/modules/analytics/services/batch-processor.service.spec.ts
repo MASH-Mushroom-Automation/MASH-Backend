@@ -3,11 +3,20 @@ import { ConsoleLogger } from '@nestjs/common';
 import { BatchProcessorService } from './batch-processor.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
+import { RedisService } from '../../../database/redis.service';
 
 describe('BatchProcessorService', () => {
   let service: BatchProcessorService;
   let prisma: PrismaService;
   let cacheService: CacheService;
+
+  const mockRedisService = {
+    isAvailable: jest.fn().mockReturnValue(true),
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    keys: jest.fn(),
+  };
 
   const mockPrismaService = {
     order: {
@@ -27,6 +36,9 @@ describe('BatchProcessorService', () => {
 
   const mockCacheService = {
     set: jest.fn(),
+    get: jest.fn(),
+    del: jest.fn(),
+    invalidateByTags: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -38,11 +50,10 @@ describe('BatchProcessorService', () => {
         BatchProcessorService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CacheService, useValue: mockCacheService },
+        { provide: RedisService, useValue: mockRedisService },
       ],
     })
-
       .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
-
       .compile();
 
     service = module.get<BatchProcessorService>(BatchProcessorService);

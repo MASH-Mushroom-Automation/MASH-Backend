@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConsoleLogger } from '@nestjs/common';
 import { AlertEngineService } from '../alert-engine.service';
 import { PrismaService } from '../../../../database/prisma.service';
+import { NotificationQueueService } from '../../../queues/services/notification-queue.service';
 import { AlertCategory, AlertPriority, AlertStatus } from '@prisma/client';
 
 describe('AlertEngineService', () => {
   let service: AlertEngineService;
   let prisma: PrismaService;
+  let notificationQueue: NotificationQueueService;
 
   const mockPrismaService = {
     alertRule: {
@@ -17,6 +19,12 @@ describe('AlertEngineService', () => {
       create: jest.fn(),
       findFirst: jest.fn(),
     },
+  };
+
+  const mockNotificationQueueService = {
+    addEmailJob: jest.fn(),
+    addSmsJob: jest.fn(),
+    addPushNotificationJob: jest.fn(),
   };
 
   const mockAlertRule = {
@@ -45,6 +53,10 @@ describe('AlertEngineService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: NotificationQueueService,
+          useValue: mockNotificationQueueService,
+        },
       ],
     })
       .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
@@ -52,6 +64,7 @@ describe('AlertEngineService', () => {
 
     service = module.get<AlertEngineService>(AlertEngineService);
     prisma = module.get<PrismaService>(PrismaService);
+    notificationQueue = module.get<NotificationQueueService>(NotificationQueueService);
 
     jest.clearAllMocks();
   });
