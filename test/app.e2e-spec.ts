@@ -20,6 +20,11 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect((res) => {
+        expect(res.body).toHaveProperty('success', true);
+        expect(res.body).toHaveProperty('statusCode', 200);
+        expect(res.body.data).toHaveProperty('name', 'MASH Backend API');
+        expect(res.body.data).toHaveProperty('status', 'operational');
+      });
   });
 });
