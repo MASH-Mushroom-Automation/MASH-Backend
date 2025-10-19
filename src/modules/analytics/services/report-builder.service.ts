@@ -317,13 +317,7 @@ export class ReportBuilderService {
       where: {
         createdAt: { gte: new Date(start), lte: new Date(end) },
         status: { in: ['DELIVERED'] },
-        ...(filters.categories && {
-          orderItems: {
-            some: {
-              product: { categoryId: { in: filters.categories } },
-            },
-          },
-        }),
+        // TODO: Add category filtering when Product-Category relation is established
       },
       include: {
         orderItems: {
