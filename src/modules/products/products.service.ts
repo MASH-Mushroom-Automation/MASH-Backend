@@ -2,9 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
+import { Cacheable, CacheEvict } from '../../common/decorators/cache.decorator';
+import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
@@ -13,6 +16,7 @@ import { UpdatePriceDto } from './dto/update-price.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
+@UseInterceptors(CacheInterceptor) // Apply caching interceptor to entire service
 export class ProductsService {
   private readonly PRODUCT_CACHE_PREFIX = 'product';
   private readonly PRODUCTS_LIST_CACHE_PREFIX = 'products:list';
@@ -113,8 +117,9 @@ export class ProductsService {
 
   /**
    * Create new product
-   * Phase 2: Invalidate product caches on create
+   * ✅ CACHE INVALIDATION: Invalidates products list and featured caches
    */
+  @CacheEvict({ tags: ['products', 'products:list', 'products:featured', 'products:search'] })
   async create(createProductDto: CreateProductDto) {
     const { slug, sku, ...rest } = createProductDto;
 
@@ -147,30 +152,17 @@ export class ProductsService {
       },
     });
 
-    // Invalidate product caches (including search results)
-    await this.cacheService.invalidateByTags([
-      'products',
-      'products:list',
-      'products:search',
-    ]);
-
     return product;
   }
 
   /**
    * Get featured products
-   * Phase 2: Cache featured products
+   * ✅ CACHED: 5 minutes TTL
+   * Hot path - high traffic, perfect for caching
    */
+  @Cacheable({ key: 'products:featured', ttl: 300, tags: ['products', 'products:featured'] })
   async getFeatured() {
-    const cacheKey = `${this.PRODUCTS_LIST_CACHE_PREFIX}:featured`;
-
-    // Try cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    const products = await this.prisma.product.findMany({
+    return await this.prisma.product.findMany({
       where: {
         isFeatured: true,
         isActive: true,
@@ -178,14 +170,6 @@ export class ProductsService {
       take: 10,
       orderBy: { createdAt: 'desc' },
     });
-
-    // Cache for 10 minutes
-    await this.cacheService.set(cacheKey, products, this.PRODUCT_TTL, [
-      'products',
-      'products:featured',
-    ]);
-
-    return products;
   }
 
   /**
