@@ -316,7 +316,7 @@ export class ReportBuilderService {
     const sales = await this.prisma.order.findMany({
       where: {
         createdAt: { gte: new Date(start), lte: new Date(end) },
-        status: { in: ['COMPLETED', 'DELIVERED'] },
+        status: { in: ['DELIVERED'] },
         ...(filters.categories && {
           orderItems: {
             some: {
@@ -340,9 +340,9 @@ export class ReportBuilderService {
       sales: sales.map((order) => ({
         orderId: order.id,
         date: order.createdAt,
-        customer: order.user.email,
+        customer: order.user?.email || 'N/A',
         amount: Number(order.total),
-        items: order.orderItems.length,
+        items: order.orderItems?.length || 0,
       })),
     };
   }
