@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConsoleLogger } from '@nestjs/common';
 import { AuditLogService, AuditAction } from '../audit-log.service';
 import { PrismaService } from '../../../database/prisma.service';
+import { Prisma } from '@prisma/client';
 
 describe('AuditLogService', () => {
   let service: AuditLogService;
@@ -63,8 +64,8 @@ describe('AuditLogService', () => {
           action: AuditAction.LOGIN,
           entity: 'User',
           entityId: 'user_123',
-          oldValues: null,
-          newValues: null,
+          oldValues: Prisma.JsonNull,
+          newValues: Prisma.JsonNull,
           ipAddress: '192.168.1.1',
           userAgent: 'Mozilla/5.0',
         },
