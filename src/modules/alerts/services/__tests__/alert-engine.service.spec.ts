@@ -3,12 +3,10 @@ import { ConsoleLogger } from '@nestjs/common';
 import { AlertEngineService } from '../alert-engine.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { NotificationQueueService } from '../../../queues/services/notification-queue.service';
-import { AlertCategory, AlertPriority, AlertStatus } from '@prisma/client';
+import { AlertCategory, AlertPriority } from '@prisma/client';
 
 describe('AlertEngineService', () => {
   let service: AlertEngineService;
-  let prisma: PrismaService;
-  let notificationQueue: NotificationQueueService;
 
   const mockPrismaService = {
     alertRule: {
@@ -741,7 +739,7 @@ describe('AlertEngineService', () => {
   describe('getNestedValue', () => {
     it('should get top-level property', () => {
       const obj = { temperature: 35 };
-      const result = service['getNestedValue'](obj, 'temperature');
+      const result = service['getNestedValue'](obj, 'temperature') as number;
 
       expect(result).toBe(35);
     });
@@ -754,21 +752,29 @@ describe('AlertEngineService', () => {
           },
         },
       };
-      const result = service['getNestedValue'](obj, 'sensor.temperature.value');
+      const result = service['getNestedValue'](
+        obj,
+        'sensor.temperature.value',
+      ) as number;
 
       expect(result).toBe(35);
     });
 
     it('should return undefined for non-existent property', () => {
       const obj = { temperature: 35 };
-      const result = service['getNestedValue'](obj, 'humidity');
+      const result = service['getNestedValue'](obj, 'humidity') as
+        | number
+        | undefined;
 
       expect(result).toBeUndefined();
     });
 
     it('should return undefined for non-existent nested property', () => {
       const obj = { sensor: { temperature: 35 } };
-      const result = service['getNestedValue'](obj, 'sensor.humidity.value');
+      const result = service['getNestedValue'](
+        obj,
+        'sensor.humidity.value',
+      ) as number | undefined;
 
       expect(result).toBeUndefined();
     });

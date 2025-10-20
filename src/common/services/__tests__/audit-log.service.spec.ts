@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConsoleLogger } from '@nestjs/common';
 import { AuditLogService, AuditAction } from '../audit-log.service';
@@ -6,7 +8,6 @@ import { Prisma } from '@prisma/client';
 
 describe('AuditLogService', () => {
   let service: AuditLogService;
-  let prismaService: PrismaService;
 
   const mockPrismaService = {
     auditLog: {
@@ -30,7 +31,6 @@ describe('AuditLogService', () => {
       .compile();
 
     service = module.get<AuditLogService>(AuditLogService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -71,8 +71,8 @@ describe('AuditLogService', () => {
         }),
       });
 
-      const calledData = mockPrismaService.auditLog.create.mock.calls[0][0]
-        .data as any;
+      const calledData =
+        mockPrismaService.auditLog.create.mock.calls[0]?.[0]?.data;
 
       expect([Prisma.JsonNull, null, undefined]).toContain(
         calledData.oldValues,

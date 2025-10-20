@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConsoleLogger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { WsException } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { MainGateway } from '../main.gateway';
 import { ConnectionManagerService } from '../../services/connection-manager.service';
-import { WsJwtGuard } from '../../guards/ws-jwt.guard';
 import type { AuthenticatedSocket } from '../../interfaces/authenticated-socket.interface';
 
 describe('MainGateway', () => {
@@ -27,7 +28,7 @@ describe('MainGateway', () => {
           origin: 'http://localhost:3000',
         },
         address: '127.0.0.1',
-        time: Date.now(),
+        time: String(Date.now()),
         auth: {},
         query: {},
         secure: false,
@@ -37,15 +38,15 @@ describe('MainGateway', () => {
       } as any,
       rooms: new Set<string>(),
       join: jest.fn((room: string) => {
-        mockSocket.rooms!.add(room);
+        mockSocket.rooms?.add(room);
         return Promise.resolve(mockSocket as any);
       }),
       leave: jest.fn((room: string) => {
-        mockSocket.rooms!.delete(room);
+        mockSocket.rooms?.delete(room);
         return Promise.resolve(mockSocket as any);
       }),
       emit: jest.fn(),
-      to: jest.fn(() => mockSocket),
+      to: jest.fn().mockReturnValue(mockSocket),
       disconnect: jest.fn(),
       data: {},
       connected: true,
