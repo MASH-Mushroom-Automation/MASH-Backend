@@ -88,9 +88,12 @@ export class CacheManagerService implements OnModuleInit {
     this.logger.log('🚀 Initializing Cache Manager...');
 
     // Warm cache on startup (async, don't block startup)
-    this.warmCache().catch((error) => {
-      this.logger.error('Failed to warm cache on startup', error);
-    });
+    // Use setTimeout to defer execution until after module initialization completes
+    setTimeout(() => {
+      void this.warmCache().catch((error) => {
+        this.logger.error('Failed to warm cache on startup', error);
+      });
+    }, 1000); // Wait 1 second after module init
 
     // Start monitoring
     this.logger.log('✅ Cache Manager initialized successfully');
@@ -194,7 +197,7 @@ export class CacheManagerService implements OnModuleInit {
       this.logger.debug(`✅ Warmed system config (${config.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm system config', error);
-      throw error;
+      // Non-fatal: system can start without cached config
     }
   }
 
@@ -218,7 +221,7 @@ export class CacheManagerService implements OnModuleInit {
       this.logger.debug(`✅ Warmed categories (${categories.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm categories', error);
-      throw error;
+      // Non-fatal: categories can load on-demand
     }
   }
 
@@ -245,7 +248,7 @@ export class CacheManagerService implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error('Failed to warm featured products', error);
-      throw error;
+      // Non-fatal: products can load on-demand
     }
   }
 
@@ -313,8 +316,8 @@ export class CacheManagerService implements OnModuleInit {
         `✅ Warmed top products analytics (${topProducts.length} items)`,
       );
     } catch (error) {
-      this.logger.error('Failed to warm top products analytics', error);
-      throw error;
+      this.logger.error('Failed to warm top products', error);
+      // Non-fatal: analytics can load on-demand
     }
   }
 
@@ -351,8 +354,8 @@ export class CacheManagerService implements OnModuleInit {
 
       this.logger.debug('✅ Warmed dashboard statistics');
     } catch (error) {
-      this.logger.error('Failed to warm dashboard stats', error);
-      throw error;
+      this.logger.error('Failed to warm dashboard statistics', error);
+      // Non-fatal: dashboard stats can load on-demand
     }
   }
 
