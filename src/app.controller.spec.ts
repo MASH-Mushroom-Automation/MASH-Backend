@@ -42,7 +42,7 @@ describe('AppController', () => {
   describe('root', () => {
     it('should return API information', () => {
       const result = appController.getApiInfo();
-      
+
       expect(result).toBeDefined();
       expect(result).toHaveProperty('name');
       expect(result).toHaveProperty('version');

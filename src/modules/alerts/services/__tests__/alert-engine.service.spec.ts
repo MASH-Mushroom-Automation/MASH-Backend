@@ -64,7 +64,9 @@ describe('AlertEngineService', () => {
 
     service = module.get<AlertEngineService>(AlertEngineService);
     prisma = module.get<PrismaService>(PrismaService);
-    notificationQueue = module.get<NotificationQueueService>(NotificationQueueService);
+    notificationQueue = module.get<NotificationQueueService>(
+      NotificationQueueService,
+    );
 
     jest.clearAllMocks();
   });

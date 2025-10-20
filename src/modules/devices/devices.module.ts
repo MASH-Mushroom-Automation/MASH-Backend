@@ -4,7 +4,6 @@ import { DevicesGateway } from './devices.gateway';
 import { DevicesController } from './devices.controller';
 import { MqttService } from './mqtt.service';
 
-
 @Module({
   providers: [DevicesService, MqttService, DevicesGateway], // PrismaService provided globally by DatabaseModule
   controllers: [DevicesController],

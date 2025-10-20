@@ -21,27 +21,27 @@ import { getCompressionConfig } from './config/compression.config';
 import { getCorsConfig } from './config/cors.config';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { AuditLogService } from './common/services/audit-log.service';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'; 
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-  console.log('🚀 Bootstrap function started');
   const logger = new Logger('Bootstrap');
+  logger.log('🚀 Bootstrap function started');
 
-  console.log('🔧 Stage 1: Creating NestJS application...');
+  logger.log('🔧 Stage 1: Creating NestJS application...');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
   });
-  console.log('✅ Stage 1 complete: Application created');
+  logger.log('✅ Stage 1 complete: Application created');
 
-  console.log('🔧 Stage 2: Setting up custom logger...');
+  logger.log('🔧 Stage 2: Setting up custom logger...');
   // Use CustomLogger from CommonModule
   const customLogger = app.get(CustomLogger);
   app.useLogger(customLogger);
-  console.log('✅ Stage 2 complete: Logger configured');
+  logger.log('✅ Stage 2 complete: Logger configured');
 
   // Apply global middleware (order matters!)
   const correlationIdMiddleware = new CorrelationIdMiddleware();
@@ -83,21 +83,21 @@ async function bootstrap() {
     prefix: '/public/',
   });
 
-  console.log('🔧 Stage 3: Applying security middleware...');
+  logger.log('🔧 Stage 3: Applying security middleware...');
   // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
 
-  console.log('🔧 Stage 4: Applying compression...');
+  logger.log('🔧 Stage 4: Applying compression...');
   // Compression middleware - Optimized response compression with threshold and filtering
   app.use(compression(getCompressionConfig(nodeEnv)));
 
-  console.log('🔧 Stage 5: Enabling CORS...');
+  logger.log('🔧 Stage 5: Enabling CORS...');
   // CORS configuration - Cross-origin resource sharing
   const corsOrigins = configService.get<string>('CORS_ORIGINS');
   const corsCredentials = configService.get<boolean>('CORS_CREDENTIALS', true);
   app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
 
-  console.log('🔧 Stage 6: Setting up audit logging...');
+  logger.log('🔧 Stage 6: Setting up audit logging...');
   // Audit logging interceptor - Track sensitive operations
   const reflector = app.get(Reflector);
   const auditLogService = app.get(AuditLogService);
@@ -105,17 +105,17 @@ async function bootstrap() {
     new AuditLogInterceptor(reflector, auditLogService),
   );
 
-  console.log('🔧 Stage 7: Applying global exception filters...');
+  logger.log('🔧 Stage 7: Applying global exception filters...');
   // ==================== GLOBAL EXCEPTION FILTERS ====================
   // Apply exception filters in order of specificity (most specific first)
   // Order matters: Specific exceptions should be caught before generic ones
   app.useGlobalFilters(
-    new PrismaExceptionFilter(),        // Catch Prisma database errors
-    new ValidationExceptionFilter(),     // Catch validation errors
-    new HttpExceptionFilter(),           // Catch HTTP exceptions
-    new AllExceptionsFilter(),           // Catch all other exceptions (fallback)
+    new PrismaExceptionFilter(), // Catch Prisma database errors
+    new ValidationExceptionFilter(), // Catch validation errors
+    new HttpExceptionFilter(), // Catch HTTP exceptions
+    new AllExceptionsFilter(), // Catch all other exceptions (fallback)
   );
-  console.log('✅ Global exception filters applied successfully');
+  logger.log('✅ Global exception filters applied successfully');
 
   // Note: Global validation pipes are registered in CommonModule
 
@@ -276,16 +276,16 @@ All protected endpoints require a Bearer token in the Authorization header.
 
   logger.log(`Swagger API Documentation: http://localhost:${port}/api/docs`);
 
-  console.log('🔧 Stage 8: Enabling graceful shutdown...');
+  logger.log('🔧 Stage 8: Enabling graceful shutdown...');
   // Graceful shutdown
   app.enableShutdownHooks();
-  console.log('✅ Stage 8 complete: Shutdown hooks enabled');
+  logger.log('✅ Stage 8 complete: Shutdown hooks enabled');
 
-  console.log(`🔧 Stage 9: Binding to port ${port} on 0.0.0.0...`);
+  logger.log(`🔧 Stage 9: Binding to port ${port} on 0.0.0.0...`);
   // Bind to 0.0.0.0 to accept connections from any network interface
   // This is required for cloud platforms like Render, Railway, etc.
   await app.listen(port, '0.0.0.0');
-  console.log(`✅ Stage 9 complete: Server listening on port ${port}`);
+  logger.log(`✅ Stage 9 complete: Server listening on port ${port}`);
 
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Environment: ${nodeEnv}`);
@@ -293,11 +293,13 @@ All protected endpoints require a Bearer token in the Authorization header.
 }
 
 bootstrap().catch((error) => {
-  console.error('❌ FATAL ERROR DURING BOOTSTRAP:');
-  console.error('Error type:', typeof error);
-  console.error('Error:', error);
-  console.error('Stack:', error?.stack);
-  console.error('Message:', error?.message);
-  Logger.error('Error starting application', error, 'Bootstrap');
+  const logger = new Logger('Bootstrap');
+  logger.error('❌ FATAL ERROR DURING BOOTSTRAP:');
+  logger.error(`Error type: ${typeof error}`);
+  logger.error('Error:', error);
+  if (error instanceof Error) {
+    logger.error(`Stack: ${error.stack}`);
+    logger.error(`Message: ${error.message}`);
+  }
   process.exit(1);
 });

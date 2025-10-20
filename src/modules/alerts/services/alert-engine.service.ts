@@ -528,10 +528,13 @@ export class AlertEngineService {
           // Create a new object with sorted keys to ensure deterministic output
           return Object.keys(value)
             .sort()
-            .reduce((acc, k) => {
-              acc[k] = value[k];
-              return acc;
-            }, {} as Record<string, any>);
+            .reduce(
+              (acc, k) => {
+                acc[k] = value[k];
+                return acc;
+              },
+              {} as Record<string, any>,
+            );
         }
         return value;
       });

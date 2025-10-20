@@ -74,16 +74,12 @@ describe('AuditLogService', () => {
       const calledData = mockPrismaService.auditLog.create.mock.calls[0][0]
         .data as any;
 
-      expect([
-        Prisma.JsonNull,
-        null,
-        undefined,
-      ]).toContain(calledData.oldValues);
-      expect([
-        Prisma.JsonNull,
-        null,
-        undefined,
-      ]).toContain(calledData.newValues);
+      expect([Prisma.JsonNull, null, undefined]).toContain(
+        calledData.oldValues,
+      );
+      expect([Prisma.JsonNull, null, undefined]).toContain(
+        calledData.newValues,
+      );
     });
 
     it('should log event with old and new values', async () => {

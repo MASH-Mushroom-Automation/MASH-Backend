@@ -10,26 +10,26 @@ export interface CacheableOptions {
 
 /**
  * Cache decorator for controller methods and service methods
- * 
+ *
  * Caches the response of a method in Redis with a specified TTL.
  * Cache keys can include placeholders like :id, :userId that will be replaced
  * with actual values from request parameters.
- * 
+ *
  * @param key - Redis cache key (can include :id, :userId, etc. placeholders)
  * @param ttl - Time to live in seconds (default: 300 = 5 minutes)
- * 
+ *
  * @example
  * // Cache featured products for 5 minutes
  * @Get('featured')
  * @Cacheable('products:featured', 300)
  * getFeaturedProducts() { ... }
- * 
+ *
  * @example
  * // Cache product details with dynamic ID for 5 minutes
  * @Get(':id')
  * @Cacheable('products:details::id', 300)
  * findOne(@Param('id') id: string) { ... }
- * 
+ *
  * @example
  * // Cache user session for 15 minutes
  * @Get('session')

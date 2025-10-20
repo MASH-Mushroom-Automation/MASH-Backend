@@ -11,6 +11,10 @@ import { AppService } from './app.service';
 import { createAppConfig } from './config/app.config';
 import { createDatabaseConfig } from './config/database.config';
 import { createJwtConfig } from './config/jwt.config';
+import {
+  envValidationSchema,
+  envValidationOptions,
+} from './config/env-validation.config';
 import { getThrottlerConfig } from './common/config/throttler.config';
 
 // Import modules (will be created)
@@ -54,7 +58,7 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
 @Module({
   imports: [
-    // Configuration
+    // Configuration with environment variable validation
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
@@ -63,6 +67,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
         () => ({ database: createDatabaseConfig }),
         () => ({ jwt: createJwtConfig }),
       ],
+      // Validate environment variables on startup
+      validationSchema: envValidationSchema,
+      validationOptions: envValidationOptions,
     }),
 
     // Rate limiting with Redis-backed distributed storage

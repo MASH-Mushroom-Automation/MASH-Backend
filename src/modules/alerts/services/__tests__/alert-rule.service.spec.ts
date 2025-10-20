@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConsoleLogger, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConsoleLogger,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { AlertRuleService } from '../alert-rule.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { AlertCategory, AlertPriority } from '@prisma/client';

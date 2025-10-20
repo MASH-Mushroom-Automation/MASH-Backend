@@ -31,7 +31,11 @@ export class CategoriesService {
    * ✅ CACHED: 10 minutes TTL
    * Hot path - categories rarely change, perfect for caching
    */
-  @Cacheable({ key: 'categories:list', ttl: 600, tags: ['categories', 'categories:list'] })
+  @Cacheable({
+    key: 'categories:list',
+    ttl: 600,
+    tags: ['categories', 'categories:list'],
+  })
   async findAll(query: CategoryQueryDto) {
     const { page = 1, limit = 10, search, parentId, isActive } = query;
     const skip = (page - 1) * limit;

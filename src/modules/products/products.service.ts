@@ -119,7 +119,9 @@ export class ProductsService {
    * Create new product
    * ✅ CACHE INVALIDATION: Invalidates products list and featured caches
    */
-  @CacheEvict({ tags: ['products', 'products:list', 'products:featured', 'products:search'] })
+  @CacheEvict({
+    tags: ['products', 'products:list', 'products:featured', 'products:search'],
+  })
   async create(createProductDto: CreateProductDto) {
     const { slug, sku, ...rest } = createProductDto;
 
@@ -160,7 +162,11 @@ export class ProductsService {
    * ✅ CACHED: 5 minutes TTL
    * Hot path - high traffic, perfect for caching
    */
-  @Cacheable({ key: 'products:featured', ttl: 300, tags: ['products', 'products:featured'] })
+  @Cacheable({
+    key: 'products:featured',
+    ttl: 300,
+    tags: ['products', 'products:featured'],
+  })
   async getFeatured() {
     return await this.prisma.product.findMany({
       where: {

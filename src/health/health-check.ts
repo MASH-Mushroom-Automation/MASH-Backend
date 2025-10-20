@@ -34,16 +34,19 @@ function checkHealth(): Promise<number> {
 
 (async () => {
   const code = await checkHealth();
-  // Ensure any logs are flushed
+  // Health check script needs console for Docker output
+  // This is an exception to the no-console rule
   if (code === 0) {
+    // eslint-disable-next-line no-console
     console.log(
-      `OK: health endpoint reachable at http://${HOST}:${PORT}${PATH}`,
+      `✅ Health check passed: ${HOST}:${PORT}${PATH}`,
     );
     process.exit(0);
   }
 
+  // eslint-disable-next-line no-console
   console.error(
-    `FAIL: health endpoint unreachable at http://${HOST}:${PORT}${PATH}`,
+    `❌ Health check failed: ${HOST}:${PORT}${PATH}`,
   );
   process.exit(1);
 })();
