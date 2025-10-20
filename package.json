@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.901.0",
-    "@aws-sdk/s3-request-presigner": "^3.908.0",
+    "@aws-sdk/s3-request-presigner": "^3.913.0",
     "@bull-board/api": "^6.13.0",
     "@bull-board/express": "^6.13.0",
     "@bull-board/nestjs": "^6.13.0",
@@ -81,7 +81,7 @@
     "@types/socket.io": "^3.0.1",
     "@willsoto/nestjs-prometheus": "^6.0.2",
     "bcrypt": "^6.0.0",
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.2",
     "bull": "^4.16.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
