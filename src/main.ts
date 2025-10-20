@@ -21,6 +21,10 @@ import { getCompressionConfig } from './config/compression.config';
 import { getCorsConfig } from './config/cors.config';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { AuditLogService } from './common/services/audit-log.service';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -90,6 +94,16 @@ async function bootstrap() {
   const auditLogService = app.get(AuditLogService);
   app.useGlobalInterceptors(
     new AuditLogInterceptor(reflector, auditLogService),
+  );
+
+  // ==================== GLOBAL EXCEPTION FILTERS ====================
+  // Apply exception filters in order of specificity (most specific first)
+  // Order matters: Specific exceptions should be caught before generic ones
+  app.useGlobalFilters(
+    new PrismaExceptionFilter(),        // Catch Prisma database errors
+    new ValidationExceptionFilter(),     // Catch validation errors
+    new HttpExceptionFilter(),           // Catch HTTP exceptions
+    new AllExceptionsFilter(),           // Catch all other exceptions (fallback)
   );
 
   // Note: Global validation pipes are registered in CommonModule

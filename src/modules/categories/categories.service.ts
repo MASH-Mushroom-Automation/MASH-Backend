@@ -2,14 +2,18 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
+import { Cacheable, CacheEvict } from '../../common/decorators/cache.decorator';
+import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryQueryDto } from './dto/category-query.dto';
 
 @Injectable()
+@UseInterceptors(CacheInterceptor)
 export class CategoriesService {
   // Cache configuration
   private readonly CATEGORY_CACHE_PREFIX = 'category';
@@ -24,20 +28,13 @@ export class CategoriesService {
 
   /**
    * 1. Find all categories with pagination and filtering
-   * Phase 2: Cache category listings
+   * ✅ CACHED: 10 minutes TTL
+   * Hot path - categories rarely change, perfect for caching
    */
+  @Cacheable({ key: 'categories:list', ttl: 600, tags: ['categories', 'categories:list'] })
   async findAll(query: CategoryQueryDto) {
     const { page = 1, limit = 10, search, parentId, isActive } = query;
     const skip = (page - 1) * limit;
-
-    // Generate cache key
-    const cacheKey = `${this.CATEGORIES_LIST_CACHE_PREFIX}:${JSON.stringify(query)}`;
-
-    // Try cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
 
     const where: any = {};
 
@@ -83,7 +80,7 @@ export class CategoriesService {
       this.prisma.category.count({ where }),
     ]);
 
-    const result = {
+    return {
       data: categories,
       meta: {
         total,
@@ -92,14 +89,6 @@ export class CategoriesService {
         totalPages: Math.ceil(total / limit),
       },
     };
-
-    // Cache for 10 minutes
-    await this.cacheService.set(cacheKey, result, this.CATEGORY_TTL, [
-      'categories',
-      'categories:list',
-    ]);
-
-    return result;
   }
 
   /**

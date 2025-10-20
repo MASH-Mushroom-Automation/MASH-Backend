@@ -3,8 +3,11 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { Cacheable, CacheEvict } from '../../common/decorators/cache.decorator';
+import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderQueryDto, OrderStatus } from './dto/order-query.dto';
@@ -13,6 +16,7 @@ import { CancelOrderDto } from './dto/cancel-order.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
+@UseInterceptors(CacheInterceptor)
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
 
@@ -191,6 +195,11 @@ export class OrdersService {
   }
 
   // 3. Get user's orders
+  /**
+   * ✅ CACHED: 10 minutes TTL
+   * Hot path - user order history cached for performance
+   */
+  @Cacheable({ key: 'orders:user', ttl: 600, tags: ['orders', 'orders:user'] })
   async getUserOrders(userId: string, query: OrderQueryDto, currentUser: any) {
     if (
       userId !== currentUser.id &&

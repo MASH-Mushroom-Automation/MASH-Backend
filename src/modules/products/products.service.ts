@@ -229,17 +229,11 @@ export class ProductsService {
 
   /**
    * Get product by ID
-   * Phase 2: Cache individual products
+   * ✅ CACHED: 5 minutes TTL
+   * Hot path - product details frequently viewed
    */
+  @Cacheable({ key: 'product', ttl: 300, tags: ['products'] })
   async findOne(id: string) {
-    const cacheKey = `${this.PRODUCT_CACHE_PREFIX}:${id}`;
-
-    // Try cache first
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
     const product = await this.prisma.product.findUnique({
       where: { id },
     });
@@ -248,19 +242,14 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
-    // Cache for 10 minutes
-    await this.cacheService.set(cacheKey, product, this.PRODUCT_TTL, [
-      'products',
-      `product:${id}`,
-    ]);
-
     return product;
   }
 
   /**
    * Update product
-   * Phase 2: Invalidate caches on update
+   * ✅ CACHE INVALIDATION: Invalidates product cache on update
    */
+  @CacheEvict({ tags: ['products', 'products:list', 'products:featured'] })
   async update(id: string, updateProductDto: UpdateProductDto) {
     const { slug, sku, ...rest } = updateProductDto;
 
