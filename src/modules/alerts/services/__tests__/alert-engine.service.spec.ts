@@ -61,10 +61,6 @@ describe('AlertEngineService', () => {
       .compile();
 
     service = module.get<AlertEngineService>(AlertEngineService);
-    prisma = module.get<PrismaService>(PrismaService);
-    notificationQueue = module.get<NotificationQueueService>(
-      NotificationQueueService,
-    );
 
     jest.clearAllMocks();
   });
@@ -771,10 +767,9 @@ describe('AlertEngineService', () => {
 
     it('should return undefined for non-existent nested property', () => {
       const obj = { sensor: { temperature: 35 } };
-      const result = service['getNestedValue'](
-        obj,
-        'sensor.humidity.value',
-      ) as number | undefined;
+      const result = service['getNestedValue'](obj, 'sensor.humidity.value') as
+        | number
+        | undefined;
 
       expect(result).toBeUndefined();
     });

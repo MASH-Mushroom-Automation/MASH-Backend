@@ -37,16 +37,22 @@ describe('MainGateway', () => {
         xdomain: false,
       } as any,
       rooms: new Set<string>(),
-      join: jest.fn((room: string) => {
-        mockSocket.rooms?.add(room);
-        return Promise.resolve(mockSocket as any);
+      join: jest.fn(function (
+        this: Partial<AuthenticatedSocket>,
+        room: string,
+      ) {
+        this.rooms?.add(room);
+        return Promise.resolve(this as any);
       }),
-      leave: jest.fn((room: string) => {
-        mockSocket.rooms?.delete(room);
-        return Promise.resolve(mockSocket as any);
+      leave: jest.fn(function (
+        this: Partial<AuthenticatedSocket>,
+        room: string,
+      ) {
+        this.rooms?.delete(room);
+        return Promise.resolve(this as any);
       }),
       emit: jest.fn(),
-      to: jest.fn().mockReturnValue(mockSocket),
+      to: jest.fn().mockReturnThis(),
       disconnect: jest.fn(),
       data: {},
       connected: true,
@@ -244,7 +250,7 @@ describe('MainGateway', () => {
 
     it('should calculate latency correctly', () => {
       const mockSocket = createMockSocket('socket-1') as AuthenticatedSocket;
-      const testTime = Date.now() - 1000;
+      const testTime = String(Date.now() - 1000);
       mockSocket.handshake.time = testTime;
 
       const result = gateway.handlePing(mockSocket);
@@ -600,8 +606,6 @@ describe('MainGateway', () => {
     });
 
     it('should handle user with no connections', () => {
-      const debugSpy = jest.spyOn(gateway['logger'], 'debug');
-
       expect(() =>
         gateway.broadcastToUser('non-existent', 'event', {}),
       ).not.toThrow();

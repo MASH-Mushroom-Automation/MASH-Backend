@@ -38,15 +38,11 @@ function checkHealth(): Promise<number> {
   // This is an exception to the no-console rule
   if (code === 0) {
     // eslint-disable-next-line no-console
-    console.log(
-      `✅ Health check passed: ${HOST}:${PORT}${PATH}`,
-    );
+    console.log(`✅ Health check passed: ${HOST}:${PORT}${PATH}`);
     process.exit(0);
   }
 
   // eslint-disable-next-line no-console
-  console.error(
-    `❌ Health check failed: ${HOST}:${PORT}${PATH}`,
-  );
+  console.error(`❌ Health check failed: ${HOST}:${PORT}${PATH}`);
   process.exit(1);
 })();

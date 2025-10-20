@@ -142,9 +142,7 @@ export const envValidationSchema = Joi.object({
     .email()
     .description('SendGrid from email'),
 
-  SENDGRID_FROM_NAME: Joi.string()
-    .allow('')
-    .description('SendGrid from name'),
+  SENDGRID_FROM_NAME: Joi.string().allow('').description('SendGrid from name'),
 
   // ==================== SMS (Twilio) ====================
   TWILIO_ACCOUNT_SID: Joi.string().allow('').description('Twilio account SID'),
@@ -174,10 +172,7 @@ export const envValidationSchema = Joi.object({
     .description('Payment webhook secret'),
 
   // ==================== MQTT (IoT Devices) ====================
-  MQTT_BROKER_URL: Joi.string()
-    .uri()
-    .allow('')
-    .description('MQTT broker URL'),
+  MQTT_BROKER_URL: Joi.string().uri().allow('').description('MQTT broker URL'),
 
   MQTT_USERNAME: Joi.string().allow('').description('MQTT username'),
 
