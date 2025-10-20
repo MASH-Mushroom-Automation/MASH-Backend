@@ -81,6 +81,7 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
 
       - name: Build application
         run: npm run build
