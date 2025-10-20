@@ -92,14 +92,35 @@ jobs:
           echo $! > .pidfile
         env:
           NODE_ENV: production
+          PORT: 3000
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
           REDIS_HOST: localhost
           REDIS_PORT: 6379
-          JWT_SECRET: test-jwt-secret
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-performance-tests
+          JWT_EXPIRATION: 1d
+          CLERK_SECRET_KEY: test-clerk-secret
+          CLERK_WEBHOOK_SECRET: test-webhook-secret
+          FIREBASE_PROJECT_ID: test-project
+          FIREBASE_CLIENT_EMAIL: test@test.com
+          FIREBASE_PRIVATE_KEY: test-key
+          SENDGRID_API_KEY: test-key
+          TWILIO_ACCOUNT_SID: test-sid
+          TWILIO_AUTH_TOKEN: test-token
+          LOG_LEVEL: error
 
       - name: Wait for application
         run: |
           timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+
+      - name: Check app logs if startup failed
+        if: failure()
+        run: |
+          echo "=== Application Logs ==="
+          cat app.log || echo "No app.log found"
+          echo "=== Process Status ==="
+          ps aux | grep node || echo "No node processes"
 
       - name: Install k6
         run: |
