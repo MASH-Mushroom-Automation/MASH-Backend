@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { mock } from 'jest-mock-extended';
@@ -18,7 +19,11 @@ describe('AdminController', () => {
           useValue: service,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     controller = module.get<AdminController>(AdminController);
   });

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { RealtimeAnalyticsService } from './realtime-analytics.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
@@ -34,7 +35,11 @@ describe('RealtimeAnalyticsService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CacheService, useValue: mockCacheService },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     service = module.get<RealtimeAnalyticsService>(RealtimeAnalyticsService);
     prisma = module.get<PrismaService>(PrismaService);

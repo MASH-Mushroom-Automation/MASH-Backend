@@ -31,6 +31,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --pull always
         ports:
           - 5432:5432
 
@@ -41,6 +42,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --pull always
         ports:
           - 6379:6379
 
@@ -49,6 +51,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Pre-pull Docker images with retry
+        continue-on-error: true
+        run: |
+          echo "Pre-pulling Docker images to avoid service startup failures..."
+          for i in 1 2 3; do
+            echo "Attempt $i to pull postgres:15"
+            docker pull postgres:15 && break || sleep 10
+          done
+          for i in 1 2 3; do
+            echo "Attempt $i to pull redis:7-alpine"
+            docker pull redis:7-alpine && break || sleep 10
+          done
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -66,6 +81,7 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
 
       - name: Build application
         run: npm run build
@@ -76,14 +92,35 @@ jobs:
           echo $! > .pidfile
         env:
           NODE_ENV: production
+          PORT: 3000
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
           REDIS_HOST: localhost
           REDIS_PORT: 6379
-          JWT_SECRET: test-jwt-secret
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-performance-tests
+          JWT_EXPIRATION: 1d
+          CLERK_SECRET_KEY: test-clerk-secret
+          CLERK_WEBHOOK_SECRET: test-webhook-secret
+          FIREBASE_PROJECT_ID: test-project
+          FIREBASE_CLIENT_EMAIL: test@test.com
+          FIREBASE_PRIVATE_KEY: test-key
+          SENDGRID_API_KEY: test-key
+          TWILIO_ACCOUNT_SID: test-sid
+          TWILIO_AUTH_TOKEN: test-token
+          LOG_LEVEL: error
 
       - name: Wait for application
         run: |
           timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+
+      - name: Check app logs if startup failed
+        if: failure()
+        run: |
+          echo "=== Application Logs ==="
+          cat app.log || echo "No app.log found"
+          echo "=== Process Status ==="
+          ps aux | grep node || echo "No node processes"
 
       - name: Install k6
         run: |

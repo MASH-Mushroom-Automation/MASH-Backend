@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConsoleLogger,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { AlertRuleService } from '../alert-rule.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { AlertCategory, AlertPriority } from '@prisma/client';
@@ -45,7 +49,9 @@ describe('AlertRuleService', () => {
           useValue: mockPrismaService,
         },
       ],
-    }).compile();
+    })
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+      .compile();
 
     service = module.get<AlertRuleService>(AlertRuleService);
     prisma = module.get<PrismaService>(PrismaService);

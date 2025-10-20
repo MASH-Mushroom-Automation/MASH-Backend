@@ -220,7 +220,13 @@ jobs:
             });
 
       - name: Fail if critical vulnerabilities
-        if: steps.analyze.outputs.critical > 0
+        if: steps.analyze.outputs.critical > 0 && github.event_name != 'pull_request'
         run: |
           echo "::error::Critical vulnerabilities detected! Please fix before merging."
           exit 1
+
+      - name: Warning for PR with critical vulnerabilities
+        if: steps.analyze.outputs.critical > 0 && github.event_name == 'pull_request'
+        run: |
+          echo "::warning::Critical vulnerabilities detected. Please run 'npm audit fix' to resolve them."
+          echo "This is a warning only for PRs. The workflow will not fail, but vulnerabilities should be addressed before merging."

@@ -4,6 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { TransformInterceptor } from '../transform.interceptor';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of } from 'rxjs';
@@ -56,7 +57,11 @@ describe('TransformInterceptor', () => {
           useValue: mockLogger,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     interceptor = module.get<TransformInterceptor<any>>(TransformInterceptor);
   });

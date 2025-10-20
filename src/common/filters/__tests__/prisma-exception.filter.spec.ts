@@ -4,6 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { PrismaExceptionFilter } from '../prisma-exception.filter';
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -39,7 +40,11 @@ describe.skip('PrismaExceptionFilter', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [PrismaExceptionFilter],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     filter = module.get<PrismaExceptionFilter>(PrismaExceptionFilter);
   });

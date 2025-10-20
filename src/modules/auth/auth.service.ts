@@ -4,9 +4,12 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  UseInterceptors,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
+import { Cacheable, CacheEvict } from '../../common/decorators/cache.decorator';
+import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
@@ -17,6 +20,7 @@ import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 
 @Injectable()
+@UseInterceptors(CacheInterceptor)
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
@@ -42,6 +46,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Get current user information
+   * ✅ CACHED: 15 minutes TTL
+   * Hot path - user session data cached for performance
+   */
+  @Cacheable({ key: 'auth:user', ttl: 900, tags: ['auth', 'users'] })
   async getCurrentUser(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -67,6 +77,12 @@ export class AuthService {
     return user;
   }
 
+  /**
+   * Get session information
+   * ✅ CACHED: 15 minutes TTL
+   * Hot path - session info frequently accessed
+   */
+  @Cacheable({ key: 'auth:session', ttl: 900, tags: ['auth', 'sessions'] })
   async getSessionInfo(user: any) {
     return {
       userId: user.userId,

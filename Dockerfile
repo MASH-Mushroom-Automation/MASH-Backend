@@ -58,8 +58,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy scripts folder (if it exists)
 COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
 
-# Create logs directory with proper permissions
-RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/uploads/exports /app/uploads/temp && \
+    chown -R appuser:appuser /app/logs /app/uploads
 
 # Set ownership of copied files
 RUN chown -R appuser:appuser /app/dist /app/node_modules /app/prisma
@@ -70,9 +71,10 @@ USER appuser
 # Expose port
 EXPOSE 3000
 
-# Health check - Use wget instead of node script for reliability
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/health || exit 1
+# Health check - Use built-in Node health-check script
+# The script is compiled to dist/health/health-check.js during build
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node dist/health/health-check.js || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]

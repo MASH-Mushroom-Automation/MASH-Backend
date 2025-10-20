@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { PrismaService } from '../../database/prisma.service';
 import { createMockPrismaService } from '../../../test/mocks/prisma.mock';
@@ -18,7 +19,11 @@ describe('OrdersService', () => {
           useValue: prisma,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     service = module.get<OrdersService>(OrdersService);
   });

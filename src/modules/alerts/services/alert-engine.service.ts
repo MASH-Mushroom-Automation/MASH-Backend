@@ -521,9 +521,27 @@ export class AlertEngineService {
       data: event.data,
     };
 
+    // Use a replacer to produce a stable JSON string with sorted keys
+    const stableStringify = (obj: any): string =>
+      JSON.stringify(obj, (_key, value) => {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          // Create a new object with sorted keys to ensure deterministic output
+          return Object.keys(value)
+            .sort()
+            .reduce(
+              (acc, k) => {
+                acc[k] = value[k];
+                return acc;
+              },
+              {} as Record<string, any>,
+            );
+        }
+        return value;
+      });
+
     return crypto
       .createHash('sha256')
-      .update(JSON.stringify(payload, Object.keys(payload).sort()))
+      .update(stableStringify(payload))
       .digest('hex')
       .substring(0, 16);
   }

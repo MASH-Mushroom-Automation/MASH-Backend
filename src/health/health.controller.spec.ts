@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { HealthController } from './health.controller';
 import { PrismaService } from '../database/prisma.service';
 
@@ -19,7 +20,11 @@ describe('HealthController', () => {
           useValue: mockPrismaService,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     controller = module.get<HealthController>(HealthController);
     prismaService = module.get<PrismaService>(PrismaService);

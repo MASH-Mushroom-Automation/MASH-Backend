@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { ConnectionManagerService } from '../connection-manager.service';
 import type { AuthenticatedSocket } from '../../interfaces/authenticated-socket.interface';
 
@@ -52,7 +53,9 @@ describe('ConnectionManagerService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [ConnectionManagerService],
-    }).compile();
+    })
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+      .compile();
 
     service = module.get<ConnectionManagerService>(ConnectionManagerService);
   });

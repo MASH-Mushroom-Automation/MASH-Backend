@@ -4,6 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { LoggingInterceptor } from '../logging.interceptor';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
@@ -58,7 +59,11 @@ describe.skip('LoggingInterceptor', () => {
           useValue: mockLogger,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     interceptor = module.get<LoggingInterceptor>(LoggingInterceptor);
   });

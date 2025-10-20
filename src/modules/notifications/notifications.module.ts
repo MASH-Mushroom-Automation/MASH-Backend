@@ -5,7 +5,6 @@ import { TestNotificationsController } from './test-notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { EmailTemplateService } from './services/email-template.service';
 import { EmailService } from './services/email.service';
-import { PrismaService } from '../../database/prisma.service';
 import { QueuesModule } from '../queues/queues.module';
 
 @Module({
@@ -19,7 +18,7 @@ import { QueuesModule } from '../queues/queues.module';
     NotificationsService,
     EmailTemplateService,
     EmailService,
-    PrismaService,
+    // PrismaService provided globally by DatabaseModule
   ],
   exports: [NotificationsService, EmailTemplateService, EmailService],
 })
