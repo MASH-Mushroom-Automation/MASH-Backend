@@ -71,11 +71,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install system dependencies for sharp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvips-dev build-essential python3
+
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Rebuild sharp for Linux
-        run: npm rebuild sharp --force
+      - name: Rebuild sharp for Linux (force reinstall)
+        run: |
+          npm uninstall sharp
+          npm install --include=optional --os=linux --cpu=x64 sharp
+          npm rebuild sharp --force
 
       - name: Generate Prisma Client
         run: npx prisma generate
