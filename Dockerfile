@@ -28,8 +28,19 @@ RUN npm run build && \
 # Stage 2: Production stage
 FROM node:20-alpine AS production
 
-# Install dumb-init and wget for proper signal handling and health checks
-RUN apk add --no-cache dumb-init wget
+# Install dumb-init, wget, and Sharp dependencies for Alpine Linux
+# vips-dev is required for Sharp to work on Alpine (musl-based) systems
+RUN apk add --no-cache \
+    dumb-init \
+    wget \
+    vips-dev \
+    fftw-dev \
+    build-base \
+    python3 \
+    --virtual .build-deps \
+    gcc \
+    g++ \
+    make
 
 # Create app user
 RUN addgroup -g 1001 -S appuser && adduser -S appuser -u 1001
@@ -44,7 +55,13 @@ COPY prisma ./prisma/
 # Install production dependencies only (skip lifecycle scripts such as `prepare`/husky)
 # --omit=dev replaces the deprecated --only=production flag
 # --ignore-scripts prevents running package lifecycle scripts in the production image
-RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts && npm cache clean --force
+# Remove --ignore-scripts to allow Sharp to rebuild for the correct platform
+RUN npm ci --legacy-peer-deps --omit=dev && \
+    npm rebuild sharp --platform=linux --arch=x64 --libc=musl && \
+    npm cache clean --force
+
+# Remove build dependencies to reduce image size
+RUN apk del .build-deps
 
 # Copy built application from builder stage
 # Prisma client artifacts are generated in the builder (where dev deps are present).
