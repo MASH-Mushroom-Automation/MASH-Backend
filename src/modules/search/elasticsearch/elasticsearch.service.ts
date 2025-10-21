@@ -16,13 +16,20 @@ export class ElasticsearchService implements OnModuleInit {
 
     this.logger.log(`🔍 Initializing Elasticsearch client for ${node}...`);
 
+    // Initialize Elasticsearch client with simplified configuration
+    // Note: Elasticsearch v9 client handles timeouts internally
     this.client = new Client({
       node,
       ...(username && password
         ? { auth: { username, password } }
         : {}),
+      // Retry configuration
       maxRetries: this.config.get('ELASTICSEARCH_MAX_RETRIES', 3),
-      requestTimeout: this.config.get('ELASTICSEARCH_REQUEST_TIMEOUT', 30000),
+      // Request timeout in milliseconds
+      requestTimeout: 30000,
+      // Connection settings
+      compression: false, // Disable compression to avoid timeout issues
+      sniffOnStart: false,
     });
 
     // Check connection in background (non-blocking)

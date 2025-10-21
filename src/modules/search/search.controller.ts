@@ -1,13 +1,17 @@
-import { Controller, Get, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Query, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { SearchService } from './search.service';
+import { ProductIndexerService } from './indexers/product-indexer.service';
 
 @ApiTags('Search')
 @Controller('search')
 export class SearchController {
   private readonly logger = new Logger(SearchController.name);
 
-  constructor(private readonly searchService: SearchService) {}
+  constructor(
+    private readonly searchService: SearchService,
+    private readonly productIndexer: ProductIndexerService,
+  ) {}
 
   /**
    * Test endpoint - verify Elasticsearch connection
@@ -36,5 +40,23 @@ export class SearchController {
   ) {
     this.logger.log(`🔍 Product search: "${query || 'all'}"`);
     return this.searchService.searchProducts(query || '', page || 1, limit || 20);
+  }
+
+  /**
+   * Manually trigger full product reindexing
+   */
+  @Post('reindex/products')
+  @ApiOperation({ 
+    summary: 'Reindex all products', 
+    description: 'Triggers a full reindex of all products from database to Elasticsearch'
+  })
+  @ApiResponse({ status: 200, description: 'Reindexing completed successfully' })
+  async reindexProducts() {
+    this.logger.log('🔄 Starting product reindex...');
+    await this.productIndexer.reindexAll();
+    return {
+      message: 'Product reindexing completed successfully',
+      timestamp: new Date().toISOString(),
+    };
   }
 }
