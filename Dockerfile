@@ -54,9 +54,9 @@ COPY prisma ./prisma/
 
 # Install production dependencies only (skip lifecycle scripts such as `prepare`/husky)
 # --omit=dev replaces the deprecated --only=production flag
-# --ignore-scripts prevents running package lifecycle scripts in the production image
-# Remove --ignore-scripts to allow Sharp to rebuild for the correct platform
-RUN npm ci --legacy-peer-deps --omit=dev && \
+# --ignore-scripts prevents running package lifecycle scripts (husky prepare) in production
+# Then explicitly rebuild Sharp for the correct Alpine Linux platform
+RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts && \
     npm rebuild sharp --platform=linux --arch=x64 --libc=musl && \
     npm cache clean --force
 
