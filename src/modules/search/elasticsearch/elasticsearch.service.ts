@@ -14,7 +14,7 @@ export class ElasticsearchService implements OnModuleInit {
     const username = this.config.get('ELASTICSEARCH_USERNAME');
     const password = this.config.get('ELASTICSEARCH_PASSWORD');
 
-    this.logger.log(`🔍 Connecting to Elasticsearch at ${node}...`);
+    this.logger.log(`🔍 Initializing Elasticsearch client for ${node}...`);
 
     this.client = new Client({
       node,
@@ -25,7 +25,11 @@ export class ElasticsearchService implements OnModuleInit {
       requestTimeout: this.config.get('ELASTICSEARCH_REQUEST_TIMEOUT', 30000),
     });
 
-    await this.checkConnection();
+    // Check connection in background (non-blocking)
+    this.checkConnection().catch((error) => {
+      this.logger.warn('⚠️ Elasticsearch connection failed during startup:', error.message);
+      this.logger.warn('⚠️ Search functionality will be limited until connection is established');
+    });
   }
 
   private async checkConnection() {
@@ -35,7 +39,7 @@ export class ElasticsearchService implements OnModuleInit {
       this.logger.log(`📊 Cluster status: ${health.status}`);
       this.logger.log(`🔢 Number of nodes: ${health.number_of_nodes}`);
     } catch (error) {
-      this.logger.error('❌ Elasticsearch connection failed:', error.message);
+      this.logger.error('❌ Elasticsearch connection check failed:', error.message);
       throw error;
     }
   }

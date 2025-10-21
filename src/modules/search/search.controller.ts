@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 
 @ApiTags('Search')
-@Controller('api/v1/search')
+@Controller('search')
 export class SearchController {
   private readonly logger = new Logger(SearchController.name);
 
