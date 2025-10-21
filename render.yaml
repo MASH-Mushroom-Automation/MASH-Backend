@@ -1,3 +1,19 @@
+# ⚠️ DEPRECATED - MIGRATED TO RAILWAY
+# This file is kept for historical reference only.
+# 
+# **Current Production Deployment**: Railway (https://mash-backend-api.up.railway.app)
+# **Deployment Date**: October 22, 2025
+# **Migration Reason**: Better performance, easier deployment, cost-effective
+#
+# For current deployment configuration, see:
+# - railway.json
+# - railway.toml
+# - Dockerfile
+#
+# ---
+# LEGACY CONFIGURATION BELOW (DO NOT USE)
+# ---
+
 # Render Blueprint for MASH Backend
 # This file enables one-click deployment to Render.com
 # Deploy: https://dashboard.render.com/select-repo?type=blueprint
