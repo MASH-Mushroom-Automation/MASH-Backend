@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 
 export interface SearchAnalytics {
   totalSearches: number;
@@ -156,7 +156,7 @@ export class SearchAnalyticsService {
       },
       take: limit,
       select: {
-        query,
+        query: true,
         index: true,
         took: true,
         resultsCount: true,

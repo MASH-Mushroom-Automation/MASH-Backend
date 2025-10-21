@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ElasticsearchService } from './elasticsearch/elasticsearch.service';
 import { SearchProductsDto } from './dto';
 import { SearchAnalyticsService } from './analytics/search-analytics.service';
-import { CacheService } from '../cache/cache.service';
+import { CacheService } from '../../common/services/cache.service';
 
 export interface SearchResult {
   hits: any[];
@@ -172,8 +172,6 @@ export class SearchService {
     if (dto.inStock) filters.inStock = dto.inStock;
     if (dto.tags) filters.tags = dto.tags;
     return Object.keys(filters).length > 0 ? filters : null;
-  }
-    }
   }
 
   /**

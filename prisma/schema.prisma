@@ -982,3 +982,31 @@ enum SubscriptionFrequency {
   MONTHLY
   REAL_TIME
 }
+
+// ============================================
+// SEARCH ANALYTICS
+// ============================================
+
+model SearchLog {
+  id            String   @id @default(cuid())
+  query         String // The search query string
+  index         String // Which index was searched (products, orders, etc.)
+  resultsCount  Int // Number of results returned
+  took          Int // Query time in milliseconds
+  filters       Json? // Applied filters (price, category, etc.)
+  sort          Json? // Sort configuration
+  userId        String? // User ID if authenticated search
+  ipAddress     String? // IP address for rate limiting/analytics
+  userAgent     String? // Browser/client info
+  clickedResult String? // Product ID if user clicked a result
+  isSlowQuery   Boolean  @default(false) // Flag for queries >500ms
+  createdAt     DateTime @default(now())
+
+  // Indexes for analytics queries
+  @@index([query]) // Popular searches
+  @@index([createdAt]) // Time-based analytics
+  @@index([isSlowQuery, took]) // Slow query analysis
+  @@index([userId, createdAt]) // User search history
+  @@index([index, createdAt]) // Index-specific analytics
+  @@map("search_logs")
+}

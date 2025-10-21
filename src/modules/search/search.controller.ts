@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Query, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Query, Param, Logger, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { Request } from 'express';
 import { SearchService } from './search.service';
 import { ProductIndexerService } from './indexers/product-indexer.service';
 import { SearchProductsDto, AutocompleteDto } from './dto';
@@ -46,11 +47,15 @@ export class SearchController {
   @ApiQuery({ name: 'sortBy', required: false, enum: ['relevance', 'price', 'rating', 'createdAt', 'name'], description: 'Sort field' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Sort order' })
   @ApiQuery({ name: 'includeFacets', required: false, type: Boolean, description: 'Include facets in response' })
-  async searchProducts(@Query() dto: SearchProductsDto) {
+  async searchProducts(@Query() dto: SearchProductsDto, @Req() req: Request) {
     const startTime = Date.now();
     this.logger.log(`🔍 Advanced search: "${dto.query || 'all'}" with filters`);
     
-    const results = await this.searchService.searchProducts(dto);
+    // Extract user ID and IP address for analytics
+    const userId = (req as any).user?.id; // If you have auth middleware
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    
+    const results = await this.searchService.searchProducts(dto, userId, ipAddress);
     const totalTime = Date.now() - startTime;
     
     this.logger.log(`✅ Search completed in ${totalTime}ms`);
