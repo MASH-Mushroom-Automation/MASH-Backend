@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ElasticsearchService } from './elasticsearch/elasticsearch.service';
 import { SearchProductsDto } from './dto';
+import { SearchAnalyticsService } from './analytics/search-analytics.service';
+import { CacheService } from '../cache/cache.service';
 
 export interface SearchResult {
   hits: any[];
@@ -21,8 +23,13 @@ export interface SearchResult {
 export class SearchService {
   private readonly logger = new Logger(SearchService.name);
   private readonly PRODUCTS_INDEX = 'products';
+  private readonly CACHE_TTL = 300; // 5 minutes in seconds
 
-  constructor(private readonly elasticsearch: ElasticsearchService) {}
+  constructor(
+    private readonly elasticsearch: ElasticsearchService,
+    private readonly analyticsService: SearchAnalyticsService,
+    private readonly cacheService: CacheService,
+  ) {}
 
   /**
    * Test Elasticsearch connection
@@ -46,12 +53,22 @@ export class SearchService {
   /**
    * Advanced product search with filtering, sorting, and facets
    */
-  async searchProducts(dto: SearchProductsDto): Promise<SearchResult> {
+  async searchProducts(dto: SearchProductsDto, userId?: string, ipAddress?: string): Promise<SearchResult> {
     const startTime = Date.now();
     const { query, page = 1, limit = 20, includeFacets } = dto;
     const from = (page - 1) * limit;
 
     this.logger.log(`🔍 Searching products: "${query || 'all'}" (page ${page}, limit ${limit})`);
+
+    // Generate cache key
+    const cacheKey = `search:products:${this.generateCacheKey(dto)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<SearchResult>(cacheKey);
+    if (cached) {
+      this.logger.log(`💾 Cache hit for: "${query || 'all'}"`);
+      return cached;
+    }
 
     // Build the Elasticsearch query
     const queryBody = this.buildQuery(dto);
@@ -97,10 +114,65 @@ export class SearchService {
         response.facets = this.parseFacets(result.aggregations);
       }
 
+      // Cache the results (non-blocking)
+      this.cacheService
+        .set(cacheKey, response, this.CACHE_TTL)
+        .catch((error) => this.logger.error(`Failed to cache search results: ${error.message}`));
+
+      // Log search analytics (non-blocking)
+      this.analyticsService
+        .logSearch({
+          query: query || '',
+          index: this.PRODUCTS_INDEX,
+          resultsCount: total,
+          took,
+          filters: this.extractFilters(dto),
+          sort: { sortBy: dto.sortBy, sortOrder: dto.sortOrder },
+          userId,
+          ipAddress,
+        })
+        .catch((error) => this.logger.error(`Failed to log search: ${error.message}`));
+
       return response;
     } catch (error) {
       this.logger.error(`❌ Search failed: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Generate cache key from search parameters
+   */
+  private generateCacheKey(dto: SearchProductsDto): string {
+    return JSON.stringify({
+      q: dto.query,
+      p: dto.page,
+      l: dto.limit,
+      minP: dto.minPrice,
+      maxP: dto.maxPrice,
+      cats: dto.categories,
+      minR: dto.minRating,
+      inStock: dto.inStock,
+      tags: dto.tags,
+      sortBy: dto.sortBy,
+      sortOrder: dto.sortOrder,
+      facets: dto.includeFacets,
+    });
+  }
+
+  /**
+   * Extract filters for analytics
+   */
+  private extractFilters(dto: SearchProductsDto): any {
+    const filters: any = {};
+    if (dto.minPrice) filters.minPrice = dto.minPrice;
+    if (dto.maxPrice) filters.maxPrice = dto.maxPrice;
+    if (dto.categories) filters.categories = dto.categories;
+    if (dto.minRating) filters.minRating = dto.minRating;
+    if (dto.inStock) filters.inStock = dto.inStock;
+    if (dto.tags) filters.tags = dto.tags;
+    return Object.keys(filters).length > 0 ? filters : null;
+  }
     }
   }
 
