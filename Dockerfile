@@ -28,22 +28,20 @@ RUN npm run build && \
 # Stage 2: Production stage
 FROM node:20-alpine AS production
 
-# Install runtime dependencies for Alpine Linux
-# vips is required for Sharp to work (image processing library)
+# Install ALL dependencies needed for Sharp (keep everything, don't delete)
+# Sharp requires vips runtime libraries and build tools must remain for npm rebuild
 RUN apk add --no-cache \
     dumb-init \
     wget \
-    vips
-
-# Install build dependencies temporarily for Sharp compilation
-RUN apk add --no-cache --virtual .build-deps \
+    vips \
+    vips-dev \
+    fftw-dev \
     build-base \
     python3 \
     gcc \
     g++ \
     make \
-    vips-dev \
-    fftw-dev
+    pkgconfig
 
 # Create app user
 RUN addgroup -g 1001 -S appuser && adduser -S appuser -u 1001
@@ -55,16 +53,20 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install production dependencies only (skip lifecycle scripts such as `prepare`/husky)
-# --omit=dev replaces the deprecated --only=production flag
-# --ignore-scripts prevents running package lifecycle scripts (husky prepare) in production
-# Then explicitly rebuild Sharp for the correct Alpine Linux platform
+# Install production dependencies and force Sharp to rebuild for Alpine Linux
+# Step 1: Install without scripts to avoid husky
+# Step 2: Remove any existing Sharp binaries
+# Step 3: Reinstall Sharp with correct platform flags
+# Step 4: Rebuild Sharp to ensure native bindings are correct
 RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts && \
-    npm rebuild sharp --platform=linux --arch=x64 --libc=musl && \
+    rm -rf node_modules/sharp && \
+    npm install --legacy-peer-deps --omit=dev sharp --verbose && \
+    npm rebuild sharp --platform=linux --arch=x64 --libc=musl --verbose && \
     npm cache clean --force
 
-# Remove build dependencies but keep vips runtime library
-RUN apk del .build-deps
+# Verify Sharp is installed correctly
+RUN node -e "const sharp = require('sharp'); console.log('Sharp version:', sharp.versions);" || \
+    (echo "ERROR: Sharp installation failed!" && exit 1)
 
 # Copy built application from builder stage
 # Prisma client artifacts are generated in the builder (where dev deps are present).
