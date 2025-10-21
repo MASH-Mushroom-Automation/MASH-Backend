@@ -28,19 +28,22 @@ RUN npm run build && \
 # Stage 2: Production stage
 FROM node:20-alpine AS production
 
-# Install dumb-init, wget, and Sharp dependencies for Alpine Linux
-# vips-dev is required for Sharp to work on Alpine (musl-based) systems
+# Install runtime dependencies for Alpine Linux
+# vips is required for Sharp to work (image processing library)
 RUN apk add --no-cache \
     dumb-init \
     wget \
-    vips-dev \
-    fftw-dev \
+    vips
+
+# Install build dependencies temporarily for Sharp compilation
+RUN apk add --no-cache --virtual .build-deps \
     build-base \
     python3 \
-    --virtual .build-deps \
     gcc \
     g++ \
-    make
+    make \
+    vips-dev \
+    fftw-dev
 
 # Create app user
 RUN addgroup -g 1001 -S appuser && adduser -S appuser -u 1001
@@ -60,7 +63,7 @@ RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts && \
     npm rebuild sharp --platform=linux --arch=x64 --libc=musl && \
     npm cache clean --force
 
-# Remove build dependencies to reduce image size
+# Remove build dependencies but keep vips runtime library
 RUN apk del .build-deps
 
 # Copy built application from builder stage
