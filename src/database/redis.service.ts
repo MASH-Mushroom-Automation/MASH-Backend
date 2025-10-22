@@ -35,7 +35,9 @@ export class RedisService implements OnModuleDestroy {
 
     if (!redisUrl) {
       this.logger.warn('⚠️ REDIS_URL not configured - Redis caching disabled');
-      // Create a mock client that does nothing
+      this.logger.warn(
+        '📝 App will continue without Redis (cache, rate limiting, sessions disabled)',
+      );
       this.client = null;
       return;
     }
@@ -44,16 +46,32 @@ export class RedisService implements OnModuleDestroy {
       this.client = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         enableReadyCheck: true,
+        lazyConnect: true, // Don't connect immediately
         retryStrategy: (times: number) => {
-          if (times > 10) {
-            this.logger.error('Redis: Max retries reached, giving up');
-            return null;
+          if (times > 3) {
+            // Reduce retries to fail fast
+            this.logger.error(
+              '❌ Redis: Max retries reached. Continuing without Redis.',
+            );
+            this.isConnected = false;
+            return null; // Stop retrying
           }
-          const delay = Math.min(times * 50, 2000);
-          this.logger.warn(`Redis: Reconnecting in ${delay}ms...`);
+          const delay = Math.min(times * 50, 1000);
+          this.logger.warn(`Redis: Retry attempt ${times} in ${delay}ms...`);
           return delay;
         },
       });
+
+      // Try to connect but don't block app startup
+      this.client
+        .connect()
+        .then(() => {
+          this.logger.log('✅ Redis connected successfully');
+          this.isConnected = true;
+        })
+        .catch((error) => {
+          this.handleConnectionError(error);
+        });
 
       this.client.on('connect', () => {
         this.logger.log('✅ Redis connected successfully');
@@ -61,17 +79,57 @@ export class RedisService implements OnModuleDestroy {
       });
 
       this.client.on('error', (error) => {
-        this.logger.error('Redis connection error:', error);
-        this.isConnected = false;
+        this.handleConnectionError(error);
       });
 
       this.client.on('close', () => {
-        this.logger.warn('Redis connection closed');
+        this.logger.warn('⚠️ Redis connection closed');
         this.isConnected = false;
       });
+
+      this.client.on('reconnecting', () => {
+        this.logger.log('🔄 Redis reconnecting...');
+      });
     } catch (error) {
-      this.logger.error('Failed to initialize Redis client:', error);
+      this.logger.error('❌ Failed to initialize Redis client:', error);
       this.client = null;
+    }
+  }
+
+  /**
+   * Handle Redis connection errors with specific messages
+   */
+  private handleConnectionError(error: any): void {
+    this.isConnected = false;
+
+    // Check for quota exceeded error
+    if (
+      error.message?.includes('max requests limit exceeded') ||
+      error.message?.includes('Usage:')
+    ) {
+      this.logger.error('❌ REDIS QUOTA EXCEEDED!');
+      this.logger.error(
+        '💰 Your Upstash Redis free tier limit has been reached',
+      );
+      this.logger.error(
+        '📝 Options: 1) Upgrade Upstash plan, 2) Reset database, 3) Continue without Redis',
+      );
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+
+      // Disconnect to prevent further errors
+      if (this.client) {
+        this.client.disconnect(false);
+      }
+    } else if (error.message?.includes('ECONNREFUSED')) {
+      this.logger.error('❌ Redis connection refused (server not reachable)');
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+    } else if (error.message?.includes('Invalid password')) {
+      this.logger.error('❌ Redis authentication failed (invalid password)');
+      this.logger.error('🔑 Check REDIS_URL and REDIS_PASSWORD in environment');
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+    } else {
+      this.logger.error('❌ Redis connection error:', error.message);
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
     }
   }
 
