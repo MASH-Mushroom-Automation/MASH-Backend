@@ -154,10 +154,10 @@ jobs:
           CLERK_SECRET_KEY: sk_test_placeholder
           CLERK_PUBLISHABLE_KEY: pk_test_placeholder
           CLERK_WEBHOOK_SECRET: whsec_placeholder
-          # Firebase (optional for perf tests)
-          FIREBASE_PROJECT_ID: test-project
-          FIREBASE_CLIENT_EMAIL: test@test.com
-          FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC\n-----END PRIVATE KEY-----"
+          # Firebase (optional for perf tests) - not set to avoid malformed key during CI
+          FIREBASE_PROJECT_ID: ''
+          FIREBASE_CLIENT_EMAIL: ''
+          FIREBASE_PRIVATE_KEY: ''
           # SendGrid (optional for perf tests)
           SENDGRID_API_KEY: SG.test-key
           # Twilio (optional for perf tests)
