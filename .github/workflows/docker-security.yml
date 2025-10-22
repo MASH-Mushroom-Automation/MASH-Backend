@@ -57,6 +57,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Docker image
+        id: docker-build
         uses: docker/build-push-action@v5
         continue-on-error: true
         with:
@@ -71,10 +72,13 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
         env:
           DOCKER_BUILDKIT: 1
+        # Note: This may fail due to GitHub Actions Cache service issues
+        # The retry step will build without cache as fallback
 
       # Retry build without cache if first attempt fails
       - name: Build Docker image (without cache fallback)
-        if: failure()
+        if: steps.docker-build.outcome == 'failure'
+        id: docker-build-no-cache
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -82,10 +86,21 @@ jobs:
           push: false
           load: true
           tags: ${{ steps.meta.outputs.tags }}
+          # No cache - more reliable when GitHub cache is unavailable
           build-args: |
             BUILDKIT_INLINE_CACHE=1
         env:
           DOCKER_BUILDKIT: 1
+      
+      # Check if build succeeded (either with or without cache)
+      - name: Verify build success
+        run: |
+          if [ "${{ steps.docker-build.outcome }}" == "success" ] || [ "${{ steps.docker-build-no-cache.outcome }}" == "success" ]; then
+            echo "✅ Docker build succeeded"
+          else
+            echo "❌ Docker build failed"
+            exit 1
+          fi
 
       - name: Get image ID
         id: image-id
@@ -348,13 +363,26 @@ jobs:
 
       - name: Push image to registry
         if: github.event_name == 'push' && steps.parse-results.outputs.should_fail == 'false'
+        id: docker-push
         uses: docker/build-push-action@v5
+        continue-on-error: true
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+        # Note: This may fail due to GitHub Actions Cache issues
+        # Retry without cache as fallback
+        
+      - name: Push image to registry (without cache fallback)
+        if: github.event_name == 'push' && steps.parse-results.outputs.should_fail == 'false' && steps.docker-push.outcome == 'failure'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          # No cache - more reliable when GitHub cache is unavailable
 
       - name: Fail build if critical vulnerabilities
         if: steps.parse-results.outputs.should_fail == 'true' && steps.parse-results.outputs.parse_success == 'true'
