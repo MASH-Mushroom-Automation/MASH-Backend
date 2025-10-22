@@ -1,6 +1,6 @@
 /**
  * Elasticsearch Product Index Mapping
- * 
+ *
  * Defines the schema and field types for product documents in Elasticsearch.
  * Optimized for:
  * - Full-text search on name and description

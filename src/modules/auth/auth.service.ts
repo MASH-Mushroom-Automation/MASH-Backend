@@ -346,14 +346,27 @@ export class AuthService {
           '24 hours',
         );
         this.logger.log(
-          `✅ MASH verification email sent to: ${registerDto.email}`,
+          `✅ MASH verification email sent successfully to: ${registerDto.email}`,
         );
-      } catch (emailError) {
+      } catch (emailError: any) {
         // Don't fail registration if custom email fails
-        this.logger.warn(
-          `⚠️ Failed to send MASH verification email to ${registerDto.email}:`,
-          emailError.message,
+        this.logger.error(
+          `❌ CRITICAL: Failed to send MASH verification email to ${registerDto.email}`,
         );
+        this.logger.error(
+          `Error details: ${emailError?.message || 'Unknown error'}`,
+        );
+        if (
+          emailError?.message?.includes('Missing credentials') ||
+          emailError?.message?.includes('Invalid login')
+        ) {
+          this.logger.error(
+            '🔧 FIX: Add EMAIL_* environment variables to Railway dashboard',
+          );
+          this.logger.error(
+            '📋 Required: EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM',
+          );
+        }
       }
 
       return {

@@ -5,7 +5,7 @@ import { productMapping } from '../elasticsearch/mappings/product.mapping';
 
 /**
  * Product Indexer Service
- * 
+ *
  * Handles indexing, updating, and removing products from Elasticsearch.
  * Automatically syncs product data from PostgreSQL to Elasticsearch.
  */
@@ -36,10 +36,7 @@ export class ProductIndexerService implements OnModuleInit {
 
       if (!exists) {
         this.logger.log(`Creating index: ${this.indexName}...`);
-        await this.elasticsearch.createIndex(
-          this.indexName,
-          productMapping,
-        );
+        await this.elasticsearch.createIndex(this.indexName, productMapping);
         this.logger.log(`✅ Index ${this.indexName} created successfully`);
       } else {
         this.logger.log(`✅ Index ${this.indexName} already exists`);
@@ -131,7 +128,10 @@ export class ProductIndexerService implements OnModuleInit {
 
       this.logger.debug(`✅ Updated product: ${productId}`);
     } catch (error) {
-      this.logger.error(`Failed to update product ${productId}:`, error.message);
+      this.logger.error(
+        `Failed to update product ${productId}:`,
+        error.message,
+      );
       throw error;
     }
   }
@@ -145,7 +145,10 @@ export class ProductIndexerService implements OnModuleInit {
 
       this.logger.debug(`✅ Deleted product from index: ${productId}`);
     } catch (error) {
-      this.logger.error(`Failed to delete product ${productId}:`, error.message);
+      this.logger.error(
+        `Failed to delete product ${productId}:`,
+        error.message,
+      );
       throw error;
     }
   }
@@ -198,10 +201,10 @@ export class ProductIndexerService implements OnModuleInit {
    */
   private transformProduct(product: any): Record<string, any> {
     // Parse categories from JSON field
-    const categories = Array.isArray(product.categories) 
-      ? product.categories 
+    const categories = Array.isArray(product.categories)
+      ? product.categories
       : [];
-    
+
     const primaryCategory = categories[0] || 'Uncategorized';
 
     return {

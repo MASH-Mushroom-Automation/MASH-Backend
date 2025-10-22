@@ -13,9 +13,10 @@ export class SearchAnalyticsController {
    * Get comprehensive search analytics
    */
   @Get()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get search analytics',
-    description: 'Comprehensive analytics including popular queries, performance metrics, and more'
+    description:
+      'Comprehensive analytics including popular queries, performance metrics, and more',
   })
   @ApiResponse({ status: 200, description: 'Analytics data returned' })
   async getAnalytics() {
@@ -29,7 +30,12 @@ export class SearchAnalyticsController {
   @Get('popular')
   @ApiOperation({ summary: 'Get popular search queries' })
   @ApiResponse({ status: 200, description: 'Popular queries returned' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max results (default: 20)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Max results (default: 20)',
+  })
   async getPopularQueries(@Query('limit') limit?: number) {
     this.logger.log('📈 Fetching popular queries');
     return this.analyticsService.getPopularQueries(limit || 20);
@@ -39,12 +45,17 @@ export class SearchAnalyticsController {
    * Get queries with zero results
    */
   @Get('zero-results')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get queries with zero results',
-    description: 'Helps identify missing products or improve search algorithm'
+    description: 'Helps identify missing products or improve search algorithm',
   })
   @ApiResponse({ status: 200, description: 'Zero-result queries returned' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max results (default: 20)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Max results (default: 20)',
+  })
   async getZeroResultQueries(@Query('limit') limit?: number) {
     this.logger.log('🔍 Fetching zero-result queries');
     return this.analyticsService.getZeroResultQueries(limit || 20);
@@ -54,12 +65,17 @@ export class SearchAnalyticsController {
    * Get slow query statistics
    */
   @Get('slow-queries')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get slow queries',
-    description: 'Queries that took longer than 500ms'
+    description: 'Queries that took longer than 500ms',
   })
   @ApiResponse({ status: 200, description: 'Slow queries returned' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max results (default: 20)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Max results (default: 20)',
+  })
   async getSlowQueries(@Query('limit') limit?: number) {
     this.logger.log('🐌 Fetching slow queries');
     return this.analyticsService.getSlowQueries(limit || 20);
@@ -69,9 +85,9 @@ export class SearchAnalyticsController {
    * Get performance metrics
    */
   @Get('performance')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get performance metrics',
-    description: 'Response time percentiles (p50, p95, p99) and averages'
+    description: 'Response time percentiles (p50, p95, p99) and averages',
   })
   @ApiResponse({ status: 200, description: 'Performance metrics returned' })
   async getPerformanceMetrics() {

@@ -16,7 +16,9 @@ export class ElasticsearchService implements OnModuleInit {
 
     // Skip initialization if no Elasticsearch node is configured
     if (!node || node.trim() === '') {
-      this.logger.warn('⚠️ ELASTICSEARCH_NODE not configured - Search features disabled');
+      this.logger.warn(
+        '⚠️ ELASTICSEARCH_NODE not configured - Search features disabled',
+      );
       this.client = null;
       return;
     }
@@ -27,9 +29,7 @@ export class ElasticsearchService implements OnModuleInit {
     // Note: Elasticsearch v9 client handles timeouts internally
     this.client = new Client({
       node,
-      ...(username && password
-        ? { auth: { username, password } }
-        : {}),
+      ...(username && password ? { auth: { username, password } } : {}),
       // Retry configuration
       maxRetries: this.config.get('ELASTICSEARCH_MAX_RETRIES', 3),
       // Request timeout in milliseconds
@@ -41,8 +41,13 @@ export class ElasticsearchService implements OnModuleInit {
 
     // Check connection in background (non-blocking)
     this.checkConnection().catch((error) => {
-      this.logger.warn('⚠️ Elasticsearch connection failed during startup:', error.message);
-      this.logger.warn('⚠️ Search functionality will be limited until connection is established');
+      this.logger.warn(
+        '⚠️ Elasticsearch connection failed during startup:',
+        error.message,
+      );
+      this.logger.warn(
+        '⚠️ Search functionality will be limited until connection is established',
+      );
     });
   }
 
@@ -53,7 +58,10 @@ export class ElasticsearchService implements OnModuleInit {
       this.logger.log(`📊 Cluster status: ${health.status}`);
       this.logger.log(`🔢 Number of nodes: ${health.number_of_nodes}`);
     } catch (error) {
-      this.logger.error('❌ Elasticsearch connection check failed:', error.message);
+      this.logger.error(
+        '❌ Elasticsearch connection check failed:',
+        error.message,
+      );
       throw error;
     }
   }
@@ -78,10 +86,13 @@ export class ElasticsearchService implements OnModuleInit {
   /**
    * Create an index with mappings
    */
-  async createIndex(index: string, mapping: Record<string, any>): Promise<void> {
+  async createIndex(
+    index: string,
+    mapping: Record<string, any>,
+  ): Promise<void> {
     try {
       const exists = await this.client.indices.exists({ index });
-      
+
       if (!exists) {
         await this.client.indices.create({
           index,
@@ -117,19 +128,24 @@ export class ElasticsearchService implements OnModuleInit {
   /**
    * Bulk index multiple documents
    */
-  async bulkIndex(index: string, documents: Array<{ id: string; data: any }>): Promise<void> {
+  async bulkIndex(
+    index: string,
+    documents: Array<{ id: string; data: any }>,
+  ): Promise<void> {
     try {
-      const operations = documents.flatMap(doc => [
+      const operations = documents.flatMap((doc) => [
         { index: { _index: index, _id: doc.id } },
         doc.data,
       ]);
 
       const result = await this.client.bulk({ operations });
-      
+
       if (result.errors) {
         this.logger.warn(`⚠️ Bulk indexing had errors`);
       } else {
-        this.logger.log(`✅ Bulk indexed ${documents.length} documents in ${index}`);
+        this.logger.log(
+          `✅ Bulk indexed ${documents.length} documents in ${index}`,
+        );
       }
     } catch (error) {
       this.logger.error(`❌ Bulk indexing failed:`, error.message);
@@ -140,7 +156,11 @@ export class ElasticsearchService implements OnModuleInit {
   /**
    * Update a document
    */
-  async updateDocument(index: string, id: string, updates: Record<string, any>): Promise<void> {
+  async updateDocument(
+    index: string,
+    id: string,
+    updates: Record<string, any>,
+  ): Promise<void> {
     try {
       await this.client.update({
         index,

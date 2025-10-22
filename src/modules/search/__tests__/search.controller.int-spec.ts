@@ -26,7 +26,9 @@ describe('SearchController (Integration)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true }),
+    );
     await app.init();
     server = app.getHttpServer();
   });
@@ -88,7 +90,7 @@ describe('SearchController (Integration)', () => {
         .expect(201);
 
       expect(response.body.hits).toBeDefined();
-      
+
       // Verify all results are within price range
       response.body.hits.forEach((hit: any) => {
         if (hit.price) {
@@ -110,7 +112,7 @@ describe('SearchController (Integration)', () => {
         .expect(201);
 
       expect(response.body.hits).toBeDefined();
-      
+
       // Verify all results match category
       response.body.hits.forEach((hit: any) => {
         if (hit.category) {
@@ -131,7 +133,7 @@ describe('SearchController (Integration)', () => {
         .expect(201);
 
       expect(response.body.hits).toBeDefined();
-      
+
       // Verify all results meet minimum rating
       response.body.hits.forEach((hit: any) => {
         if (hit.rating) {
@@ -152,7 +154,7 @@ describe('SearchController (Integration)', () => {
         .expect(201);
 
       expect(response.body.hits).toBeDefined();
-      
+
       // Verify all results are in stock
       response.body.hits.forEach((hit: any) => {
         if (hit.stock !== undefined) {
@@ -177,7 +179,7 @@ describe('SearchController (Integration)', () => {
       expect(response.body.facets.priceRanges).toBeDefined();
       expect(response.body.facets.tags).toBeDefined();
       expect(response.body.facets.avgRating).toBeDefined();
-      
+
       expect(Array.isArray(response.body.facets.categories)).toBe(true);
       expect(Array.isArray(response.body.facets.priceRanges)).toBe(true);
       expect(Array.isArray(response.body.facets.tags)).toBe(true);
@@ -249,12 +251,12 @@ describe('SearchController (Integration)', () => {
 
       expect(page1Response.body.page).toBe(1);
       expect(page2Response.body.page).toBe(2);
-      
+
       // Ensure different results on different pages
       if (page1Response.body.total > 5) {
         const page1Ids = page1Response.body.hits.map((h: any) => h.id);
         const page2Ids = page2Response.body.hits.map((h: any) => h.id);
-        
+
         // No overlap between pages
         const overlap = page1Ids.filter((id: string) => page2Ids.includes(id));
         expect(overlap.length).toBe(0);
@@ -314,7 +316,7 @@ describe('SearchController (Integration)', () => {
 
       // Cached response should be faster
       expect(secondResponseTime).toBeLessThanOrEqual(firstResponseTime);
-      
+
       // Results should be identical
       expect(response2.body.total).toBe(response1.body.total);
     });
@@ -336,7 +338,7 @@ describe('SearchController (Integration)', () => {
           took: expect.any(Number),
         }),
       );
-      
+
       expect(response.body.suggestions.length).toBeLessThanOrEqual(5);
       expect(response.body.took).toBeLessThan(100); // Target: <100ms
     });
@@ -374,7 +376,7 @@ describe('SearchController (Integration)', () => {
 
       const suggestions = response.body.suggestions;
       const uniqueSuggestions = [...new Set(suggestions)];
-      
+
       expect(suggestions.length).toBe(uniqueSuggestions.length);
     });
   });
@@ -408,7 +410,7 @@ describe('SearchController (Integration)', () => {
         );
 
         expect(response.body.similar.length).toBeLessThanOrEqual(5);
-        
+
         // Ensure the original product is not in similar products
         const similarIds = response.body.similar.map((p: any) => p.id);
         expect(similarIds).not.toContain(productId);
@@ -461,7 +463,7 @@ describe('SearchController (Integration)', () => {
 
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeLessThanOrEqual(10);
-        
+
         if (response.body.length > 0) {
           expect(response.body[0]).toEqual(
             expect.objectContaining({
@@ -491,7 +493,7 @@ describe('SearchController (Integration)', () => {
 
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeLessThanOrEqual(20);
-        
+
         if (response.body.length > 0) {
           expect(response.body[0]).toEqual(
             expect.objectContaining({
@@ -513,7 +515,7 @@ describe('SearchController (Integration)', () => {
 
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeLessThanOrEqual(20);
-        
+
         if (response.body.length > 0) {
           expect(response.body[0]).toEqual(
             expect.objectContaining({
@@ -521,7 +523,7 @@ describe('SearchController (Integration)', () => {
               took: expect.any(Number),
             }),
           );
-          
+
           // Verify all slow queries exceed 500ms threshold
           expect(response.body[0].took).toBeGreaterThan(500);
         }
@@ -569,8 +571,8 @@ describe('SearchController (Integration)', () => {
         );
 
       const results = await Promise.all(promises);
-      
-      results.forEach(response => {
+
+      results.forEach((response) => {
         expect(response.status).toBe(201);
         expect(response.body).toHaveProperty('hits');
       });
@@ -590,12 +592,13 @@ describe('SearchController (Integration)', () => {
             limit: 10,
           })
           .expect(201);
-        
+
         responseTimes.push(Date.now() - start);
       }
 
-      const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
-      
+      const avgResponseTime =
+        responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+
       // Average response time should be reasonable
       expect(avgResponseTime).toBeLessThan(500); // 500ms threshold
     });

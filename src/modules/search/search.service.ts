@@ -45,7 +45,10 @@ export class SearchService {
         nodes: health.number_of_nodes,
       };
     } catch (error) {
-      this.logger.error('❌ Elasticsearch connection test failed:', error.message);
+      this.logger.error(
+        '❌ Elasticsearch connection test failed:',
+        error.message,
+      );
       throw error;
     }
   }
@@ -53,12 +56,18 @@ export class SearchService {
   /**
    * Advanced product search with filtering, sorting, and facets
    */
-  async searchProducts(dto: SearchProductsDto, userId?: string, ipAddress?: string): Promise<SearchResult> {
+  async searchProducts(
+    dto: SearchProductsDto,
+    userId?: string,
+    ipAddress?: string,
+  ): Promise<SearchResult> {
     const startTime = Date.now();
     const { query, page = 1, limit = 20, includeFacets } = dto;
     const from = (page - 1) * limit;
 
-    this.logger.log(`🔍 Searching products: "${query || 'all'}" (page ${page}, limit ${limit})`);
+    this.logger.log(
+      `🔍 Searching products: "${query || 'all'}" (page ${page}, limit ${limit})`,
+    );
 
     // Generate cache key
     const cacheKey = `search:products:${this.generateCacheKey(dto)}`;
@@ -90,11 +99,14 @@ export class SearchService {
       const result = await this.elasticsearch.getClient().search(searchParams);
 
       const took = Date.now() - startTime;
-      const total = typeof result.hits.total === 'number' 
-        ? result.hits.total 
-        : result.hits.total.value;
+      const total =
+        typeof result.hits.total === 'number'
+          ? result.hits.total
+          : result.hits.total.value;
 
-      this.logger.log(`✅ Search completed in ${took}ms (ES: ${result.took}ms) - ${total} results`);
+      this.logger.log(
+        `✅ Search completed in ${took}ms (ES: ${result.took}ms) - ${total} results`,
+      );
 
       const response: SearchResult = {
         hits: result.hits.hits.map((hit: any) => ({
@@ -117,7 +129,9 @@ export class SearchService {
       // Cache the results (non-blocking)
       this.cacheService
         .set(cacheKey, response, this.CACHE_TTL)
-        .catch((error) => this.logger.error(`Failed to cache search results: ${error.message}`));
+        .catch((error) =>
+          this.logger.error(`Failed to cache search results: ${error.message}`),
+        );
 
       // Log search analytics (non-blocking)
       this.analyticsService
@@ -131,7 +145,9 @@ export class SearchService {
           userId,
           ipAddress,
         })
-        .catch((error) => this.logger.error(`Failed to log search: ${error.message}`));
+        .catch((error) =>
+          this.logger.error(`Failed to log search: ${error.message}`),
+        );
 
       return response;
     } catch (error) {
@@ -197,16 +213,16 @@ export class SearchService {
                 },
               },
             ],
-            filter: [
-              { term: { status: 'active' } },
-            ],
+            filter: [{ term: { status: 'active' } }],
           },
         },
         _source: ['name', 'id', 'price', 'category'],
       });
 
       const took = Date.now() - startTime;
-      this.logger.log(`✅ Autocomplete completed in ${took}ms - ${result.hits.hits.length} suggestions`);
+      this.logger.log(
+        `✅ Autocomplete completed in ${took}ms - ${result.hits.hits.length} suggestions`,
+      );
 
       return result.hits.hits.map((hit: any) => ({
         id: hit._source.id,
@@ -248,9 +264,7 @@ export class SearchService {
                 },
               },
             ],
-            filter: [
-              { term: { status: 'active' } },
-            ],
+            filter: [{ term: { status: 'active' } }],
           },
         },
       });
@@ -272,7 +286,8 @@ export class SearchService {
    * Build Elasticsearch query from DTO
    */
   private buildQuery(dto: SearchProductsDto): any {
-    const { query, minPrice, maxPrice, categories, minRating, inStock, tags } = dto;
+    const { query, minPrice, maxPrice, categories, minRating, inStock, tags } =
+      dto;
 
     const mustClauses: any[] = [];
     const filterClauses: any[] = [
@@ -285,7 +300,7 @@ export class SearchService {
         multi_match: {
           query,
           fields: [
-            'name^3',        // Name is most important (boost 3x)
+            'name^3', // Name is most important (boost 3x)
             'description^2', // Description is second (boost 2x)
             'category',
             'tags',
