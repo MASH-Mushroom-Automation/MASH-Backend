@@ -15,10 +15,14 @@
  * import './tracing';
  */
 
+import { Logger } from '@nestjs/common';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+
+// Logger for tracing initialization
+const logger = new Logger('OpenTelemetry');
 
 // Configuration from environment variables
 const OTEL_ENABLED = process.env.OTEL_ENABLED === 'true';
@@ -30,11 +34,11 @@ const OTEL_ENVIRONMENT = process.env.NODE_ENV || 'development';
 
 // Only initialize if explicitly enabled
 if (!OTEL_ENABLED) {
-  console.log(
+  logger.warn(
     '⚠️  OpenTelemetry tracing is DISABLED. Set OTEL_ENABLED=true to enable.',
   );
 } else {
-  console.log('🔍 Initializing OpenTelemetry tracing...');
+  logger.log('🔍 Initializing OpenTelemetry tracing...');
 
   // Create OTLP trace exporter
   const traceExporter = new OTLPTraceExporter({
@@ -77,13 +81,13 @@ if (!OTEL_ENABLED) {
   // Start the SDK
   try {
     sdk.start();
-    console.log('✅ OpenTelemetry tracing initialized successfully');
-    console.log(`   Service: ${OTEL_SERVICE_NAME}`);
-    console.log(`   Version: ${OTEL_SERVICE_VERSION}`);
-    console.log(`   Environment: ${OTEL_ENVIRONMENT}`);
-    console.log(`   Exporter: ${OTEL_EXPORTER_OTLP_ENDPOINT}`);
+    logger.log('✅ OpenTelemetry tracing initialized successfully');
+    logger.log(`   Service: ${OTEL_SERVICE_NAME}`);
+    logger.log(`   Version: ${OTEL_SERVICE_VERSION}`);
+    logger.log(`   Environment: ${OTEL_ENVIRONMENT}`);
+    logger.log(`   Exporter: ${OTEL_EXPORTER_OTLP_ENDPOINT}`);
   } catch (error) {
-    console.error('❌ Failed to initialize OpenTelemetry:', error);
+    logger.error('❌ Failed to initialize OpenTelemetry:', error);
   }
 
   // Graceful shutdown
@@ -91,8 +95,8 @@ if (!OTEL_ENABLED) {
     sdk
       .shutdown()
       .then(
-        () => console.log('🔍 OpenTelemetry tracing shut down successfully'),
-        (err) => console.error('❌ Error shutting down OpenTelemetry:', err),
+        () => logger.log('🔍 OpenTelemetry tracing shut down successfully'),
+        (err) => logger.error('❌ Error shutting down OpenTelemetry:', err),
       )
       .finally(() => process.exit(0));
   });

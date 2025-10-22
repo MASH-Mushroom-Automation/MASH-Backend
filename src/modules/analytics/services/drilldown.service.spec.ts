@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
 import { DrillDownService } from './drilldown.service';
 import { PrismaService } from '../../../database/prisma.service';
@@ -41,7 +42,11 @@ describe('DrillDownService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CacheService, useValue: mockCacheService },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     service = module.get<DrillDownService>(DrillDownService);
     prismaService = module.get<PrismaService>(PrismaService);

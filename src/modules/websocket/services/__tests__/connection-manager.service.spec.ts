@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { ConnectionManagerService } from '../connection-manager.service';
 import type { AuthenticatedSocket } from '../../interfaces/authenticated-socket.interface';
 
@@ -33,11 +34,11 @@ describe('ConnectionManagerService', () => {
       } as any,
       rooms: new Set<string>(),
       join: jest.fn((room: string) => {
-        mockSocket.rooms!.add(room);
+        mockSocket.rooms.add(room);
         return mockSocket as any;
       }),
       leave: jest.fn((room: string) => {
-        mockSocket.rooms!.delete(room);
+        mockSocket.rooms.delete(room);
         return mockSocket as any;
       }),
       emit: jest.fn(),
@@ -52,7 +53,9 @@ describe('ConnectionManagerService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [ConnectionManagerService],
-    }).compile();
+    })
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+      .compile();
 
     service = module.get<ConnectionManagerService>(ConnectionManagerService);
   });
@@ -253,7 +256,7 @@ describe('ConnectionManagerService', () => {
       const updatedInfo = service.getConnectionInfo('socket-1');
       const updatedTime = updatedInfo?.lastActivity.getTime();
 
-      expect(updatedTime).toBeGreaterThan(initialTime!);
+      expect(updatedTime).toBeGreaterThan(initialTime);
     });
 
     it('should handle updating non-existent connection gracefully', () => {

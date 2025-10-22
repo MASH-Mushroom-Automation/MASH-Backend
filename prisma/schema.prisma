@@ -1,52 +1,56 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  clerkId             String               @unique
-  email               String               @unique
-  username            String?              @unique
-  firstName           String?
-  lastName            String?
-  imageUrl            String?
-  phoneNumber         String?
-  role                UserRole             @default(USER)
-  isActive            Boolean              @default(true)
-  preferences         Json?                // User preferences (theme, language, timezone, notifications)
-  twoFactorSecret     String?              // TOTP secret (base32 encoded)
-  twoFactorEnabled    Boolean              @default(false) // Whether 2FA is enabled
-  twoFactorBackupCodes String[]            @default([]) // Hashed backup codes
-  lastLoginAt         DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  addresses           Address[]
-  apiKeys             ApiKey[]
-  devices             Device[]
-  userNotifications   UserNotification[]   @relation("UserNotifications")
-  orders              Order[]
-  payments            Payment[]
-  sensorData          SensorData[]
-  sessions            Session[]
-  userRoleAssignments UserRoleAssignment[]
-  
+  id                   String               @id @default(cuid())
+  clerkId              String               @unique
+  email                String               @unique
+  username             String?              @unique
+  firstName            String?
+  lastName             String?
+  imageUrl             String?
+  phoneNumber          String?
+  role                 UserRole             @default(USER)
+  isActive             Boolean              @default(true)
+  preferences          Json? // User preferences (theme, language, timezone, notifications)
+  twoFactorSecret      String? // TOTP secret (base32 encoded)
+  twoFactorEnabled     Boolean              @default(false) // Whether 2FA is enabled
+  twoFactorBackupCodes String[]             @default([]) // Hashed backup codes
+  lastLoginAt          DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  addresses            Address[]
+  apiKeys              ApiKey[]
+  devices              Device[]
+  userNotifications    UserNotification[]   @relation("UserNotifications")
+  orders               Order[]
+  payments             Payment[]
+  sensorData           SensorData[]
+  sessions             Session[]
+  userRoleAssignments  UserRoleAssignment[]
+
   // Alert System Relations
-  alertRulesCreated         AlertRule[]              @relation("AlertRuleCreator")
-  alertRulesUpdated         AlertRule[]              @relation("AlertRuleUpdater")
-  alertRecipients           AlertRuleRecipient[]     @relation("AlertRecipient")
-  alertAcknowledgments      AlertAcknowledgment[]    @relation("AlertAcknowledgmentUser")
-  notificationTemplates     NotificationTemplate[]   @relation("NotificationTemplateCreator")
-  alertNotifications        Notification[]
+  alertRulesCreated     AlertRule[]            @relation("AlertRuleCreator")
+  alertRulesUpdated     AlertRule[]            @relation("AlertRuleUpdater")
+  alertRecipients       AlertRuleRecipient[]   @relation("AlertRecipient")
+  alertAcknowledgments  AlertAcknowledgment[]  @relation("AlertAcknowledgmentUser")
+  notificationTemplates NotificationTemplate[] @relation("NotificationTemplateCreator")
+  alertNotifications    Notification[]
 
   // Performance Indexes for analytics queries
   @@index([createdAt])
   @@index([isActive, role])
   @@index([lastLoginAt])
+  @@index([email, isActive]) // Email lookup with active filter (Neon optimization)
   @@map("users")
 }
 
@@ -81,7 +85,7 @@ model Device {
 }
 
 model Sensor {
-  id          String       @id @default(cuid())
+  id          String        @id @default(cuid())
   deviceId    String
   type        String
   name        String
@@ -89,12 +93,12 @@ model Sensor {
   minValue    Float?
   maxValue    Float?
   calibration Json?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   alerts      SensorAlert[]
   sensorData  SensorData[]
-  device      Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  device      Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@map("sensors")
 }
@@ -171,6 +175,8 @@ model Product {
   attributes     Json?
   isActive       Boolean     @default(true)
   isFeatured     Boolean     @default(false)
+  isDeleted      Boolean     @default(false) // Soft delete for archived products
+  deletedAt      DateTime? // When product was archived
   seoTitle       String?
   seoDescription String?
   createdAt      DateTime    @default(now())
@@ -182,6 +188,7 @@ model Product {
   @@index([slug, isActive])
   @@index([stock, minStock])
   @@index([createdAt])
+  @@index([isDeleted, isActive]) // Soft delete filtering (Neon optimization)
   @@map("products")
 }
 
@@ -296,6 +303,10 @@ model Payment {
   order           Order?        @relation(fields: [orderId], references: [id])
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Payment history index (Neon optimization)
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([transactionId])
   @@map("payments")
 }
 
@@ -554,103 +565,104 @@ enum NotificationType {
 
 // Alert Categories
 enum AlertCategory {
-  SYSTEM        // System-level alerts (CPU, memory, disk)
-  SECURITY      // Security-related alerts (unauthorized access, suspicious activity)
-  BUSINESS      // Business logic alerts (low inventory, high sales)
-  USER          // User-related alerts (account activity)
-  SENSOR        // IoT sensor alerts (temperature, humidity)
-  ORDER         // Order-related alerts (order delays, cancellations)
-  PAYMENT       // Payment-related alerts (failed payments, refunds)
+  SYSTEM // System-level alerts (CPU, memory, disk)
+  SECURITY // Security-related alerts (unauthorized access, suspicious activity)
+  BUSINESS // Business logic alerts (low inventory, high sales)
+  USER // User-related alerts (account activity)
+  SENSOR // IoT sensor alerts (temperature, humidity)
+  ORDER // Order-related alerts (order delays, cancellations)
+  PAYMENT // Payment-related alerts (failed payments, refunds)
 }
 
 // Alert Priority Levels
 enum AlertPriority {
-  CRITICAL      // Requires immediate action
-  HIGH          // Requires prompt attention
-  MEDIUM        // Should be addressed soon
-  LOW           // Can be addressed when convenient
+  CRITICAL // Requires immediate action
+  HIGH // Requires prompt attention
+  MEDIUM // Should be addressed soon
+  LOW // Can be addressed when convenient
 }
 
 // Alert Status
 enum AlertStatus {
-  PENDING       // Alert created, waiting to be sent
-  SENT          // Notifications sent
-  ACKNOWLEDGED  // User acknowledged the alert
-  RESOLVED      // Issue resolved
-  ESCALATED     // Alert escalated to higher level
-  SNOOZED       // Temporarily muted
-  CANCELLED     // Alert cancelled
+  PENDING // Alert created, waiting to be sent
+  SENT // Notifications sent
+  ACKNOWLEDGED // User acknowledged the alert
+  RESOLVED // Issue resolved
+  ESCALATED // Alert escalated to higher level
+  SNOOZED // Temporarily muted
+  CANCELLED // Alert cancelled
 }
 
 // Notification Channel Types
 enum NotificationChannel {
-  EMAIL         // Email notification
-  SMS           // SMS notification
-  PUSH          // Push notification (Firebase, OneSignal)
-  IN_APP        // In-app notification
-  WEBHOOK       // Webhook callback
+  EMAIL // Email notification
+  SMS // SMS notification
+  PUSH // Push notification (Firebase, OneSignal)
+  IN_APP // In-app notification
+  WEBHOOK // Webhook callback
 }
 
 // Notification Status
 enum NotificationStatus {
-  PENDING       // Queued, not sent yet
-  QUEUED        // In processing queue
-  SENDING       // Currently being sent
-  SENT          // Successfully sent
-  DELIVERED     // Confirmed delivery (webhook callback)
-  FAILED        // Failed to send
-  BOUNCED       // Email bounced
-  RETRYING      // Retrying after failure
-  CANCELLED     // Cancelled before sending
+  PENDING // Queued, not sent yet
+  QUEUED // In processing queue
+  SENDING // Currently being sent
+  SENT // Successfully sent
+  DELIVERED // Confirmed delivery (webhook callback)
+  FAILED // Failed to send
+  BOUNCED // Email bounced
+  RETRYING // Retrying after failure
+  CANCELLED // Cancelled before sending
 }
 
 // Recipient Types for Alert Rules
 enum RecipientType {
-  USER          // Specific user by ID
-  ROLE          // All users with a specific role
-  EMAIL         // Direct email address
-  PHONE         // Direct phone number
+  USER // Specific user by ID
+  ROLE // All users with a specific role
+  EMAIL // Direct email address
+  PHONE // Direct phone number
 }
 
 // Acknowledgment Actions
 enum AcknowledgmentAction {
-  ACKNOWLEDGED  // User acknowledged the alert
-  RESOLVED      // User marked as resolved
-  ESCALATED     // User escalated the alert
-  SNOOZED       // User snoozed the alert
-  COMMENTED     // User added a comment
-  CANCELLED     // User cancelled the alert
+  ACKNOWLEDGED // User acknowledged the alert
+  RESOLVED // User marked as resolved
+  ESCALATED // User escalated the alert
+  SNOOZED // User snoozed the alert
+  COMMENTED // User added a comment
+  CANCELLED // User cancelled the alert
 }
 
 // ============================================
 // 1. ALERT RULES - Define when alerts trigger
 // ============================================
 model AlertRule {
-  id                String                 @id @default(uuid())
-  name              String                 // Rule name (e.g., "High Temperature Alert")
-  description       String?                // Detailed description
-  category          AlertCategory          // Alert category
-  priority          AlertPriority          // Alert priority
-  eventType         String                 // Event type to monitor (e.g., "sensor.temperature")
-  condition         Json                   // Condition to evaluate { operator: "GT", threshold: 30, field: "value" }
-  activeHours       Json?                  // Active time window { start: "09:00", end: "17:00", days: [1,2,3,4,5] }
-  cooldownMinutes   Int                    @default(15) // Cooldown period between alerts
-  isActive          Boolean                @default(true)
-  isDeleted         Boolean                @default(false)
-  createdBy         String                 // User who created the rule
-  updatedBy         String?                // User who last updated
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  
+  id              String        @id @default(uuid())
+  name            String // Rule name (e.g., "High Temperature Alert")
+  description     String? // Detailed description
+  category        AlertCategory // Alert category
+  priority        AlertPriority // Alert priority
+  eventType       String // Event type to monitor (e.g., "sensor.temperature")
+  condition       Json // Condition to evaluate { operator: "GT", threshold: 30, field: "value" }
+  activeHours     Json? // Active time window { start: "09:00", end: "17:00", days: [1,2,3,4,5] }
+  cooldownMinutes Int           @default(15) // Cooldown period between alerts
+  isActive        Boolean       @default(true)
+  isDeleted       Boolean       @default(false)
+  createdBy       String // User who created the rule
+  updatedBy       String? // User who last updated
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
   // Relations
-  creator           User                   @relation("AlertRuleCreator", fields: [createdBy], references: [id])
-  updater           User?                  @relation("AlertRuleUpdater", fields: [updatedBy], references: [id])
-  recipients        AlertRuleRecipient[]
-  alerts            Alert[]
-  
+  creator    User                 @relation("AlertRuleCreator", fields: [createdBy], references: [id])
+  updater    User?                @relation("AlertRuleUpdater", fields: [updatedBy], references: [id])
+  recipients AlertRuleRecipient[]
+  alerts     Alert[]
+
   @@index([eventType])
   @@index([isActive])
   @@index([category, priority])
+  @@index([createdBy]) // User's created rules (Neon optimization)
   @@map("alert_rules")
 }
 
@@ -658,27 +670,27 @@ model AlertRule {
 // 2. ALERT RULE RECIPIENTS - Who receives alerts
 // ============================================
 model AlertRuleRecipient {
-  id              String         @id @default(uuid())
-  ruleId          String         // Alert rule
-  recipientType   RecipientType  // Type of recipient
-  recipientId     String?        // User ID (if USER type)
-  role            String?        // Role name (if ROLE type)
-  email           String?        // Email address (if EMAIL type)
-  phone           String?        // Phone number (if PHONE type)
-  
+  id            String        @id @default(uuid())
+  ruleId        String // Alert rule
+  recipientType RecipientType // Type of recipient
+  recipientId   String? // User ID (if USER type)
+  role          String? // Role name (if ROLE type)
+  email         String? // Email address (if EMAIL type)
+  phone         String? // Phone number (if PHONE type)
+
   // Channel preferences
-  enableEmail     Boolean        @default(true)
-  enableSms       Boolean        @default(false)
-  enablePush      Boolean        @default(true)
-  enableInApp     Boolean        @default(true)
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
+  enableEmail Boolean @default(true)
+  enableSms   Boolean @default(false)
+  enablePush  Boolean @default(true)
+  enableInApp Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  rule            AlertRule      @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  user            User?          @relation("AlertRecipient", fields: [recipientId], references: [id])
-  
+  rule AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  user User?     @relation("AlertRecipient", fields: [recipientId], references: [id])
+
   @@index([ruleId])
   @@index([recipientId])
   @@map("alert_rule_recipients")
@@ -688,46 +700,46 @@ model AlertRuleRecipient {
 // 3. ALERTS - Alert instances when rules trigger
 // ============================================
 model Alert {
-  id                String                  @id @default(uuid())
-  ruleId            String                  // Alert rule that triggered this
-  title             String                  // Alert title
-  message           String                  // Alert message
-  category          AlertCategory           // Alert category
-  priority          AlertPriority           // Alert priority
-  severity          Int                     @default(5) // Severity score (1-10)
-  status            AlertStatus             @default(PENDING)
-  
+  id       String        @id @default(uuid())
+  ruleId   String // Alert rule that triggered this
+  title    String // Alert title
+  message  String // Alert message
+  category AlertCategory // Alert category
+  priority AlertPriority // Alert priority
+  severity Int           @default(5) // Severity score (1-10)
+  status   AlertStatus   @default(PENDING)
+
   // Event Information
-  eventType         String                  // Event type (e.g., "sensor.temperature")
-  eventId           String?                 // Original event ID
-  eventData         Json?                   // Event data snapshot
-  
+  eventType String // Event type (e.g., "sensor.temperature")
+  eventId   String? // Original event ID
+  eventData Json? // Event data snapshot
+
   // Deduplication & Grouping
-  fingerprint       String                  // Unique fingerprint for deduplication
-  groupKey          String?                 // Group similar alerts together
-  occurrenceCount   Int                     @default(1) // Number of times this alert occurred
-  firstOccurrence   DateTime                @default(now())
-  lastOccurrence    DateTime                @default(now())
-  
+  fingerprint     String // Unique fingerprint for deduplication
+  groupKey        String? // Group similar alerts together
+  occurrenceCount Int      @default(1) // Number of times this alert occurred
+  firstOccurrence DateTime @default(now())
+  lastOccurrence  DateTime @default(now())
+
   // Timing
-  triggeredAt       DateTime                @default(now())
-  acknowledgedAt    DateTime?
-  resolvedAt        DateTime?
-  escalatedAt       DateTime?
-  snoozedUntil      DateTime?
-  
+  triggeredAt    DateTime  @default(now())
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  escalatedAt    DateTime?
+  snoozedUntil   DateTime?
+
   // Metadata
-  metadata          Json?                   // Additional metadata
-  tags              String[]                @default([]) // Tags for filtering
-  
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  
+  metadata Json? // Additional metadata
+  tags     String[] @default([]) // Tags for filtering
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  rule              AlertRule               @relation(fields: [ruleId], references: [id])
-  notifications     Notification[]          @relation("AlertNotifications")
-  acknowledgments   AlertAcknowledgment[]
-  
+  rule            AlertRule             @relation(fields: [ruleId], references: [id])
+  notifications   Notification[]        @relation("AlertNotifications")
+  acknowledgments AlertAcknowledgment[]
+
   @@index([ruleId])
   @@index([status])
   @@index([priority])
@@ -741,51 +753,51 @@ model Alert {
 // 4. NOTIFICATIONS - Notification delivery records
 // ============================================
 model Notification {
-  id                String               @id @default(uuid())
-  alertId           String?              // Alert that triggered this notification
-  userId            String?              // User receiving notification (for in-app)
-  channel           NotificationChannel  // Delivery channel
-  status            NotificationStatus   @default(PENDING)
-  
+  id      String              @id @default(uuid())
+  alertId String? // Alert that triggered this notification
+  userId  String? // User receiving notification (for in-app)
+  channel NotificationChannel // Delivery channel
+  status  NotificationStatus  @default(PENDING)
+
   // Recipient Information
-  recipientEmail    String?              // Email recipient
-  recipientPhone    String?              // Phone recipient
-  recipientId       String?              // User ID recipient
-  
+  recipientEmail String? // Email recipient
+  recipientPhone String? // Phone recipient
+  recipientId    String? // User ID recipient
+
   // Content
-  subject           String?              // Email subject / Push title
-  body              String               // Message body
-  templateId        String?              // Template used (if any)
-  
+  subject    String? // Email subject / Push title
+  body       String // Message body
+  templateId String? // Template used (if any)
+
   // Delivery Tracking
-  queuedAt          DateTime?            // When added to queue
-  sentAt            DateTime?            // When sent
-  deliveredAt       DateTime?            // When delivered (webhook confirmation)
-  failedAt          DateTime?            // When failed
-  
+  queuedAt    DateTime? // When added to queue
+  sentAt      DateTime? // When sent
+  deliveredAt DateTime? // When delivered (webhook confirmation)
+  failedAt    DateTime? // When failed
+
   // Retry Logic
-  retryCount        Int                  @default(0)
-  maxRetries        Int                  @default(3)
-  nextRetryAt       DateTime?            // When to retry next
-  
+  retryCount  Int       @default(0)
+  maxRetries  Int       @default(3)
+  nextRetryAt DateTime? // When to retry next
+
   // Provider Details
-  provider          String?              // Provider used (SendGrid, Twilio, Firebase)
-  providerMessageId String?              // External message ID
-  providerResponse  Json?                // Provider response data
-  errorMessage      String?              // Error message if failed
-  
+  provider          String? // Provider used (SendGrid, Twilio, Firebase)
+  providerMessageId String? // External message ID
+  providerResponse  Json? // Provider response data
+  errorMessage      String? // Error message if failed
+
   // Metadata
-  metadata          Json?                // Additional metadata
-  priority          Int                  @default(5) // Priority for queue processing
-  
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  
+  metadata Json? // Additional metadata
+  priority Int   @default(5) // Priority for queue processing
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  alert             Alert?               @relation("AlertNotifications", fields: [alertId], references: [id])
-  user              User?                @relation(fields: [userId], references: [id])
-  template          NotificationTemplate? @relation(fields: [templateId], references: [id])
-  
+  alert    Alert?                @relation("AlertNotifications", fields: [alertId], references: [id])
+  user     User?                 @relation(fields: [userId], references: [id])
+  template NotificationTemplate? @relation(fields: [templateId], references: [id])
+
   @@index([alertId])
   @@index([userId])
   @@index([status])
@@ -803,18 +815,18 @@ model Notification {
 // 5. ALERT ACKNOWLEDGMENTS - Alert action history
 // ============================================
 model AlertAcknowledgment {
-  id          String                @id @default(uuid())
-  alertId     String                // Alert being acknowledged
-  userId      String                // User taking action
-  action      AcknowledgmentAction  // Action taken
-  comment     String?               // Optional comment
-  metadata    Json?                 // Additional metadata
-  createdAt   DateTime              @default(now())
-  
+  id        String               @id @default(uuid())
+  alertId   String // Alert being acknowledged
+  userId    String // User taking action
+  action    AcknowledgmentAction // Action taken
+  comment   String? // Optional comment
+  metadata  Json? // Additional metadata
+  createdAt DateTime             @default(now())
+
   // Relations
-  alert       Alert                 @relation(fields: [alertId], references: [id], onDelete: Cascade)
-  user        User                  @relation("AlertAcknowledgmentUser", fields: [userId], references: [id])
-  
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  user  User  @relation("AlertAcknowledgmentUser", fields: [userId], references: [id])
+
   @@index([alertId])
   @@index([userId])
   @@map("alert_acknowledgments")
@@ -824,23 +836,23 @@ model AlertAcknowledgment {
 // 6. NOTIFICATION TEMPLATES - Reusable templates
 // ============================================
 model NotificationTemplate {
-  id            String              @id @default(uuid())
-  name          String              @unique // Template identifier
-  description   String?             // Template description
-  category      AlertCategory       // Category this template is for
-  channel       NotificationChannel // Channel type
-  subject       String?             // Email subject / Push title template
-  body          String              // Message body template (supports variables {{var}})
-  variables     Json?               // Expected variables { "sensorName": "Sensor name", "temperature": "Current temp" }
-  isActive      Boolean             @default(true)
-  createdBy     String              // User who created
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  
+  id          String              @id @default(uuid())
+  name        String              @unique // Template identifier
+  description String? // Template description
+  category    AlertCategory // Category this template is for
+  channel     NotificationChannel // Channel type
+  subject     String? // Email subject / Push title template
+  body        String // Message body template (supports variables {{var}})
+  variables   Json? // Expected variables { "sensorName": "Sensor name", "temperature": "Current temp" }
+  isActive    Boolean             @default(true)
+  createdBy   String // User who created
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
   // Relations
-  creator       User                @relation("NotificationTemplateCreator", fields: [createdBy], references: [id])
+  creator       User           @relation("NotificationTemplateCreator", fields: [createdBy], references: [id])
   notifications Notification[]
-  
+
   @@index([name])
   @@index([category, channel])
   @@map("notification_templates")
@@ -850,17 +862,17 @@ model NotificationTemplate {
 // 7. ALERT ESCALATION POLICIES - Auto-escalation rules
 // ============================================
 model AlertEscalationPolicy {
-  id                  String          @id @default(uuid())
-  name                String          // Policy name
-  description         String?         // Policy description
-  priority            AlertPriority[] // Alert priorities this applies to
-  category            AlertCategory[] // Alert categories this applies to
-  unacknowledgedMin   Int             @default(30) // Minutes before escalation
-  steps               Json            // Escalation steps [{ level: 1, delay: 15, recipients: [...], channels: [...] }]
-  isActive            Boolean         @default(true)
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  
+  id                String          @id @default(uuid())
+  name              String // Policy name
+  description       String? // Policy description
+  priority          AlertPriority[] // Alert priorities this applies to
+  category          AlertCategory[] // Alert categories this applies to
+  unacknowledgedMin Int             @default(30) // Minutes before escalation
+  steps             Json // Escalation steps [{ level: 1, delay: 15, recipients: [...], channels: [...] }]
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
   @@index([isActive])
   @@map("alert_escalation_policies")
 }
@@ -879,21 +891,21 @@ model AlertEscalationPolicy {
 // 8. ANALYTICS & REPORTING MODELS
 // ============================================
 model Report {
-  id              String              @id @default(uuid())
-  name            String              // Report name
-  description     String?             // Report description
-  type            ReportType          // Report type (sales, users, products, etc.)
-  configuration   Json                // Report configuration (filters, grouping, etc.)
-  schedule        Json?               // Schedule configuration for automated reports
-  isActive        Boolean             @default(true)
-  createdBy       String              // User who created the report
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  id            String     @id @default(uuid())
+  name          String // Report name
+  description   String? // Report description
+  type          ReportType // Report type (sales, users, products, etc.)
+  configuration Json // Report configuration (filters, grouping, etc.)
+  schedule      Json? // Schedule configuration for automated reports
+  isActive      Boolean    @default(true)
+  createdBy     String // User who created the report
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
   // Relations
-  executions      ReportExecution[]
-  subscriptions   ReportSubscription[]
-  
+  executions    ReportExecution[]
+  subscriptions ReportSubscription[]
+
   @@index([type])
   @@index([createdBy])
   @@index([isActive, type])
@@ -901,20 +913,20 @@ model Report {
 }
 
 model ReportExecution {
-  id              String            @id @default(uuid())
-  reportId        String            // Report being executed
-  status          ExecutionStatus   @default(PENDING)
-  startedAt       DateTime          @default(now())
-  completedAt     DateTime?         // When execution completed
-  duration        Int?              // Execution time in milliseconds
-  resultData      Json?             // Execution result data
-  resultUrl       String?           // URL to exported file (if applicable)
-  errorMessage    String?           // Error message if failed
-  executedBy      String?           // User who triggered (null for scheduled)
-  
+  id           String          @id @default(uuid())
+  reportId     String // Report being executed
+  status       ExecutionStatus @default(PENDING)
+  startedAt    DateTime        @default(now())
+  completedAt  DateTime? // When execution completed
+  duration     Int? // Execution time in milliseconds
+  resultData   Json? // Execution result data
+  resultUrl    String? // URL to exported file (if applicable)
+  errorMessage String? // Error message if failed
+  executedBy   String? // User who triggered (null for scheduled)
+
   // Relations
-  report          Report            @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
   @@index([reportId])
   @@index([status])
   @@index([startedAt])
@@ -923,19 +935,19 @@ model ReportExecution {
 }
 
 model ReportSubscription {
-  id              String              @id @default(uuid())
-  reportId        String              // Report being subscribed to
-  userId          String              // Subscriber user
-  channel         NotificationChannel // Delivery channel
-  frequency       SubscriptionFrequency // How often to receive
-  isActive        Boolean             @default(true)
-  lastSentAt      DateTime?           // Last time report was sent
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  id         String                @id @default(uuid())
+  reportId   String // Report being subscribed to
+  userId     String // Subscriber user
+  channel    NotificationChannel // Delivery channel
+  frequency  SubscriptionFrequency // How often to receive
+  isActive   Boolean               @default(true)
+  lastSentAt DateTime? // Last time report was sent
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
   // Relations
-  report          Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
   @@unique([reportId, userId, channel])
   @@index([reportId])
   @@index([userId])
@@ -969,4 +981,32 @@ enum SubscriptionFrequency {
   WEEKLY
   MONTHLY
   REAL_TIME
+}
+
+// ============================================
+// SEARCH ANALYTICS
+// ============================================
+
+model SearchLog {
+  id            String   @id @default(cuid())
+  query         String // The search query string
+  index         String // Which index was searched (products, orders, etc.)
+  resultsCount  Int // Number of results returned
+  took          Int // Query time in milliseconds
+  filters       Json? // Applied filters (price, category, etc.)
+  sort          Json? // Sort configuration
+  userId        String? // User ID if authenticated search
+  ipAddress     String? // IP address for rate limiting/analytics
+  userAgent     String? // Browser/client info
+  clickedResult String? // Product ID if user clicked a result
+  isSlowQuery   Boolean  @default(false) // Flag for queries >500ms
+  createdAt     DateTime @default(now())
+
+  // Indexes for analytics queries
+  @@index([query]) // Popular searches
+  @@index([createdAt]) // Time-based analytics
+  @@index([isSlowQuery, took]) // Slow query analysis
+  @@index([userId, createdAt]) // User search history
+  @@index([index, createdAt]) // Index-specific analytics
+  @@map("search_logs")
 }

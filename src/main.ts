@@ -21,18 +21,27 @@ import { getCompressionConfig } from './config/compression.config';
 import { getCorsConfig } from './config/cors.config';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { AuditLogService } from './common/services/audit-log.service';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+  logger.log('🚀 Bootstrap function started');
 
+  logger.log('🔧 Stage 1: Creating NestJS application...');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
   });
+  logger.log('✅ Stage 1 complete: Application created');
 
+  logger.log('🔧 Stage 2: Setting up custom logger...');
   // Use CustomLogger from CommonModule
   const customLogger = app.get(CustomLogger);
   app.useLogger(customLogger);
+  logger.log('✅ Stage 2 complete: Logger configured');
 
   // Apply global middleware (order matters!)
   const correlationIdMiddleware = new CorrelationIdMiddleware();
@@ -74,23 +83,39 @@ async function bootstrap() {
     prefix: '/public/',
   });
 
+  logger.log('🔧 Stage 3: Applying security middleware...');
   // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
 
+  logger.log('🔧 Stage 4: Applying compression...');
   // Compression middleware - Optimized response compression with threshold and filtering
   app.use(compression(getCompressionConfig(nodeEnv)));
 
+  logger.log('🔧 Stage 5: Enabling CORS...');
   // CORS configuration - Cross-origin resource sharing
   const corsOrigins = configService.get<string>('CORS_ORIGINS');
   const corsCredentials = configService.get<boolean>('CORS_CREDENTIALS', true);
   app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
 
+  logger.log('🔧 Stage 6: Setting up audit logging...');
   // Audit logging interceptor - Track sensitive operations
   const reflector = app.get(Reflector);
   const auditLogService = app.get(AuditLogService);
   app.useGlobalInterceptors(
     new AuditLogInterceptor(reflector, auditLogService),
   );
+
+  logger.log('🔧 Stage 7: Applying global exception filters...');
+  // ==================== GLOBAL EXCEPTION FILTERS ====================
+  // Apply exception filters in order of specificity (most specific first)
+  // Order matters: Specific exceptions should be caught before generic ones
+  app.useGlobalFilters(
+    new PrismaExceptionFilter(), // Catch Prisma database errors
+    new ValidationExceptionFilter(), // Catch validation errors
+    new HttpExceptionFilter(), // Catch HTTP exceptions
+    new AllExceptionsFilter(), // Catch all other exceptions (fallback)
+  );
+  logger.log('✅ Global exception filters applied successfully');
 
   // Note: Global validation pipes are registered in CommonModule
 
@@ -112,7 +137,7 @@ async function bootstrap() {
     .setDescription(
       `# Mushroom Automation with Smart Hydro-environment Backend API
 
-**Production URL**: https://mash-backend.onrender.com
+**Production URL**: https://mash-backend-api.up.railway.app
 
 ## Overview
 
@@ -230,8 +255,11 @@ All protected endpoints require a Bearer token in the Authorization header.
       },
       'access-token',
     )
+    .addServer(
+      'https://mash-backend-api.up.railway.app',
+      'Production Server (Railway)',
+    )
     .addServer(`http://localhost:${port}`, 'Development Server')
-    .addServer('https://mash-backend.onrender.com', 'Production Server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
@@ -246,17 +274,24 @@ All protected endpoints require a Bearer token in the Authorization header.
       persistAuthorization: true,
       displayRequestDuration: true,
       filter: true,
+      tryItOutEnabled: true,
+      // Use the current page's origin as the default server
+      url: undefined, // Let Swagger auto-detect from document servers
     },
   });
 
   logger.log(`Swagger API Documentation: http://localhost:${port}/api/docs`);
 
+  logger.log('🔧 Stage 8: Enabling graceful shutdown...');
   // Graceful shutdown
   app.enableShutdownHooks();
+  logger.log('✅ Stage 8 complete: Shutdown hooks enabled');
 
+  logger.log(`🔧 Stage 9: Binding to port ${port} on 0.0.0.0...`);
   // Bind to 0.0.0.0 to accept connections from any network interface
   // This is required for cloud platforms like Render, Railway, etc.
   await app.listen(port, '0.0.0.0');
+  logger.log(`✅ Stage 9 complete: Server listening on port ${port}`);
 
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Environment: ${nodeEnv}`);
@@ -264,11 +299,13 @@ All protected endpoints require a Bearer token in the Authorization header.
 }
 
 bootstrap().catch((error) => {
-  console.error('❌ FATAL ERROR DURING BOOTSTRAP:');
-  console.error('Error type:', typeof error);
-  console.error('Error:', error);
-  console.error('Stack:', error?.stack);
-  console.error('Message:', error?.message);
-  Logger.error('Error starting application', error, 'Bootstrap');
+  const logger = new Logger('Bootstrap');
+  logger.error('❌ FATAL ERROR DURING BOOTSTRAP:');
+  logger.error(`Error type: ${typeof error}`);
+  logger.error('Error:', error);
+  if (error instanceof Error) {
+    logger.error(`Stack: ${error.stack}`);
+    logger.error(`Message: ${error.message}`);
+  }
   process.exit(1);
 });

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { CacheWarmerService } from './cache-warmer.service';
 import { AnalyticsService } from '../analytics.service';
 import { ConfigService } from '@nestjs/config';
@@ -38,7 +39,11 @@ describe('CacheWarmerService', () => {
           useValue: mockConfigService,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     service = module.get<CacheWarmerService>(CacheWarmerService);
     analyticsService = module.get(AnalyticsService);

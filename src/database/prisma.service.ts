@@ -16,6 +16,7 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
   private isConnected = false;
   private readonly queryTimeoutMs: number; // Query timeout in milliseconds
+  private readonly startupTime = Date.now(); // Track startup time to suppress cache warming warnings
 
   // Query performance tracking
   private queryStats = {
@@ -49,8 +50,11 @@ export class PrismaService
       this.queryStats.totalQueries++;
       this.queryStats.totalDuration += e.duration;
 
+      // Skip slow query warnings during cache warming (first 15 seconds)
+      const isWarmingUp = Date.now() - this.startupTime < 15000;
+
       // Log slow queries (> 50ms)
-      if (e.duration > 50) {
+      if (e.duration > 50 && !isWarmingUp) {
         this.queryStats.slowQueries++;
 
         if (e.duration > this.queryStats.slowestQuery.duration) {
@@ -301,7 +305,7 @@ export class PrismaService
       }
     }
 
-    throw lastError!;
+    throw lastError;
   }
 
   async enableShutdownHooks(app: any) {

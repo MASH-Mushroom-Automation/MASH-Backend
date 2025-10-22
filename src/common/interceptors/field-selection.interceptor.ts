@@ -65,7 +65,7 @@ export class FieldSelectionInterceptor implements NestInterceptor {
           .handle()
           .pipe(
             map((data) =>
-              this.selectFields(data, config.defaultFields!, config),
+              this.selectFields(data, config.defaultFields, config),
             ),
           );
       }

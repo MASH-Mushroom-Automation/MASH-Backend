@@ -136,16 +136,16 @@ export class AlertEngineService {
 
     switch (condition.operator) {
       case 'GT': // Greater than
-        return fieldValue > condition.threshold!;
+        return fieldValue > condition.threshold;
 
       case 'GTE': // Greater than or equal
-        return fieldValue >= condition.threshold!;
+        return fieldValue >= condition.threshold;
 
       case 'LT': // Less than
-        return fieldValue < condition.threshold!;
+        return fieldValue < condition.threshold;
 
       case 'LTE': // Less than or equal
-        return fieldValue <= condition.threshold!;
+        return fieldValue <= condition.threshold;
 
       case 'EQ': // Equal
         return fieldValue === condition.value;
@@ -154,7 +154,7 @@ export class AlertEngineService {
         return fieldValue !== condition.value;
 
       case 'BETWEEN': // Between min and max
-        return fieldValue >= condition.min! && fieldValue <= condition.max!;
+        return fieldValue >= condition.min && fieldValue <= condition.max;
 
       case 'IN': // Value in array
         return condition.values?.includes(fieldValue) ?? false;
@@ -521,9 +521,27 @@ export class AlertEngineService {
       data: event.data,
     };
 
+    // Use a replacer to produce a stable JSON string with sorted keys
+    const stableStringify = (obj: any): string =>
+      JSON.stringify(obj, (_key, value) => {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          // Create a new object with sorted keys to ensure deterministic output
+          return Object.keys(value)
+            .sort()
+            .reduce(
+              (acc, k) => {
+                acc[k] = value[k];
+                return acc;
+              },
+              {} as Record<string, any>,
+            );
+        }
+        return value;
+      });
+
     return crypto
       .createHash('sha256')
-      .update(JSON.stringify(payload, Object.keys(payload).sort()))
+      .update(stableStringify(payload))
       .digest('hex')
       .substring(0, 16);
   }

@@ -250,7 +250,7 @@ export class ReportBuilderService {
           completedAt: new Date(),
           duration:
             new Date().getTime() - new Date(execution.startedAt).getTime(),
-          resultData: resultData as any,
+          resultData: resultData,
         },
       });
 
@@ -316,14 +316,8 @@ export class ReportBuilderService {
     const sales = await this.prisma.order.findMany({
       where: {
         createdAt: { gte: new Date(start), lte: new Date(end) },
-        status: { in: ['COMPLETED', 'DELIVERED'] },
-        ...(filters.categories && {
-          orderItems: {
-            some: {
-              product: { categoryId: { in: filters.categories } },
-            },
-          },
-        }),
+        status: { in: ['DELIVERED'] },
+        // TODO: Add category filtering when Product-Category relation is established
       },
       include: {
         orderItems: {
@@ -340,9 +334,9 @@ export class ReportBuilderService {
       sales: sales.map((order) => ({
         orderId: order.id,
         date: order.createdAt,
-        customer: order.user.email,
+        customer: order.user?.email || 'N/A',
         amount: Number(order.total),
-        items: order.orderItems.length,
+        items: order.orderItems?.length || 0,
       })),
     };
   }

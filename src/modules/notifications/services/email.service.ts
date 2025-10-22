@@ -23,6 +23,29 @@ export class EmailService {
   }
 
   private initializeTransporter() {
+    // Check if required environment variables are set
+    const requiredVars = {
+      EMAIL_HOST: process.env.EMAIL_HOST,
+      EMAIL_PORT: process.env.EMAIL_PORT,
+      EMAIL_USER: process.env.EMAIL_USER,
+      EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
+      EMAIL_FROM: process.env.EMAIL_FROM,
+    };
+
+    const missingVars = Object.entries(requiredVars)
+      .filter(([, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingVars.length > 0) {
+      this.logger.error(
+        `❌ EMAIL SERVICE NOT CONFIGURED! Missing environment variables: ${missingVars.join(', ')}`,
+      );
+      this.logger.error(
+        '📧 Email sending will FAIL until you add these variables to Railway dashboard',
+      );
+      // Still create transporter to prevent app crash, but it will fail on send
+    }
+
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: parseInt(process.env.EMAIL_PORT || '587'),
@@ -36,9 +59,22 @@ export class EmailService {
     // Verify transporter configuration
     this.transporter.verify((error) => {
       if (error) {
-        this.logger.error('Email transporter configuration error:', error);
+        this.logger.error(
+          '❌ Email transporter configuration error:',
+          error.message,
+        );
+        if (error.message.includes('Invalid login')) {
+          this.logger.error(
+            '🔑 Gmail App Password is invalid or expired. Generate new one at: https://myaccount.google.com/apppasswords',
+          );
+        }
       } else {
-        this.logger.log('Email transporter is ready to send emails');
+        this.logger.log(
+          '✅ Email transporter is ready to send emails via Gmail SMTP',
+        );
+        this.logger.log(
+          `📧 Sending emails from: ${process.env.EMAIL_FROM || process.env.EMAIL_USER}`,
+        );
       }
     });
   }

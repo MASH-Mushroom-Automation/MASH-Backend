@@ -11,6 +11,10 @@ import { AppService } from './app.service';
 import { createAppConfig } from './config/app.config';
 import { createDatabaseConfig } from './config/database.config';
 import { createJwtConfig } from './config/jwt.config';
+import {
+  envValidationSchema,
+  envValidationOptions,
+} from './config/env-validation.config';
 import { getThrottlerConfig } from './common/config/throttler.config';
 
 // Import modules (will be created)
@@ -47,6 +51,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { SearchModule } from './modules/search/search.module';
 import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -54,7 +59,7 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
 @Module({
   imports: [
-    // Configuration
+    // Configuration with environment variable validation
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
@@ -63,6 +68,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
         () => ({ database: createDatabaseConfig }),
         () => ({ jwt: createJwtConfig }),
       ],
+      // Validate environment variables on startup
+      validationSchema: envValidationSchema,
+      validationOptions: envValidationOptions,
     }),
 
     // Rate limiting with Redis-backed distributed storage
@@ -115,6 +123,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     QueuesModule,
 
     InventoryModule,
+
+    // Search Engine Module (Issue #28 - Advanced Search & Filtering)
+    SearchModule,
 
     // WebSocket module for real-time communication
     WebsocketModule,

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { SensorsController } from './sensors.controller';
 import { SensorsService } from './sensors.service';
 import { mock } from 'jest-mock-extended';
@@ -18,7 +19,11 @@ describe('SensorsController', () => {
           useValue: service,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     controller = module.get<SensorsController>(SensorsController);
   });

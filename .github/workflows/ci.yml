@@ -92,6 +92,7 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
+          DIRECT_URL: ${{ env.DATABASE_URL }}
 
       - name: Run unit tests with coverage
         run: npm run test:cov
@@ -100,7 +101,7 @@ jobs:
           JWT_SECRET: ${{ env.JWT_SECRET }}
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: ./coverage/lcov.info
           fail_ci_if_error: false
@@ -167,6 +168,7 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
+          DIRECT_URL: ${{ env.DATABASE_URL }}
 
       - name: Run integration tests
         run: npm run test:e2e
@@ -229,6 +231,7 @@ jobs:
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
+          DIRECT_URL: ${{ env.DATABASE_URL }}
 
       - name: Start application in background
         run: |
@@ -547,7 +550,7 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64

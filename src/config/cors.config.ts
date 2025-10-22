@@ -53,6 +53,7 @@ export function getCorsConfig(
 
     if (isDevelopment) {
       return [
+        'https://mash-backend-api.up.railway.app', // Production backend
         'http://localhost:3000', // Main backend
         'http://localhost:3001', // Secondary backend instance
         'http://localhost:5173', // Vite dev server (common React/Vue port)
@@ -80,9 +81,12 @@ export function getCorsConfig(
       return origins;
     }
 
-    // Default: Very restrictive (no origins allowed)
-    // This forces production deployments to explicitly set CORS_ORIGINS
-    return [];
+    // Default fallback for production: Allow Railway backend and localhost
+    // This allows Swagger UI on Railway to work without requiring CORS_ORIGINS env var
+    return [
+      'https://mash-backend-api.up.railway.app', // Production backend (Railway)
+      'http://localhost:3000', // Allow localhost for testing/debugging
+    ];
   };
 
   return {

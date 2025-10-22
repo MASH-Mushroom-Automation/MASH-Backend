@@ -7,6 +7,7 @@ export const createAppConfig = (configService: ConfigService) => ({
   isProduction: configService.get('NODE_ENV') === 'production',
   apiPrefix: configService.get('API_PREFIX') || 'api',
   corsOrigins: configService.get('CORS_ORIGINS')?.split(',') || [
+    'https://mash-backend-api.up.railway.app',
     'http://localhost:3000',
   ],
 });

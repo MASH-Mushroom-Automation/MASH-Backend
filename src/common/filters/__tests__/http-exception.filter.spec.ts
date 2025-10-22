@@ -4,6 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConsoleLogger } from '@nestjs/common';
 import { HttpExceptionFilter } from '../http-exception.filter';
 import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { CustomLogger } from '../../utils/logger.util';
@@ -53,7 +54,11 @@ describe('HttpExceptionFilter', () => {
           useValue: mockLogger,
         },
       ],
-    }).compile();
+    })
+
+      .setLogger(new ConsoleLogger()) // Use ConsoleLogger for NestJS v11 compatibility
+
+      .compile();
 
     filter = module.get<HttpExceptionFilter>(HttpExceptionFilter);
   });

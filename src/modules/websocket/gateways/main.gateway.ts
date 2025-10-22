@@ -26,7 +26,9 @@ import type { AuthenticatedSocket } from '../interfaces/authenticated-socket.int
 @WebSocketGateway({
   namespace: process.env.WS_NAMESPACE || '/ws',
   cors: {
-    origin: process.env.WS_CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+    origin: process.env.WS_CORS_ORIGIN?.split(',') || [
+      'https://mash-backend-api.up.railway.app',
+    ],
     credentials: true,
   },
   transports: ['websocket', 'polling'],

@@ -35,7 +35,9 @@ export class RedisService implements OnModuleDestroy {
 
     if (!redisUrl) {
       this.logger.warn('⚠️ REDIS_URL not configured - Redis caching disabled');
-      // Create a mock client that does nothing
+      this.logger.warn(
+        '📝 App will continue without Redis (cache, rate limiting, sessions disabled)',
+      );
       this.client = null;
       return;
     }
@@ -44,16 +46,32 @@ export class RedisService implements OnModuleDestroy {
       this.client = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         enableReadyCheck: true,
+        lazyConnect: true, // Don't connect immediately
         retryStrategy: (times: number) => {
-          if (times > 10) {
-            this.logger.error('Redis: Max retries reached, giving up');
-            return null;
+          if (times > 3) {
+            // Reduce retries to fail fast
+            this.logger.error(
+              '❌ Redis: Max retries reached. Continuing without Redis.',
+            );
+            this.isConnected = false;
+            return null; // Stop retrying
           }
-          const delay = Math.min(times * 50, 2000);
-          this.logger.warn(`Redis: Reconnecting in ${delay}ms...`);
+          const delay = Math.min(times * 50, 1000);
+          this.logger.warn(`Redis: Retry attempt ${times} in ${delay}ms...`);
           return delay;
         },
       });
+
+      // Try to connect but don't block app startup
+      this.client
+        .connect()
+        .then(() => {
+          this.logger.log('✅ Redis connected successfully');
+          this.isConnected = true;
+        })
+        .catch((error) => {
+          this.handleConnectionError(error);
+        });
 
       this.client.on('connect', () => {
         this.logger.log('✅ Redis connected successfully');
@@ -61,17 +79,57 @@ export class RedisService implements OnModuleDestroy {
       });
 
       this.client.on('error', (error) => {
-        this.logger.error('Redis connection error:', error);
-        this.isConnected = false;
+        this.handleConnectionError(error);
       });
 
       this.client.on('close', () => {
-        this.logger.warn('Redis connection closed');
+        this.logger.warn('⚠️ Redis connection closed');
         this.isConnected = false;
       });
+
+      this.client.on('reconnecting', () => {
+        this.logger.log('🔄 Redis reconnecting...');
+      });
     } catch (error) {
-      this.logger.error('Failed to initialize Redis client:', error);
+      this.logger.error('❌ Failed to initialize Redis client:', error);
       this.client = null;
+    }
+  }
+
+  /**
+   * Handle Redis connection errors with specific messages
+   */
+  private handleConnectionError(error: any): void {
+    this.isConnected = false;
+
+    // Check for quota exceeded error
+    if (
+      error.message?.includes('max requests limit exceeded') ||
+      error.message?.includes('Usage:')
+    ) {
+      this.logger.error('❌ REDIS QUOTA EXCEEDED!');
+      this.logger.error(
+        '💰 Your Upstash Redis free tier limit has been reached',
+      );
+      this.logger.error(
+        '📝 Options: 1) Upgrade Upstash plan, 2) Reset database, 3) Continue without Redis',
+      );
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+
+      // Disconnect to prevent further errors
+      if (this.client) {
+        this.client.disconnect(false);
+      }
+    } else if (error.message?.includes('ECONNREFUSED')) {
+      this.logger.error('❌ Redis connection refused (server not reachable)');
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+    } else if (error.message?.includes('Invalid password')) {
+      this.logger.error('❌ Redis authentication failed (invalid password)');
+      this.logger.error('🔑 Check REDIS_URL and REDIS_PASSWORD in environment');
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+    } else {
+      this.logger.error('❌ Redis connection error:', error.message);
+      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
     }
   }
 
@@ -93,7 +151,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const value = await this.client!.get(key);
+      const value = await this.client.get(key);
       if (!value) {
         return null;
       }
@@ -117,7 +175,7 @@ export class RedisService implements OnModuleDestroy {
 
     try {
       const serialized = JSON.stringify(value);
-      await this.client!.setex(key, ttlSeconds, serialized);
+      await this.client.setex(key, ttlSeconds, serialized);
       return true;
     } catch (error) {
       this.logger.error(`Redis SET error for key ${key}:`, error);
@@ -135,7 +193,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      await this.client!.del(key);
+      await this.client.del(key);
       return true;
     } catch (error) {
       this.logger.error(`Redis DEL error for key ${key}:`, error);
@@ -153,12 +211,12 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const keys = await this.client!.keys(pattern);
+      const keys = await this.client.keys(pattern);
       if (keys.length === 0) {
         return 0;
       }
 
-      await this.client!.del(...keys);
+      await this.client.del(...keys);
       this.logger.debug(`Deleted ${keys.length} keys matching ${pattern}`);
       return keys.length;
     } catch (error) {
@@ -177,7 +235,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const result = await this.client!.exists(key);
+      const result = await this.client.exists(key);
       return result === 1;
     } catch (error) {
       this.logger.error(`Redis EXISTS error for key ${key}:`, error);
@@ -196,7 +254,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      return await this.client!.ttl(key);
+      return await this.client.ttl(key);
     } catch (error) {
       this.logger.error(`Redis TTL error for key ${key}:`, error);
       return -2;
@@ -223,7 +281,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      return await this.client!.incr(key);
+      return await this.client.incr(key);
     } catch (error) {
       this.logger.error(`Redis INCR error for key ${key}:`, error);
       return 0;
@@ -242,7 +300,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      return await this.client!.incrby(key, amount);
+      return await this.client.incrby(key, amount);
     } catch (error) {
       this.logger.error(`Redis INCRBY error for key ${key}:`, error);
       return 0;
@@ -261,7 +319,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const result = await this.client!.expire(key, seconds);
+      const result = await this.client.expire(key, seconds);
       return result === 1;
     } catch (error) {
       this.logger.error(`Redis EXPIRE error for key ${key}:`, error);
@@ -279,7 +337,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      await this.client!.flushdb();
+      await this.client.flushdb();
       this.logger.warn('⚠️ Redis: Flushed all keys');
       return true;
     } catch (error) {

@@ -2,18 +2,25 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  UseInterceptors,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
+import { Cacheable, CacheEvict } from '../../common/decorators/cache.decorator';
+import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { UpdatePriceDto } from './dto/update-price.dto';
 import { Prisma } from '@prisma/client';
+import { ProductIndexerService } from '../search/indexers/product-indexer.service';
 
 @Injectable()
+@UseInterceptors(CacheInterceptor) // Apply caching interceptor to entire service
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
   private readonly PRODUCT_CACHE_PREFIX = 'product';
   private readonly PRODUCTS_LIST_CACHE_PREFIX = 'products:list';
   private readonly PRODUCTS_SEARCH_CACHE_PREFIX = 'products:search';
@@ -23,6 +30,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private cacheService: CacheService,
+    private productIndexer: ProductIndexerService,
   ) {}
 
   /**
@@ -113,8 +121,11 @@ export class ProductsService {
 
   /**
    * Create new product
-   * Phase 2: Invalidate product caches on create
+   * ✅ CACHE INVALIDATION: Invalidates products list and featured caches
    */
+  @CacheEvict({
+    tags: ['products', 'products:list', 'products:featured', 'products:search'],
+  })
   async create(createProductDto: CreateProductDto) {
     const { slug, sku, ...rest } = createProductDto;
 
@@ -147,30 +158,29 @@ export class ProductsService {
       },
     });
 
-    // Invalidate product caches (including search results)
-    await this.cacheService.invalidateByTags([
-      'products',
-      'products:list',
-      'products:search',
-    ]);
+    // Auto-index in Elasticsearch (non-blocking)
+    this.productIndexer.indexProduct(product.id).catch((error) => {
+      this.logger.error(
+        `Failed to index product ${product.id} in Elasticsearch:`,
+        error.message,
+      );
+    });
 
     return product;
   }
 
   /**
    * Get featured products
-   * Phase 2: Cache featured products
+   * ✅ CACHED: 5 minutes TTL
+   * Hot path - high traffic, perfect for caching
    */
+  @Cacheable({
+    key: 'products:featured',
+    ttl: 300,
+    tags: ['products', 'products:featured'],
+  })
   async getFeatured() {
-    const cacheKey = `${this.PRODUCTS_LIST_CACHE_PREFIX}:featured`;
-
-    // Try cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    const products = await this.prisma.product.findMany({
+    return await this.prisma.product.findMany({
       where: {
         isFeatured: true,
         isActive: true,
@@ -178,14 +188,6 @@ export class ProductsService {
       take: 10,
       orderBy: { createdAt: 'desc' },
     });
-
-    // Cache for 10 minutes
-    await this.cacheService.set(cacheKey, products, this.PRODUCT_TTL, [
-      'products',
-      'products:featured',
-    ]);
-
-    return products;
   }
 
   /**
@@ -245,17 +247,11 @@ export class ProductsService {
 
   /**
    * Get product by ID
-   * Phase 2: Cache individual products
+   * ✅ CACHED: 5 minutes TTL
+   * Hot path - product details frequently viewed
    */
+  @Cacheable({ key: 'product', ttl: 300, tags: ['products'] })
   async findOne(id: string) {
-    const cacheKey = `${this.PRODUCT_CACHE_PREFIX}:${id}`;
-
-    // Try cache first
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
     const product = await this.prisma.product.findUnique({
       where: { id },
     });
@@ -264,19 +260,14 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
-    // Cache for 10 minutes
-    await this.cacheService.set(cacheKey, product, this.PRODUCT_TTL, [
-      'products',
-      `product:${id}`,
-    ]);
-
     return product;
   }
 
   /**
    * Update product
-   * Phase 2: Invalidate caches on update
+   * ✅ CACHE INVALIDATION: Invalidates product cache on update
    */
+  @CacheEvict({ tags: ['products', 'products:list', 'products:featured'] })
   async update(id: string, updateProductDto: UpdateProductDto) {
     const { slug, sku, ...rest } = updateProductDto;
 
@@ -320,6 +311,14 @@ export class ProductsService {
       `product:${id}`,
     ]);
 
+    // Auto-update in Elasticsearch (non-blocking)
+    this.productIndexer.indexProduct(id).catch((error) => {
+      this.logger.error(
+        `Failed to update product ${id} in Elasticsearch:`,
+        error.message,
+      );
+    });
+
     return updated;
   }
 
@@ -342,6 +341,15 @@ export class ProductsService {
       'products:search',
       `product:${id}`,
     ]);
+
+    // Auto-remove from Elasticsearch (non-blocking)
+    // Since this is a soft delete, we update the index to reflect inactive status
+    this.productIndexer.indexProduct(id).catch((error) => {
+      this.logger.error(
+        `Failed to update product ${id} status in Elasticsearch:`,
+        error.message,
+      );
+    });
 
     return deleted;
   }
