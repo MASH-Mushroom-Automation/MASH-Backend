@@ -5,7 +5,7 @@ import { Client } from '@elastic/elasticsearch';
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
   private readonly logger = new Logger(ElasticsearchService.name);
-  private client: Client;
+  private client: Client | null;
 
   constructor(private config: ConfigService) {}
 
@@ -13,6 +13,13 @@ export class ElasticsearchService implements OnModuleInit {
     const node = this.config.get('ELASTICSEARCH_NODE');
     const username = this.config.get('ELASTICSEARCH_USERNAME');
     const password = this.config.get('ELASTICSEARCH_PASSWORD');
+
+    // Skip initialization if no Elasticsearch node is configured
+    if (!node || node.trim() === '') {
+      this.logger.warn('⚠️ ELASTICSEARCH_NODE not configured - Search features disabled');
+      this.client = null;
+      return;
+    }
 
     this.logger.log(`🔍 Initializing Elasticsearch client for ${node}...`);
 
@@ -55,7 +62,17 @@ export class ElasticsearchService implements OnModuleInit {
    * Get the Elasticsearch client instance
    */
   getClient(): Client {
+    if (!this.client) {
+      throw new Error('Elasticsearch is not configured or initialized');
+    }
     return this.client;
+  }
+
+  /**
+   * Check if Elasticsearch is available
+   */
+  isAvailable(): boolean {
+    return this.client !== null;
   }
 
   /**
