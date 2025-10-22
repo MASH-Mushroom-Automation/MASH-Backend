@@ -51,6 +51,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { SearchModule } from './modules/search/search.module';
 import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -122,6 +123,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     QueuesModule,
 
     InventoryModule,
+
+    // Search Engine Module (Issue #28 - Advanced Search & Filtering)
+    SearchModule,
 
     // WebSocket module for real-time communication
     WebsocketModule,

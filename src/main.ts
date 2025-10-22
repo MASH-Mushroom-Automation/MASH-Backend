@@ -137,7 +137,7 @@ async function bootstrap() {
     .setDescription(
       `# Mushroom Automation with Smart Hydro-environment Backend API
 
-**Production URL**: https://mash-backend.onrender.com
+**Production URL**: https://mash-backend-api.up.railway.app
 
 ## Overview
 
@@ -256,7 +256,7 @@ All protected endpoints require a Bearer token in the Authorization header.
       'access-token',
     )
     .addServer(`http://localhost:${port}`, 'Development Server')
-    .addServer('https://mash-backend.onrender.com', 'Production Server')
+    .addServer('https://mash-backend-api.up.railway.app', 'Production Server (Railway)')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {

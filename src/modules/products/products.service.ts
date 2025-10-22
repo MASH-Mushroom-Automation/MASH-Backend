@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   UseInterceptors,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
@@ -14,10 +15,12 @@ import { ProductQueryDto } from './dto/product-query.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { UpdatePriceDto } from './dto/update-price.dto';
 import { Prisma } from '@prisma/client';
+import { ProductIndexerService } from '../search/indexers/product-indexer.service';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor) // Apply caching interceptor to entire service
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
   private readonly PRODUCT_CACHE_PREFIX = 'product';
   private readonly PRODUCTS_LIST_CACHE_PREFIX = 'products:list';
   private readonly PRODUCTS_SEARCH_CACHE_PREFIX = 'products:search';
@@ -27,6 +30,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private cacheService: CacheService,
+    private productIndexer: ProductIndexerService,
   ) {}
 
   /**
@@ -152,6 +156,14 @@ export class ProductsService {
         slug: productSlug,
         sku,
       },
+    });
+
+    // Auto-index in Elasticsearch (non-blocking)
+    this.productIndexer.indexProduct(product.id).catch((error) => {
+      this.logger.error(
+        `Failed to index product ${product.id} in Elasticsearch:`,
+        error.message,
+      );
     });
 
     return product;
@@ -299,6 +311,14 @@ export class ProductsService {
       `product:${id}`,
     ]);
 
+    // Auto-update in Elasticsearch (non-blocking)
+    this.productIndexer.indexProduct(id).catch((error) => {
+      this.logger.error(
+        `Failed to update product ${id} in Elasticsearch:`,
+        error.message,
+      );
+    });
+
     return updated;
   }
 
@@ -321,6 +341,15 @@ export class ProductsService {
       'products:search',
       `product:${id}`,
     ]);
+
+    // Auto-remove from Elasticsearch (non-blocking)
+    // Since this is a soft delete, we update the index to reflect inactive status
+    this.productIndexer.indexProduct(id).catch((error) => {
+      this.logger.error(
+        `Failed to update product ${id} status in Elasticsearch:`,
+        error.message,
+      );
+    });
 
     return deleted;
   }
