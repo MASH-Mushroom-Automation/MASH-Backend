@@ -60,8 +60,9 @@ export const envValidationSchema = Joi.object({
   // ==================== CACHING (Redis) ====================
   REDIS_URL: Joi.string()
     .uri()
-    .required()
-    .description('Redis connection URL (required)'),
+    .optional()
+    .allow('')
+    .description('Redis connection URL (optional - caching disabled if not provided)'),
 
   REDIS_CACHE_TTL: Joi.number()
     .min(0)

@@ -113,7 +113,7 @@ jobs:
           THROTTLE_LIMIT=100
           
           # Logging
-          LOG_LEVEL=info
+          LOG_LEVEL=log
           EOF
 
       - name: Run database migrations
@@ -169,7 +169,7 @@ jobs:
           ELASTICSEARCH_USERNAME: elastic
           ELASTICSEARCH_PASSWORD: changeme
           # Misc
-          LOG_LEVEL: info
+          LOG_LEVEL: log
           THROTTLE_TTL: 60
           THROTTLE_LIMIT: 100
 
