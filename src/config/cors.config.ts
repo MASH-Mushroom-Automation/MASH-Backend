@@ -53,6 +53,7 @@ export function getCorsConfig(
 
     if (isDevelopment) {
       return [
+        'https://mash-backend-api.up.railway.app', // Production backend
         'http://localhost:3000', // Main backend
         'http://localhost:3001', // Secondary backend instance
         'http://localhost:5173', // Vite dev server (common React/Vue port)

@@ -89,7 +89,7 @@ export class EmailTemplateService {
     if (!variables.appUrl) {
       result = result.replace(
         /{{appUrl}}/g,
-        process.env.APP_URL || 'http://localhost:3000',
+        process.env.APP_URL || 'https://mash-backend-api.up.railway.app',
       );
     }
 

@@ -7,8 +7,8 @@ export default registerAs('clerk', () => ({
   webhookSecret: process.env.CLERK_WEBHOOK_SECRET || '',
   jwtKey: process.env.CLERK_JWT_KEY || '',
 
-  // Frontend URLs
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+    // Frontend URLs
+  frontendUrl: process.env.FRONTEND_URL || 'https://mash-backend-api.up.railway.app',
   afterSignInUrl: process.env.CLERK_AFTER_SIGN_IN_URL || '/dashboard',
   afterSignUpUrl: process.env.CLERK_AFTER_SIGN_UP_URL || '/onboarding',
 

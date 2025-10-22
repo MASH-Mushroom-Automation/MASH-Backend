@@ -113,7 +113,7 @@ export const envValidationSchema = Joi.object({
 
   // ==================== CORS ====================
   CORS_ORIGINS: Joi.string()
-    .default('http://localhost:3000,http://localhost:5173')
+    .default('https://mash-backend-api.up.railway.app,http://localhost:3000,http://localhost:5173')
     .description('Comma-separated list of allowed CORS origins'),
 
   CORS_CREDENTIALS: Joi.boolean()
