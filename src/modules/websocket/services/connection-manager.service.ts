@@ -37,7 +37,7 @@ export class ConnectionManagerService {
     if (!this.userConnections.has(userId)) {
       this.userConnections.set(userId, new Set());
     }
-    this.userConnections.get(userId)!.add(socketId);
+    this.userConnections.get(userId).add(socketId);
 
     // Store connection info
     const info: ConnectionInfo = {
@@ -284,7 +284,7 @@ export class ConnectionManagerService {
   isUserConnected(userId: string): boolean {
     return (
       this.userConnections.has(userId) &&
-      this.userConnections.get(userId)!.size > 0
+      this.userConnections.get(userId).size > 0
     );
   }
 

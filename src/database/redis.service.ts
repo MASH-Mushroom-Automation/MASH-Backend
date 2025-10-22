@@ -151,7 +151,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const value = await this.client!.get(key);
+      const value = await this.client.get(key);
       if (!value) {
         return null;
       }
@@ -175,7 +175,7 @@ export class RedisService implements OnModuleDestroy {
 
     try {
       const serialized = JSON.stringify(value);
-      await this.client!.setex(key, ttlSeconds, serialized);
+      await this.client.setex(key, ttlSeconds, serialized);
       return true;
     } catch (error) {
       this.logger.error(`Redis SET error for key ${key}:`, error);
@@ -193,7 +193,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      await this.client!.del(key);
+      await this.client.del(key);
       return true;
     } catch (error) {
       this.logger.error(`Redis DEL error for key ${key}:`, error);
@@ -211,12 +211,12 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const keys = await this.client!.keys(pattern);
+      const keys = await this.client.keys(pattern);
       if (keys.length === 0) {
         return 0;
       }
 
-      await this.client!.del(...keys);
+      await this.client.del(...keys);
       this.logger.debug(`Deleted ${keys.length} keys matching ${pattern}`);
       return keys.length;
     } catch (error) {
@@ -235,7 +235,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const result = await this.client!.exists(key);
+      const result = await this.client.exists(key);
       return result === 1;
     } catch (error) {
       this.logger.error(`Redis EXISTS error for key ${key}:`, error);
@@ -254,7 +254,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      return await this.client!.ttl(key);
+      return await this.client.ttl(key);
     } catch (error) {
       this.logger.error(`Redis TTL error for key ${key}:`, error);
       return -2;
@@ -281,7 +281,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      return await this.client!.incr(key);
+      return await this.client.incr(key);
     } catch (error) {
       this.logger.error(`Redis INCR error for key ${key}:`, error);
       return 0;
@@ -300,7 +300,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      return await this.client!.incrby(key, amount);
+      return await this.client.incrby(key, amount);
     } catch (error) {
       this.logger.error(`Redis INCRBY error for key ${key}:`, error);
       return 0;
@@ -319,7 +319,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      const result = await this.client!.expire(key, seconds);
+      const result = await this.client.expire(key, seconds);
       return result === 1;
     } catch (error) {
       this.logger.error(`Redis EXPIRE error for key ${key}:`, error);
@@ -337,7 +337,7 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
-      await this.client!.flushdb();
+      await this.client.flushdb();
       this.logger.warn('⚠️ Redis: Flushed all keys');
       return true;
     } catch (error) {

@@ -250,7 +250,7 @@ export class ReportBuilderService {
           completedAt: new Date(),
           duration:
             new Date().getTime() - new Date(execution.startedAt).getTime(),
-          resultData: resultData as any,
+          resultData: resultData,
         },
       });
 

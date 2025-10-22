@@ -42,7 +42,6 @@ function checkHealth(): Promise<number> {
     process.exit(0);
   }
 
-  // eslint-disable-next-line no-console
   console.error(`❌ Health check failed: ${HOST}:${PORT}${PATH}`);
   process.exit(1);
 })();

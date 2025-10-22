@@ -85,7 +85,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         message,
         // Include Prisma error code in development
         ...(process.env.NODE_ENV === 'development' && {
-          prismaCode: (exception as any).code,
+          prismaCode: exception.code,
         }),
       },
       // Include full error details in development only
@@ -99,7 +99,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       correlationId,
       path: request.url,
       method: request.method,
-      prismaCode: (exception as any).code,
+      prismaCode: exception.code,
       error: exception.message,
     });
 

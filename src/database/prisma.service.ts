@@ -305,7 +305,7 @@ export class PrismaService
       }
     }
 
-    throw lastError!;
+    throw lastError;
   }
 
   async enableShutdownHooks(app: any) {

@@ -34,11 +34,11 @@ describe('ConnectionManagerService', () => {
       } as any,
       rooms: new Set<string>(),
       join: jest.fn((room: string) => {
-        mockSocket.rooms!.add(room);
+        mockSocket.rooms.add(room);
         return mockSocket as any;
       }),
       leave: jest.fn((room: string) => {
-        mockSocket.rooms!.delete(room);
+        mockSocket.rooms.delete(room);
         return mockSocket as any;
       }),
       emit: jest.fn(),
@@ -256,7 +256,7 @@ describe('ConnectionManagerService', () => {
       const updatedInfo = service.getConnectionInfo('socket-1');
       const updatedTime = updatedInfo?.lastActivity.getTime();
 
-      expect(updatedTime).toBeGreaterThan(initialTime!);
+      expect(updatedTime).toBeGreaterThan(initialTime);
     });
 
     it('should handle updating non-existent connection gracefully', () => {

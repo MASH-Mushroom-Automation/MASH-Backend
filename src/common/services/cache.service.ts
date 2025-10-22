@@ -359,7 +359,7 @@ export class CacheService {
       const tagKey = this.buildTagKey(tag);
 
       // Get existing keys for this tag
-      let taggedKeys = (await this.redisService.get<string[]>(tagKey)) || [];
+      const taggedKeys = (await this.redisService.get<string[]>(tagKey)) || [];
 
       // Add current key if not already present
       if (!taggedKeys.includes(key)) {

@@ -49,7 +49,7 @@ export class TwoFactorService {
     });
 
     // Generate QR code
-    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url as string);
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
 
     // Store secret temporarily (not enabled yet)
     await this.prisma.user.update({

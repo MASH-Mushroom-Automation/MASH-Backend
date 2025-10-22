@@ -136,16 +136,16 @@ export class AlertEngineService {
 
     switch (condition.operator) {
       case 'GT': // Greater than
-        return fieldValue > condition.threshold!;
+        return fieldValue > condition.threshold;
 
       case 'GTE': // Greater than or equal
-        return fieldValue >= condition.threshold!;
+        return fieldValue >= condition.threshold;
 
       case 'LT': // Less than
-        return fieldValue < condition.threshold!;
+        return fieldValue < condition.threshold;
 
       case 'LTE': // Less than or equal
-        return fieldValue <= condition.threshold!;
+        return fieldValue <= condition.threshold;
 
       case 'EQ': // Equal
         return fieldValue === condition.value;
@@ -154,7 +154,7 @@ export class AlertEngineService {
         return fieldValue !== condition.value;
 
       case 'BETWEEN': // Between min and max
-        return fieldValue >= condition.min! && fieldValue <= condition.max!;
+        return fieldValue >= condition.min && fieldValue <= condition.max;
 
       case 'IN': // Value in array
         return condition.values?.includes(fieldValue) ?? false;

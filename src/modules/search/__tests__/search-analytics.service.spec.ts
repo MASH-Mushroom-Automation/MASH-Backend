@@ -27,7 +27,7 @@ describe('SearchAnalyticsService', () => {
     }).compile();
 
     service = module.get<SearchAnalyticsService>(SearchAnalyticsService);
-    prismaService = module.get(PrismaService) as any;
+    prismaService = module.get(PrismaService);
   });
 
   afterEach(() => {
