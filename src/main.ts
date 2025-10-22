@@ -255,11 +255,11 @@ All protected endpoints require a Bearer token in the Authorization header.
       },
       'access-token',
     )
-    .addServer(`http://localhost:${port}`, 'Development Server')
     .addServer(
       'https://mash-backend-api.up.railway.app',
       'Production Server (Railway)',
     )
+    .addServer(`http://localhost:${port}`, 'Development Server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
@@ -274,6 +274,9 @@ All protected endpoints require a Bearer token in the Authorization header.
       persistAuthorization: true,
       displayRequestDuration: true,
       filter: true,
+      tryItOutEnabled: true,
+      // Use the current page's origin as the default server
+      url: undefined, // Let Swagger auto-detect from document servers
     },
   });
 
