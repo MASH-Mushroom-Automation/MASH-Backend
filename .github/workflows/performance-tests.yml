@@ -81,8 +81,8 @@ jobs:
 
       - name: Rebuild sharp for Linux (force reinstall)
         run: |
-          npm uninstall sharp
-          npm install --include=optional --os=linux --cpu=x64 sharp
+          npm uninstall sharp --legacy-peer-deps || true
+          npm install --include=optional --os=linux --cpu=x64 sharp --legacy-peer-deps
           npm rebuild sharp --force
 
       - name: Generate Prisma Client

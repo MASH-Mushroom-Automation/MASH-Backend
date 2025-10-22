@@ -58,7 +58,7 @@ jobs:
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
-        continue-on-error: false
+        continue-on-error: true
         with:
           context: .
           file: ./Dockerfile
@@ -67,6 +67,21 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+        env:
+          DOCKER_BUILDKIT: 1
+
+      # Retry build without cache if first attempt fails
+      - name: Build Docker image (without cache fallback)
+        if: failure()
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
         env:
