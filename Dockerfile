@@ -1,7 +1,7 @@
 # Multi-stage Docker build for MASH Backend
 # Stage 1: Build stage
 # Updated: Fixes Railway deployment by preventing lifecycle scripts in production
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -26,7 +26,7 @@ RUN npm run build && \
     test -f dist/src/main.js || (echo "ERROR: dist/src/main.js not found after build!" && exit 1)
 
 # Stage 2: Production stage
-FROM node:20-alpine AS production
+FROM node:25-alpine AS production
 
 # Install ALL dependencies needed for Sharp (keep everything, don't delete)
 # Sharp requires vips runtime libraries and build tools must remain for npm rebuild
