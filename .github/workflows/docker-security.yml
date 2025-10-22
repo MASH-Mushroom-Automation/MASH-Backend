@@ -58,7 +58,7 @@ jobs:
 
       - name: Build Docker image
         id: docker-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         continue-on-error: true
         with:
           context: .
@@ -79,7 +79,7 @@ jobs:
       - name: Build Docker image (without cache fallback)
         if: steps.docker-build.outcome == 'failure'
         id: docker-build-no-cache
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -364,7 +364,7 @@ jobs:
       - name: Push image to registry
         if: github.event_name == 'push' && steps.parse-results.outputs.should_fail == 'false'
         id: docker-push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         continue-on-error: true
         with:
           context: .
@@ -377,7 +377,7 @@ jobs:
         
       - name: Push image to registry (without cache fallback)
         if: github.event_name == 'push' && steps.parse-results.outputs.should_fail == 'false' && steps.docker-push.outcome == 'failure'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
