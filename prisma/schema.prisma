@@ -46,6 +46,9 @@ model User {
   notificationTemplates NotificationTemplate[] @relation("NotificationTemplateCreator")
   alertNotifications    Notification[]
 
+  // Import/Export System Relations
+  importExportJobs ImportExportJob[] @relation("ImportExportJobsCreated")
+
   // Performance Indexes for analytics queries
   @@index([createdAt])
   @@index([isActive, role])
@@ -1009,4 +1012,152 @@ model SearchLog {
   @@index([userId, createdAt]) // User search history
   @@index([index, createdAt]) // Index-specific analytics
   @@map("search_logs")
+}
+
+// ============================================
+// IMPORT/EXPORT SYSTEM
+// ============================================
+
+model ImportExportJob {
+  id         String      @id @default(cuid())
+  type       JobType // IMPORT | EXPORT
+  entityType EntityType // PRODUCT | ORDER | USER | CATEGORY | etc.
+  status     JobStatus // QUEUED | PROCESSING | COMPLETED | FAILED | CANCELLED
+  priority   JobPriority // URGENT | NORMAL | LOW
+
+  // File information
+  fileName      String
+  fileFormat    FileFormat // CSV | EXCEL | JSON | XML
+  fileSize      Int // in bytes
+  fileUrl       String? // S3/MinIO URL
+  resultFileUrl String? // For exports
+
+  // Progress tracking
+  totalRecords     Int   @default(0)
+  processedRecords Int   @default(0)
+  successCount     Int   @default(0)
+  failureCount     Int   @default(0)
+  warningCount     Int   @default(0)
+  progressPercent  Float @default(0)
+
+  // Timing
+  startedAt       DateTime?
+  completedAt     DateTime?
+  estimatedTimeMs Int?
+
+  // Configuration
+  options Json? // Import/export options (delimiter, skipRows, etc.)
+  filters Json? // Export filters
+
+  // Error tracking
+  errors ImportExportError[]
+
+  // Audit
+  createdBy     String
+  createdByUser User     @relation("ImportExportJobsCreated", fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([entityType, type])
+  @@index([createdBy])
+  @@map("import_export_jobs")
+}
+
+model ImportExportError {
+  id    String          @id @default(cuid())
+  jobId String
+  job   ImportExportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  // Error location
+  rowNumber  Int? // Row in file (1-indexed)
+  columnName String?
+  fieldPath  String? // For nested JSON/XML
+
+  // Error details
+  errorType  ErrorType // VALIDATION | CONSTRAINT | FORMAT | BUSINESS_RULE
+  severity   ErrorSeverity // ERROR | WARNING
+  errorCode  String // E.g., "REQUIRED_FIELD_MISSING"
+  message    String
+  suggestion String? // How to fix
+
+  // Original data
+  originalValue  String?
+  expectedFormat String?
+
+  createdAt DateTime @default(now())
+
+  @@index([jobId, severity])
+  @@map("import_export_errors")
+}
+
+model ImportExportTemplate {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  entityType  EntityType
+  fileFormat  FileFormat
+
+  // Template configuration
+  headers    Json // Column names and order
+  sampleData Json // Example rows
+  validation Json // Validation rules
+
+  isActive  Boolean  @default(true)
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entityType, fileFormat])
+  @@map("import_export_templates")
+}
+
+// Enums for Import/Export System
+enum JobType {
+  IMPORT
+  EXPORT
+}
+
+enum EntityType {
+  PRODUCT
+  ORDER
+  USER
+  CATEGORY
+  SELLER
+  BUYER
+  TRANSACTION
+  INVENTORY
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum JobPriority {
+  URGENT
+  NORMAL
+  LOW
+}
+
+enum FileFormat {
+  CSV
+  EXCEL
+  JSON
+  XML
+}
+
+enum ErrorType {
+  VALIDATION
+  CONSTRAINT
+  FORMAT
+  BUSINESS_RULE
+}
+
+enum ErrorSeverity {
+  ERROR
+  WARNING
 }
