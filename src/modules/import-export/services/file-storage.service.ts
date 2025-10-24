@@ -12,7 +12,7 @@ const mkdir = promisify(fs.mkdir);
 /**
  * File Storage Service
  * Handles file upload, download, and deletion for import/export operations
- * 
+ *
  * Currently uses local filesystem storage
  * TODO: Implement S3/MinIO integration for production
  */
@@ -25,9 +25,12 @@ export class FileStorageService {
   constructor(private configService: ConfigService) {
     // For now, use local filesystem storage
     // In production, this should be replaced with S3/MinIO
-    this.uploadDir = this.configService.get('UPLOAD_DIR', './uploads/import-export');
+    this.uploadDir = this.configService.get(
+      'UPLOAD_DIR',
+      './uploads/import-export',
+    );
     this.baseUrl = this.configService.get('BASE_URL', 'http://localhost:3000');
-    
+
     // Ensure upload directory exists
     this.ensureUploadDir();
   }
@@ -56,7 +59,10 @@ export class FileStorageService {
   ): Promise<{ url: string; key: string }> {
     try {
       const timestamp = Date.now();
-      const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const sanitizedFilename = file.originalname.replace(
+        /[^a-zA-Z0-9.-]/g,
+        '_',
+      );
       const key = `${folder}/${timestamp}-${sanitizedFilename}`;
       const filePath = path.join(this.uploadDir, key);
 
@@ -68,9 +74,9 @@ export class FileStorageService {
       await writeFile(filePath, file.buffer);
 
       const url = `${this.baseUrl}/api/v1/files/${key}`;
-      
+
       this.logger.log(`File uploaded: ${key} (${file.size} bytes)`);
-      
+
       return { url, key };
     } catch (error) {
       this.logger.error(`Failed to upload file: ${error.message}`);
@@ -87,9 +93,9 @@ export class FileStorageService {
     try {
       const filePath = path.join(this.uploadDir, key);
       const buffer = await readFile(filePath);
-      
+
       this.logger.log(`File downloaded: ${key}`);
-      
+
       return buffer;
     } catch (error) {
       this.logger.error(`Failed to download file: ${error.message}`);
@@ -105,7 +111,7 @@ export class FileStorageService {
     try {
       const filePath = path.join(this.uploadDir, key);
       await unlink(filePath);
-      
+
       this.logger.log(`File deleted: ${key}`);
     } catch (error) {
       // Don't throw error if file doesn't exist

@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
+import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { FileStorageService } from './services/file-storage.service';
 
 @Module({
   imports: [
@@ -51,9 +55,26 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         },
       },
     ),
+    // Bull Board for queue monitoring dashboard
+    BullBoardModule.forRoot({
+      route: '/admin/queues',
+      adapter: ExpressAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'import',
+      adapter: BullAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'export',
+      adapter: BullAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'cleanup',
+      adapter: BullAdapter,
+    }),
   ],
   controllers: [],
-  providers: [],
-  exports: [],
+  providers: [FileStorageService],
+  exports: [FileStorageService],
 })
 export class ImportExportModule {}
