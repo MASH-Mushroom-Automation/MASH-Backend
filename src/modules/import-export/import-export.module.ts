@@ -5,6 +5,7 @@ import { DatabaseModule } from '../../database/database.module';
 import { FileStorageService } from './services/file-storage.service';
 import { ValidationService } from './services/validation.service';
 import { ImportService } from './services/import.service';
+import { ExportService } from './services/export.service';
 import { CsvParserService } from './parsers/csv-parser.service';
 import { ExcelParserService } from './parsers/excel-parser.service';
 import { JsonParserService } from './parsers/json-parser.service';
@@ -14,8 +15,10 @@ import { ProductImportValidator } from './validators/product-import.validator';
 import { UserImportValidator } from './validators/user-import.validator';
 import { OrderImportValidator } from './validators/order-import.validator';
 import { ImportProcessor } from './processors/import.processor';
+import { ExportProcessor } from './processors/export.processor';
 import { ImportExportGateway } from './gateways/import-export.gateway';
 import { ImportController } from './controllers/import.controller';
+import { ExportController } from './controllers/export.controller';
 
 @Module({
   imports: [
@@ -57,7 +60,7 @@ import { ImportController } from './controllers/import.controller';
       },
     ),
   ],
-  controllers: [ImportController],
+  controllers: [ImportController, ExportController],
   providers: [
     // File Storage
     FileStorageService,
@@ -65,6 +68,7 @@ import { ImportController } from './controllers/import.controller';
     // Services
     ValidationService,
     ImportService,
+    ExportService,
 
     // File Parsers
     CsvParserService,
@@ -80,6 +84,7 @@ import { ImportController } from './controllers/import.controller';
 
     // Processors
     ImportProcessor,
+    ExportProcessor,
 
     // WebSocket Gateway
     ImportExportGateway,
@@ -88,6 +93,7 @@ import { ImportController } from './controllers/import.controller';
     FileStorageService,
     ValidationService,
     ImportService,
+    ExportService,
     FileParserFactory,
     CsvParserService,
     ExcelParserService,
