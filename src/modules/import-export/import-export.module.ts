@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '../../database/database.module';
 import { FileStorageService } from './services/file-storage.service';
 import { ValidationService } from './services/validation.service';
+import { ImportService } from './services/import.service';
 import { CsvParserService } from './parsers/csv-parser.service';
 import { ExcelParserService } from './parsers/excel-parser.service';
 import { JsonParserService } from './parsers/json-parser.service';
@@ -12,6 +13,9 @@ import { FileParserFactory } from './parsers/file-parser.factory';
 import { ProductImportValidator } from './validators/product-import.validator';
 import { UserImportValidator } from './validators/user-import.validator';
 import { OrderImportValidator } from './validators/order-import.validator';
+import { ImportProcessor } from './processors/import.processor';
+import { ImportExportGateway } from './gateways/import-export.gateway';
+import { ImportController } from './controllers/import.controller';
 
 @Module({
   imports: [
@@ -53,13 +57,14 @@ import { OrderImportValidator } from './validators/order-import.validator';
       },
     ),
   ],
-  controllers: [],
+  controllers: [ImportController],
   providers: [
     // File Storage
     FileStorageService,
 
-    // Validation
+    // Services
     ValidationService,
+    ImportService,
 
     // File Parsers
     CsvParserService,
@@ -72,10 +77,17 @@ import { OrderImportValidator } from './validators/order-import.validator';
     ProductImportValidator,
     UserImportValidator,
     OrderImportValidator,
+
+    // Processors
+    ImportProcessor,
+
+    // WebSocket Gateway
+    ImportExportGateway,
   ],
   exports: [
     FileStorageService,
     ValidationService,
+    ImportService,
     FileParserFactory,
     CsvParserService,
     ExcelParserService,
