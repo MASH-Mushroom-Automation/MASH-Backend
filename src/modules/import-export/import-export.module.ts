@@ -1,16 +1,22 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from '../../database/database.module';
 import { FileStorageService } from './services/file-storage.service';
+import { ValidationService } from './services/validation.service';
 import { CsvParserService } from './parsers/csv-parser.service';
 import { ExcelParserService } from './parsers/excel-parser.service';
 import { JsonParserService } from './parsers/json-parser.service';
 import { XmlParserService } from './parsers/xml-parser.service';
 import { FileParserFactory } from './parsers/file-parser.factory';
+import { ProductImportValidator } from './validators/product-import.validator';
+import { UserImportValidator } from './validators/user-import.validator';
+import { OrderImportValidator } from './validators/order-import.validator';
 
 @Module({
   imports: [
     ConfigModule,
+    DatabaseModule, // Add DatabaseModule for Prisma access
     // Register Bull queues for background job processing
     BullModule.registerQueue(
       {
@@ -51,20 +57,33 @@ import { FileParserFactory } from './parsers/file-parser.factory';
   providers: [
     // File Storage
     FileStorageService,
+
+    // Validation
+    ValidationService,
+
     // File Parsers
     CsvParserService,
     ExcelParserService,
     JsonParserService,
     XmlParserService,
     FileParserFactory,
+
+    // Entity Validators
+    ProductImportValidator,
+    UserImportValidator,
+    OrderImportValidator,
   ],
   exports: [
     FileStorageService,
+    ValidationService,
     FileParserFactory,
     CsvParserService,
     ExcelParserService,
     JsonParserService,
     XmlParserService,
+    ProductImportValidator,
+    UserImportValidator,
+    OrderImportValidator,
   ],
 })
 export class ImportExportModule {}
