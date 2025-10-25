@@ -13,7 +13,9 @@ import { FileStorageService } from '../services/file-storage.service';
 import { FileParserFactory } from '../parsers/file-parser.factory';
 import { ImportExportGateway } from '../gateways/import-export.gateway';
 
-@Processor('export')
+// 🔧 TEMPORARILY DISABLED - Processor causes conflicts with Bull auto-discovery
+// Re-enable when QueuesModule is properly configured
+// @Processor('export')
 export class ExportProcessor {
   private readonly logger = new Logger(ExportProcessor.name);
 

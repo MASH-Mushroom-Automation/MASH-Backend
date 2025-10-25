@@ -47,7 +47,9 @@ interface ProcessingProgress {
   }>;
 }
 
-@Processor('import')
+// 🔧 TEMPORARILY DISABLED - Processor causes conflicts with Bull auto-discovery
+// Re-enable when QueuesModule is properly configured
+// @Processor('import')
 export class ImportProcessor {
   private readonly logger = new Logger(ImportProcessor.name);
 

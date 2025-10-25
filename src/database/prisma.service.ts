@@ -343,15 +343,19 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    // � DYNAMIC IMPORT: Initialize Prisma Client with dynamic import
+    // 🔥 DYNAMIC IMPORT: Initialize Prisma Client with dynamic import
     // This defers native DLL loading until now, not during module parse
+    console.log('🔥🔥🔥 PrismaService.onModuleInit() called');
     this.logger.log('📊 PrismaService: Initializing with dynamic import...');
     
     try {
       await this.initializeClient();
+      console.log('🔥🔥🔥 PrismaService.initializeClient() completed successfully');
       this.logger.log('✅ PrismaClient initialized successfully');
       this.logger.log('⏳ Database connection will be established on first query');
+      console.log('🔥🔥🔥 PrismaService.onModuleInit() completed successfully');
     } catch (error) {
+      console.error('🔥🔥🔥 PrismaService.onModuleInit() FAILED:', error);
       this.logger.error('❌ Failed to initialize PrismaClient:', error);
       throw error;
     }
