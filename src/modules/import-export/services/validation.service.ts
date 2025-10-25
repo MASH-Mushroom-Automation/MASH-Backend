@@ -1,6 +1,6 @@
 /**
  * Validation Service
- * 
+ *
  * Core validation engine for import/export operations.
  * Provides rule-based validation with support for multiple validation types,
  * error collection, and batch processing.
@@ -49,7 +49,9 @@ export class ValidationService {
     const allErrors: ValidationError[] = [];
     const allWarnings: ValidationError[] = [];
 
-    this.logger.log(`Validating batch of ${records.length} records with ${rules.length} rules`);
+    this.logger.log(
+      `Validating batch of ${records.length} records with ${rules.length} rules`,
+    );
 
     // Initialize validation context
     const context: ValidationContext = {
@@ -69,7 +71,13 @@ export class ValidationService {
       const record = records[i];
       const rowNumber = i + 2; // +2 for 1-based index and header row
 
-      const result = await this.validateRecord(record, rowNumber, rules, context, options);
+      const result = await this.validateRecord(
+        record,
+        rowNumber,
+        rules,
+        context,
+        options,
+      );
       results.push(result);
 
       allErrors.push(...result.errors);
@@ -77,13 +85,17 @@ export class ValidationService {
 
       // Stop on first error if requested
       if (options.stopOnFirstError && result.errors.length > 0) {
-        this.logger.warn(`Stopping validation at row ${rowNumber} due to stopOnFirstError option`);
+        this.logger.warn(
+          `Stopping validation at row ${rowNumber} due to stopOnFirstError option`,
+        );
         break;
       }
 
       // Stop if max errors reached
       if (options.maxErrors && allErrors.length >= options.maxErrors) {
-        this.logger.warn(`Stopping validation at row ${rowNumber} - max errors (${options.maxErrors}) reached`);
+        this.logger.warn(
+          `Stopping validation at row ${rowNumber} - max errors (${options.maxErrors}) reached`,
+        );
         break;
       }
     }
@@ -125,8 +137,14 @@ export class ValidationService {
     const warnings: ValidationError[] = [];
 
     for (const rule of rules) {
-      const ruleErrors = await this.validateRule(record, row, rule, context, options);
-      
+      const ruleErrors = await this.validateRule(
+        record,
+        row,
+        rule,
+        context,
+        options,
+      );
+
       for (const error of ruleErrors) {
         if (error.severity === ErrorSeverity.ERROR) {
           errors.push(error);
@@ -179,10 +197,24 @@ export class ValidationService {
         return this.validateLength(record, row, rule as LengthRule, value);
 
       case ValidationRuleType.UNIQUE:
-        return this.validateUnique(record, row, rule as UniqueRule, value, context, options);
+        return this.validateUnique(
+          record,
+          row,
+          rule as UniqueRule,
+          value,
+          context,
+          options,
+        );
 
       case ValidationRuleType.FOREIGN_KEY:
-        return await this.validateForeignKey(record, row, rule as ForeignKeyRule, value, context, options);
+        return await this.validateForeignKey(
+          record,
+          row,
+          rule as ForeignKeyRule,
+          value,
+          context,
+          options,
+        );
 
       case ValidationRuleType.ENUM:
         return this.validateEnum(record, row, rule as EnumRule, value);
@@ -191,10 +223,22 @@ export class ValidationService {
         return this.validatePattern(record, row, rule as PatternRule, value);
 
       case ValidationRuleType.CUSTOM:
-        return await this.validateCustom(record, row, rule as CustomRule, value, context);
+        return await this.validateCustom(
+          record,
+          row,
+          rule as CustomRule,
+          value,
+          context,
+        );
 
       case ValidationRuleType.CONDITIONAL:
-        return await this.validateConditional(record, row, rule as ConditionalRule, context, options);
+        return await this.validateConditional(
+          record,
+          row,
+          rule as ConditionalRule,
+          context,
+          options,
+        );
 
       default:
         this.logger.warn(`Unknown validation rule type: ${(rule as any).type}`);
@@ -292,7 +336,9 @@ export class ValidationService {
         break;
 
       case DataType.ARRAY:
-        isValid = Array.isArray(value) || (typeof value === 'string' && value.startsWith('['));
+        isValid =
+          Array.isArray(value) ||
+          (typeof value === 'string' && value.startsWith('['));
         break;
 
       case DataType.JSON:
@@ -352,7 +398,10 @@ export class ValidationService {
         break;
 
       case DataType.PHONE:
-        isValid = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/.test(value);
+        isValid =
+          /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/.test(
+            value,
+          );
         expectedFormat = '+1234567890 or (123) 456-7890';
         break;
 
@@ -425,14 +474,17 @@ export class ValidationService {
     const errors: ValidationError[] = [];
 
     if (rule.min !== undefined) {
-      const minValid = rule.minInclusive ? numValue >= rule.min : numValue > rule.min;
+      const minValid = rule.minInclusive
+        ? numValue >= rule.min
+        : numValue > rule.min;
       if (!minValid) {
         errors.push(
           this.createError(
             row,
             rule.field,
             'VALUE_TOO_SMALL',
-            rule.message || `${rule.field} must be ${rule.minInclusive ? '>=' : '>'} ${rule.min}`,
+            rule.message ||
+              `${rule.field} must be ${rule.minInclusive ? '>=' : '>'} ${rule.min}`,
             rule.severity,
             value,
             `${rule.minInclusive ? '>=' : '>'} ${rule.min}`,
@@ -442,14 +494,17 @@ export class ValidationService {
     }
 
     if (rule.max !== undefined) {
-      const maxValid = rule.maxInclusive ? numValue <= rule.max : numValue < rule.max;
+      const maxValid = rule.maxInclusive
+        ? numValue <= rule.max
+        : numValue < rule.max;
       if (!maxValid) {
         errors.push(
           this.createError(
             row,
             rule.field,
             'VALUE_TOO_LARGE',
-            rule.message || `${rule.field} must be ${rule.maxInclusive ? '<=' : '<'} ${rule.max}`,
+            rule.message ||
+              `${rule.field} must be ${rule.maxInclusive ? '<=' : '<'} ${rule.max}`,
             rule.severity,
             value,
             `${rule.maxInclusive ? '<=' : '<'} ${rule.max}`,
@@ -483,7 +538,8 @@ export class ValidationService {
           row,
           rule.field,
           'STRING_TOO_SHORT',
-          rule.message || `${rule.field} must be at least ${rule.minLength} characters`,
+          rule.message ||
+            `${rule.field} must be at least ${rule.minLength} characters`,
           rule.severity,
           value,
           `>= ${rule.minLength} characters`,
@@ -497,7 +553,8 @@ export class ValidationService {
           row,
           rule.field,
           'STRING_TOO_LONG',
-          rule.message || `${rule.field} must be at most ${rule.maxLength} characters`,
+          rule.message ||
+            `${rule.field} must be at most ${rule.maxLength} characters`,
           rule.severity,
           value,
           `<= ${rule.maxLength} characters`,
@@ -528,7 +585,9 @@ export class ValidationService {
     }
 
     const key = rule.field;
-    const compareValue = rule.caseSensitive ? value : String(value).toLowerCase();
+    const compareValue = rule.caseSensitive
+      ? value
+      : String(value).toLowerCase();
 
     // Check in current batch
     if (!context.existingData.has(key)) {
@@ -542,7 +601,8 @@ export class ValidationService {
           row,
           rule.field,
           'DUPLICATE_VALUE',
-          rule.message || `${rule.field} must be unique. Value "${value}" already exists`,
+          rule.message ||
+            `${rule.field} must be unique. Value "${value}" already exists`,
           rule.severity,
           value,
           'Unique value',
@@ -569,7 +629,10 @@ export class ValidationService {
       return [];
     }
 
-    if ((value === null || value === undefined || value === '') && rule.allowNull) {
+    if (
+      (value === null || value === undefined || value === '') &&
+      rule.allowNull
+    ) {
       return [];
     }
 
@@ -622,7 +685,10 @@ export class ValidationService {
         ];
       }
     } catch (error) {
-      this.logger.error(`Foreign key validation failed for ${rule.field}:`, error);
+      this.logger.error(
+        `Foreign key validation failed for ${rule.field}:`,
+        error,
+      );
       return [
         this.createError(
           row,
@@ -651,7 +717,9 @@ export class ValidationService {
       return [];
     }
 
-    const compareValue = rule.caseSensitive ? value : String(value).toLowerCase();
+    const compareValue = rule.caseSensitive
+      ? value
+      : String(value).toLowerCase();
     const allowedValues: any[] = rule.caseSensitive
       ? rule.allowedValues
       : rule.allowedValues.map((v) => String(v).toLowerCase());
@@ -662,7 +730,8 @@ export class ValidationService {
           row,
           rule.field,
           'INVALID_ENUM_VALUE',
-          rule.message || `${rule.field} must be one of: ${rule.allowedValues.join(', ')}`,
+          rule.message ||
+            `${rule.field} must be one of: ${rule.allowedValues.join(', ')}`,
           rule.severity,
           value,
           rule.allowedValues.join(', '),
@@ -686,7 +755,10 @@ export class ValidationService {
       return [];
     }
 
-    const pattern = typeof rule.pattern === 'string' ? new RegExp(rule.pattern, rule.flags) : rule.pattern;
+    const pattern =
+      typeof rule.pattern === 'string'
+        ? new RegExp(rule.pattern, rule.flags)
+        : rule.pattern;
 
     if (!pattern.test(String(value))) {
       return [
@@ -760,7 +832,13 @@ export class ValidationService {
       if (rule.condition(record)) {
         const errors: ValidationError[] = [];
         for (const subRule of rule.rules) {
-          const subErrors = await this.validateRule(record, row, subRule, context, options);
+          const subErrors = await this.validateRule(
+            record,
+            row,
+            subRule,
+            context,
+            options,
+          );
           errors.push(...subErrors);
         }
         return errors;
@@ -789,10 +867,14 @@ export class ValidationService {
     rules: AnyValidationRule[],
     context: ValidationContext,
   ): Promise<void> {
-    const uniqueRules = rules.filter((r) => r.type === ValidationRuleType.UNIQUE) as UniqueRule[];
+    const uniqueRules = rules.filter(
+      (r) => r.type === ValidationRuleType.UNIQUE,
+    ) as UniqueRule[];
 
     for (const rule of uniqueRules) {
-      const values = records.map((r) => r[rule.field]).filter((v) => v !== null && v !== undefined && v !== '');
+      const values = records
+        .map((r) => r[rule.field])
+        .filter((v) => v !== null && v !== undefined && v !== '');
 
       if (values.length === 0) continue;
 
@@ -886,7 +968,8 @@ export class ValidationService {
     for (const issue of allIssues) {
       errorsByType[issue.type] = (errorsByType[issue.type] || 0) + 1;
       errorsByField[issue.field] = (errorsByField[issue.field] || 0) + 1;
-      errorsBySeverity[issue.severity] = (errorsBySeverity[issue.severity] || 0) + 1;
+      errorsBySeverity[issue.severity] =
+        (errorsBySeverity[issue.severity] || 0) + 1;
     }
 
     return { errorsByType, errorsByField, errorsBySeverity };

@@ -13,7 +13,13 @@ import {
   HttpCode,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Response } from 'express';
 import { ExportService } from '../services/export.service';
 import { StartExportDto, GetJobsQueryDto } from '../dto/import-export.dto';
@@ -34,7 +40,8 @@ export class ExportController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     summary: 'Create export job',
-    description: 'Create a new export job to generate a file with filtered data from the database. The job is processed asynchronously in the background.',
+    description:
+      'Create a new export job to generate a file with filtered data from the database. The job is processed asynchronously in the background.',
   })
   @ApiBody({ type: StartExportDto })
   @ApiResponse({
@@ -52,13 +59,18 @@ export class ExportController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid entity type or filters' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid entity type or filters',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async createExport(@Body() dto: StartExportDto, @Req() req: any) {
     // TODO: Get userId from authentication guard (req.user.id)
     const userId = 'system-user-id'; // Temporary placeholder
-    
-    this.logger.log(`Creating export job for entity ${dto.entityType} in ${dto.fileFormat} format`);
+
+    this.logger.log(
+      `Creating export job for entity ${dto.entityType} in ${dto.fileFormat} format`,
+    );
     return this.exportService.createExport(dto, userId);
   }
 
@@ -69,7 +81,8 @@ export class ExportController {
   @Get('jobs/:jobId')
   @ApiOperation({
     summary: 'Get export job status',
-    description: 'Retrieve detailed information about an export job including progress, status, and download URL when completed.',
+    description:
+      'Retrieve detailed information about an export job including progress, status, and download URL when completed.',
   })
   @ApiResponse({
     status: 200,
@@ -110,12 +123,31 @@ export class ExportController {
   @Get('jobs')
   @ApiOperation({
     summary: 'List export jobs',
-    description: 'List all export jobs for the authenticated user with optional filtering and pagination.',
+    description:
+      'List all export jobs for the authenticated user with optional filtering and pagination.',
   })
-  @ApiQuery({ name: 'entityType', required: false, description: 'Filter by entity type' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
-  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number })
+  @ApiQuery({
+    name: 'entityType',
+    required: false,
+    description: 'Filter by entity type',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page',
+    type: Number,
+  })
   @ApiResponse({
     status: 200,
     description: 'Export jobs list retrieved successfully.',
@@ -155,7 +187,8 @@ export class ExportController {
   @Post('jobs/:jobId/cancel')
   @ApiOperation({
     summary: 'Cancel export job',
-    description: 'Cancel a queued or processing export job. Cannot cancel completed or failed jobs.',
+    description:
+      'Cancel a queued or processing export job. Cannot cancel completed or failed jobs.',
   })
   @ApiResponse({
     status: 200,
@@ -168,10 +201,16 @@ export class ExportController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad request - cannot cancel completed/failed job' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - cannot cancel completed/failed job',
+  })
   @ApiResponse({ status: 404, description: 'Export job not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async cancelJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
+  async cancelJob(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Req() req: any,
+  ) {
     const userId = 'system-user-id'; // TODO: Get from req.user.id
     return this.exportService.cancelJob(jobId, userId);
   }
@@ -183,7 +222,8 @@ export class ExportController {
   @Post('jobs/:jobId/retry')
   @ApiOperation({
     summary: 'Retry failed export job',
-    description: 'Re-queue a failed export job for processing. Resets all counters and status.',
+    description:
+      'Re-queue a failed export job for processing. Resets all counters and status.',
   })
   @ApiResponse({
     status: 200,
@@ -198,10 +238,16 @@ export class ExportController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad request - can only retry failed jobs' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - can only retry failed jobs',
+  })
   @ApiResponse({ status: 404, description: 'Export job not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async retryJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
+  async retryJob(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Req() req: any,
+  ) {
     const userId = 'system-user-id'; // TODO: Get from req.user.id
     return this.exportService.retryJob(jobId, userId);
   }
@@ -213,7 +259,8 @@ export class ExportController {
   @Get('jobs/:jobId/download')
   @ApiOperation({
     summary: 'Download export file',
-    description: 'Download the generated export file. Only available when job status is COMPLETED.',
+    description:
+      'Download the generated export file. Only available when job status is COMPLETED.',
   })
   @ApiResponse({
     status: 200,
@@ -225,7 +272,10 @@ export class ExportController {
       'application/xml': {},
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad request - job not completed yet' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - job not completed yet',
+  })
   @ApiResponse({ status: 404, description: 'Export job or file not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async downloadFile(
@@ -234,14 +284,17 @@ export class ExportController {
     @Req() req: any,
   ) {
     const userId = 'system-user-id'; // TODO: Get from req.user.id
-    
-    const { buffer, fileName, mimeType } = await this.exportService.downloadFile(jobId, userId);
+
+    const { buffer, fileName, mimeType } =
+      await this.exportService.downloadFile(jobId, userId);
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('Content-Length', buffer.length);
-    
-    this.logger.log(`Downloading export file: ${fileName} (${buffer.length} bytes)`);
+
+    this.logger.log(
+      `Downloading export file: ${fileName} (${buffer.length} bytes)`,
+    );
     res.send(buffer);
   }
 }

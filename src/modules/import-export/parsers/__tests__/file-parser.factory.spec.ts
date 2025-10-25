@@ -103,9 +103,9 @@ describe('FileParserFactory', () => {
         ),
       ).toBe(FileFormat.EXCEL);
 
-      expect(
-        factory.detectFormatFromMimeType('application/vnd.ms-excel'),
-      ).toBe(FileFormat.EXCEL);
+      expect(factory.detectFormatFromMimeType('application/vnd.ms-excel')).toBe(
+        FileFormat.EXCEL,
+      );
     });
 
     it('should detect JSON from application/json MIME type', () => {

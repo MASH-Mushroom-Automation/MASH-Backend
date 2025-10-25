@@ -1,6 +1,6 @@
 /**
  * Import Service Unit Tests
- * 
+ *
  * Tests for ImportService covering:
  * - File upload and validation
  * - Job creation and queuing
@@ -301,7 +301,9 @@ describe('ImportService', () => {
         updatedAt: new Date(),
       });
 
-      mockPrismaService.importExportError.createMany.mockResolvedValue({ count: 1 });
+      mockPrismaService.importExportError.createMany.mockResolvedValue({
+        count: 1,
+      });
       mockImportQueue.add.mockResolvedValue({ id: 'queue-job-123' });
 
       const result = await service.uploadFile(mockFile, mockDto, mockUserId);
@@ -354,21 +356,25 @@ describe('ImportService', () => {
       expect(result.id).toBe(mockJobId);
       expect(result.status).toBe(JobStatus.COMPLETED);
       expect(result.errors).toHaveLength(1);
-      expect(mockPrismaService.importExportJob.findUnique).toHaveBeenCalledWith({
-        where: { id: mockJobId },
-        include: {
-          errors: {
-            take: 100,
-            orderBy: { row: 'asc' },
+      expect(mockPrismaService.importExportJob.findUnique).toHaveBeenCalledWith(
+        {
+          where: { id: mockJobId },
+          include: {
+            errors: {
+              take: 100,
+              orderBy: { row: 'asc' },
+            },
           },
         },
-      });
+      );
     });
 
     it('should throw NotFoundException when job not found', async () => {
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.getJob(mockJobId, mockUserId)).rejects.toThrow(NotFoundException);
+      await expect(service.getJob(mockJobId, mockUserId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when job belongs to different user', async () => {
@@ -377,7 +383,9 @@ describe('ImportService', () => {
         createdBy: 'different-user',
       });
 
-      await expect(service.getJob(mockJobId, mockUserId)).rejects.toThrow(NotFoundException);
+      await expect(service.getJob(mockJobId, mockUserId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -491,7 +499,9 @@ describe('ImportService', () => {
         createdBy: mockUserId,
       });
 
-      await expect(service.cancelJob(mockJobId, mockUserId)).rejects.toThrow(BadRequestException);
+      await expect(service.cancelJob(mockJobId, mockUserId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -535,7 +545,9 @@ describe('ImportService', () => {
         createdBy: mockUserId,
       });
 
-      await expect(service.retryJob(mockJobId, mockUserId)).rejects.toThrow(BadRequestException);
+      await expect(service.retryJob(mockJobId, mockUserId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

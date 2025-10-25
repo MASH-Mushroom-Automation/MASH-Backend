@@ -299,17 +299,24 @@ describe('ExportService', () => {
 
     it('should list exports with pagination', async () => {
       const mockJobs = [
-        { id: 'job1', entityType: 'PRODUCT' as any, totalRecords: 100, processedRecords: 0 },
-        { id: 'job2', entityType: 'USER' as any, totalRecords: 50, processedRecords: 0 },
+        {
+          id: 'job1',
+          entityType: 'PRODUCT' as any,
+          totalRecords: 100,
+          processedRecords: 0,
+        },
+        {
+          id: 'job2',
+          entityType: 'USER' as any,
+          totalRecords: 50,
+          processedRecords: 0,
+        },
       ];
 
       mockPrismaService.importExportJob.findMany.mockResolvedValue(mockJobs);
       mockPrismaService.importExportJob.count.mockResolvedValue(2);
 
-      const result = await service.listJobs(
-        userId,
-        { page: 1, limit: 10 },
-      );
+      const result = await service.listJobs(userId, { page: 1, limit: 10 });
 
       expect(result).toEqual({
         jobs: [
@@ -327,10 +334,11 @@ describe('ExportService', () => {
       mockPrismaService.importExportJob.findMany.mockResolvedValue([]);
       mockPrismaService.importExportJob.count.mockResolvedValue(0);
 
-      await service.listJobs(
-        userId,
-        { entityType: 'PRODUCT' as any, page: 1, limit: 10 },
-      );
+      await service.listJobs(userId, {
+        entityType: 'PRODUCT' as any,
+        page: 1,
+        limit: 10,
+      });
 
       expect(mockPrismaService.importExportJob.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -348,10 +356,11 @@ describe('ExportService', () => {
       mockPrismaService.importExportJob.findMany.mockResolvedValue([]);
       mockPrismaService.importExportJob.count.mockResolvedValue(0);
 
-      await service.listJobs(
-        userId,
-        { status: 'COMPLETED', page: 1, limit: 10 },
-      );
+      await service.listJobs(userId, {
+        status: 'COMPLETED',
+        page: 1,
+        limit: 10,
+      });
 
       expect(mockPrismaService.importExportJob.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

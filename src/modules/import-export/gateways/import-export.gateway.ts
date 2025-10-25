@@ -1,6 +1,6 @@
 /**
  * Import Export WebSocket Gateway
- * 
+ *
  * Provides real-time progress updates for import/export jobs via Socket.IO.
  * Clients can subscribe to specific jobs and receive progress events.
  */
@@ -60,7 +60,9 @@ interface JobFailedData {
   },
   namespace: process.env.WS_NAMESPACE || '/import-export',
 })
-export class ImportExportGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ImportExportGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -213,7 +215,9 @@ export class ImportExportGateway implements OnGatewayConnection, OnGatewayDiscon
       return;
     }
 
-    this.logger.log(`Emitting completion for job ${data.jobId} to ${subscribers.size} subscriber(s)`);
+    this.logger.log(
+      `Emitting completion for job ${data.jobId} to ${subscribers.size} subscriber(s)`,
+    );
 
     // Emit to all subscribed clients
     for (const socketId of subscribers) {
@@ -233,7 +237,9 @@ export class ImportExportGateway implements OnGatewayConnection, OnGatewayDiscon
       return;
     }
 
-    this.logger.error(`Emitting failure for job ${data.jobId} to ${subscribers.size} subscriber(s)`);
+    this.logger.error(
+      `Emitting failure for job ${data.jobId} to ${subscribers.size} subscriber(s)`,
+    );
 
     // Emit to all subscribed clients
     for (const socketId of subscribers) {

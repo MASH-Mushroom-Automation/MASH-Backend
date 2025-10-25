@@ -49,6 +49,12 @@ model User {
   // Import/Export System Relations
   importExportJobs ImportExportJob[] @relation("ImportExportJobsCreated")
 
+  // API Gateway & Rate Limiting Relations (Issue #32)
+  rateLimitOverrides RateLimitOverride[]
+  apiUsageLogs       ApiUsageLog[]
+  requestQueues      RequestQueue[]
+  apiVersionUsage    ApiVersionUsage[]
+
   // Performance Indexes for analytics queries
   @@index([createdAt])
   @@index([isActive, role])
@@ -1161,3 +1167,179 @@ enum ErrorSeverity {
   ERROR
   WARNING
 }
+
+// ============================================
+// API GATEWAY & RATE LIMITING (Issue #32)
+// ============================================
+
+// Load Balancing Strategy enum
+enum LoadBalancingStrategy {
+  ROUND_ROBIN
+  LEAST_CONNECTIONS
+  WEIGHTED_ROUND_ROBIN
+  IP_HASH
+  HEALTH_BASED
+}
+
+// Rate Limit Strategy enum
+enum RateLimitStrategy {
+  TOKEN_BUCKET
+  LEAKY_BUCKET
+  FIXED_WINDOW
+  SLIDING_WINDOW
+  ADAPTIVE
+}
+
+// Request Queue Status enum
+enum RequestQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+// Circuit Breaker State enum
+enum CircuitBreakerStateEnum {
+  CLOSED
+  OPEN
+  HALF_OPEN
+}
+
+// 1. API Gateway Configuration - Routing rules and service registry
+model ApiGatewayConfig {
+  id               String                 @id @default(cuid())
+  serviceName      String                 @unique
+  basePath         String                 // e.g., /api/v1/orders
+  targetUrl        String                 // e.g., http://orders-service:3001
+  healthCheckUrl   String?                // e.g., http://orders-service:3001/health
+  timeout          Int                    @default(30000) // milliseconds
+  retryAttempts    Int                    @default(3)
+  circuitBreaker   Boolean                @default(true)
+  loadBalancing    LoadBalancingStrategy  @default(ROUND_ROBIN)
+  isActive         Boolean                @default(true)
+  priority         Int                    @default(0) // Higher priority routes checked first
+  metadata         Json?                  // Additional configuration
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@map("api_gateway_configs")
+}
+
+// 2. Rate Limit Overrides - Per-user or per-API-key custom limits
+model RateLimitOverride {
+  id            String            @id @default(cuid())
+  userId        String?
+  apiKey        String?
+  endpoint      String            // e.g., /api/v1/products
+  requestLimit  Int               // Number of requests allowed
+  timeWindowMs  Int               // Time window in milliseconds
+  strategy      RateLimitStrategy @default(TOKEN_BUCKET)
+  priority      Int               @default(0)
+  reason        String?           // Why this override exists
+  expiresAt     DateTime?         // When this override expires
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([apiKey])
+  @@index([endpoint])
+  @@map("rate_limit_overrides")
+}
+
+// 3. API Usage Logs - Detailed analytics for every API request
+model ApiUsageLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  apiKey        String?
+  endpoint      String
+  method        String   // HTTP method (GET, POST, etc.)
+  version       String   // API version (v1, v2)
+  statusCode    Int
+  responseTime  Int      // milliseconds
+  requestSize   Int?     // bytes
+  responseSize  Int?     // bytes
+  ipAddress     String
+  userAgent     String?
+  referer       String?
+  rateLimitHit  Boolean  @default(false)
+  throttled     Boolean  @default(false)
+  queueTime     Int?     // milliseconds in queue
+  metadata      Json?
+  timestamp     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, timestamp])
+  @@index([endpoint, timestamp])
+  @@index([timestamp])
+  @@index([apiKey])
+  @@map("api_usage_logs")
+}
+
+// 4. Request Queue - Throttled requests waiting to be processed
+model RequestQueue {
+  id               String             @id @default(cuid())
+  userId           String?
+  endpoint         String
+  method           String
+  priority         Int                @default(50) // 0-100 scale (higher = more priority)
+  payload          Json?
+  headers          Json?
+  status           RequestQueueStatus @default(PENDING)
+  estimatedWaitMs  Int?
+  queuedAt         DateTime           @default(now())
+  processedAt      DateTime?
+  completedAt      DateTime?
+  expiresAt        DateTime
+  retryCount       Int                @default(0)
+  errorMessage     String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, priority, queuedAt])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("request_queues")
+}
+
+// 5. API Version Usage - Track which API versions are being used
+model ApiVersionUsage {
+  id           String   @id @default(cuid())
+  version      String
+  endpoint     String
+  userId       String?
+  requestCount Int      @default(1)
+  lastUsedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([version, endpoint, userId])
+  @@index([version])
+  @@index([userId])
+  @@map("api_version_usage")
+}
+
+// 6. Circuit Breaker State - Track circuit breaker state for each service
+model CircuitBreakerState {
+  id            String                  @id @default(cuid())
+  serviceName   String                  @unique
+  state         CircuitBreakerStateEnum @default(CLOSED)
+  failureCount  Int                     @default(0)
+  successCount  Int                     @default(0)
+  lastFailureAt DateTime?
+  lastSuccessAt DateTime?
+  nextRetryAt   DateTime?
+  openedAt      DateTime?
+  metadata      Json?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([state])
+  @@map("circuit_breaker_states")
+}
+ 

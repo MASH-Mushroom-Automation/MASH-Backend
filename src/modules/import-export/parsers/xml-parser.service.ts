@@ -27,10 +27,7 @@ export class XmlParserService {
    * @param options Parsing options
    * @returns Parsed data
    */
-  parse(
-    fileBuffer: Buffer,
-    options: XmlParseOptions = {},
-  ): XmlParsedData {
+  parse(fileBuffer: Buffer, options: XmlParseOptions = {}): XmlParsedData {
     this.logger.log('Parsing XML file from buffer');
 
     try {
@@ -191,7 +188,8 @@ export class XmlParserService {
       };
 
       // Add XML declaration
-      const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(xmlObject);
+      const xml =
+        '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(xmlObject);
 
       return xml;
     } catch (error) {

@@ -24,10 +24,7 @@ export class JsonParserService {
    * @param options Parsing options
    * @returns Parsed data
    */
-  parse(
-    fileBuffer: Buffer,
-    options: JsonParseOptions = {},
-  ): JsonParsedData {
+  parse(fileBuffer: Buffer, options: JsonParseOptions = {}): JsonParsedData {
     this.logger.log('Parsing JSON file from buffer');
 
     try {
@@ -157,11 +154,7 @@ export class JsonParserService {
       }
 
       // Convert to JSON
-      const json = JSON.stringify(
-        output,
-        null,
-        options.pretty ? 2 : undefined,
-      );
+      const json = JSON.stringify(output, null, options.pretty ? 2 : undefined);
 
       return json;
     } catch (error) {
@@ -236,8 +229,7 @@ export class JsonParserService {
   } {
     const parsed = this.parse(fileBuffer);
 
-    const fields =
-      parsed.data.length > 0 ? Object.keys(parsed.data[0]) : [];
+    const fields = parsed.data.length > 0 ? Object.keys(parsed.data[0]) : [];
 
     return {
       data: parsed.data.slice(0, recordCount),
