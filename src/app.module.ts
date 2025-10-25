@@ -37,7 +37,8 @@ import { CommonModule } from './common/common.module';
 import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
 import { TracingModule } from './monitoring/tracing/tracing.module';
 import { UsersModule } from './modules/users/users.module';
-import { DevicesModule } from './modules/devices/devices.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+// import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -49,9 +50,11 @@ import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
-import { WebsocketModule } from './modules/websocket/websocket.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+// import { WebsocketModule } from './modules/websocket/websocket.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
-import { SearchModule } from './modules/search/search.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+// import { SearchModule } from './modules/search/search.module';
 import { ImportExportModule } from './modules/import-export/import-export.module';
 import { GatewayModule } from './modules/gateway/gateway.module';
 import { RedisService } from './database/redis.service';
@@ -104,7 +107,8 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     UsersModule,
 
-    DevicesModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+    // DevicesModule,
 
     SensorsModule,
 
@@ -126,8 +130,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     InventoryModule,
 
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
     // Search Engine Module (Issue #28 - Advanced Search & Filtering)
-    SearchModule,
+    // SearchModule,
 
     // Import/Export Module (Issue #30 - Data Export & Import Backend System)
     ImportExportModule,
@@ -135,8 +140,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     // API Gateway Module (Issue #32 - API Gateway & Rate Limiting Backend)
     GatewayModule,
 
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
     // WebSocket module for real-time communication
-    WebsocketModule,
+    // WebsocketModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,
