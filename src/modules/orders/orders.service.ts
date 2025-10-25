@@ -110,9 +110,9 @@ export class OrdersService {
       if (!product) {
         throw new BadRequestException(`Product ${item.productId} not found`);
       }
-      if (product.stock < item.quantity) {
+      if ((product as any).stock < item.quantity) {
         throw new BadRequestException(
-          `Insufficient stock for product ${product.name}`,
+          `Insufficient stock for product ${(product as any).name}`,
         );
       }
     }

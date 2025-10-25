@@ -6,12 +6,19 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+
+// 🔥 CRITICAL FIX: Use type placeholders instead of static import
+// Static import loads native query engine DLL at parse time, which crashes on Windows
+// We'll use dynamic import inside getClient() to defer DLL loading until runtime
+type PrismaClient = any;
+type Prisma = any;
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
   private client: PrismaClient | null = null; // 🔥 LAZY: Don't create client in constructor
+  private PrismaClientClass: any = null; // 🔥 Store dynamically imported PrismaClient class
+  private PrismaNamespace: any = null; // 🔥 Store dynamically imported Prisma namespace
   private isConnected = false;
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;
@@ -97,34 +104,58 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    */
   $connect() { return this.getClient().$connect(); }
   $disconnect() { return this.getClient().$disconnect(); }
-  $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Promise<T> {
-    return this.getClient().$queryRaw<T>(query, ...values) as Promise<T>;
+  $queryRaw<T = unknown>(query: any, ...values: any[]): Promise<T> {
+    return this.getClient().$queryRaw(query, ...values) as Promise<T>;
   }
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Promise<T> {
-    return this.getClient().$queryRawUnsafe<T>(query, ...values) as Promise<T>;
+    return this.getClient().$queryRawUnsafe(query, ...values) as Promise<T>;
   }
-  $executeRaw(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Promise<number> {
+  $executeRaw(query: any, ...values: any[]): Promise<number> {
     return this.getClient().$executeRaw(query, ...values) as Promise<number>;
   }
   $executeRawUnsafe(query: string, ...values: any[]): Promise<number> {
     return this.getClient().$executeRawUnsafe(query, ...values) as Promise<number>;
   }
   $transaction<R>(fn: (prisma: Omit<PrismaClient, '$transaction'>) => Promise<R>): Promise<R>;
-  $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P], options?: { isolationLevel?: Prisma.TransactionIsolationLevel }): Promise<any>;
+  $transaction<P extends any[]>(arg: [...P], options?: { isolationLevel?: any }): Promise<any>;
   $transaction(arg: any, options?: any): Promise<any> {
     return this.getClient().$transaction(arg, options);
   }
 
   
   /**
-   * Get or create the Prisma Client instance
+   * Initialize Prisma Client with dynamic import
+   * 🔥 CRITICAL: Uses dynamic import to defer native DLL loading until this method is called
    */
-  private getClient(): PrismaClient {
-    if (!this.client) {
-      console.log('🔥🔥🔥 getClient() called - Creating PrismaClient instance...');
-      console.log('Stack trace:', new Error().stack);
-      this.logger.log('🔄 Creating PrismaClient instance (first access)...');
-      this.client = new PrismaClient({
+  private async initializeClient(): Promise<void> {
+    if (this.client) {
+      return; // Already initialized
+    }
+
+    // 🔥 DYNAMIC IMPORT: Load @prisma/client at runtime, not parse time
+    // This prevents native query engine DLL from loading during module initialization
+    if (!this.PrismaClientClass) {
+      console.log('🔥🔥🔥 Dynamically importing @prisma/client...');
+      this.logger.log('🔄 Dynamically importing @prisma/client module...');
+      
+      try {
+        const prismaModule = await import('@prisma/client');
+        this.PrismaClientClass = prismaModule.PrismaClient;
+        this.PrismaNamespace = prismaModule.Prisma;
+        this.logger.log('✅ @prisma/client imported successfully');
+        console.log('✅ Prisma module imported successfully');
+      } catch (error) {
+        this.logger.error('❌ Failed to import @prisma/client:', error);
+        console.error('❌ Failed to import @prisma/client:', error);
+        throw error;
+      }
+    }
+    
+    console.log('🔥🔥🔥 Creating PrismaClient instance...');
+    this.logger.log('🔄 Creating PrismaClient instance...');
+    
+    try {
+      this.client = new this.PrismaClientClass({
         log: [
           { emit: 'event', level: 'query' },
           { emit: 'event', level: 'error' },
@@ -134,50 +165,63 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         errorFormat: 'pretty',
       });
       console.log('✅ PrismaClient instance created successfully');
-      
-      // 🚀 Enhanced query performance monitoring (Task 1.1.1)
-      this.client.$on('query', (e: Prisma.QueryEvent) => {
-        this.queryStats.totalQueries++;
-        this.queryStats.totalDuration += e.duration;
-
-        // Skip slow query warnings during cache warming (first 15 seconds)
-        const isWarmingUp = Date.now() - this.startupTime < 15000;
-
-        // Log slow queries (> 50ms)
-        if (e.duration > 50 && !isWarmingUp) {
-          this.queryStats.slowQueries++;
-
-          if (e.duration > this.queryStats.slowestQuery.duration) {
-            this.queryStats.slowestQuery = {
-              duration: e.duration,
-              query: e.query,
-            };
-          }
-
-          const severity = this.getQuerySeverity(e.duration);
-          const logMessage = `[${severity}] Slow Query (${e.duration}ms):\n  Query: ${this.truncateQuery(e.query)}\n  Params: ${e.params}`;
-
-          if (e.duration > 200) {
-            this.logger.error(logMessage);
-          } else if (e.duration > 100) {
-            this.logger.warn(logMessage);
-          } else {
-            this.logger.debug(logMessage);
-          }
-        }
-      });
-
-      // Error logging
-      this.client.$on('error', (e: Prisma.LogEvent) => {
-        this.logger.error(`Prisma Error: ${e.message}`);
-      });
-
-      // Warning logging
-      this.client.$on('warn', (e: Prisma.LogEvent) => {
-        this.logger.warn(`Prisma Warning: ${e.message}`);
-      });
+      this.logger.log('✅ PrismaClient instance created successfully');
+    } catch (error) {
+      this.logger.error('❌ Failed to create PrismaClient instance:', error);
+      console.error('❌ Failed to create PrismaClient instance:', error);
+      throw error;
     }
     
+    // 🚀 Enhanced query performance monitoring (Task 1.1.1)
+    this.client.$on('query', (e: any) => {
+      this.queryStats.totalQueries++;
+      this.queryStats.totalDuration += e.duration;
+
+      // Skip slow query warnings during cache warming (first 15 seconds)
+      const isWarmingUp = Date.now() - this.startupTime < 15000;
+
+      // Log slow queries (> 50ms)
+      if (e.duration > 50 && !isWarmingUp) {
+        this.queryStats.slowQueries++;
+
+        if (e.duration > this.queryStats.slowestQuery.duration) {
+          this.queryStats.slowestQuery = {
+            duration: e.duration,
+            query: e.query,
+          };
+        }
+
+        const severity = this.getQuerySeverity(e.duration);
+        const logMessage = `[${severity}] Slow Query (${e.duration}ms):\n  Query: ${this.truncateQuery(e.query)}\n  Params: ${e.params}`;
+
+        if (e.duration > 200) {
+          this.logger.error(logMessage);
+        } else if (e.duration > 100) {
+          this.logger.warn(logMessage);
+        } else {
+          this.logger.debug(logMessage);
+        }
+      }
+    });
+
+    // Error logging
+    this.client.$on('error', (e: any) => {
+      this.logger.error(`Prisma Error: ${e.message}`);
+    });
+
+    // Warning logging
+    this.client.$on('warn', (e: any) => {
+      this.logger.warn(`Prisma Warning: ${e.message}`);
+    });
+  }
+
+  /**
+   * Get the Prisma Client instance (must be initialized first)
+   */
+  private getClient(): PrismaClient {
+    if (!this.client) {
+      throw new Error('PrismaClient not initialized. Did you forget to call onModuleInit()?');
+    }
     return this.client;
   }
 
@@ -299,13 +343,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    // 🚀 LAZY INITIALIZATION: Don't connect during module init
-    // This prevents the server from crashing if database is temporarily unavailable
-    // Connection will be established on first database query
-    this.logger.log('📊 PrismaService: Lazy initialization enabled');
-    this.logger.log(
-      '⏳ Database connection will be established on first query',
-    );
+    // � DYNAMIC IMPORT: Initialize Prisma Client with dynamic import
+    // This defers native DLL loading until now, not during module parse
+    this.logger.log('📊 PrismaService: Initializing with dynamic import...');
+    
+    try {
+      await this.initializeClient();
+      this.logger.log('✅ PrismaClient initialized successfully');
+      this.logger.log('⏳ Database connection will be established on first query');
+    } catch (error) {
+      this.logger.error('❌ Failed to initialize PrismaClient:', error);
+      throw error;
+    }
   }
 
   /**
