@@ -6,6 +6,11 @@ import {
   IRateLimitResult,
 } from '../interfaces/rate-limit-strategy.interface';
 
+interface BucketState {
+  tokens: number;
+  lastRefillMs: number;
+}
+
 /**
  * TokenBucketStrategy - Token Bucket Rate Limiting Algorithm
  *
@@ -53,13 +58,18 @@ export class TokenBucketStrategy implements IRateLimitStrategy {
 
     // Get or initialize bucket state
     const stateJson = await this.redis.get(storeKey);
-    let state: {
-      tokens: number;
-      lastRefillMs: number;
-    };
+    let state: BucketState;
 
-    if (stateJson) {
-      state = JSON.parse(stateJson);
+    if (stateJson && typeof stateJson === 'string') {
+      try {
+        state = JSON.parse(stateJson) as BucketState;
+      } catch {
+        // Invalid JSON, initialize new state
+        state = {
+          tokens: config.limit,
+          lastRefillMs: now,
+        };
+      }
     } else {
       // Initialize with full bucket
       state = {
@@ -119,17 +129,18 @@ export class TokenBucketStrategy implements IRateLimitStrategy {
     const storeKey = `${this.KEY_PREFIX}${key}`;
     const stateJson = await this.redis.get(storeKey);
 
-    if (!stateJson) {
+    if (!stateJson || typeof stateJson !== 'string') {
       return null;
     }
 
-    const state = JSON.parse(stateJson);
+    const state = JSON.parse(stateJson) as BucketState;
     const ttl = await this.redis.getTTL(storeKey);
+    const limit = 100; // Default limit
 
     return {
       allowed: state.tokens >= 1,
-      current: 0, // Not tracked in state
-      limit: 0, // Not tracked in state
+      current: limit - Math.floor(state.tokens),
+      limit,
       remaining: Math.floor(state.tokens),
       resetMs: ttl * 1000,
       metadata: {

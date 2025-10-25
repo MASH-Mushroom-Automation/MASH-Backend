@@ -35,6 +35,12 @@ export interface IRateLimitConfig {
 
     /** Adaptive: adjustment factor (0-1) */
     adjustmentFactor?: number;
+
+    /** Adaptive: minimum allowed limit (safety floor) */
+    minLimit?: number;
+
+    /** Adaptive: maximum allowed limit (safety ceiling) */
+    maxLimit?: number;
   };
 }
 
@@ -59,6 +65,9 @@ export interface IRateLimitResult {
 
   /** Additional metadata */
   metadata?: {
+    /** Strategy name */
+    strategy?: string;
+
     /** Current bucket level (for token/leaky bucket) */
     bucketLevel?: number;
 
@@ -68,8 +77,23 @@ export interface IRateLimitResult {
     /** Requests in current window (for sliding window) */
     windowRequests?: number[];
 
-    /** Current adjustment factor (for adaptive) */
-    currentLimit?: number;
+    /** Current adaptive limit (for adaptive) */
+    adaptiveLimit?: number;
+
+    /** Base limit before adjustments (for adaptive) */
+    baseLimit?: number;
+
+    /** System load factor (for adaptive) */
+    systemLoad?: number;
+
+    /** User behavior score (for adaptive) */
+    userScore?: number;
+
+    /** Window start timestamp (for fixed window) */
+    windowStart?: number;
+
+    /** General message */
+    message?: string;
   };
 }
 
