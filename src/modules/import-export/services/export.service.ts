@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../../database/prisma.service';
@@ -114,7 +114,7 @@ export class ExportService {
     }
 
     if (job.createdBy !== userId) {
-      throw new NotFoundException(`Export job ${jobId} not found`);
+      throw new ForbiddenException('Access denied to this export job');
     }
 
     // Calculate progress percentage
@@ -315,7 +315,7 @@ export class ExportService {
     }
 
     if (job.createdBy !== userId) {
-      throw new NotFoundException(`Export job ${jobId} not found`);
+      throw new ForbiddenException('Access denied to this export file');
     }
 
     if (job.status !== 'COMPLETED') {
