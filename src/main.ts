@@ -36,76 +36,47 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
   });
-  console.log('🔥🔥🔥 NestFactory.create() completed');
-  
-  // Explicitly initialize the app (onModuleInit hooks should run here)
-  console.log('🔥🔥🔥 About to call app.init()...');
-  try {
-    await app.init();
-    console.log('🔥🔥🔥 app.init() completed successfully!');
-  } catch (error) {
-    console.error('🔥🔥🔥 FATAL ERROR in app.init():', error);
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-    throw error;
-  }
   
   logger.log('✅ Stage 1 complete: Application created');
-  console.log('🔥🔥🔥 About to set up custom logger...');
 
   logger.log('🔧 Stage 2: Setting up custom logger...');
   // Use CustomLogger from CommonModule
   try {
-    console.log('🔥🔥🔥 Attempting to get CustomLogger...');
     const customLogger = app.get(CustomLogger);
-    console.log('🔥🔥🔥 Got CustomLogger successfully');
     app.useLogger(customLogger);
-    console.log('🔥🔥🔥 Set CustomLogger successfully');
     logger.log('✅ Stage 2 complete: Logger configured');
-    console.log('🔥🔥🔥 After logger.log Stage 2 complete');
   } catch (error) {
-    console.error('🔥🔥🔥 FAILED to get/set CustomLogger:', error);
     logger.error('Failed to setup custom logger:', error);
   }
 
-  console.log('🔥🔥🔥 About to set up middleware...');
   // Apply global middleware (order matters!)
   const correlationIdMiddleware = new CorrelationIdMiddleware();
   app.use(correlationIdMiddleware.use.bind(correlationIdMiddleware));
-  console.log('🔥🔥🔥 CorrelationIdMiddleware setup');
 
   const requestLoggerMiddleware = new RequestLoggerMiddleware();
   app.use(requestLoggerMiddleware.use.bind(requestLoggerMiddleware));
-  console.log('🔥🔥🔥 RequestLoggerMiddleware setup');
 
   // Security headers middleware - Additional OWASP-recommended headers
   const securityHeadersMiddleware = new SecurityHeadersMiddleware();
   app.use(securityHeadersMiddleware.use.bind(securityHeadersMiddleware));
-  console.log('🔥🔥🔥 SecurityHeadersMiddleware setup');
 
   // Cookie parser middleware - Required for CSRF protection
   app.use(cookieParser());
-  console.log('🔥🔥🔥 Cookie parser setup');
 
   // CSRF protection middleware - Protects against Cross-Site Request Forgery attacks
   // Note: Must be applied AFTER cookie-parser and BEFORE routes
   const csrfProtectionMiddleware = new CsrfProtectionMiddleware();
   app.use(csrfProtectionMiddleware.use.bind(csrfProtectionMiddleware));
-  console.log('🔥🔥🔥 CSRF protection setup');
 
   // Serve static files (for uploaded avatars)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
-  console.log('🔥🔥🔥 Static assets (uploads) setup');
 
   // Get config service and environment variables first
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
-  console.log(`🔥🔥🔥 Config loaded: PORT=${port}, NODE_ENV=${nodeEnv}`);
 
   // Serve static files for auth pages (HTML, CSS, JS)
   // In production (dist), public folder is copied to dist/public
@@ -117,18 +88,14 @@ async function bootstrap() {
   app.useStaticAssets(publicPath, {
     prefix: '/public/',
   });
-  console.log(`🔥🔥🔥 Static assets (public) setup: ${publicPath}`);
 
-  console.log('🔥🔥🔥 About to apply security middleware...');
   logger.log('🔧 Stage 3: Applying security middleware...');
   // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
-  console.log('🔥🔥🔥 Helmet security applied');
 
   logger.log('🔧 Stage 4: Applying compression...');
   // Compression middleware - Optimized response compression with threshold and filtering
   app.use(compression(getCompressionConfig(nodeEnv)));
-  console.log('🔥🔥🔥 Compression applied');
 
   logger.log('🔧 Stage 5: Enabling CORS...');
   // CORS configuration - Cross-origin resource sharing
@@ -554,15 +521,19 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason: any, promise) => {
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
   const logger = new Logger('UnhandledRejection');
   logger.error('🔥 UNHANDLED REJECTION:');
-  logger.error(`Promise: ${promise}`);
-  logger.error(`Reason type: ${reason?.constructor?.name}`);
-  logger.error(`Reason: ${reason}`);
-  if (reason?.stack) {
+  logger.error('Promise:', promise);
+  
+  if (reason instanceof Error) {
+    logger.error(`Reason type: ${reason.constructor.name}`);
+    logger.error(`Reason: ${reason.message}`);
     logger.error(`Stack: ${reason.stack}`);
+  } else {
+    logger.error(`Reason: ${String(reason)}`);
   }
+  
   process.exit(1);
 });
 

@@ -135,7 +135,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     // 🔥 DYNAMIC IMPORT: Load @prisma/client at runtime, not parse time
     // This prevents native query engine DLL from loading during module initialization
     if (!this.PrismaClientClass) {
-      console.log('🔥🔥🔥 Dynamically importing @prisma/client...');
       this.logger.log('🔄 Dynamically importing @prisma/client module...');
       
       try {
@@ -143,15 +142,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         this.PrismaClientClass = prismaModule.PrismaClient;
         this.PrismaNamespace = prismaModule.Prisma;
         this.logger.log('✅ @prisma/client imported successfully');
-        console.log('✅ Prisma module imported successfully');
       } catch (error) {
         this.logger.error('❌ Failed to import @prisma/client:', error);
-        console.error('❌ Failed to import @prisma/client:', error);
         throw error;
       }
     }
     
-    console.log('🔥🔥🔥 Creating PrismaClient instance...');
     this.logger.log('🔄 Creating PrismaClient instance...');
     
     try {
@@ -164,7 +160,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         ],
         errorFormat: 'pretty',
       });
-      console.log('✅ PrismaClient instance created successfully');
       this.logger.log('✅ PrismaClient instance created successfully');
     } catch (error) {
       this.logger.error('❌ Failed to create PrismaClient instance:', error);
@@ -345,17 +340,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     // 🔥 DYNAMIC IMPORT: Initialize Prisma Client with dynamic import
     // This defers native DLL loading until now, not during module parse
-    console.log('🔥🔥🔥 PrismaService.onModuleInit() called');
     this.logger.log('📊 PrismaService: Initializing with dynamic import...');
     
     try {
       await this.initializeClient();
-      console.log('🔥🔥🔥 PrismaService.initializeClient() completed successfully');
       this.logger.log('✅ PrismaClient initialized successfully');
       this.logger.log('⏳ Database connection will be established on first query');
-      console.log('🔥🔥🔥 PrismaService.onModuleInit() completed successfully');
     } catch (error) {
-      console.error('🔥🔥🔥 PrismaService.onModuleInit() FAILED:', error);
       this.logger.error('❌ Failed to initialize PrismaClient:', error);
       throw error;
     }
