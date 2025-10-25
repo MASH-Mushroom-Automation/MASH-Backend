@@ -185,57 +185,44 @@ export class ValidationService {
         return this.validateRequired(record, row, rule, value);
 
       case ValidationRuleType.TYPE:
-        return this.validateType(record, row, rule as TypeRule, value);
+        return this.validateType(record, row, rule, value);
 
       case ValidationRuleType.FORMAT:
-        return this.validateFormat(record, row, rule as FormatRule, value);
+        return this.validateFormat(record, row, rule, value);
 
       case ValidationRuleType.RANGE:
-        return this.validateRange(record, row, rule as RangeRule, value);
+        return this.validateRange(record, row, rule, value);
 
       case ValidationRuleType.LENGTH:
-        return this.validateLength(record, row, rule as LengthRule, value);
+        return this.validateLength(record, row, rule, value);
 
       case ValidationRuleType.UNIQUE:
-        return this.validateUnique(
-          record,
-          row,
-          rule as UniqueRule,
-          value,
-          context,
-          options,
-        );
+        return this.validateUnique(record, row, rule, value, context, options);
 
       case ValidationRuleType.FOREIGN_KEY:
         return await this.validateForeignKey(
           record,
           row,
-          rule as ForeignKeyRule,
+          rule,
           value,
           context,
           options,
         );
 
       case ValidationRuleType.ENUM:
-        return this.validateEnum(record, row, rule as EnumRule, value);
+        return this.validateEnum(record, row, rule, value);
 
       case ValidationRuleType.PATTERN:
-        return this.validatePattern(record, row, rule as PatternRule, value);
+        return this.validatePattern(record, row, rule, value);
 
       case ValidationRuleType.CUSTOM:
-        return await this.validateCustom(
-          record,
-          row,
-          rule as CustomRule,
-          value,
-          context,
-        );
+        return await this.validateCustom(record, row, rule, value, context);
 
       case ValidationRuleType.CONDITIONAL:
         return await this.validateConditional(
           record,
           row,
-          rule as ConditionalRule,
+          rule,
           context,
           options,
         );
@@ -594,7 +581,7 @@ export class ValidationService {
       context.existingData.set(key, new Set());
     }
 
-    const existingValues = context.existingData.get(key)!;
+    const existingValues = context.existingData.get(key);
     if (existingValues.has(compareValue)) {
       return [
         this.createError(
@@ -869,7 +856,7 @@ export class ValidationService {
   ): Promise<void> {
     const uniqueRules = rules.filter(
       (r) => r.type === ValidationRuleType.UNIQUE,
-    ) as UniqueRule[];
+    );
 
     for (const rule of uniqueRules) {
       const values = records

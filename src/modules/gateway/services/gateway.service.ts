@@ -177,9 +177,9 @@ export class GatewayService {
         // Handle multiple values for same key
         if (params[decodedKey]) {
           if (Array.isArray(params[decodedKey])) {
-            (params[decodedKey] as string[]).push(decodedValue);
+            params[decodedKey].push(decodedValue);
           } else {
-            params[decodedKey] = [params[decodedKey] as string, decodedValue];
+            params[decodedKey] = [params[decodedKey], decodedValue];
           }
         } else {
           params[decodedKey] = decodedValue;
@@ -250,7 +250,7 @@ export class GatewayService {
             .map((v) => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`)
             .join('&');
         }
-        return `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`;
+        return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
       })
       .join('&');
 

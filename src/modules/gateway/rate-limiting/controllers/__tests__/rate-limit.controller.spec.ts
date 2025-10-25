@@ -73,12 +73,8 @@ describe('RateLimitController', () => {
     }).compile();
 
     controller = module.get<RateLimitController>(RateLimitController);
-    dynamicRateLimit = module.get(
-      DynamicRateLimitService,
-    ) as jest.Mocked<DynamicRateLimitService>;
-    analytics = module.get(
-      RateLimitAnalyticsService,
-    ) as jest.Mocked<RateLimitAnalyticsService>;
+    dynamicRateLimit = module.get(DynamicRateLimitService);
+    analytics = module.get(RateLimitAnalyticsService);
   });
 
   afterEach(() => {

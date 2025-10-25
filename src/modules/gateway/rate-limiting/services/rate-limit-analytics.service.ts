@@ -189,7 +189,7 @@ export class RateLimitAnalyticsService {
         });
       }
 
-      const violator = violatorMap.get(v.identifier)!;
+      const violator = violatorMap.get(v.identifier);
       violator.count += 1;
       if (v.windowStart > violator.lastDate) violator.lastDate = v.windowStart;
 
