@@ -43,13 +43,16 @@ import { SensorsModule } from './modules/sensors/sensors.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { CategoriesModule } from './modules/categories/categories.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+// import { AnalyticsModule } from './modules/analytics/analytics.module';
+// import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
-import { AlertsModule } from './modules/alerts/alerts.module';
-import { QueuesModule } from './modules/queues/queues.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+// import { AlertsModule } from './modules/alerts/alerts.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing hang
+// import { QueuesModule } from './modules/queues/queues.module';
 // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
 // import { WebsocketModule } from './modules/websocket/websocket.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
@@ -118,15 +121,19 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     CategoriesModule,
 
-    AnalyticsModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+    // AnalyticsModule,
 
-    NotificationsModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+    // NotificationsModule,
 
     AdminModule,
 
-    AlertsModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+    // AlertsModule,
 
-    QueuesModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing startup hang
+    // QueuesModule,
 
     InventoryModule,
 

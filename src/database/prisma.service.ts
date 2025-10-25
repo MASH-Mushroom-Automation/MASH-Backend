@@ -15,6 +15,8 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
   private isConnected = false;
+  private isInitializing = false;
+  private initPromise: Promise<void> | null = null;
   private readonly queryTimeoutMs: number; // Query timeout in milliseconds
   private readonly startupTime = Date.now(); // Track startup time to suppress cache warming warnings
 
@@ -208,29 +210,37 @@ export class PrismaService
   async onModuleInit() {
     try {
       this.logger.log('🔄 Connecting to Neon PostgreSQL...');
+      this.logger.log('📊 Step 1: Setting up connection with 10s timeout');
 
       // Set a timeout for the connection attempt
       const connectWithTimeout = Promise.race([
         this.$connect(),
         new Promise((_, reject) =>
           setTimeout(
-            () =>
-              reject(new Error('Database connection timeout after 10 seconds')),
+            () => {
+              this.logger.error('⏰ Database connection TIMEOUT after 10 seconds');
+              reject(new Error('Database connection timeout after 10 seconds'));
+            },
             10000,
           ),
         ),
       ]);
 
+      this.logger.log('📊 Step 2: Attempting connection...');
       await connectWithTimeout;
       this.isConnected = true;
       this.logger.log('✅ Successfully connected to Neon PostgreSQL');
 
+      this.logger.log('📊 Step 3: Running test query...');
       // Test connection with timeout
       const testQueryWithTimeout = Promise.race([
         this.$queryRaw`SELECT 1`,
         new Promise((_, reject) =>
           setTimeout(
-            () => reject(new Error('Test query timeout after 5 seconds')),
+            () => {
+              this.logger.error('⏰ Test query TIMEOUT after 5 seconds');
+              reject(new Error('Test query timeout after 5 seconds'));
+            },
             5000,
           ),
         ),
@@ -240,7 +250,13 @@ export class PrismaService
       this.logger.log('✅ Database connection verified');
     } catch (error) {
       this.isConnected = false;
-      this.logger.error('❌ Failed to connect to database:', error);
+      this.logger.error('❌ Failed to connect to database:');
+      this.logger.error(`   Error type: ${typeof error}`);
+      this.logger.error(`   Error: ${error}`);
+      if (error instanceof Error) {
+        this.logger.error(`   Message: ${error.message}`);
+        this.logger.error(`   Stack: ${error.stack}`);
+      }
       this.logger.error(
         '⚠️  Starting server without database connection - some features will be unavailable',
       );

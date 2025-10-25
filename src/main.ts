@@ -1,5 +1,6 @@
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
 // Initialize OpenTelemetry tracing FIRST (before any other imports)
-import './tracing';
+// import './tracing';
 
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
@@ -504,6 +505,28 @@ See [API Changelog](/docs/API_CHANGELOG.md) for version history and breaking cha
   logger.log(`Environment: ${nodeEnv}`);
   logger.log(`API Prefix: api/v1`);
 }
+
+// 🔧 DEBUGGING: Add global error handlers to catch unhandled errors
+process.on('uncaughtException', (error) => {
+  const logger = new Logger('UncaughtException');
+  logger.error('🔥 UNCAUGHT EXCEPTION:');
+  logger.error(`Error type: ${error.constructor.name}`);
+  logger.error(`Message: ${error.message}`);
+  logger.error(`Stack: ${error.stack}`);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason: any, promise) => {
+  const logger = new Logger('UnhandledRejection');
+  logger.error('🔥 UNHANDLED REJECTION:');
+  logger.error(`Promise: ${promise}`);
+  logger.error(`Reason type: ${reason?.constructor?.name}`);
+  logger.error(`Reason: ${reason}`);
+  if (reason?.stack) {
+    logger.error(`Stack: ${reason.stack}`);
+  }
+  process.exit(1);
+});
 
 bootstrap().catch((error) => {
   const logger = new Logger('Bootstrap');
