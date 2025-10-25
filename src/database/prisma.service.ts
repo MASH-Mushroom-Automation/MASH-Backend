@@ -208,41 +208,72 @@ export class PrismaService
   }
 
   async onModuleInit() {
+    // 🚀 LAZY INITIALIZATION: Don't connect during module init
+    // This prevents the server from crashing if database is temporarily unavailable
+    // Connection will be established on first database query
+    this.logger.log('📊 PrismaService: Lazy initialization enabled');
+    this.logger.log(
+      '⏳ Database connection will be established on first query',
+    );
+  }
+
+  /**
+   * Ensure database connection is established before executing queries
+   * Implements lazy connection pattern for better reliability
+   */
+  async ensureConnected(): Promise<void> {
+    // Already connected
+    if (this.isConnected) {
+      return;
+    }
+
+    // Connection in progress - wait for it
+    if (this.isInitializing && this.initPromise) {
+      return this.initPromise;
+    }
+
+    // Start new connection
+    this.isInitializing = true;
+    this.initPromise = this._connect();
+    
     try {
-      this.logger.log('🔄 Connecting to Neon PostgreSQL...');
-      this.logger.log('📊 Step 1: Setting up connection with 10s timeout');
+      await this.initPromise;
+    } finally {
+      this.isInitializing = false;
+    }
+  }
+
+  /**
+   * Internal method to establish database connection
+   * @private
+   */
+  private async _connect(): Promise<void> {
+    try {
+      this.logger.log('🔄 Connecting to Neon PostgreSQL (lazy initialization)...');
 
       // Set a timeout for the connection attempt
       const connectWithTimeout = Promise.race([
         this.$connect(),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => {
-              this.logger.error('⏰ Database connection TIMEOUT after 10 seconds');
-              reject(new Error('Database connection timeout after 10 seconds'));
-            },
-            10000,
-          ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            this.logger.error('⏰ Database connection TIMEOUT after 10 seconds');
+            reject(new Error('Database connection timeout after 10 seconds'));
+          }, 10000),
         ),
       ]);
 
-      this.logger.log('📊 Step 2: Attempting connection...');
       await connectWithTimeout;
       this.isConnected = true;
       this.logger.log('✅ Successfully connected to Neon PostgreSQL');
 
-      this.logger.log('📊 Step 3: Running test query...');
       // Test connection with timeout
       const testQueryWithTimeout = Promise.race([
         this.$queryRaw`SELECT 1`,
-        new Promise((_, reject) =>
-          setTimeout(
-            () => {
-              this.logger.error('⏰ Test query TIMEOUT after 5 seconds');
-              reject(new Error('Test query timeout after 5 seconds'));
-            },
-            5000,
-          ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            this.logger.error('⏰ Test query TIMEOUT after 5 seconds');
+            reject(new Error('Test query timeout after 5 seconds'));
+          }, 5000),
         ),
       ]);
 
@@ -250,6 +281,7 @@ export class PrismaService
       this.logger.log('✅ Database connection verified');
     } catch (error) {
       this.isConnected = false;
+      this.initPromise = null; // Allow retry
       this.logger.error('❌ Failed to connect to database:');
       this.logger.error(`   Error type: ${typeof error}`);
       this.logger.error(`   Error: ${error}`);
@@ -257,10 +289,7 @@ export class PrismaService
         this.logger.error(`   Message: ${error.message}`);
         this.logger.error(`   Stack: ${error.stack}`);
       }
-      this.logger.error(
-        '⚠️  Starting server without database connection - some features will be unavailable',
-      );
-      // Don't throw - allow server to start without DB
+      throw error; // Propagate error to caller
     }
   }
 
@@ -277,6 +306,7 @@ export class PrismaService
   async healthCheck() {
     const startTime = Date.now();
     try {
+      await this.ensureConnected(); // Ensure connection before health check
       await this.$queryRaw`SELECT 1`;
       const responseTime = Date.now() - startTime;
       return {
@@ -297,6 +327,14 @@ export class PrismaService
     }
   }
 
+  // Note: For transparent lazy connection, Prisma Client Extensions could be used
+  // For now, services should call ensureConnected() explicitly before queries
+  // Example in a service:
+  //   async findUser(id: string) {
+  //     await this.prisma.ensureConnected();
+  //     return this.prisma.user.findUnique({ where: { id } });
+  //   }
+
   /**
    * Execute transaction with retry logic
    */
@@ -304,6 +342,8 @@ export class PrismaService
     fn: (prisma: Omit<PrismaClient, '$connect' | '$disconnect'>) => Promise<T>,
     maxRetries = 3,
   ): Promise<T> {
+    await this.ensureConnected(); // Ensure connection before transaction
+    
     let lastError: Error;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
