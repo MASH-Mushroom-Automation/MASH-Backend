@@ -32,21 +32,27 @@ export class ExportService {
       // Calculate estimated time (rough estimate: 100 records per second)
       const estimatedSeconds = Math.ceil(totalRecords / 100);
 
+      // Generate fileName
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `export-${dto.entityType.toLowerCase()}-${timestamp}.${dto.fileFormat.toLowerCase()}`;
+
       // Create export job in database
       const job = await this.prisma.importExportJob.create({
         data: {
           type: 'EXPORT',
           entityType: dto.entityType,
           fileFormat: dto.fileFormat,
+          fileName,
+          fileSize: 0, // Will be updated after export is complete
           status: 'QUEUED',
           priority: dto.priority || 'NORMAL',
           totalRecords,
           processedRecords: 0,
           successCount: 0,
           failureCount: 0,
-          estimatedTime: estimatedSeconds,
+          estimatedTimeMs: estimatedSeconds * 1000, // Convert to milliseconds
           filters: dto.filters || {},
-          options: dto.options || {},
+          options: (dto.options as any) || {},
           createdBy: userId,
         },
       });
@@ -80,7 +86,7 @@ export class ExportService {
         entityType: job.entityType,
         fileFormat: job.fileFormat,
         totalRecords: job.totalRecords,
-        estimatedTime: job.estimatedTime,
+        estimatedTime: job.estimatedTimeMs ? job.estimatedTimeMs / 1000 : null, // Convert back to seconds for API
         createdAt: job.createdAt,
       };
     } catch (error) {
@@ -168,7 +174,7 @@ export class ExportService {
           processedRecords: true,
           successCount: true,
           failureCount: true,
-          estimatedTime: true,
+          estimatedTimeMs: true,
           startedAt: true,
           completedAt: true,
           createdAt: true,
@@ -266,7 +272,7 @@ export class ExportService {
         failureCount: 0,
         startedAt: null,
         completedAt: null,
-        error: null,
+        // Note: errors is a relation, can't set to null directly. Will be handled separately if needed
       },
     });
 
@@ -316,18 +322,18 @@ export class ExportService {
       throw new BadRequestException(`Export job is not completed yet. Current status: ${job.status}`);
     }
 
-    if (!job.fileKey) {
+    if (!job.fileUrl) {
       throw new NotFoundException('Export file not found');
     }
 
     // Check if file exists
-    const fileExists = await this.fileStorage.fileExists(job.fileKey);
+    const fileExists = await this.fileStorage.fileExists(job.fileUrl);
     if (!fileExists) {
       throw new NotFoundException('Export file has been deleted or expired');
     }
 
     // Download file from storage
-    const fileBuffer = await this.fileStorage.downloadFile(job.fileKey);
+    const fileBuffer = await this.fileStorage.downloadFile(job.fileUrl);
 
     return {
       buffer: fileBuffer,

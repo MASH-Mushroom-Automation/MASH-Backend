@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExportService } from '../export.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { RedisService } from '../../../../database/redis.service';
+import { FileStorageService } from '../file-storage.service';
 import { Queue } from 'bull';
 import { getQueueToken } from '@nestjs/bull';
 import {
@@ -9,7 +10,6 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { FileFormat, EntityType, JobPriority } from '@prisma/client';
 
 describe('ExportService', () => {
   let service: ExportService;
@@ -50,6 +50,13 @@ describe('ExportService', () => {
     removeJobs: jest.fn(),
   };
 
+  const mockFileStorageService = {
+    uploadFile: jest.fn(),
+    downloadFile: jest.fn(),
+    deleteFile: jest.fn(),
+    fileExists: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -65,6 +72,10 @@ describe('ExportService', () => {
         {
           provide: getQueueToken('export'),
           useValue: mockExportQueue,
+        },
+        {
+          provide: FileStorageService,
+          useValue: mockFileStorageService,
         },
       ],
     }).compile();
@@ -85,9 +96,9 @@ describe('ExportService', () => {
   describe('createExport', () => {
     const userId = 'user123';
     const createExportDto = {
-      entityType: EntityType.PRODUCT,
-      fileFormat: FileFormat.CSV,
-      priority: JobPriority.NORMAL,
+      entityType: 'PRODUCT' as any,
+      fileFormat: 'CSV' as any,
+      priority: 'NORMAL' as any,
       filters: { isActive: true },
       options: { delimiter: ',' },
     };
@@ -97,8 +108,8 @@ describe('ExportService', () => {
       const mockJob = {
         id: 'job123',
         type: 'EXPORT',
-        entityType: EntityType.PRODUCT,
-        fileFormat: FileFormat.CSV,
+        entityType: 'PRODUCT' as any,
+        fileFormat: 'CSV' as any,
         status: 'QUEUED',
         totalRecords,
         estimatedTime: 1,
@@ -118,8 +129,8 @@ describe('ExportService', () => {
       expect(mockPrismaService.importExportJob.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           type: 'EXPORT',
-          entityType: EntityType.PRODUCT,
-          fileFormat: FileFormat.CSV,
+          entityType: 'PRODUCT' as any,
+          fileFormat: 'CSV' as any,
           status: 'QUEUED',
           createdBy: userId,
           totalRecords,
@@ -143,10 +154,10 @@ describe('ExportService', () => {
       mockPrismaService.user.count.mockResolvedValue(50);
       mockPrismaService.importExportJob.create.mockResolvedValue({
         id: 'job456',
-        entityType: EntityType.USER,
+        entityType: 'USER' as any,
       });
 
-      const userDto = { ...createExportDto, entityType: EntityType.USER };
+      const userDto = { ...createExportDto, entityType: 'USER' as any };
       await service.createExport(userDto, userId);
 
       expect(mockPrismaService.user.count).toHaveBeenCalled();
@@ -160,7 +171,7 @@ describe('ExportService', () => {
 
       const urgentDto = {
         ...createExportDto,
-        priority: JobPriority.URGENT,
+        priority: 'URGENT' as any,
       };
       await service.createExport(urgentDto, userId);
 
@@ -171,7 +182,7 @@ describe('ExportService', () => {
     });
   });
 
-  describe('getExport', () => {
+  describe('getJob', () => {
     const jobId = 'job123';
     const userId = 'user123';
 
@@ -179,7 +190,7 @@ describe('ExportService', () => {
       const mockJob = {
         id: jobId,
         type: 'EXPORT',
-        entityType: EntityType.PRODUCT,
+        entityType: 'PRODUCT' as any,
         status: 'COMPLETED',
         createdBy: userId,
         totalRecords: 100,
@@ -189,7 +200,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      const result = await service.getExport(jobId, userId);
+      const result = await service.getJob(jobId, userId);
 
       expect(result).toEqual({
         ...mockJob,
@@ -211,7 +222,7 @@ describe('ExportService', () => {
     it('should throw NotFoundException if job not found', async () => {
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.getExport(jobId, userId)).rejects.toThrow(
+      await expect(service.getJob(jobId, userId)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -224,7 +235,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.getExport(jobId, userId)).rejects.toThrow(
+      await expect(service.getJob(jobId, userId)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -239,27 +250,27 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      const result = await service.getExport(jobId, userId);
+      const result = await service.getJob(jobId, userId);
 
       expect(result.progressPercent).toBe(25);
     });
   });
 
-  describe('listExports', () => {
+  describe('listJobs', () => {
     const userId = 'user123';
 
     it('should list exports with pagination', async () => {
       const mockJobs = [
-        { id: 'job1', entityType: EntityType.PRODUCT },
-        { id: 'job2', entityType: EntityType.USER },
+        { id: 'job1', entityType: 'PRODUCT' as any },
+        { id: 'job2', entityType: 'USER' as any },
       ];
 
       mockPrismaService.importExportJob.findMany.mockResolvedValue(mockJobs);
       mockPrismaService.importExportJob.count.mockResolvedValue(2);
 
-      const result = await service.listExports(
-        { page: 1, limit: 10 },
+      const result = await service.listJobs(
         userId,
+        { page: 1, limit: 10 },
       );
 
       expect(result).toEqual({
@@ -275,14 +286,14 @@ describe('ExportService', () => {
       mockPrismaService.importExportJob.findMany.mockResolvedValue([]);
       mockPrismaService.importExportJob.count.mockResolvedValue(0);
 
-      await service.listExports(
-        { entityType: EntityType.PRODUCT, page: 1, limit: 10 },
+      await service.listJobs(
         userId,
+        { entityType: 'PRODUCT' as any, page: 1, limit: 10 },
       );
 
       expect(mockPrismaService.importExportJob.findMany).toHaveBeenCalledWith({
         where: expect.objectContaining({
-          entityType: EntityType.PRODUCT,
+          entityType: 'PRODUCT' as any,
         }),
         skip: 0,
         take: 10,
@@ -294,9 +305,9 @@ describe('ExportService', () => {
       mockPrismaService.importExportJob.findMany.mockResolvedValue([]);
       mockPrismaService.importExportJob.count.mockResolvedValue(0);
 
-      await service.listExports(
-        { status: 'COMPLETED', page: 1, limit: 10 },
+      await service.listJobs(
         userId,
+        { status: 'COMPLETED', page: 1, limit: 10 },
       );
 
       expect(mockPrismaService.importExportJob.findMany).toHaveBeenCalledWith({
@@ -310,7 +321,7 @@ describe('ExportService', () => {
     });
   });
 
-  describe('cancelExport', () => {
+  describe('cancelJob', () => {
     const jobId = 'job123';
     const userId = 'user123';
 
@@ -328,7 +339,7 @@ describe('ExportService', () => {
       });
       mockExportQueue.removeJobs.mockResolvedValue(undefined);
 
-      const result = await service.cancelExport(jobId, userId);
+      const result = await service.cancelJob(jobId, userId);
 
       expect(result.status).toBe('CANCELLED');
       expect(mockExportQueue.removeJobs).toHaveBeenCalledWith(jobId);
@@ -343,7 +354,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.cancelExport(jobId, userId)).rejects.toThrow(
+      await expect(service.cancelJob(jobId, userId)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -351,13 +362,13 @@ describe('ExportService', () => {
     it('should throw NotFoundException if job not found', async () => {
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.cancelExport(jobId, userId)).rejects.toThrow(
+      await expect(service.cancelJob(jobId, userId)).rejects.toThrow(
         NotFoundException,
       );
     });
   });
 
-  describe('downloadExport', () => {
+  describe('downloadFile', () => {
     const jobId = 'job123';
     const userId = 'user123';
 
@@ -373,7 +384,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      const result = await service.downloadExport(jobId, userId);
+      const result = await service.downloadFile(jobId, userId);
 
       expect(result).toEqual({
         url: mockJob.resultFileUrl,
@@ -392,7 +403,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.downloadExport(jobId, userId)).rejects.toThrow(
+      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -400,7 +411,7 @@ describe('ExportService', () => {
     it('should throw NotFoundException if job not found', async () => {
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.downloadExport(jobId, userId)).rejects.toThrow(
+      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -414,7 +425,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.downloadExport(jobId, userId)).rejects.toThrow(
+      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(
         ForbiddenException,
       );
     });
