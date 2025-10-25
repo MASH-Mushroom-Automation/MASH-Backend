@@ -1,6 +1,6 @@
 /**
  * User Import Validator
- * 
+ *
  * Validates user data for import operations.
  * Handles user-specific business rules and constraints.
  */
@@ -20,7 +20,13 @@ export class UserImportValidator extends BaseImportValidator {
   private readonly logger = new Logger(UserImportValidator.name);
 
   // Valid user roles from Prisma schema
-  private readonly USER_ROLES = ['USER', 'ADMIN', 'SELLER', 'MODERATOR', 'SUPER_ADMIN'];
+  private readonly USER_ROLES = [
+    'USER',
+    'ADMIN',
+    'SELLER',
+    'MODERATOR',
+    'SUPER_ADMIN',
+  ];
 
   constructor(prisma: PrismaService) {
     super(prisma);
@@ -168,23 +174,31 @@ export class UserImportValidator extends BaseImportValidator {
       try {
         transformed.preferences = JSON.parse(transformed.preferences);
       } catch {
-        this.logger.warn(`Failed to parse preferences JSON for user: ${transformed.email}`);
+        this.logger.warn(
+          `Failed to parse preferences JSON for user: ${transformed.email}`,
+        );
         transformed.preferences = null;
       }
     }
 
     // Convert boolean strings
     if (typeof transformed.isActive === 'string') {
-      transformed.isActive = transformed.isActive.toLowerCase() === 'true' || transformed.isActive === '1';
+      transformed.isActive =
+        transformed.isActive.toLowerCase() === 'true' ||
+        transformed.isActive === '1';
     }
 
     if (typeof transformed.twoFactorEnabled === 'string') {
       transformed.twoFactorEnabled =
-        transformed.twoFactorEnabled.toLowerCase() === 'true' || transformed.twoFactorEnabled === '1';
+        transformed.twoFactorEnabled.toLowerCase() === 'true' ||
+        transformed.twoFactorEnabled === '1';
     }
 
     // Parse date
-    if (transformed.lastLoginAt && typeof transformed.lastLoginAt === 'string') {
+    if (
+      transformed.lastLoginAt &&
+      typeof transformed.lastLoginAt === 'string'
+    ) {
       transformed.lastLoginAt = new Date(transformed.lastLoginAt);
     }
 
@@ -194,7 +208,9 @@ export class UserImportValidator extends BaseImportValidator {
   /**
    * Transform for database
    */
-  async transformForDatabase(data: Record<string, any>): Promise<Record<string, any>> {
+  async transformForDatabase(
+    data: Record<string, any>,
+  ): Promise<Record<string, any>> {
     const transformed = { ...data };
 
     // Set defaults
@@ -206,7 +222,10 @@ export class UserImportValidator extends BaseImportValidator {
       transformed.isActive = true;
     }
 
-    if (transformed.twoFactorEnabled === undefined || transformed.twoFactorEnabled === null) {
+    if (
+      transformed.twoFactorEnabled === undefined ||
+      transformed.twoFactorEnabled === null
+    ) {
       transformed.twoFactorEnabled = false;
     }
 

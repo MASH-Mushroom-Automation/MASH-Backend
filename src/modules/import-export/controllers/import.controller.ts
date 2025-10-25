@@ -1,6 +1,6 @@
 /**
  * Import Controller
- * 
+ *
  * REST API endpoints for importing data from files.
  * Handles file uploads, job management, and error reporting.
  */
@@ -23,7 +23,13 @@ import {
   Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { Response } from 'express';
 import { ImportService } from '../services/import.service';
 import { StartImportDto } from '../dto/import-export.dto';
@@ -42,7 +48,8 @@ export class ImportController {
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
     summary: 'Upload file for import',
-    description: 'Upload a file (CSV, Excel, JSON, XML) to import data. The file will be validated and queued for processing.',
+    description:
+      'Upload a file (CSV, Excel, JSON, XML) to import data. The file will be validated and queued for processing.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -96,7 +103,10 @@ export class ImportController {
           type: 'array',
           items: { type: 'object' },
         },
-        estimatedTime: { type: 'number', description: 'Estimated time in milliseconds' },
+        estimatedTime: {
+          type: 'number',
+          description: 'Estimated time in milliseconds',
+        },
       },
     },
   })
@@ -110,7 +120,7 @@ export class ImportController {
     @Req() req: any,
   ) {
     const userId = req.user?.id || 'system';
-    
+
     // Transform Express.Multer.File to UploadedFileInfo
     const fileInfo = {
       originalName: file.originalname,
@@ -118,7 +128,7 @@ export class ImportController {
       mimeType: file.mimetype,
       buffer: file.buffer,
     };
-    
+
     return this.importService.uploadFile(fileInfo, dto, userId);
   }
 
@@ -128,7 +138,8 @@ export class ImportController {
   @Get('jobs/:jobId')
   @ApiOperation({
     summary: 'Get job details',
-    description: 'Retrieve detailed information about an import job including status and errors',
+    description:
+      'Retrieve detailed information about an import job including status and errors',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -184,7 +195,8 @@ export class ImportController {
   @Get('jobs')
   @ApiOperation({
     summary: 'List import jobs',
-    description: 'Retrieve a paginated list of import jobs with optional filters',
+    description:
+      'Retrieve a paginated list of import jobs with optional filters',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -252,7 +264,10 @@ export class ImportController {
     status: HttpStatus.NOT_FOUND,
     description: 'Job not found',
   })
-  async cancelJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
+  async cancelJob(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Req() req: any,
+  ) {
     const userId = req.user?.id || 'system';
     return this.importService.cancelJob(jobId, userId);
   }
@@ -277,7 +292,10 @@ export class ImportController {
     status: HttpStatus.NOT_FOUND,
     description: 'Job not found',
   })
-  async retryJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
+  async retryJob(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Req() req: any,
+  ) {
     const userId = req.user?.id || 'system';
     return this.importService.retryJob(jobId, userId);
   }
@@ -317,11 +335,23 @@ export class ImportController {
 
     if (format === 'json') {
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename=errors-${jobId}.json`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=errors-${jobId}.json`,
+      );
       res.send(JSON.stringify(job.errors, null, 2));
     } else {
       // CSV format
-      const headers = ['Row', 'Column', 'Field', 'Error Type', 'Severity', 'Code', 'Message', 'Suggestion'];
+      const headers = [
+        'Row',
+        'Column',
+        'Field',
+        'Error Type',
+        'Severity',
+        'Code',
+        'Message',
+        'Suggestion',
+      ];
       const csvRows = [
         headers.join(','),
         ...job.errors.map((error) =>
@@ -339,7 +369,10 @@ export class ImportController {
       ];
 
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename=errors-${jobId}.csv`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=errors-${jobId}.csv`,
+      );
       res.send(csvRows.join('\n'));
     }
   }

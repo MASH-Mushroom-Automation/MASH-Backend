@@ -1,6 +1,6 @@
 /**
  * Import Service
- * 
+ *
  * Handles file upload, parsing, validation, and job creation for import operations.
  * Creates import jobs and queues them for background processing.
  */
@@ -15,7 +15,13 @@ import { FileParserFactory } from '../parsers/file-parser.factory';
 import { ProductImportValidator } from '../validators/product-import.validator';
 import { UserImportValidator } from '../validators/user-import.validator';
 import { OrderImportValidator } from '../validators/order-import.validator';
-import { FileFormat, EntityType, JobType, JobStatus, JobPriority } from '@prisma/client';
+import {
+  FileFormat,
+  EntityType,
+  JobType,
+  JobStatus,
+  JobPriority,
+} from '@prisma/client';
 import { StartImportDto } from '../dto/import-export.dto';
 
 export interface UploadedFileInfo {
@@ -67,7 +73,9 @@ export class ImportService {
     dto: StartImportDto,
     userId: string,
   ): Promise<ImportJobResult> {
-    this.logger.log(`Starting import for entity: ${dto.entityType}, format: ${dto.fileFormat}`);
+    this.logger.log(
+      `Starting import for entity: ${dto.entityType}, format: ${dto.fileFormat}`,
+    );
 
     const startTime = Date.now();
 
@@ -92,8 +100,14 @@ export class ImportService {
       const parser = this.fileParserFactory.getParser(dto.fileFormat);
       const parseResult = await parser.parse(file.buffer, dto.options || {});
 
-      if (!parseResult.success || !parseResult.data || parseResult.data.length === 0) {
-        throw new BadRequestException(parseResult.error || 'File is empty or invalid');
+      if (
+        !parseResult.success ||
+        !parseResult.data ||
+        parseResult.data.length === 0
+      ) {
+        throw new BadRequestException(
+          parseResult.error || 'File is empty or invalid',
+        );
       }
 
       this.logger.log(`File parsed: ${parseResult.data.length} records found`);
@@ -103,15 +117,21 @@ export class ImportService {
       const rules = validator.getRules();
 
       // 5. Transform data
-      const transformedData = parseResult.data.map((record) => validator.transformData(record));
+      const transformedData = parseResult.data.map((record) =>
+        validator.transformData(record),
+      );
 
       // 6. Validate data
-      const validationResult = await this.validationService.validateBatch(transformedData, rules, {
-        validateUnique: dto.options?.validateData ?? true,
-        validateForeignKeys: dto.options?.validateData ?? true,
-        skipInvalid: dto.options?.skipInvalid ?? false,
-        maxErrors: 100,
-      });
+      const validationResult = await this.validationService.validateBatch(
+        transformedData,
+        rules,
+        {
+          validateUnique: dto.options?.validateData ?? true,
+          validateForeignKeys: dto.options?.validateData ?? true,
+          skipInvalid: dto.options?.skipInvalid ?? false,
+          maxErrors: 100,
+        },
+      );
 
       this.logger.log(
         `Validation completed: ${validationResult.validRecords} valid, ${validationResult.invalidRecords} invalid`,
@@ -142,7 +162,10 @@ export class ImportService {
       this.logger.log(`Import job created: ${job.id}`);
 
       // 8. Store validation errors in database
-      if (validationResult.errors.length > 0 || validationResult.warnings.length > 0) {
+      if (
+        validationResult.errors.length > 0 ||
+        validationResult.warnings.length > 0
+      ) {
         await this.storeValidationErrors(job.id, [
           ...validationResult.errors,
           ...validationResult.warnings,
@@ -341,7 +364,11 @@ export class ImportService {
     }
 
     // Remove from queue
-    const bullJobs = await this.importQueue.getJobs(['waiting', 'active', 'delayed']);
+    const bullJobs = await this.importQueue.getJobs([
+      'waiting',
+      'active',
+      'delayed',
+    ]);
     const bullJob = bullJobs.find((j) => j.data.jobId === jobId);
 
     if (bullJob) {
@@ -429,7 +456,9 @@ export class ImportService {
     }
 
     if (file.size > maxSize) {
-      throw new BadRequestException(`File too large. Max size: ${maxSize / 1024 / 1024}MB`);
+      throw new BadRequestException(
+        `File too large. Max size: ${maxSize / 1024 / 1024}MB`,
+      );
     }
 
     if (!file.originalName) {
@@ -449,14 +478,19 @@ export class ImportService {
       case EntityType.ORDER:
         return this.orderValidator;
       default:
-        throw new BadRequestException(`Validator not implemented for entity type: ${entityType}`);
+        throw new BadRequestException(
+          `Validator not implemented for entity type: ${entityType}`,
+        );
     }
   }
 
   /**
    * Store validation errors in database
    */
-  private async storeValidationErrors(jobId: string, errors: any[]): Promise<void> {
+  private async storeValidationErrors(
+    jobId: string,
+    errors: any[],
+  ): Promise<void> {
     const errorRecords = errors.map((error) => ({
       jobId,
       rowNumber: error.row,
@@ -476,7 +510,9 @@ export class ImportService {
       skipDuplicates: true,
     });
 
-    this.logger.log(`Stored ${errorRecords.length} validation errors for job ${jobId}`);
+    this.logger.log(
+      `Stored ${errorRecords.length} validation errors for job ${jobId}`,
+    );
   }
 
   /**

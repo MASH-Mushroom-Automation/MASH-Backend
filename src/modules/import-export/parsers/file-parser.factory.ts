@@ -68,7 +68,9 @@ export class FileParserFactory {
   detectFormatFromFilename(filename: string): FileFormat {
     const extension = filename.split('.').pop()?.toLowerCase();
 
-    this.logger.log(`Detecting format from filename: ${filename} (extension: ${extension})`);
+    this.logger.log(
+      `Detecting format from filename: ${filename} (extension: ${extension})`,
+    );
 
     switch (extension) {
       case 'csv':
@@ -143,7 +145,7 @@ export class FileParserFactory {
     // Check for XML (starts with <?xml or <root>)
     if (
       content.trim().startsWith('<?xml') ||
-      content.trim().startsWith('<') && content.includes('>')
+      (content.trim().startsWith('<') && content.includes('>'))
     ) {
       return FileFormat.XML;
     }

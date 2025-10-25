@@ -1,6 +1,6 @@
 /**
  * Validation Service Unit Tests
- * 
+ *
  * Tests for ValidationService covering:
  * - All 11 validation rule types
  * - Batch validation
@@ -290,7 +290,10 @@ describe('ValidationService', () => {
         { website: 'https://example.com' },
         { website: 'http://example.com/path?query=value' },
       ];
-      const invalidRecords = [{ website: 'invalid' }, { website: 'ftp://example.com' }];
+      const invalidRecords = [
+        { website: 'invalid' },
+        { website: 'ftp://example.com' },
+      ];
 
       const validResult = await service.validateBatch(validRecords, rules);
       expect(validResult.valid).toBe(true);
@@ -359,7 +362,11 @@ describe('ValidationService', () => {
         },
       ];
 
-      const validRecords = [{ name: 'abc' }, { name: 'Product Name' }, { name: 'A'.repeat(50) }];
+      const validRecords = [
+        { name: 'abc' },
+        { name: 'Product Name' },
+        { name: 'A'.repeat(50) },
+      ];
       const invalidRecords = [{ name: 'ab' }, { name: 'A'.repeat(51) }];
 
       const validResult = await service.validateBatch(validRecords, rules);
@@ -428,7 +435,11 @@ describe('ValidationService', () => {
         },
       ];
 
-      const validRecords = [{ status: 'ACTIVE' }, { status: 'INACTIVE' }, { status: 'PENDING' }];
+      const validRecords = [
+        { status: 'ACTIVE' },
+        { status: 'INACTIVE' },
+        { status: 'PENDING' },
+      ];
       const invalidRecords = [{ status: 'INVALID' }, { status: 'active' }];
 
       const validResult = await service.validateBatch(validRecords, rules);
@@ -450,7 +461,11 @@ describe('ValidationService', () => {
         },
       ];
 
-      const records = [{ status: 'active' }, { status: 'INACTIVE' }, { status: 'InAcTiVe' }];
+      const records = [
+        { status: 'active' },
+        { status: 'INACTIVE' },
+        { status: 'InAcTiVe' },
+      ];
 
       const result = await service.validateBatch(records, rules);
 

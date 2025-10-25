@@ -1,4 +1,10 @@
-import { Processor, Process, OnQueueActive, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
+import {
+  Processor,
+  Process,
+  OnQueueActive,
+  OnQueueCompleted,
+  OnQueueFailed,
+} from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { PrismaService } from '../../../database/prisma.service';
@@ -23,7 +29,9 @@ export class ExportProcessor {
   async handleExport(job: Job) {
     const { jobId, entityType, fileFormat, filters, options } = job.data;
 
-    this.logger.log(`Processing export job ${jobId} for entity ${entityType} in ${fileFormat} format`);
+    this.logger.log(
+      `Processing export job ${jobId} for entity ${entityType} in ${fileFormat} format`,
+    );
 
     try {
       // Update job status to PROCESSING
@@ -61,11 +69,19 @@ export class ExportProcessor {
       });
 
       // Transform records for export
-      const transformedRecords = this.transformRecordsForExport(records, entityType);
+      const transformedRecords = this.transformRecordsForExport(
+        records,
+        entityType,
+      );
 
       // Generate file using appropriate parser
       const parser = this.fileParserFactory.getParser(fileFormat);
-      const fileBuffer = await this.generateFile(parser, transformedRecords, options, fileFormat);
+      const fileBuffer = await this.generateFile(
+        parser,
+        transformedRecords,
+        options,
+        fileFormat,
+      );
 
       // Generate file name
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -110,9 +126,14 @@ export class ExportProcessor {
       // Clean up progress tracking in Redis
       await this.redis.delete(`export:progress:${jobId}`);
 
-      this.logger.log(`Export job ${jobId} completed successfully. Generated file: ${fileName}`);
+      this.logger.log(
+        `Export job ${jobId} completed successfully. Generated file: ${fileName}`,
+      );
     } catch (error) {
-      this.logger.error(`Export job ${jobId} failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Export job ${jobId} failed: ${error.message}`,
+        error.stack,
+      );
 
       // Update job as failed
       await this.prisma.importExportJob.update({
@@ -139,7 +160,10 @@ export class ExportProcessor {
   /**
    * Fetch records from database based on entity type and filters
    */
-  private async fetchRecords(entityType: string, filters: Record<string, any>): Promise<any[]> {
+  private async fetchRecords(
+    entityType: string,
+    filters: Record<string, any>,
+  ): Promise<any[]> {
     const where = this.buildWhereClause(filters);
 
     switch (entityType) {
@@ -224,7 +248,11 @@ export class ExportProcessor {
         }
 
         // Stringify JSON fields
-        if (typeof transformed[key] === 'object' && transformed[key] !== null && !(transformed[key] instanceof Date)) {
+        if (
+          typeof transformed[key] === 'object' &&
+          transformed[key] !== null &&
+          !(transformed[key] instanceof Date)
+        ) {
           // For nested objects (like order items), flatten or stringify
           if (Array.isArray(transformed[key])) {
             transformed[key] = JSON.stringify(transformed[key]);
@@ -238,7 +266,8 @@ export class ExportProcessor {
       // Entity-specific transformations
       if (entityType === 'ORDER' && record.user) {
         transformed.userEmail = record.user.email;
-        transformed.userName = `${record.user.firstName || ''} ${record.user.lastName || ''}`.trim();
+        transformed.userName =
+          `${record.user.firstName || ''} ${record.user.lastName || ''}`.trim();
         delete transformed.user;
       }
 
@@ -312,7 +341,8 @@ export class ExportProcessor {
     }
 
     if (filters.isFeatured !== undefined) {
-      where.isFeatured = filters.isFeatured === 'true' || filters.isFeatured === true;
+      where.isFeatured =
+        filters.isFeatured === 'true' || filters.isFeatured === true;
     }
 
     // Date range filters
@@ -356,7 +386,18 @@ export class ExportProcessor {
     }
 
     // Add other custom filters directly
-    const excludeKeys = ['status', 'isActive', 'isFeatured', 'startDate', 'endDate', 'search', 'minPrice', 'maxPrice', 'categoryId', 'role'];
+    const excludeKeys = [
+      'status',
+      'isActive',
+      'isFeatured',
+      'startDate',
+      'endDate',
+      'search',
+      'minPrice',
+      'maxPrice',
+      'categoryId',
+      'role',
+    ];
     Object.keys(filters).forEach((key) => {
       if (!excludeKeys.includes(key) && filters[key] !== undefined) {
         where[key] = filters[key];
@@ -414,6 +455,9 @@ export class ExportProcessor {
 
   @OnQueueFailed()
   onError(job: Job, error: Error) {
-    this.logger.error(`Failed job ${job.id} of type ${job.name}: ${error.message}`, error.stack);
+    this.logger.error(
+      `Failed job ${job.id} of type ${job.name}: ${error.message}`,
+      error.stack,
+    );
   }
 }

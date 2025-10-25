@@ -116,7 +116,9 @@ describe('ExportProcessor', () => {
       ];
       const csvContent = 'id,name,price\n1,Product 1,100\n2,Product 2,200';
 
-      mockPrismaService.importExportJob.update.mockResolvedValue({ id: jobData.jobId });
+      mockPrismaService.importExportJob.update.mockResolvedValue({
+        id: jobData.jobId,
+      });
       mockPrismaService.product.findMany.mockResolvedValue(mockProducts);
       mockParser.generate.mockReturnValue(csvContent);
       mockFileStorageService.uploadFile.mockResolvedValue({
@@ -173,14 +175,20 @@ describe('ExportProcessor', () => {
       });
 
       expect(mockGateway.emitJobCompleted).toHaveBeenCalled();
-      expect(mockRedisService.delete).toHaveBeenCalledWith(`export:progress:${jobData.jobId}`);
+      expect(mockRedisService.delete).toHaveBeenCalledWith(
+        `export:progress:${jobData.jobId}`,
+      );
     });
 
     it('should handle empty results', async () => {
-      mockPrismaService.importExportJob.update.mockResolvedValue({ id: jobData.jobId });
+      mockPrismaService.importExportJob.update.mockResolvedValue({
+        id: jobData.jobId,
+      });
       mockPrismaService.product.findMany.mockResolvedValue([]);
 
-      await expect(processor.handleExport(mockJob)).rejects.toThrow('No records found matching the export criteria');
+      await expect(processor.handleExport(mockJob)).rejects.toThrow(
+        'No records found matching the export criteria',
+      );
 
       expect(mockPrismaService.importExportJob.update).toHaveBeenCalledWith({
         where: { id: jobData.jobId },
@@ -194,7 +202,9 @@ describe('ExportProcessor', () => {
     it('should handle errors and update job status to FAILED', async () => {
       const error = new Error('Database connection failed');
 
-      mockPrismaService.importExportJob.update.mockResolvedValue({ id: jobData.jobId });
+      mockPrismaService.importExportJob.update.mockResolvedValue({
+        id: jobData.jobId,
+      });
       mockPrismaService.product.findMany.mockRejectedValue(error);
 
       await expect(processor.handleExport(mockJob)).rejects.toThrow(error);

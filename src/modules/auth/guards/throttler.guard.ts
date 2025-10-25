@@ -21,6 +21,8 @@ import {
   getEndpointLimit,
   formatEndpointLimitForLog,
 } from '../../../common/decorators/throttle-endpoint.decorator';
+import { DynamicRateLimitService } from '../../gateway/rate-limiting/services/dynamic-rate-limit.service';
+import { RateLimitAnalyticsService } from '../../gateway/rate-limiting/services/rate-limit-analytics.service';
 
 /**
  * CustomThrottlerGuard - Enhanced rate limiting with role-based limits and database logging
@@ -75,6 +77,8 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     private readonly prisma: PrismaService,
     private readonly quotaService: QuotaService,
     private readonly violationTracker: ViolationTrackerService,
+    private readonly dynamicRateLimit: DynamicRateLimitService,
+    private readonly analytics: RateLimitAnalyticsService,
   ) {
     super(options, storageService, reflector);
   }
@@ -178,6 +182,100 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       response.setHeader('X-RateLimit-Whitelisted', 'true');
       return true; // Bypass all rate limiting
     }
+
+    // 0.5. Check for custom rate limit override (NEW: Dynamic Rate Limiting)
+    // The checkLimit method will internally check for overrides and apply the appropriate strategy
+    const endpoint = request.url;
+    const method = request.method;
+
+    const rateLimitResult = await this.dynamicRateLimit.checkLimit(
+      userId,
+      endpoint,
+      method,
+    );
+
+    // Check if an override was applied (indicated by metadata.strategy presence)
+    const hasOverride = !!rateLimitResult.metadata?.strategy;
+
+    if (hasOverride) {
+      // Custom override is active for this request
+      this.logger.debug(
+        `Custom rate limit active for ${identifier} on ${method} ${endpoint} ` +
+          `(strategy: ${rateLimitResult.metadata?.strategy}, limit: ${rateLimitResult.limit})`,
+      );
+
+      if (!rateLimitResult.allowed) {
+        // Log violation
+        await this.analytics.logViolation(identifier, endpoint, {
+          count: rateLimitResult.current,
+          currentLimit: rateLimitResult.limit,
+        });
+
+        // Track violation for backoff escalation
+        if (userId) {
+          await this.violationTracker.recordViolation(userId);
+        }
+
+        // Set rate limit headers
+        response.setHeader(
+          RATE_LIMIT_HEADERS.LIMIT,
+          rateLimitResult.limit.toString(),
+        );
+        response.setHeader(
+          RATE_LIMIT_HEADERS.REMAINING,
+          rateLimitResult.remaining.toString(),
+        );
+        response.setHeader(
+          RATE_LIMIT_HEADERS.RESET,
+          new Date(Date.now() + rateLimitResult.resetMs).toISOString(),
+        );
+        response.setHeader(
+          RATE_LIMIT_HEADERS.RETRY_AFTER,
+          Math.ceil(rateLimitResult.retryAfterMs / 1000).toString(),
+        );
+        response.setHeader(
+          'X-RateLimit-Strategy',
+          rateLimitResult.metadata?.strategy || 'default',
+        );
+
+        this.logger.warn(
+          `Rate limit exceeded for ${identifier} on ${method} ${endpoint} ` +
+            `(strategy: ${rateLimitResult.metadata?.strategy}, limit: ${rateLimitResult.limit}, ` +
+            `current: ${rateLimitResult.current})`,
+        );
+
+        throw new ThrottlerException(
+          `Rate limit exceeded. Retry after ${Math.ceil(rateLimitResult.retryAfterMs / 1000)} seconds.`,
+        );
+      }
+
+      // Request allowed - update headers and continue
+      response.setHeader(
+        RATE_LIMIT_HEADERS.LIMIT,
+        rateLimitResult.limit.toString(),
+      );
+      response.setHeader(
+        RATE_LIMIT_HEADERS.REMAINING,
+        rateLimitResult.remaining.toString(),
+      );
+      response.setHeader(
+        RATE_LIMIT_HEADERS.RESET,
+        new Date(Date.now() + rateLimitResult.resetMs).toISOString(),
+      );
+      response.setHeader(
+        'X-RateLimit-Strategy',
+        rateLimitResult.metadata?.strategy || 'default',
+      );
+
+      this.logger.debug(
+        `Rate limit check passed for ${identifier} on ${method} ${endpoint} ` +
+          `(strategy: ${rateLimitResult.metadata?.strategy}, remaining: ${rateLimitResult.remaining})`,
+      );
+
+      return true; // Allow request with custom rate limit
+    }
+
+    // Fall through to existing role-based logic if no override found
 
     // 1. Check if user is in backoff period from previous violations
     if (userId) {

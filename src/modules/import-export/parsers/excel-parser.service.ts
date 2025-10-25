@@ -30,10 +30,7 @@ export class ExcelParserService {
    * @param options Parsing options
    * @returns Parsed data with metadata
    */
-  parse(
-    fileBuffer: Buffer,
-    options: ExcelParseOptions = {},
-  ): ExcelParsedData {
+  parse(fileBuffer: Buffer, options: ExcelParseOptions = {}): ExcelParsedData {
     this.logger.log('Parsing Excel file from buffer');
 
     try {
@@ -70,8 +67,7 @@ export class ExcelParserService {
       });
 
       // Get columns from first row
-      const columns =
-        data.length > 0 ? Object.keys(data[0] as object) : [];
+      const columns = data.length > 0 ? Object.keys(data[0] as object) : [];
 
       // Get sheet dimensions
       const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
