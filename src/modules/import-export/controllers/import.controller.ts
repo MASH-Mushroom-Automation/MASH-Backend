@@ -26,7 +26,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ImportService } from '../services/import.service';
-import { UploadImportFileDto } from '../dto/upload-import-file.dto';
+import { StartImportDto } from '../dto/import-export.dto';
 import { EntityType, JobStatus } from '@prisma/client';
 
 @ApiTags('Import')
@@ -106,11 +106,20 @@ export class ImportController {
   })
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
-    @Body(ValidationPipe) dto: UploadImportFileDto,
+    @Body(ValidationPipe) dto: StartImportDto,
     @Req() req: any,
   ) {
     const userId = req.user?.id || 'system';
-    return this.importService.uploadFile(file, dto, userId);
+    
+    // Transform Express.Multer.File to UploadedFileInfo
+    const fileInfo = {
+      originalName: file.originalname,
+      size: file.size,
+      mimeType: file.mimetype,
+      buffer: file.buffer,
+    };
+    
+    return this.importService.uploadFile(fileInfo, dto, userId);
   }
 
   /**

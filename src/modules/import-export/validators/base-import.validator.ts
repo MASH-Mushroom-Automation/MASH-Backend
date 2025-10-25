@@ -75,7 +75,7 @@ export abstract class BaseImportValidator {
   protected optionalString(field: string, maxLength?: number): AnyValidationRule[] {
     const rules: AnyValidationRule[] = [Rules.type(field, DataType.STRING, true)];
     if (maxLength) {
-      rules.push(Rules.length(field, undefined, maxLength));
+      rules.push(Rules.stringLength(field, undefined, maxLength));
     }
     return rules;
   }
@@ -87,7 +87,7 @@ export abstract class BaseImportValidator {
     return [
       Rules.required(field),
       Rules.type(field, DataType.STRING),
-      Rules.length(field, minLength, maxLength),
+      Rules.stringLength(field, minLength, maxLength),
     ];
   }
 

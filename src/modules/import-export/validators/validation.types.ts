@@ -307,7 +307,7 @@ export class ValidationRuleBuilder {
     };
   }
 
-  static length(field: string, minLength?: number, maxLength?: number): LengthRule {
+  static stringLength(field: string, minLength?: number, maxLength?: number): LengthRule {
     return {
       field,
       type: ValidationRuleType.LENGTH,

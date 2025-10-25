@@ -32,11 +32,11 @@ export class ProductImportValidator extends BaseImportValidator {
       // Required fields
       Rules.required('name'),
       Rules.type('name', 'STRING' as any),
-      Rules.length('name', 1, 255),
+      Rules.stringLength('name', 1, 255),
 
       Rules.required('slug'),
       Rules.type('slug', 'STRING' as any),
-      Rules.length('slug', 1, 255),
+      Rules.stringLength('slug', 1, 255),
       Rules.unique('slug', true),
       Rules.pattern('slug', /^[a-z0-9]+(?:-[a-z0-9]+)*$/, undefined),
 

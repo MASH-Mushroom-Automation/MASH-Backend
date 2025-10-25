@@ -197,7 +197,7 @@ export class ValidationService {
         return await this.validateConditional(record, row, rule as ConditionalRule, context, options);
 
       default:
-        this.logger.warn(`Unknown validation rule type: ${rule.type}`);
+        this.logger.warn(`Unknown validation rule type: ${(rule as any).type}`);
         return [];
     }
   }
@@ -652,7 +652,7 @@ export class ValidationService {
     }
 
     const compareValue = rule.caseSensitive ? value : String(value).toLowerCase();
-    const allowedValues = rule.caseSensitive
+    const allowedValues: any[] = rule.caseSensitive
       ? rule.allowedValues
       : rule.allowedValues.map((v) => String(v).toLowerCase());
 

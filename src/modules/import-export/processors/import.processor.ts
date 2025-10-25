@@ -200,7 +200,7 @@ export class ImportProcessor {
 
       // 12. Clean up progress tracking
       const progressKey = `import:progress:${jobId}`;
-      await this.redis.getClient().del(progressKey);
+      await this.redis.delete(progressKey);
 
       this.logger.log(
         `Import job ${jobId} completed: ${successCount} success, ${failureCount} failed in ${duration}ms`,
@@ -361,11 +361,11 @@ export class ImportProcessor {
   ): Promise<void> {
     const errorRecords = errors.map((error) => ({
       jobId,
-      row: error.row,
-      column: null,
-      field: null,
-      errorType: 'CONSTRAINT',
-      severity: 'ERROR',
+      rowNumber: error.row,
+      columnName: null,
+      fieldPath: null,
+      errorType: 'CONSTRAINT' as any,
+      severity: 'ERROR' as any,
       errorCode: 'PROCESSING_ERROR',
       message: error.message,
       suggestion: 'Check data format and database constraints',
