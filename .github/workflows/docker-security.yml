@@ -27,6 +27,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Free up disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          echo ""
+          echo "=== Cleaning up Docker resources ==="
+          docker system prune -af --volumes || true
+          docker image prune -af || true
+          docker builder prune -af || true
+          echo ""
+          echo "=== Removing unnecessary system packages ==="
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/hostedtoolcache || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo rm -rf /usr/share/swift || true
+          sudo apt-get clean || true
+          sudo apt-get autoclean || true
+          sudo apt-get autoremove -y || true
+          echo ""
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         continue-on-error: true
@@ -109,6 +133,14 @@ jobs:
           echo "image_id=$IMAGE_ID" >> $GITHUB_OUTPUT
           echo "Image ID: $IMAGE_ID"
 
+      - name: Clean up build artifacts to free space
+        run: |
+          echo "=== Cleaning up intermediate Docker resources ==="
+          docker builder prune -af || true
+          docker image prune -f --filter "dangling=true" || true
+          echo "=== Disk space after intermediate cleanup ==="
+          df -h
+
       # Trivy Scanner - Comprehensive vulnerability scanning
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -184,9 +216,20 @@ jobs:
           image: ${{ steps.image-id.outputs.image_id }}
           args: --severity-threshold=high --json-file-output=snyk-results.json
 
+      - name: Clean up before SBOM generation
+        run: |
+          echo "=== Cleaning up before SBOM generation ==="
+          # Remove scan results to free up space
+          rm -f trivy-results.json trivy-results.sarif || true
+          rm -f snyk-results.json || true
+          docker image prune -f --filter "dangling=true" || true
+          echo "=== Disk space before SBOM generation ==="
+          df -h
+
       # Generate SBOM (Software Bill of Materials)
       - name: Generate SBOM with Syft
         uses: anchore/sbom-action@v0
+        continue-on-error: true  # Don't fail if SBOM generation fails due to space
         with:
           image: ${{ steps.image-id.outputs.image_id }}
           format: 'spdx-json'
