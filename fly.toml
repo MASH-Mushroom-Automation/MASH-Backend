@@ -1,8 +1,9 @@
 # fly.toml - Fly.io configuration for MASH Backend
-# Using external Neon PostgreSQL database
+# Optimized for FREE TIER - $0/month hosting
+# Using external Neon PostgreSQL database & Upstash Redis
 
 app = "mash-backend-api"
-primary_region = "sin"
+primary_region = "sin"  # Singapore - closest to Philippines
 
 [build]
   dockerfile = "Dockerfile"
@@ -14,9 +15,11 @@ primary_region = "sin"
 [[services]]
   internal_port = 3000
   protocol = "tcp"
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 1
+  
+  # FREE TIER OPTIMIZATION: Auto-suspend when idle
+  auto_stop_machines = true   # Stop machine after 2 min of no requests
+  auto_start_machines = true  # Auto-start on incoming request
+  min_machines_running = 0    # Allow complete shutdown when idle (saves $$$)
 
   [[services.ports]]
     port = 80
@@ -29,23 +32,23 @@ primary_region = "sin"
 
   [services.concurrency]
     type = "connections"
-    hard_limit = 100
-    soft_limit = 80
+    hard_limit = 100  # Max connections before scaling (stay in free tier)
+    soft_limit = 80   # Start warning at 80 connections
 
   [[services.http_checks]]
-    interval = "30s"
-    timeout = "5s"
-    grace_period = "10s"
+    interval = "30s"       # Check every 30 seconds
+    timeout = "10s"        # Allow 10s for cold starts
+    grace_period = "30s"   # Give 30s grace period on startup
     method = "get"
     path = "/api/v1/health"
     protocol = "http"
 
 [mounts]
-  source = "mash_uploads"
-  destination = "/app/uploads"
-  initial_size = "3gb"
+  source = "mash_uploads"       # Volume name
+  destination = "/app/uploads"  # Mount path in container
+  initial_size = "3gb"          # Free tier limit (max)
 
 [[vm]]
-  cpu_kind = "shared"
-  cpus = 1
-  memory_mb = 256
+  cpu_kind = "shared"  # Shared CPU (free tier)
+  cpus = 1             # 1 vCPU (free tier)
+  memory_mb = 256      # 256MB RAM (free tier max)
