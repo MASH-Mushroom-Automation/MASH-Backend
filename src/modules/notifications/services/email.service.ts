@@ -108,9 +108,7 @@ export class EmailService {
           );
         }
       } else {
-        this.logger.log(
-          '✅ SMTP Email transporter is ready to send emails',
-        );
+        this.logger.log('✅ SMTP Email transporter is ready to send emails');
         this.logger.log(
           `📧 Sending emails from: ${process.env.EMAIL_FROM || process.env.EMAIL_USER}`,
         );
@@ -232,7 +230,9 @@ export class EmailService {
         );
       } else if (provider.name === EmailProvider.SENDGRID) {
         // TODO: Implement SendGrid sending
-        this.logger.log(`SendGrid sending not yet implemented for ${options.to}`);
+        this.logger.log(
+          `SendGrid sending not yet implemented for ${options.to}`,
+        );
         throw new Error('SendGrid provider not yet implemented');
       } else {
         throw new Error(`Unsupported provider: ${provider.name}`);

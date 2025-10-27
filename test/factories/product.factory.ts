@@ -1,6 +1,6 @@
 /**
  * Product Factory
- * 
+ *
  * Factory for creating test Product instances with realistic fake data.
  */
 
@@ -37,7 +37,7 @@ export class ProductFactory {
     'Shiitake Mushroom',
     'Button Mushroom',
     'Enoki Mushroom',
-    'Lion\'s Mane',
+    "Lion's Mane",
     'Reishi Mushroom',
     'Cordyceps',
     'Portobello',
@@ -49,39 +49,68 @@ export class ProductFactory {
    * Create a single product with optional overrides
    */
   static create(overrides?: Partial<ProductFactoryOptions>) {
-    const name = overrides?.name || faker.helpers.arrayElement(this.mushroomVarieties);
-    const basePrice = faker.number.float({ min: 50, max: 500, fractionDigits: 2 });
+    const name =
+      overrides?.name || faker.helpers.arrayElement(this.mushroomVarieties);
+    const basePrice = faker.number.float({
+      min: 50,
+      max: 500,
+      fractionDigits: 2,
+    });
     const hasDiscount = faker.datatype.boolean();
-    
+
     return {
       id: overrides?.id || faker.string.uuid(),
       name,
-      description: overrides?.description || faker.commerce.productDescription(),
-      sku: overrides?.sku || `MSH-${faker.string.alphanumeric(8).toUpperCase()}`,
-      category: overrides?.category || faker.helpers.arrayElement(Object.values(ProductCategory)),
+      description:
+        overrides?.description || faker.commerce.productDescription(),
+      sku:
+        overrides?.sku || `MSH-${faker.string.alphanumeric(8).toUpperCase()}`,
+      category:
+        overrides?.category ||
+        faker.helpers.arrayElement(Object.values(ProductCategory)),
       price: overrides?.price || basePrice,
-      discountPrice: overrides?.discountPrice || (hasDiscount ? basePrice * 0.8 : null),
-      stock: overrides?.stock !== undefined ? overrides.stock : faker.number.int({ min: 0, max: 500 }),
+      discountPrice:
+        overrides?.discountPrice || (hasDiscount ? basePrice * 0.8 : null),
+      stock:
+        overrides?.stock !== undefined
+          ? overrides.stock
+          : faker.number.int({ min: 0, max: 500 }),
       lowStockThreshold: overrides?.lowStockThreshold || 10,
-      unit: overrides?.unit || faker.helpers.arrayElement(['kg', 'g', 'pack', 'piece']),
-      weight: overrides?.weight || faker.number.float({ min: 0.1, max: 5, fractionDigits: 2 }),
+      unit:
+        overrides?.unit ||
+        faker.helpers.arrayElement(['kg', 'g', 'pack', 'piece']),
+      weight:
+        overrides?.weight ||
+        faker.number.float({ min: 0.1, max: 5, fractionDigits: 2 }),
       images: overrides?.images || [
         faker.image.url({ width: 800, height: 600 }),
         faker.image.url({ width: 800, height: 600 }),
       ],
-      tags: overrides?.tags || faker.helpers.arrayElements(
-        ['organic', 'fresh', 'local', 'premium', 'bestseller'],
-        { min: 1, max: 3 }
-      ),
+      tags:
+        overrides?.tags ||
+        faker.helpers.arrayElements(
+          ['organic', 'fresh', 'local', 'premium', 'bestseller'],
+          { min: 1, max: 3 },
+        ),
       status: overrides?.status || ProductStatus.ACTIVE,
       isActive: overrides?.isActive !== undefined ? overrides.isActive : true,
-      isFeatured: overrides?.isFeatured !== undefined ? overrides.isFeatured : faker.datatype.boolean(),
+      isFeatured:
+        overrides?.isFeatured !== undefined
+          ? overrides.isFeatured
+          : faker.datatype.boolean(),
       growerId: overrides?.growerId || faker.string.uuid(),
       metadata: overrides?.metadata || {
-        strain: faker.helpers.arrayElement(['P. ostreatus', 'L. edodes', 'A. bisporus']),
+        strain: faker.helpers.arrayElement([
+          'P. ostreatus',
+          'L. edodes',
+          'A. bisporus',
+        ]),
         growthCycle: faker.number.int({ min: 7, max: 30 }),
         harvestDate: faker.date.recent({ days: 7 }).toISOString(),
-        certifications: faker.helpers.arrayElements(['Organic', 'GAP', 'HACCP'], { min: 0, max: 2 }),
+        certifications: faker.helpers.arrayElements(
+          ['Organic', 'GAP', 'HACCP'],
+          { min: 0, max: 2 },
+        ),
       },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -126,9 +155,11 @@ export class ProductFactory {
    * Create product with discount
    */
   static createWithDiscount(overrides?: Partial<ProductFactoryOptions>) {
-    const price = overrides?.price || faker.number.float({ min: 100, max: 500, fractionDigits: 2 });
+    const price =
+      overrides?.price ||
+      faker.number.float({ min: 100, max: 500, fractionDigits: 2 });
     const discountPercent = faker.number.int({ min: 10, max: 50 });
-    
+
     return this.create({
       ...overrides,
       price,
@@ -186,10 +217,17 @@ export class ProductFactory {
     return {
       active: this.createMany(10, { status: ProductStatus.ACTIVE }),
       lowStock: this.createMany(3, { stock: 5 }),
-      outOfStock: this.createMany(2, { stock: 0, status: ProductStatus.OUT_OF_STOCK }),
+      outOfStock: this.createMany(2, {
+        stock: 0,
+        status: ProductStatus.OUT_OF_STOCK,
+      }),
       featured: this.createMany(5, { isFeatured: true }),
       discounted: this.createMany(7, {
-        discountPrice: faker.number.float({ min: 50, max: 200, fractionDigits: 2 }),
+        discountPrice: faker.number.float({
+          min: 50,
+          max: 200,
+          fractionDigits: 2,
+        }),
       }),
     };
   }
@@ -211,7 +249,11 @@ export class ProductFactory {
       name: `${faker.helpers.arrayElement(this.mushroomVarieties)} Spawn`,
       unit: 'bag',
       metadata: {
-        strain: faker.helpers.arrayElement(['P. ostreatus', 'L. edodes', 'P. florida']),
+        strain: faker.helpers.arrayElement([
+          'P. ostreatus',
+          'L. edodes',
+          'P. florida',
+        ]),
         substrate: faker.helpers.arrayElement(['Grain', 'Sawdust', 'Straw']),
         colonizationRate: `${faker.number.int({ min: 70, max: 100 })}%`,
         shelfLife: `${faker.number.int({ min: 30, max: 90 })} days`,
@@ -232,7 +274,7 @@ export class ProductFactory {
       'LED Grow Light',
       'Misting System',
     ];
-    
+
     return this.create({
       ...overrides,
       category: ProductCategory.EQUIPMENT,

@@ -30,12 +30,15 @@ export enum EmailTemplateType {
 export interface TemplateMetadata {
   name: string;
   description?: string;
-  variables: Record<string, {
-    type: 'string' | 'number' | 'boolean' | 'object';
-    description: string;
-    required: boolean;
-    default?: any;
-  }>;
+  variables: Record<
+    string,
+    {
+      type: 'string' | 'number' | 'boolean' | 'object';
+      description: string;
+      required: boolean;
+      default?: any;
+    }
+  >;
   conditionals?: string[]; // List of conditional variables
 }
 
@@ -200,7 +203,8 @@ export class EmailTemplateService {
       [EmailTemplateType.DEVICE_OFFLINE]: 'Device Offline Alert - MASH',
       [EmailTemplateType.DEVICE_ERROR]: 'Device Error Alert - MASH',
       [EmailTemplateType.HEALTH_WARNING]: 'Device Health Warning - MASH',
-      [EmailTemplateType.HEALTH_CRITICAL]: 'Critical Device Health Alert - MASH',
+      [EmailTemplateType.HEALTH_CRITICAL]:
+        'Critical Device Health Alert - MASH',
     };
 
     return subjects[templateType] || 'MASH Notification';

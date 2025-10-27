@@ -1,6 +1,6 @@
 /**
  * Test Redis Helper
- * 
+ *
  * Provides utilities for managing Redis in tests.
  * Ensures test isolation with separate key prefixes and database.
  */
@@ -18,7 +18,7 @@ export class TestRedisHelper {
       {
         keyPrefix: this.keyPrefix,
         lazyConnect: true,
-      }
+      },
     );
   }
 
@@ -52,13 +52,15 @@ export class TestRedisHelper {
     try {
       // Get all keys with test prefix
       const keys = await this.redis.keys(`${this.keyPrefix}*`);
-      
+
       if (keys.length > 0) {
         // Remove prefix before deleting
-        const keysWithoutPrefix = keys.map(key => key.replace(this.keyPrefix, ''));
+        const keysWithoutPrefix = keys.map((key) =>
+          key.replace(this.keyPrefix, ''),
+        );
         await this.redis.del(...keysWithoutPrefix);
       }
-      
+
       console.log(`🧹 Flushed ${keys.length} test Redis keys`);
     } catch (error) {
       console.error('❌ Failed to flush test Redis:', error);

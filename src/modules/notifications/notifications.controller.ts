@@ -28,8 +28,16 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
-import { PushNotificationService, PushNotificationPayload } from './services/push-notification.service';
-import { SmsService, SMSMessage, SMSDeliveryResult, SMSProviderHealth } from './services/sms.service';
+import {
+  PushNotificationService,
+  PushNotificationPayload,
+} from './services/push-notification.service';
+import {
+  SmsService,
+  SMSMessage,
+  SMSDeliveryResult,
+  SMSProviderHealth,
+} from './services/sms.service';
 import { CommunicationHubService } from './services/communication-hub.service';
 import * as nodemailer from 'nodemailer';
 
@@ -265,7 +273,13 @@ export class NotificationsController {
   @ApiResponse({ status: 201, description: 'Push subscription created' })
   @ApiResponse({ status: 400, description: 'Invalid subscription data' })
   async subscribeToPush(
-    @Body() subscriptionData: { endpoint: string; p256dh: string; auth: string; userAgent?: string },
+    @Body()
+    subscriptionData: {
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+      userAgent?: string;
+    },
     @Request() req,
   ) {
     const userId = req.user?.id as string;
@@ -368,7 +382,8 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Send communication through multiple channels' })
   @ApiResponse({ status: 200, description: 'Communication sent successfully' })
   async sendCommunication(
-    @Body() body: {
+    @Body()
+    body: {
       userId: string;
       message: { title: string; body: string; data?: any; priority?: string };
       channels?: string[];
@@ -405,7 +420,10 @@ export class NotificationsController {
       throw new BadRequestException('User authentication required');
     }
 
-    const preferences = await this.communicationHubService.getUserCommunicationPreferences(userId);
+    const preferences =
+      await this.communicationHubService.getUserCommunicationPreferences(
+        userId,
+      );
 
     return {
       success: true,
@@ -425,7 +443,10 @@ export class NotificationsController {
       throw new BadRequestException('User authentication required');
     }
 
-    await this.communicationHubService.updateUserCommunicationPreferences(userId, preferences);
+    await this.communicationHubService.updateUserCommunicationPreferences(
+      userId,
+      preferences,
+    );
 
     return {
       success: true,
@@ -467,10 +488,13 @@ export class NotificationsController {
   }
 
   @Post('communication/device-health-alert')
-  @ApiOperation({ summary: 'Send device health alert through communication channels' })
+  @ApiOperation({
+    summary: 'Send device health alert through communication channels',
+  })
   @ApiResponse({ status: 200, description: 'Health alert sent' })
   async sendDeviceHealthAlert(
-    @Body() body: {
+    @Body()
+    body: {
       userId: string;
       deviceId: string;
       healthStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'OFFLINE';
@@ -488,7 +512,9 @@ export class NotificationsController {
       body.healthStatus,
       {
         ...body.metrics,
-        lastSeen: body.metrics?.lastSeen ? new Date(body.metrics.lastSeen) : undefined,
+        lastSeen: body.metrics?.lastSeen
+          ? new Date(body.metrics.lastSeen)
+          : undefined,
       },
     );
 

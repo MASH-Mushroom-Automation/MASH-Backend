@@ -25,7 +25,7 @@ describe('SMSTemplateService', () => {
       const templates = service.getAllTemplates();
       expect(templates).toHaveLength(5);
 
-      const templateTypes = templates.map(t => t.type);
+      const templateTypes = templates.map((t) => t.type);
       expect(templateTypes).toContain(SMSTemplateType.DEVICE_OFFLINE);
       expect(templateTypes).toContain(SMSTemplateType.DEVICE_ERROR);
       expect(templateTypes).toContain(SMSTemplateType.HEALTH_WARNING);
@@ -37,7 +37,9 @@ describe('SMSTemplateService', () => {
       const template = service.getTemplate(SMSTemplateType.DEVICE_OFFLINE);
       expect(template).toBeDefined();
       expect(template?.type).toBe(SMSTemplateType.DEVICE_OFFLINE);
-      expect(template?.template).toContain('ALERT: Device {{deviceId}} is offline');
+      expect(template?.template).toContain(
+        'ALERT: Device {{deviceId}} is offline',
+      );
     });
 
     it('should return undefined for non-existent template', () => {
@@ -53,8 +55,13 @@ describe('SMSTemplateService', () => {
         lastSeen: '2025-10-27T10:00:00Z',
       };
 
-      const result = service.renderTemplate(SMSTemplateType.DEVICE_OFFLINE, variables);
-      expect(result).toBe('ALERT: Device sensor-001 is offline. Last seen: 2025-10-27T10:00:00Z');
+      const result = service.renderTemplate(
+        SMSTemplateType.DEVICE_OFFLINE,
+        variables,
+      );
+      expect(result).toBe(
+        'ALERT: Device sensor-001 is offline. Last seen: 2025-10-27T10:00:00Z',
+      );
     });
 
     it('should render device offline template with default values', () => {
@@ -62,8 +69,13 @@ describe('SMSTemplateService', () => {
         deviceId: 'sensor-001',
       };
 
-      const result = service.renderTemplate(SMSTemplateType.DEVICE_OFFLINE, variables);
-      expect(result).toBe('ALERT: Device sensor-001 is offline. Last seen: Unknown');
+      const result = service.renderTemplate(
+        SMSTemplateType.DEVICE_OFFLINE,
+        variables,
+      );
+      expect(result).toBe(
+        'ALERT: Device sensor-001 is offline. Last seen: Unknown',
+      );
     });
 
     it('should render device error template', () => {
@@ -72,8 +84,13 @@ describe('SMSTemplateService', () => {
         errorMessage: 'Temperature sensor failure',
       };
 
-      const result = service.renderTemplate(SMSTemplateType.DEVICE_ERROR, variables);
-      expect(result).toBe('ERROR: Device sensor-002 reported error: Temperature sensor failure');
+      const result = service.renderTemplate(
+        SMSTemplateType.DEVICE_ERROR,
+        variables,
+      );
+      expect(result).toBe(
+        'ERROR: Device sensor-002 reported error: Temperature sensor failure',
+      );
     });
 
     it('should render health warning template', () => {
@@ -83,7 +100,10 @@ describe('SMSTemplateService', () => {
         value: 85,
       };
 
-      const result = service.renderTemplate(SMSTemplateType.HEALTH_WARNING, variables);
+      const result = service.renderTemplate(
+        SMSTemplateType.HEALTH_WARNING,
+        variables,
+      );
       expect(result).toBe('WARNING: Device sensor-003 health issue - CPU: 85%');
     });
 
@@ -94,13 +114,20 @@ describe('SMSTemplateService', () => {
         value: 95,
       };
 
-      const result = service.renderTemplate(SMSTemplateType.HEALTH_CRITICAL, variables);
-      expect(result).toBe('CRITICAL: Device sensor-004 - Memory: 95%. Immediate attention required!');
+      const result = service.renderTemplate(
+        SMSTemplateType.HEALTH_CRITICAL,
+        variables,
+      );
+      expect(result).toBe(
+        'CRITICAL: Device sensor-004 - Memory: 95%. Immediate attention required!',
+      );
     });
 
     it('should render test message template with default timestamp', () => {
       const result = service.renderTemplate(SMSTemplateType.TEST_MESSAGE);
-      expect(result).toContain('Test SMS from MASH Device Monitoring System. Time:');
+      expect(result).toContain(
+        'Test SMS from MASH Device Monitoring System. Time:',
+      );
     });
 
     it('should render test message template with custom timestamp', () => {
@@ -108,8 +135,13 @@ describe('SMSTemplateService', () => {
         timestamp: '2025-10-27T12:00:00Z',
       };
 
-      const result = service.renderTemplate(SMSTemplateType.TEST_MESSAGE, variables);
-      expect(result).toBe('Test SMS from MASH Device Monitoring System. Time: 2025-10-27T12:00:00Z');
+      const result = service.renderTemplate(
+        SMSTemplateType.TEST_MESSAGE,
+        variables,
+      );
+      expect(result).toBe(
+        'Test SMS from MASH Device Monitoring System. Time: 2025-10-27T12:00:00Z',
+      );
     });
 
     it('should throw error for non-existent template', () => {
@@ -121,7 +153,9 @@ describe('SMSTemplateService', () => {
     it('should throw error for missing required variables', () => {
       expect(() => {
         service.renderTemplate(SMSTemplateType.DEVICE_ERROR, {});
-      }).toThrow("Required variable 'deviceId' missing for SMS template 'device-error'");
+      }).toThrow(
+        "Required variable 'deviceId' missing for SMS template 'device-error'",
+      );
     });
 
     it('should truncate message if it exceeds max length', () => {
@@ -131,7 +165,10 @@ describe('SMSTemplateService', () => {
         errorMessage: longErrorMessage,
       };
 
-      const result = service.renderTemplate(SMSTemplateType.DEVICE_ERROR, variables);
+      const result = service.renderTemplate(
+        SMSTemplateType.DEVICE_ERROR,
+        variables,
+      );
       expect(result.length).toBeLessThanOrEqual(160);
       expect(result).toMatch(/\.\.\.$/);
     });
@@ -143,7 +180,10 @@ describe('SMSTemplateService', () => {
         value: 90,
       };
 
-      const result = service.renderTemplate(SMSTemplateType.HEALTH_WARNING, variables);
+      const result = service.renderTemplate(
+        SMSTemplateType.HEALTH_WARNING,
+        variables,
+      );
       expect(result).toBe('WARNING: Device sensor-001 health issue - CPU: 90%');
     });
 
@@ -154,8 +194,13 @@ describe('SMSTemplateService', () => {
         value: 85.5,
       };
 
-      const result = service.renderTemplate(SMSTemplateType.HEALTH_WARNING, variables);
-      expect(result).toBe('WARNING: Device sensor-001 health issue - CPU: 85.5%');
+      const result = service.renderTemplate(
+        SMSTemplateType.HEALTH_WARNING,
+        variables,
+      );
+      expect(result).toBe(
+        'WARNING: Device sensor-001 health issue - CPU: 85.5%',
+      );
     });
   });
 
@@ -166,7 +211,10 @@ describe('SMSTemplateService', () => {
         errorMessage: 'Test error',
       };
 
-      const result = service.validateVariables(SMSTemplateType.DEVICE_ERROR, variables);
+      const result = service.validateVariables(
+        SMSTemplateType.DEVICE_ERROR,
+        variables,
+      );
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
@@ -177,9 +225,14 @@ describe('SMSTemplateService', () => {
         // missing errorMessage
       };
 
-      const result = service.validateVariables(SMSTemplateType.DEVICE_ERROR, variables);
+      const result = service.validateVariables(
+        SMSTemplateType.DEVICE_ERROR,
+        variables,
+      );
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Required variable 'errorMessage' is missing");
+      expect(result.errors).toContain(
+        "Required variable 'errorMessage' is missing",
+      );
     });
 
     it('should detect type mismatches', () => {
@@ -189,9 +242,14 @@ describe('SMSTemplateService', () => {
         value: '85', // should be number
       };
 
-      const result = service.validateVariables(SMSTemplateType.HEALTH_WARNING, variables);
+      const result = service.validateVariables(
+        SMSTemplateType.HEALTH_WARNING,
+        variables,
+      );
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Variable 'value' should be of type 'number' but got 'string'");
+      expect(result.errors).toContain(
+        "Variable 'value' should be of type 'number' but got 'string'",
+      );
     });
 
     it('should accept valid types', () => {
@@ -201,7 +259,10 @@ describe('SMSTemplateService', () => {
         value: 85,
       };
 
-      const result = service.validateVariables(SMSTemplateType.HEALTH_WARNING, variables);
+      const result = service.validateVariables(
+        SMSTemplateType.HEALTH_WARNING,
+        variables,
+      );
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
@@ -222,13 +283,19 @@ describe('SMSTemplateService', () => {
       };
 
       // Temporarily add custom template
-      (service as any).templates.set('custom' as SMSTemplateType, customTemplate);
+      (service as any).templates.set(
+        'custom' as SMSTemplateType,
+        customTemplate,
+      );
 
       const variables: SMSTemplateVariables = {
         enabled: true,
       };
 
-      const result = service.validateVariables('custom' as SMSTemplateType, variables);
+      const result = service.validateVariables(
+        'custom' as SMSTemplateType,
+        variables,
+      );
       expect(result.valid).toBe(true);
 
       // Clean up
@@ -236,7 +303,10 @@ describe('SMSTemplateService', () => {
     });
 
     it('should return error for non-existent template', () => {
-      const result = service.validateVariables('non-existent' as SMSTemplateType, {});
+      const result = service.validateVariables(
+        'non-existent' as SMSTemplateType,
+        {},
+      );
       expect(result.valid).toBe(false);
       expect(result.errors).toContain("Template 'non-existent' not found");
     });
@@ -244,7 +314,9 @@ describe('SMSTemplateService', () => {
 
   describe('getTemplatePreview', () => {
     it('should generate preview for device offline template', () => {
-      const preview = service.getTemplatePreview(SMSTemplateType.DEVICE_OFFLINE);
+      const preview = service.getTemplatePreview(
+        SMSTemplateType.DEVICE_OFFLINE,
+      );
       expect(preview).toContain('ALERT: Device sample_deviceId is offline');
       expect(preview).toContain('sample_lastSeen');
     });
@@ -256,14 +328,18 @@ describe('SMSTemplateService', () => {
     });
 
     it('should generate preview for health warning template', () => {
-      const preview = service.getTemplatePreview(SMSTemplateType.HEALTH_WARNING);
+      const preview = service.getTemplatePreview(
+        SMSTemplateType.HEALTH_WARNING,
+      );
       expect(preview).toContain('WARNING: Device sample_deviceId health issue');
       expect(preview).toContain('sample_metric');
       expect(preview).toContain('85%');
     });
 
     it('should generate preview for health critical template', () => {
-      const preview = service.getTemplatePreview(SMSTemplateType.HEALTH_CRITICAL);
+      const preview = service.getTemplatePreview(
+        SMSTemplateType.HEALTH_CRITICAL,
+      );
       expect(preview).toContain('CRITICAL: Device sample_deviceId');
       expect(preview).toContain('sample_metric');
       expect(preview).toContain('85%');
@@ -299,10 +375,14 @@ describe('SMSTemplateService', () => {
     });
 
     it('should have correct template structure for health templates', () => {
-      const warningTemplate = service.getTemplate(SMSTemplateType.HEALTH_WARNING);
-      const criticalTemplate = service.getTemplate(SMSTemplateType.HEALTH_CRITICAL);
+      const warningTemplate = service.getTemplate(
+        SMSTemplateType.HEALTH_WARNING,
+      );
+      const criticalTemplate = service.getTemplate(
+        SMSTemplateType.HEALTH_CRITICAL,
+      );
 
-      [warningTemplate, criticalTemplate].forEach(template => {
+      [warningTemplate, criticalTemplate].forEach((template) => {
         expect(template?.maxLength).toBe(160);
         expect(template?.variables.deviceId.required).toBe(true);
         expect(template?.variables.metric.required).toBe(true);

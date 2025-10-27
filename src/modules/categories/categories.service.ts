@@ -411,7 +411,7 @@ export class CategoriesService {
 
     // Filter products where categories array includes this category ID
     const filteredProducts = products.filter((product) => {
-      const categories = product.categories as any;
+      const categories = product.categories;
       if (Array.isArray(categories)) {
         return categories.includes(id);
       }

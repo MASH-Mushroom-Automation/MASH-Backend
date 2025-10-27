@@ -309,7 +309,8 @@ export class DevicesController {
   @ApiResponse({ status: 201, description: 'Health data recorded' })
   async recordHealth(
     @Param('id') id: string,
-    @Body() healthData: {
+    @Body()
+    healthData: {
       status: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'OFFLINE' | 'MAINTENANCE';
       cpuUsage?: number;
       memoryUsage?: number;
@@ -336,7 +337,12 @@ export class DevicesController {
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    return this.devicesService.getDeviceHealthHistory(id, limit || 50, start, end);
+    return this.devicesService.getDeviceHealthHistory(
+      id,
+      limit || 50,
+      start,
+      end,
+    );
   }
 
   @Get(':id/health/status')

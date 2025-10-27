@@ -44,7 +44,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       10,
     );
     this.queryTimeoutMs = timeoutFromEnv > 0 ? timeoutFromEnv : 30000;
-    
+
     this.logger.log(
       '📊 PrismaService constructor called - client will be created lazily',
     );
@@ -54,57 +54,148 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    * Proxy all property access to the underlying Prisma Client
    * This allows services to use prisma.user.findMany() even though we're not extending PrismaClient
    */
-  get address() { return this.getClient().address; }
-  get alert() { return this.getClient().alert; }
-  get alertAcknowledgment() { return this.getClient().alertAcknowledgment; }
-  get alertEscalationPolicy() { return this.getClient().alertEscalationPolicy; }
-  get alertRule() { return this.getClient().alertRule; }
-  get alertRuleRecipient() { return this.getClient().alertRuleRecipient; }
-  get apiGatewayConfig() { return this.getClient().apiGatewayConfig; }
-  get apiKey() { return this.getClient().apiKey; }
-  get apiUsageLog() { return this.getClient().apiUsageLog; }
-  get apiVersionUsage() { return this.getClient().apiVersionUsage; }
-  get auditLog() { return this.getClient().auditLog; }
-  get category() { return this.getClient().category; }
-  get circuitBreakerState() { return this.getClient().circuitBreakerState; }
-  get device() { return this.getClient().device; }
-  get deviceCommand() { return this.getClient().deviceCommand; }
-  get importExportError() { return this.getClient().importExportError; }
-  get importExportJob() { return this.getClient().importExportJob; }
-  get importExportTemplate() { return this.getClient().importExportTemplate; }
-  get notification() { return this.getClient().notification; }
-  get notificationTemplate() { return this.getClient().notificationTemplate; }
-  get order() { return this.getClient().order; }
-  get orderItem() { return this.getClient().orderItem; }
-  get payment() { return this.getClient().payment; }
-  get permission() { return this.getClient().permission; }
-  get product() { return this.getClient().product; }
-  get pushSubscription() { return this.getClient().pushSubscription; }
-  get rateLimitLog() { return this.getClient().rateLimitLog; }
-  get rateLimitOverride() { return this.getClient().rateLimitOverride; }
-  get report() { return this.getClient().report; }
-  get reportExecution() { return this.getClient().reportExecution; }
-  get reportSubscription() { return this.getClient().reportSubscription; }
-  get requestQueue() { return this.getClient().requestQueue; }
-  get role() { return this.getClient().role; }
-  get rolePermission() { return this.getClient().rolePermission; }
-  get searchLog() { return this.getClient().searchLog; }
-  get securityLog() { return this.getClient().securityLog; }
-  get sensor() { return this.getClient().sensor; }
-  get sensorAlert() { return this.getClient().sensorAlert; }
-  get sensorData() { return this.getClient().sensorData; }
-  get session() { return this.getClient().session; }
-  get systemConfig() { return this.getClient().systemConfig; }
-  get user() { return this.getClient().user; }
-  get userNotification() { return this.getClient().userNotification; }
-  get userRoleAssignment() { return this.getClient().userRoleAssignment; }
+  get address() {
+    return this.getClient().address;
+  }
+  get alert() {
+    return this.getClient().alert;
+  }
+  get alertAcknowledgment() {
+    return this.getClient().alertAcknowledgment;
+  }
+  get alertEscalationPolicy() {
+    return this.getClient().alertEscalationPolicy;
+  }
+  get alertRule() {
+    return this.getClient().alertRule;
+  }
+  get alertRuleRecipient() {
+    return this.getClient().alertRuleRecipient;
+  }
+  get apiGatewayConfig() {
+    return this.getClient().apiGatewayConfig;
+  }
+  get apiKey() {
+    return this.getClient().apiKey;
+  }
+  get apiUsageLog() {
+    return this.getClient().apiUsageLog;
+  }
+  get apiVersionUsage() {
+    return this.getClient().apiVersionUsage;
+  }
+  get auditLog() {
+    return this.getClient().auditLog;
+  }
+  get category() {
+    return this.getClient().category;
+  }
+  get circuitBreakerState() {
+    return this.getClient().circuitBreakerState;
+  }
+  get device() {
+    return this.getClient().device;
+  }
+  get deviceCommand() {
+    return this.getClient().deviceCommand;
+  }
+  get importExportError() {
+    return this.getClient().importExportError;
+  }
+  get importExportJob() {
+    return this.getClient().importExportJob;
+  }
+  get importExportTemplate() {
+    return this.getClient().importExportTemplate;
+  }
+  get notification() {
+    return this.getClient().notification;
+  }
+  get notificationTemplate() {
+    return this.getClient().notificationTemplate;
+  }
+  get order() {
+    return this.getClient().order;
+  }
+  get orderItem() {
+    return this.getClient().orderItem;
+  }
+  get payment() {
+    return this.getClient().payment;
+  }
+  get permission() {
+    return this.getClient().permission;
+  }
+  get product() {
+    return this.getClient().product;
+  }
+  get pushSubscription() {
+    return this.getClient().pushSubscription;
+  }
+  get rateLimitLog() {
+    return this.getClient().rateLimitLog;
+  }
+  get rateLimitOverride() {
+    return this.getClient().rateLimitOverride;
+  }
+  get report() {
+    return this.getClient().report;
+  }
+  get reportExecution() {
+    return this.getClient().reportExecution;
+  }
+  get reportSubscription() {
+    return this.getClient().reportSubscription;
+  }
+  get requestQueue() {
+    return this.getClient().requestQueue;
+  }
+  get role() {
+    return this.getClient().role;
+  }
+  get rolePermission() {
+    return this.getClient().rolePermission;
+  }
+  get searchLog() {
+    return this.getClient().searchLog;
+  }
+  get securityLog() {
+    return this.getClient().securityLog;
+  }
+  get sensor() {
+    return this.getClient().sensor;
+  }
+  get sensorAlert() {
+    return this.getClient().sensorAlert;
+  }
+  get sensorData() {
+    return this.getClient().sensorData;
+  }
+  get session() {
+    return this.getClient().session;
+  }
+  get systemConfig() {
+    return this.getClient().systemConfig;
+  }
+  get user() {
+    return this.getClient().user;
+  }
+  get userNotification() {
+    return this.getClient().userNotification;
+  }
+  get userRoleAssignment() {
+    return this.getClient().userRoleAssignment;
+  }
 
-  
   /**
    * Proxy Prisma Client methods
    */
-  $connect() { return this.getClient().$connect(); }
-  $disconnect() { return this.getClient().$disconnect(); }
+  $connect() {
+    return this.getClient().$connect();
+  }
+  $disconnect() {
+    return this.getClient().$disconnect();
+  }
   $queryRaw<T = unknown>(query: any, ...values: any[]): Promise<T> {
     return this.getClient().$queryRaw(query, ...values) as Promise<T>;
   }
@@ -115,15 +206,22 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.getClient().$executeRaw(query, ...values) as Promise<number>;
   }
   $executeRawUnsafe(query: string, ...values: any[]): Promise<number> {
-    return this.getClient().$executeRawUnsafe(query, ...values) as Promise<number>;
+    return this.getClient().$executeRawUnsafe(
+      query,
+      ...values,
+    ) as Promise<number>;
   }
-  $transaction<R>(fn: (prisma: Omit<PrismaClient, '$transaction'>) => Promise<R>): Promise<R>;
-  $transaction<P extends any[]>(arg: [...P], options?: { isolationLevel?: any }): Promise<any>;
+  $transaction<R>(
+    fn: (prisma: Omit<PrismaClient, '$transaction'>) => Promise<R>,
+  ): Promise<R>;
+  $transaction<P extends any[]>(
+    arg: [...P],
+    options?: { isolationLevel?: any },
+  ): Promise<any>;
   $transaction(arg: any, options?: any): Promise<any> {
     return this.getClient().$transaction(arg, options);
   }
 
-  
   /**
    * Initialize Prisma Client with dynamic import
    * 🔥 CRITICAL: Uses dynamic import to defer native DLL loading until this method is called
@@ -137,7 +235,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     // This prevents native query engine DLL from loading during module initialization
     if (!this.PrismaClientClass) {
       this.logger.log('🔄 Dynamically importing @prisma/client module...');
-      
+
       try {
         const prismaModule = await import('@prisma/client');
         this.PrismaClientClass = prismaModule.PrismaClient;
@@ -148,9 +246,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         throw error;
       }
     }
-    
+
     this.logger.log('🔄 Creating PrismaClient instance...');
-    
+
     try {
       this.client = new this.PrismaClientClass({
         log: [
@@ -167,7 +265,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       console.error('❌ Failed to create PrismaClient instance:', error);
       throw error;
     }
-    
+
     // 🚀 Enhanced query performance monitoring (Task 1.1.1)
     this.client.$on('query', (e: any) => {
       this.queryStats.totalQueries++;
@@ -216,7 +314,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    */
   private getClient(): PrismaClient {
     if (!this.client) {
-      throw new Error('PrismaClient not initialized. Did you forget to call onModuleInit()?');
+      throw new Error(
+        'PrismaClient not initialized. Did you forget to call onModuleInit()?',
+      );
     }
     return this.client;
   }
@@ -342,11 +442,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     // 🔥 DYNAMIC IMPORT: Initialize Prisma Client with dynamic import
     // This defers native DLL loading until now, not during module parse
     this.logger.log('📊 PrismaService: Initializing with dynamic import...');
-    
+
     try {
       await this.initializeClient();
       this.logger.log('✅ PrismaClient initialized successfully');
-      this.logger.log('⏳ Database connection will be established on first query');
+      this.logger.log(
+        '⏳ Database connection will be established on first query',
+      );
     } catch (error) {
       this.logger.error('❌ Failed to initialize PrismaClient:', error);
       throw error;
@@ -371,7 +473,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     // Start new connection
     this.isInitializing = true;
     this.initPromise = this._connect();
-    
+
     try {
       await this.initPromise;
     } finally {
@@ -483,7 +585,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     maxRetries = 3,
   ): Promise<T> {
     await this.ensureConnected(); // Ensure connection before transaction
-    
+
     let lastError: Error;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {

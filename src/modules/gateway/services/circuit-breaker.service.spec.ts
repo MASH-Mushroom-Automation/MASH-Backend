@@ -61,7 +61,9 @@ describe('CircuitBreakerService', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockPrismaService.circuitBreakerState.findUnique).toHaveBeenCalledWith({
+      expect(
+        mockPrismaService.circuitBreakerState.findUnique,
+      ).toHaveBeenCalledWith({
         where: { serviceName },
       });
     });
@@ -176,14 +178,16 @@ describe('CircuitBreakerService', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockPrismaService.circuitBreakerState.create).toHaveBeenCalledWith({
-        data: {
-          serviceName,
-          state: CircuitBreakerStateEnum.CLOSED,
-          failureCount: 0,
-          successCount: 0,
+      expect(mockPrismaService.circuitBreakerState.create).toHaveBeenCalledWith(
+        {
+          data: {
+            serviceName,
+            state: CircuitBreakerStateEnum.CLOSED,
+            failureCount: 0,
+            successCount: 0,
+          },
         },
-      });
+      );
     });
   });
 
@@ -437,14 +441,18 @@ describe('CircuitBreakerService', () => {
         },
       ];
 
-      mockPrismaService.circuitBreakerState.findMany.mockResolvedValue(mockStates);
+      mockPrismaService.circuitBreakerState.findMany.mockResolvedValue(
+        mockStates,
+      );
 
       // Act
       const result = await service.getAllStates();
 
       // Assert
       expect(result).toEqual(mockStates);
-      expect(mockPrismaService.circuitBreakerState.findMany).toHaveBeenCalledWith({
+      expect(
+        mockPrismaService.circuitBreakerState.findMany,
+      ).toHaveBeenCalledWith({
         orderBy: { serviceName: 'asc' },
       });
     });
@@ -492,7 +500,9 @@ describe('CircuitBreakerService', () => {
         },
       ];
 
-      mockPrismaService.circuitBreakerState.findMany.mockResolvedValue(mockStates);
+      mockPrismaService.circuitBreakerState.findMany.mockResolvedValue(
+        mockStates,
+      );
 
       // Act
       const result = await service.getStatistics();

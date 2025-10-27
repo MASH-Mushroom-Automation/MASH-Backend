@@ -1,6 +1,6 @@
 /**
  * Test Database Helper
- * 
+ *
  * Provides utilities for setting up, cleaning up, and managing test databases.
  * Ensures test isolation and prevents data leakage between tests.
  */
@@ -19,7 +19,9 @@ export class TestDatabaseHelper {
     this.prisma = new PrismaClient({
       datasources: {
         db: {
-          url: process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/mash_test',
+          url:
+            process.env.TEST_DATABASE_URL ||
+            'postgresql://postgres:postgres@localhost:5432/mash_test',
         },
       },
     });
@@ -41,13 +43,13 @@ export class TestDatabaseHelper {
   async setupTestDatabase(): Promise<void> {
     try {
       console.log('🔧 Setting up test database...');
-      
+
       // Run Prisma migrations
       await execAsync('npx prisma migrate deploy');
-      
+
       // Seed test data (optional)
       await this.seedTestData();
-      
+
       console.log('✅ Test database setup complete');
     } catch (error) {
       console.error('❌ Failed to setup test database:', error);
@@ -61,7 +63,7 @@ export class TestDatabaseHelper {
   async cleanupTestDatabase(): Promise<void> {
     try {
       console.log('🧹 Cleaning up test database...');
-      
+
       // Delete data in reverse order of dependencies
       await this.prisma.rateLimitOverride.deleteMany();
       await this.prisma.apiUsageLog.deleteMany();
@@ -69,24 +71,24 @@ export class TestDatabaseHelper {
       await this.prisma.apiVersionUsage.deleteMany();
       await this.prisma.circuitBreakerState.deleteMany();
       await this.prisma.apiGatewayConfig.deleteMany();
-      
+
       await this.prisma.orderItem.deleteMany();
       await this.prisma.order.deleteMany();
       await this.prisma.cart.deleteMany();
       await this.prisma.review.deleteMany();
       await this.prisma.product.deleteMany();
       await this.prisma.category.deleteMany();
-      
+
       await this.prisma.sensorReading.deleteMany();
       await this.prisma.sensor.deleteMany();
       await this.prisma.device.deleteMany();
-      
+
       await this.prisma.notification.deleteMany();
       await this.prisma.user.deleteMany();
-      
+
       // Reset sequences (PostgreSQL specific)
       await this.resetSequences();
-      
+
       console.log('✅ Test database cleanup complete');
     } catch (error) {
       console.error('❌ Failed to cleanup test database:', error);
@@ -100,10 +102,10 @@ export class TestDatabaseHelper {
   async resetDatabase(): Promise<void> {
     try {
       console.log('🔄 Resetting test database...');
-      
+
       // Drop all tables and re-run migrations
       await execAsync('npx prisma migrate reset --force --skip-seed');
-      
+
       console.log('✅ Test database reset complete');
     } catch (error) {
       console.error('❌ Failed to reset test database:', error);
@@ -139,7 +141,7 @@ export class TestDatabaseHelper {
     for (const table of tables) {
       try {
         await this.prisma.$executeRawUnsafe(
-          `ALTER SEQUENCE "${table}_id_seq" RESTART WITH 1;`
+          `ALTER SEQUENCE "${table}_id_seq" RESTART WITH 1;`,
         );
       } catch (error) {
         // Ignore errors for tables without sequences
@@ -153,12 +155,16 @@ export class TestDatabaseHelper {
   private async seedTestData(): Promise<void> {
     // Only seed essential reference data (categories, etc.)
     // Test-specific data should be created in individual tests
-    
+
     // Example: Create default categories
     const defaultCategories = [
       { name: 'Mushrooms', description: 'Fresh mushrooms', slug: 'mushrooms' },
       { name: 'Spawn', description: 'Mushroom spawn', slug: 'spawn' },
-      { name: 'Equipment', description: 'Growing equipment', slug: 'equipment' },
+      {
+        name: 'Equipment',
+        description: 'Growing equipment',
+        slug: 'equipment',
+      },
     ];
 
     for (const category of defaultCategories) {

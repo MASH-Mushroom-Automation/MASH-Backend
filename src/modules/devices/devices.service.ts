@@ -750,7 +750,9 @@ export class DevicesService {
       createdAt: new Date(),
     };
 
-    this.logger.log(`Health record created for device ${deviceId}: ${healthData.status}`);
+    this.logger.log(
+      `Health record created for device ${deviceId}: ${healthData.status}`,
+    );
 
     // Emit health update via WebSocket
     this.devicesGateway.emitDeviceHealthUpdate(deviceId, healthRecord);
@@ -889,7 +891,7 @@ export class DevicesService {
       critical: 0,
     };
 
-    devices.forEach(device => {
+    devices.forEach((device) => {
       const isOnline = this.isDeviceOnline(device);
       if (isOnline) summary.online++;
       else summary.offline++;
@@ -955,7 +957,8 @@ export class DevicesService {
 
     if (!lastSeen) return 'OFFLINE';
 
-    const minutesSinceLastSeen = (now.getTime() - lastSeen.getTime()) / (1000 * 60);
+    const minutesSinceLastSeen =
+      (now.getTime() - lastSeen.getTime()) / (1000 * 60);
 
     if (minutesSinceLastSeen > 30) return 'OFFLINE';
     if (minutesSinceLastSeen > 10) return 'WARNING';
@@ -974,7 +977,10 @@ export class DevicesService {
     }
 
     let overall = 'HEALTHY';
-    if (latestHealth.status === 'CRITICAL' || latestHealth.status === 'OFFLINE') {
+    if (
+      latestHealth.status === 'CRITICAL' ||
+      latestHealth.status === 'OFFLINE'
+    ) {
       overall = 'CRITICAL';
     } else if (latestHealth.status === 'WARNING') {
       overall = 'WARNING';
@@ -982,8 +988,12 @@ export class DevicesService {
 
     return {
       overall,
-      connectivity: latestHealth.networkLatency && latestHealth.networkLatency < 100 ? 'GOOD' : 'POOR',
-      performance: latestHealth.cpuUsage && latestHealth.cpuUsage < 80 ? 'GOOD' : 'POOR',
+      connectivity:
+        latestHealth.networkLatency && latestHealth.networkLatency < 100
+          ? 'GOOD'
+          : 'POOR',
+      performance:
+        latestHealth.cpuUsage && latestHealth.cpuUsage < 80 ? 'GOOD' : 'POOR',
       errors: latestHealth.errorCount || 0,
     };
   }

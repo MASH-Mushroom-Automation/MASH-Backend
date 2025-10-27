@@ -16,12 +16,15 @@ export interface SMSTemplate {
   type: SMSTemplateType;
   template: string;
   maxLength: number;
-  variables: Record<string, {
-    type: 'string' | 'number' | 'boolean';
-    description: string;
-    required: boolean;
-    default?: any;
-  }>;
+  variables: Record<
+    string,
+    {
+      type: 'string' | 'number' | 'boolean';
+      description: string;
+      required: boolean;
+      default?: any;
+    }
+  >;
 }
 
 @Injectable()
@@ -39,7 +42,8 @@ export class SMSTemplateService {
     // Device offline template
     this.templates.set(SMSTemplateType.DEVICE_OFFLINE, {
       type: SMSTemplateType.DEVICE_OFFLINE,
-      template: 'ALERT: Device {{deviceId}} is offline. Last seen: {{lastSeen}}',
+      template:
+        'ALERT: Device {{deviceId}} is offline. Last seen: {{lastSeen}}',
       maxLength: 160,
       variables: {
         deviceId: {
@@ -78,7 +82,8 @@ export class SMSTemplateService {
     // Health warning template
     this.templates.set(SMSTemplateType.HEALTH_WARNING, {
       type: SMSTemplateType.HEALTH_WARNING,
-      template: 'WARNING: Device {{deviceId}} health issue - {{metric}}: {{value}}%',
+      template:
+        'WARNING: Device {{deviceId}} health issue - {{metric}}: {{value}}%',
       maxLength: 160,
       variables: {
         deviceId: {
@@ -102,7 +107,8 @@ export class SMSTemplateService {
     // Health critical template
     this.templates.set(SMSTemplateType.HEALTH_CRITICAL, {
       type: SMSTemplateType.HEALTH_CRITICAL,
-      template: 'CRITICAL: Device {{deviceId}} - {{metric}}: {{value}}%. Immediate attention required!',
+      template:
+        'CRITICAL: Device {{deviceId}} - {{metric}}: {{value}}%. Immediate attention required!',
       maxLength: 160,
       variables: {
         deviceId: {
@@ -126,7 +132,8 @@ export class SMSTemplateService {
     // Test message template
     this.templates.set(SMSTemplateType.TEST_MESSAGE, {
       type: SMSTemplateType.TEST_MESSAGE,
-      template: 'Test SMS from MASH Device Monitoring System. Time: {{timestamp}}',
+      template:
+        'Test SMS from MASH Device Monitoring System. Time: {{timestamp}}',
       maxLength: 160,
       variables: {
         timestamp: {
@@ -157,7 +164,9 @@ export class SMSTemplateService {
         if (config.default !== undefined) {
           variables[key] = config.default;
         } else if (config.required) {
-          throw new Error(`Required variable '${key}' missing for SMS template '${type}'`);
+          throw new Error(
+            `Required variable '${key}' missing for SMS template '${type}'`,
+          );
         }
       }
     }
@@ -218,7 +227,9 @@ export class SMSTemplateService {
       if (value !== undefined && value !== null) {
         const actualType = typeof value;
         if (actualType !== config.type) {
-          errors.push(`Variable '${key}' should be of type '${config.type}' but got '${actualType}'`);
+          errors.push(
+            `Variable '${key}' should be of type '${config.type}' but got '${actualType}'`,
+          );
         }
       }
     }

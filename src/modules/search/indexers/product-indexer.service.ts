@@ -54,7 +54,8 @@ export class ProductIndexerService implements OnModuleInit {
         this.logger.log(`✅ Index ${this.indexName} already exists`);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(
         `⚠️ Failed to create index ${this.indexName}: ${errorMessage} (Search functionality will be limited)`,
       );

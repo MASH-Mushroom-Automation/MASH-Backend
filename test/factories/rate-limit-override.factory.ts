@@ -1,6 +1,6 @@
 /**
  * Rate Limit Override Factory
- * 
+ *
  * Factory for creating test RateLimitOverride instances.
  */
 
@@ -27,23 +27,32 @@ export class RateLimitOverrideFactory {
    */
   static create(overrides?: Partial<RateLimitOverrideFactoryOptions>) {
     const strategy = overrides?.strategy || RateLimitStrategy.TOKEN_BUCKET;
-    
+
     return {
       id: overrides?.id || faker.string.uuid(),
       userId: overrides?.userId || faker.string.uuid(),
-      endpoint: overrides?.endpoint || `/api/v1/${faker.helpers.arrayElement(['products', 'orders', 'users'])}`,
+      endpoint:
+        overrides?.endpoint ||
+        `/api/v1/${faker.helpers.arrayElement(['products', 'orders', 'users'])}`,
       strategy,
-      requestLimit: overrides?.requestLimit || faker.number.int({ min: 100, max: 1000 }),
+      requestLimit:
+        overrides?.requestLimit || faker.number.int({ min: 100, max: 1000 }),
       timeWindowMs: overrides?.timeWindowMs || 60000, // 1 minute
-      burstSize: overrides?.burstSize || (strategy === RateLimitStrategy.TOKEN_BUCKET ? 50 : null),
-      refillRate: overrides?.refillRate || (strategy === RateLimitStrategy.TOKEN_BUCKET ? 10 : null),
-      reason: overrides?.reason || faker.helpers.arrayElement([
-        'VIP customer',
-        'Partner integration',
-        'Load testing',
-        'Beta testing',
-        'Premium subscription',
-      ]),
+      burstSize:
+        overrides?.burstSize ||
+        (strategy === RateLimitStrategy.TOKEN_BUCKET ? 50 : null),
+      refillRate:
+        overrides?.refillRate ||
+        (strategy === RateLimitStrategy.TOKEN_BUCKET ? 10 : null),
+      reason:
+        overrides?.reason ||
+        faker.helpers.arrayElement([
+          'VIP customer',
+          'Partner integration',
+          'Load testing',
+          'Beta testing',
+          'Premium subscription',
+        ]),
       expiresAt: overrides?.expiresAt || faker.date.future({ years: 1 }),
       isActive: overrides?.isActive !== undefined ? overrides.isActive : true,
       createdAt: new Date(),
@@ -54,7 +63,10 @@ export class RateLimitOverrideFactory {
   /**
    * Create override for specific strategy
    */
-  static createWithStrategy(strategy: RateLimitStrategy, overrides?: Partial<RateLimitOverrideFactoryOptions>) {
+  static createWithStrategy(
+    strategy: RateLimitStrategy,
+    overrides?: Partial<RateLimitOverrideFactoryOptions>,
+  ) {
     return this.create({
       ...overrides,
       strategy,
@@ -116,7 +128,10 @@ export class RateLimitOverrideFactory {
   /**
    * Create multiple overrides
    */
-  static createMany(count: number, overrides?: Partial<RateLimitOverrideFactoryOptions>) {
+  static createMany(
+    count: number,
+    overrides?: Partial<RateLimitOverrideFactoryOptions>,
+  ) {
     return Array.from({ length: count }, () => this.create(overrides));
   }
 
@@ -125,13 +140,28 @@ export class RateLimitOverrideFactory {
    */
   static createStrategySet(userId?: string) {
     const commonOverrides = userId ? { userId } : {};
-    
+
     return {
-      tokenBucket: this.createWithStrategy(RateLimitStrategy.TOKEN_BUCKET, commonOverrides),
-      leakyBucket: this.createWithStrategy(RateLimitStrategy.LEAKY_BUCKET, commonOverrides),
-      slidingWindow: this.createWithStrategy(RateLimitStrategy.SLIDING_WINDOW, commonOverrides),
-      fixedWindow: this.createWithStrategy(RateLimitStrategy.FIXED_WINDOW, commonOverrides),
-      adaptive: this.createWithStrategy(RateLimitStrategy.ADAPTIVE, commonOverrides),
+      tokenBucket: this.createWithStrategy(
+        RateLimitStrategy.TOKEN_BUCKET,
+        commonOverrides,
+      ),
+      leakyBucket: this.createWithStrategy(
+        RateLimitStrategy.LEAKY_BUCKET,
+        commonOverrides,
+      ),
+      slidingWindow: this.createWithStrategy(
+        RateLimitStrategy.SLIDING_WINDOW,
+        commonOverrides,
+      ),
+      fixedWindow: this.createWithStrategy(
+        RateLimitStrategy.FIXED_WINDOW,
+        commonOverrides,
+      ),
+      adaptive: this.createWithStrategy(
+        RateLimitStrategy.ADAPTIVE,
+        commonOverrides,
+      ),
     };
   }
 }

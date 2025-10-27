@@ -145,7 +145,9 @@ describe('DynamicRateLimitService', () => {
             windowMs: 60000,
           }),
         );
-        expect(mockPrometheusService.rateLimitViolationsTotal.inc).toHaveBeenCalled();
+        expect(
+          mockPrometheusService.rateLimitViolationsTotal.inc,
+        ).toHaveBeenCalled();
       });
 
       it('should use endpoint-specific override when user override not found', async () => {
@@ -319,7 +321,9 @@ describe('DynamicRateLimitService', () => {
         expect(result.allowed).toBe(false);
         expect(result.remaining).toBe(0);
         expect(result.retryAfterMs).toBe(30000);
-        expect(mockPrometheusService.rateLimitViolationsTotal.inc).toHaveBeenCalledWith(
+        expect(
+          mockPrometheusService.rateLimitViolationsTotal.inc,
+        ).toHaveBeenCalledWith(
           expect.objectContaining({
             allowed: 'no',
           }),
@@ -350,7 +354,9 @@ describe('DynamicRateLimitService', () => {
         // Assert
         expect(result.allowed).toBe(true);
         expect(result.remaining).toBe(50);
-        expect(mockPrometheusService.rateLimitViolationsTotal.inc).toHaveBeenCalledWith(
+        expect(
+          mockPrometheusService.rateLimitViolationsTotal.inc,
+        ).toHaveBeenCalledWith(
           expect.objectContaining({
             allowed: 'yes',
           }),
@@ -706,10 +712,12 @@ describe('DynamicRateLimitService', () => {
       expect(result).toHaveLength(2);
       expect(result[0].userId).toBe(userId);
       expect(result[1].userId).toBe(userId);
-      expect(mockPrismaService.rateLimitOverride.findMany).toHaveBeenCalledWith({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-      });
+      expect(mockPrismaService.rateLimitOverride.findMany).toHaveBeenCalledWith(
+        {
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+        },
+      );
     });
   });
 
@@ -725,7 +733,9 @@ describe('DynamicRateLimitService', () => {
 
       // Assert
       expect(count).toBe(5);
-      expect(mockPrismaService.rateLimitOverride.deleteMany).toHaveBeenCalledWith({
+      expect(
+        mockPrismaService.rateLimitOverride.deleteMany,
+      ).toHaveBeenCalledWith({
         where: {
           expiresAt: {
             lt: expect.any(Date),
