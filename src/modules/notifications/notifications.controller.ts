@@ -29,6 +29,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
 import { PushNotificationService, PushNotificationPayload } from './services/push-notification.service';
+import { SmsService, SMSMessage, SMSDeliveryResult, SMSProviderHealth } from './services/sms.service';
 import { CommunicationHubService } from './services/communication-hub.service';
 import * as nodemailer from 'nodemailer';
 
@@ -40,6 +41,7 @@ export class NotificationsController {
     private readonly notificationsService: NotificationsService,
     private readonly notificationQueue: NotificationQueueService,
     private readonly pushNotificationService: PushNotificationService,
+    private readonly smsService: SmsService,
     private readonly communicationHubService: CommunicationHubService,
   ) {}
 
@@ -429,6 +431,39 @@ export class NotificationsController {
       success: true,
       message: 'Communication preferences updated',
     };
+  }
+
+  // SMS Endpoints
+  @Post('sms/test')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Test SMS delivery to a phone number' })
+  @ApiResponse({ status: 200, description: 'SMS test result' })
+  async testSMS(
+    @Body() body: { phoneNumber: string; message?: string },
+  ): Promise<SMSDeliveryResult> {
+    return this.smsService.testSMS(body.phoneNumber, body.message);
+  }
+
+  @Get('sms/providers/health')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get SMS provider health status' })
+  @ApiResponse({ status: 200, description: 'SMS provider health information' })
+  getSMSProviderHealth(): SMSProviderHealth[] {
+    return this.smsService.getProviderHealth();
+  }
+
+  @Get('sms/status/:messageId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get SMS delivery status' })
+  @ApiResponse({ status: 200, description: 'SMS delivery status' })
+  async getSMSDeliveryStatus(
+    @Param('messageId') messageId: string,
+    @Query('provider') provider?: 'twilio' | 'nexmo',
+  ): Promise<any> {
+    return this.smsService.getDeliveryStatus(messageId, provider);
   }
 
   @Post('communication/device-health-alert')

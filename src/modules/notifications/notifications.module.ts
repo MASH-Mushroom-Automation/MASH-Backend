@@ -6,6 +6,8 @@ import { NotificationsService } from './notifications.service';
 import { EmailTemplateService } from './services/email-template.service';
 import { EmailService } from './services/email.service';
 import { PushNotificationService } from './services/push-notification.service';
+import { SmsService } from './services/sms.service';
+import { SMSTemplateService } from './services/sms-template.service';
 import { CommunicationHubService } from './services/communication-hub.service';
 import { QueuesModule } from '../queues/queues.module';
 
@@ -21,6 +23,8 @@ import { QueuesModule } from '../queues/queues.module';
     EmailTemplateService,
     EmailService,
     PushNotificationService,
+    SmsService,
+    SMSTemplateService,
     CommunicationHubService,
     // PrismaService provided globally by DatabaseModule
   ],
@@ -29,6 +33,8 @@ import { QueuesModule } from '../queues/queues.module';
     EmailTemplateService,
     EmailService,
     PushNotificationService,
+    SmsService,
+    SMSTemplateService,
     CommunicationHubService,
   ],
 })

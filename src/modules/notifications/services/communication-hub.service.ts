@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EmailService, SendEmailOptions } from './email.service';
 import { PushNotificationService, PushNotificationPayload } from './push-notification.service';
+import { SmsService, SMSMessage } from './sms.service';
+import { SMSTemplateService, SMSTemplateType, SMSTemplateVariables } from './sms-template.service';
 import { PrismaService } from '../../../database/prisma.service';
 
 export interface CommunicationMessage {
@@ -40,6 +42,8 @@ export class CommunicationHubService {
   constructor(
     private readonly emailService: EmailService,
     private readonly pushNotificationService: PushNotificationService,
+    private readonly smsService: SmsService,
+    private readonly smsTemplateService: SMSTemplateService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -301,17 +305,128 @@ export class CommunicationHubService {
   }
 
   /**
-   * Send SMS communication (placeholder - implement SMS service)
+   * Send SMS communication using the SMS service with template support
    */
   private async sendSmsCommunication(
     userId: string,
     message: CommunicationMessage,
     template?: string,
   ): Promise<void> {
-    // TODO: Implement SMS service integration
-    this.logger.log(`SMS communication not yet implemented for user ${userId}`);
-    // For now, just log the attempt
-    throw new Error('SMS service not implemented');
+    try {
+      // Get user's phone number from database
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { phoneNumber: true },
+      });
+
+      if (!user?.phoneNumber) {
+        throw new Error(`No phone number found for user ${userId}`);
+      }
+
+      // Prepare SMS message
+      let smsBody: string;
+
+      if (template) {
+        // Use template if provided
+        const templateType = this.mapTemplateToType(template);
+        if (templateType) {
+          // Extract variables from message data
+          const variables = this.extractTemplateVariables(message, templateType);
+          smsBody = this.smsTemplateService.renderTemplate(templateType, variables);
+        } else {
+          // Use template string directly
+          smsBody = this.formatSmsMessage(message, template);
+        }
+      } else {
+        // Use default formatting
+        smsBody = this.formatSmsMessage(message);
+      }
+
+      const smsMessage: SMSMessage = {
+        to: user.phoneNumber,
+        body: smsBody,
+      };
+
+      // Send SMS
+      const result = await this.smsService.sendSMS(smsMessage);
+
+      if (!result.success) {
+        throw new Error(`SMS delivery failed: ${result.error}`);
+      }
+
+      this.logger.log(`✅ SMS sent successfully to user ${userId} via ${result.provider} (${result.messageId})`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to send SMS to user ${userId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Format message for SMS (shorter, concise format)
+   */
+  private formatSmsMessage(message: CommunicationMessage, template?: string): string {
+    if (template) {
+      // Use template if provided
+      return template
+        .replace('{{title}}', message.title)
+        .replace('{{body}}', message.body)
+        .replace('{{priority}}', message.priority || 'normal');
+    }
+
+    // Default SMS format - keep it under 160 characters for single SMS
+    const baseMessage = `${message.title}: ${message.body}`;
+
+    // Truncate if too long
+    if (baseMessage.length > 160) {
+      return baseMessage.substring(0, 157) + '...';
+    }
+
+    return baseMessage;
+  }
+
+  /**
+   * Map template string to SMS template type
+   */
+  private mapTemplateToType(template: string): SMSTemplateType | null {
+    const templateMap: Record<string, SMSTemplateType> = {
+      'device-offline': SMSTemplateType.DEVICE_OFFLINE,
+      'device-error': SMSTemplateType.DEVICE_ERROR,
+      'health-warning': SMSTemplateType.HEALTH_WARNING,
+      'health-critical': SMSTemplateType.HEALTH_CRITICAL,
+      'test-message': SMSTemplateType.TEST_MESSAGE,
+    };
+
+    return templateMap[template] || null;
+  }
+
+  /**
+   * Extract template variables from communication message
+   */
+  private extractTemplateVariables(
+    message: CommunicationMessage,
+    templateType: SMSTemplateType,
+  ): SMSTemplateVariables {
+    const variables: SMSTemplateVariables = {};
+
+    // Extract common variables from message data
+    if (message.data) {
+      if (message.data.deviceId) variables.deviceId = message.data.deviceId;
+      if (message.data.metric) variables.metric = message.data.metric;
+      if (message.data.value !== undefined) variables.value = message.data.value;
+      if (message.data.errorMessage) variables.errorMessage = message.data.errorMessage;
+      if (message.data.lastSeen) {
+        variables.lastSeen = message.data.lastSeen instanceof Date
+          ? message.data.lastSeen.toISOString()
+          : message.data.lastSeen;
+      }
+    }
+
+    // Add timestamp for test messages
+    if (templateType === SMSTemplateType.TEST_MESSAGE) {
+      variables.timestamp = new Date().toISOString();
+    }
+
+    return variables;
   }
 
   /**
