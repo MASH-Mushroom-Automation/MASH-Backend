@@ -162,7 +162,7 @@ jobs:
           fi
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: steps.check-trivy-sarif.outputs.exists == 'true'
         continue-on-error: true  # Don't fail build if upload fails
         with:
@@ -199,7 +199,7 @@ jobs:
           fi
 
       - name: Upload Grype results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: steps.check-grype-sarif.outputs.exists == 'true'
         continue-on-error: true  # Don't fail build if upload fails
         with:
