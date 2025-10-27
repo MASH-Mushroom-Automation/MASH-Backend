@@ -79,6 +79,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get payment() { return this.getClient().payment; }
   get permission() { return this.getClient().permission; }
   get product() { return this.getClient().product; }
+  get pushSubscription() { return this.getClient().pushSubscription; }
   get rateLimitLog() { return this.getClient().rateLimitLog; }
   get rateLimitOverride() { return this.getClient().rateLimitOverride; }
   get report() { return this.getClient().report; }

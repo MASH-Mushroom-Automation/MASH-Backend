@@ -301,4 +301,62 @@ export class DevicesController {
   async getHealth(@Param('id') id: string, @Request() req) {
     return this.devicesService.getHealth(id, req.user);
   }
+
+  // ========== Device Health Monitoring Endpoints ==========
+
+  @Post(':id/health')
+  @ApiOperation({ summary: 'Record device health data' })
+  @ApiResponse({ status: 201, description: 'Health data recorded' })
+  async recordHealth(
+    @Param('id') id: string,
+    @Body() healthData: {
+      status: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'OFFLINE' | 'MAINTENANCE';
+      cpuUsage?: number;
+      memoryUsage?: number;
+      diskUsage?: number;
+      temperature?: number;
+      batteryLevel?: number;
+      networkLatency?: number;
+      uptime?: number;
+      errorCount?: number;
+      metadata?: any;
+    },
+  ) {
+    return this.devicesService.recordDeviceHealth(id, healthData);
+  }
+
+  @Get(':id/health/history')
+  @ApiOperation({ summary: 'Get device health history' })
+  @ApiResponse({ status: 200, description: 'Health history retrieved' })
+  async getHealthHistory(
+    @Param('id') id: string,
+    @Query('limit') limit?: number,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.devicesService.getDeviceHealthHistory(id, limit || 50, start, end);
+  }
+
+  @Get(':id/health/status')
+  @ApiOperation({ summary: 'Get current device health status' })
+  @ApiResponse({ status: 200, description: 'Health status retrieved' })
+  async getHealthStatus(@Param('id') id: string) {
+    return this.devicesService.getDeviceHealthStatus(id);
+  }
+
+  @Post(':id/health/check')
+  @ApiOperation({ summary: 'Perform health check on device' })
+  @ApiResponse({ status: 200, description: 'Health check performed' })
+  async performHealthCheck(@Param('id') id: string) {
+    return this.devicesService.performHealthCheck(id);
+  }
+
+  @Get('health/summary')
+  @ApiOperation({ summary: 'Get health summary for all devices' })
+  @ApiResponse({ status: 200, description: 'Health summary retrieved' })
+  async getHealthSummary(@Request() req) {
+    return this.devicesService.getDevicesHealthSummary(req.user?.id);
+  }
 }

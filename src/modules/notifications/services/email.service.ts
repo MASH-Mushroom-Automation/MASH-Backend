@@ -11,15 +11,130 @@ export interface SendEmailOptions {
   subject?: string;
   templateType: EmailTemplateType;
   variables: Record<string, any>;
+  provider?: EmailProvider;
+}
+
+export enum EmailProvider {
+  SMTP = 'smtp',
+  SENDGRID = 'sendgrid',
+  // Add more providers as needed
+}
+
+interface EmailProviderConfig {
+  name: EmailProvider;
+  enabled: boolean;
+  priority: number; // Lower number = higher priority
+  transporter?: Transporter;
 }
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: Transporter;
+  private providers: EmailProviderConfig[] = [];
 
   constructor(private readonly emailTemplateService: EmailTemplateService) {
-    this.initializeTransporter();
+    this.initializeProviders();
+  }
+
+  private initializeProviders() {
+    // Initialize SMTP provider (always available as fallback)
+    this.providers.push({
+      name: EmailProvider.SMTP,
+      enabled: true,
+      priority: 10,
+      transporter: this.createSMTPTransporter(),
+    });
+
+    // Initialize SendGrid provider if configured
+    if (process.env.SENDGRID_API_KEY) {
+      this.providers.push({
+        name: EmailProvider.SENDGRID,
+        enabled: true,
+        priority: 1, // Higher priority than SMTP
+        // transporter: this.createSendGridTransporter(), // TODO: Implement when SendGrid package is installed
+      });
+    }
+
+    // Sort providers by priority (lower number = higher priority)
+    this.providers.sort((a, b) => a.priority - b.priority);
+
+    this.logger.log(`Initialized ${this.providers.length} email providers`);
+  }
+
+  private createSMTPTransporter(): Transporter {
+    // Check if required environment variables are set
+    const requiredVars = {
+      EMAIL_HOST: process.env.EMAIL_HOST,
+      EMAIL_PORT: process.env.EMAIL_PORT,
+      EMAIL_USER: process.env.EMAIL_USER,
+      EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
+      EMAIL_FROM: process.env.EMAIL_FROM,
+    };
+
+    const missingVars = Object.entries(requiredVars)
+      .filter(([, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingVars.length > 0) {
+      this.logger.error(
+        `❌ SMTP EMAIL SERVICE NOT CONFIGURED! Missing environment variables: ${missingVars.join(', ')}`,
+      );
+      this.logger.error(
+        '📧 SMTP email sending will FAIL until you add these variables',
+      );
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT || '587'),
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    // Verify transporter configuration
+    transporter.verify((error) => {
+      if (error) {
+        this.logger.error(
+          '❌ SMTP Email transporter configuration error:',
+          error.message,
+        );
+        if (error.message.includes('Invalid login')) {
+          this.logger.error(
+            '🔑 Gmail App Password is invalid or expired. Generate new one at: https://myaccount.google.com/apppasswords',
+          );
+        }
+      } else {
+        this.logger.log(
+          '✅ SMTP Email transporter is ready to send emails',
+        );
+        this.logger.log(
+          `📧 Sending emails from: ${process.env.EMAIL_FROM || process.env.EMAIL_USER}`,
+        );
+      }
+    });
+
+    return transporter;
+  }
+
+  // private createSendGridTransporter(): Transporter {
+  //   // TODO: Implement SendGrid transporter when package is installed
+  //   // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  //   // return sgMail as any;
+  // }
+
+  private async getAvailableProvider(): Promise<EmailProviderConfig | null> {
+    for (const provider of this.providers) {
+      if (provider.enabled) {
+        // For now, assume all enabled providers are available
+        // TODO: Add health checks for each provider
+        return provider;
+      }
+    }
+    return null;
   }
 
   private initializeTransporter() {
@@ -80,10 +195,18 @@ export class EmailService {
   }
 
   /**
-   * Send an email using a template
+   * Send an email using a template with provider failover
    */
   async sendTemplatedEmail(options: SendEmailOptions): Promise<void> {
     try {
+      // Get the best available provider
+      const provider = await this.getAvailableProvider();
+      if (!provider) {
+        throw new Error('No email providers available');
+      }
+
+      this.logger.log(`Using email provider: ${provider.name}`);
+
       // Render the template with variables
       const { html, text, subject } =
         await this.emailTemplateService.renderTemplate(
@@ -94,18 +217,26 @@ export class EmailService {
       // Use provided subject or template subject
       const emailSubject = options.subject || subject;
 
-      // Send the email
-      const info = await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>',
-        to: options.to,
-        subject: emailSubject,
-        text: text,
-        html: html,
-      });
+      // Send using the selected provider
+      if (provider.name === EmailProvider.SMTP && provider.transporter) {
+        const info = await provider.transporter.sendMail({
+          from: process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>',
+          to: options.to,
+          subject: emailSubject,
+          text: text,
+          html: html,
+        });
 
-      this.logger.log(
-        `Email sent successfully to ${options.to}: ${info.messageId}`,
-      );
+        this.logger.log(
+          `Email sent successfully to ${options.to} via ${provider.name}: ${info.messageId}`,
+        );
+      } else if (provider.name === EmailProvider.SENDGRID) {
+        // TODO: Implement SendGrid sending
+        this.logger.log(`SendGrid sending not yet implemented for ${options.to}`);
+        throw new Error('SendGrid provider not yet implemented');
+      } else {
+        throw new Error(`Unsupported provider: ${provider.name}`);
+      }
     } catch (error) {
       this.logger.error(`Failed to send email to ${options.to}:`, error);
       throw error;

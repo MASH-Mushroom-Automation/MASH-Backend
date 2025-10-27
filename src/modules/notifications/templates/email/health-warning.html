@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Health Warning - MASH</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="mushroom-icon">🍄</div>
+            <h1 class="logo">MASH</h1>
+        </div>
+
+        <div class="content">
+            <h2 class="greeting">Device Health Warning</h2>
+
+            <div class="message">
+                <p>Dear {{userName}},</p>
+
+                <p><strong>Warning:</strong> Your device <strong>{{deviceName}}</strong> ({{deviceSerial}}) is showing health issues that require attention.</p>
+
+                <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+                    <h3 style="color: #856404; margin-top: 0;">Health Metrics:</h3>
+                    <ul style="color: #856404;">
+                        {{#if cpuUsage}}<li><strong>CPU Usage:</strong> {{cpuUsage}}%</li>{{/if}}
+                        {{#if memoryUsage}}<li><strong>Memory Usage:</strong> {{memoryUsage}}%</li>{{/if}}
+                        {{#if temperature}}<li><strong>Temperature:</strong> {{temperature}}°C</li>{{/if}}
+                        {{#if batteryLevel}}<li><strong>Battery Level:</strong> {{batteryLevel}}%</li>{{/if}}
+                        {{#if errorCount}}<li><strong>Error Count:</strong> {{errorCount}}</li>{{/if}}
+                    </ul>
+                </div>
+
+                {{#if recommendations}}
+                <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+                    <h3 style="color: #0c5460; margin-top: 0;">Recommendations:</h3>
+                    <ul style="color: #0c5460;">
+                        {{#each recommendations}}
+                        <li>{{this}}</li>
+                        {{/each}}
+                    </ul>
+                </div>
+                {{/if}}
+
+                <p>Please review your device status and take appropriate action to prevent potential issues.</p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{{appUrl}}/devices/{{deviceId}}" style="background-color: #ffc107; color: #212529; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Device Health</a>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>If you have any questions, please contact our support team at <a href="mailto:support@mash.com">support@mash.com</a></p>
+                <p>&copy; {{year}} {{companyName}}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
