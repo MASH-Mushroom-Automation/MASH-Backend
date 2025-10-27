@@ -1,6 +1,6 @@
 /**
  * Test Auth Helper
- * 
+ *
  * Provides utilities for authentication in tests.
  * Generates JWT tokens, creates test users with different roles, etc.
  */
@@ -10,13 +10,18 @@ import * as bcrypt from 'bcrypt';
 import { UserRole } from '@prisma/client';
 
 export class TestAuthHelper {
-  private readonly jwtSecret = process.env.TEST_JWT_SECRET || 'test-jwt-secret-change-in-production';
+  private readonly jwtSecret =
+    process.env.TEST_JWT_SECRET || 'test-jwt-secret-change-in-production';
   private readonly jwtExpiresIn = '1h';
 
   /**
    * Generate JWT token for test user
    */
-  generateToken(payload: { id: string; email: string; role: UserRole }): string {
+  generateToken(payload: {
+    id: string;
+    email: string;
+    role: UserRole;
+  }): string {
     return jwt.sign(payload, this.jwtSecret, {
       expiresIn: this.jwtExpiresIn,
     });
@@ -25,7 +30,11 @@ export class TestAuthHelper {
   /**
    * Generate expired JWT token (for testing token expiration)
    */
-  generateExpiredToken(payload: { id: string; email: string; role: UserRole }): string {
+  generateExpiredToken(payload: {
+    id: string;
+    email: string;
+    role: UserRole;
+  }): string {
     return jwt.sign(payload, this.jwtSecret, {
       expiresIn: '-1h', // Expired 1 hour ago
     });
@@ -34,7 +43,11 @@ export class TestAuthHelper {
   /**
    * Generate invalid JWT token (wrong secret)
    */
-  generateInvalidToken(payload: { id: string; email: string; role: UserRole }): string {
+  generateInvalidToken(payload: {
+    id: string;
+    email: string;
+    role: UserRole;
+  }): string {
     return jwt.sign(payload, 'wrong-secret', {
       expiresIn: this.jwtExpiresIn,
     });
@@ -68,7 +81,11 @@ export class TestAuthHelper {
   /**
    * Generate auth header with Bearer token
    */
-  generateAuthHeader(userId: string, email: string, role: UserRole): Record<string, string> {
+  generateAuthHeader(
+    userId: string,
+    email: string,
+    role: UserRole,
+  ): Record<string, string> {
     const token = this.generateToken({ id: userId, email, role });
     return {
       Authorization: `Bearer ${token}`,
@@ -82,7 +99,7 @@ export class TestAuthHelper {
     const id = `test-user-${role.toLowerCase()}-${Date.now()}`;
     const email = `test-${role.toLowerCase()}@test.com`;
     const password = 'Test123!@#';
-    
+
     return {
       id,
       email,
@@ -135,10 +152,13 @@ export class TestAuthHelper {
    * Generate API key (for API key authentication testing)
    */
   generateApiKey(): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const characters =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let apiKey = '';
     for (let i = 0; i < 32; i++) {
-      apiKey += characters.charAt(Math.floor(Math.random() * characters.length));
+      apiKey += characters.charAt(
+        Math.floor(Math.random() * characters.length),
+      );
     }
     return `mash_${apiKey}`;
   }
@@ -158,7 +178,11 @@ export class TestAuthHelper {
   verifyRefreshToken(token: string): any {
     try {
       const payload = jwt.verify(token, this.jwtSecret);
-      if (payload && typeof payload === 'object' && payload.type === 'refresh') {
+      if (
+        payload &&
+        typeof payload === 'object' &&
+        payload.type === 'refresh'
+      ) {
         return payload;
       }
       return null;

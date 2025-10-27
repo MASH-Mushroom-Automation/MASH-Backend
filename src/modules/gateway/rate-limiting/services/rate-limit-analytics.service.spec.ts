@@ -28,9 +28,7 @@ describe('RateLimitAnalyticsService', () => {
       ],
     }).compile();
 
-    service = module.get<RateLimitAnalyticsService>(
-      RateLimitAnalyticsService,
-    );
+    service = module.get<RateLimitAnalyticsService>(RateLimitAnalyticsService);
     prismaService = module.get<PrismaService>(PrismaService);
   });
 

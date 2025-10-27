@@ -11,6 +11,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,11 +23,26 @@ import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import { NotificationPreferencesDto } from './dto/notification-preferences.dto';
+import {
+  SendDeviceHealthAlertDto,
+  DeviceHealthAlertResponseDto,
+} from './dto/device-health-alert.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
+import {
+  PushNotificationService,
+  PushNotificationPayload,
+} from './services/push-notification.service';
+import {
+  SmsService,
+  SMSMessage,
+  SMSDeliveryResult,
+  SMSProviderHealth,
+} from './services/sms.service';
+import { CommunicationHubService } from './services/communication-hub.service';
 import * as nodemailer from 'nodemailer';
 
 @ApiTags('notifications')
@@ -36,6 +52,9 @@ export class NotificationsController {
   constructor(
     private readonly notificationsService: NotificationsService,
     private readonly notificationQueue: NotificationQueueService,
+    private readonly pushNotificationService: PushNotificationService,
+    private readonly smsService: SmsService,
+    private readonly communicationHubService: CommunicationHubService,
   ) {}
 
   @Get()
@@ -249,5 +268,270 @@ export class NotificationsController {
       success: true,
       data: stats,
     };
+  }
+
+  // ===== PUSH NOTIFICATION ENDPOINTS =====
+
+  @Post('push/subscribe')
+  @ApiOperation({ summary: 'Subscribe to push notifications' })
+  @ApiResponse({ status: 201, description: 'Push subscription created' })
+  @ApiResponse({ status: 400, description: 'Invalid subscription data' })
+  async subscribeToPush(
+    @Body()
+    subscriptionData: {
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+      userAgent?: string;
+    },
+    @Request() req,
+  ) {
+    const userId = req.user?.id as string;
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    const subscription = {
+      endpoint: subscriptionData.endpoint,
+      keys: {
+        p256dh: subscriptionData.p256dh,
+        auth: subscriptionData.auth,
+      },
+      userAgent: subscriptionData.userAgent,
+      userId,
+    };
+
+    const result = await this.pushNotificationService.registerSubscription(
+      userId,
+      subscription,
+    );
+
+    return {
+      success: true,
+      data: result,
+      message: 'Push subscription registered successfully',
+    };
+  }
+
+  @Delete('push/unsubscribe')
+  @ApiOperation({ summary: 'Unsubscribe from push notifications' })
+  @ApiResponse({ status: 200, description: 'Push subscription removed' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async unsubscribeFromPush(
+    @Body() subscriptionData: { endpoint: string },
+    @Request() req,
+  ) {
+    const userId = req.user?.id as string;
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    await this.pushNotificationService.unregisterSubscription(
+      userId,
+      subscriptionData.endpoint,
+    );
+
+    return {
+      success: true,
+      message: 'Push subscription removed successfully',
+    };
+  }
+
+  @Get('push/subscriptions')
+  @ApiOperation({ summary: 'Get user push subscriptions' })
+  @ApiResponse({ status: 200, description: 'Push subscriptions retrieved' })
+  async getPushSubscriptions(@Request() req) {
+    const userId = req.user?.id as string;
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    // For now, return empty array as we don't have a method to get subscriptions
+    const subscriptions = [];
+
+    return {
+      success: true,
+      data: subscriptions,
+    };
+  }
+
+  @Post('push/test')
+  @ApiOperation({ summary: 'Send test push notification' })
+  @ApiResponse({ status: 200, description: 'Test notification sent' })
+  async sendTestPush(@Request() req) {
+    const userId = req.user?.id as string;
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    const payload: PushNotificationPayload = {
+      title: 'Test Notification',
+      body: 'This is a test push notification from MASH',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      data: { test: true, timestamp: new Date().toISOString() },
+    };
+
+    await this.pushNotificationService.sendToUser({ userId, payload });
+
+    return {
+      success: true,
+      message: 'Test push notification sent',
+    };
+  }
+
+  // ===== COMMUNICATION HUB ENDPOINTS =====
+
+  @Post('communication/send')
+  @ApiOperation({ summary: 'Send communication through multiple channels' })
+  @ApiResponse({ status: 200, description: 'Communication sent successfully' })
+  async sendCommunication(
+    @Body()
+    body: {
+      userId: string;
+      message: { title: string; body: string; data?: any; priority?: string };
+      channels?: string[];
+      emailTemplate?: string;
+      smsTemplate?: string;
+    },
+    @Request() req,
+  ) {
+    const result = await this.communicationHubService.sendCommunication({
+      userId: body.userId,
+      message: {
+        title: body.message.title,
+        body: body.message.body,
+        data: body.message.data,
+        priority: body.message.priority as any,
+      },
+      channels: body.channels as any,
+      emailTemplate: body.emailTemplate,
+      smsTemplate: body.smsTemplate,
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Get('communication/preferences')
+  @ApiOperation({ summary: 'Get user communication preferences' })
+  @ApiResponse({ status: 200, description: 'Preferences retrieved' })
+  async getCommunicationPreferences(@Request() req) {
+    const userId = req.user?.id as string;
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    const preferences =
+      await this.communicationHubService.getUserCommunicationPreferences(
+        userId,
+      );
+
+    return {
+      success: true,
+      data: preferences,
+    };
+  }
+
+  @Put('communication/preferences')
+  @ApiOperation({ summary: 'Update user communication preferences' })
+  @ApiResponse({ status: 200, description: 'Preferences updated' })
+  async updateCommunicationPreferences(
+    @Body() preferences: any,
+    @Request() req,
+  ) {
+    const userId = req.user?.id as string;
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    await this.communicationHubService.updateUserCommunicationPreferences(
+      userId,
+      preferences,
+    );
+
+    return {
+      success: true,
+      message: 'Communication preferences updated',
+    };
+  }
+
+  // SMS Endpoints
+  @Post('sms/test')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Test SMS delivery to a phone number' })
+  @ApiResponse({ status: 200, description: 'SMS test result' })
+  async testSMS(
+    @Body() body: { phoneNumber: string; message?: string },
+  ): Promise<SMSDeliveryResult> {
+    return this.smsService.testSMS(body.phoneNumber, body.message);
+  }
+
+  @Get('sms/providers/health')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get SMS provider health status' })
+  @ApiResponse({ status: 200, description: 'SMS provider health information' })
+  getSMSProviderHealth(): SMSProviderHealth[] {
+    return this.smsService.getProviderHealth();
+  }
+
+  @Get('sms/status/:messageId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get SMS delivery status' })
+  @ApiResponse({ status: 200, description: 'SMS delivery status' })
+  async getSMSDeliveryStatus(
+    @Param('messageId') messageId: string,
+    @Query('provider') provider?: 'twilio' | 'nexmo',
+  ): Promise<any> {
+    return this.smsService.getDeliveryStatus(messageId, provider);
+  }
+
+  @Post('communication/device-health-alert')
+  @ApiOperation({
+    summary: 'Send device health alert through communication channels',
+    description: `Send a device health alert that will be delivered through multiple communication channels based on the health status:
+
+    - **HEALTHY/WARNING**: Sent via push notification and email only
+    - **CRITICAL/OFFLINE**: Sent via push notification, email, and SMS (with automatic provider failover)
+
+    The system automatically selects the appropriate channels and handles provider failover for SMS delivery.`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Device health alert sent successfully through appropriate channels',
+    type: DeviceHealthAlertResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request data or missing required fields',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error during alert processing',
+  })
+  async sendDeviceHealthAlert(
+    @Body() body: SendDeviceHealthAlertDto,
+  ): Promise<DeviceHealthAlertResponseDto> {
+    await this.communicationHubService.sendDeviceHealthAlert(
+      body.userId,
+      body.deviceId,
+      body.healthStatus,
+      {
+        ...body.metrics,
+        lastSeen: body.metrics?.lastSeen
+          ? new Date(body.metrics.lastSeen)
+          : undefined,
+      },
+    );
+
+    return {
+      success: true,
+      message: 'Device health alert sent',
+    } as DeviceHealthAlertResponseDto;
   }
 }

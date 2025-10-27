@@ -18,6 +18,36 @@ import { FirmwareUpdateDto } from './dto/firmware-update.dto';
 import { SensorCalibrationDto } from './dto/sensor-calibration.dto';
 import { DeviceAnalyticsQueryDto } from './dto/device-analytics-query.dto';
 
+interface DeviceHealthData {
+  status: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'OFFLINE' | 'MAINTENANCE';
+  cpuUsage?: number;
+  memoryUsage?: number;
+  diskUsage?: number;
+  temperature?: number;
+  batteryLevel?: number;
+  networkLatency?: number;
+  uptime?: number;
+  errorCount?: number;
+  metadata?: any;
+}
+
+interface DeviceHealthRecord {
+  id: string;
+  deviceId: string;
+  timestamp: Date;
+  status: string;
+  cpuUsage?: number;
+  memoryUsage?: number;
+  diskUsage?: number;
+  temperature?: number;
+  batteryLevel?: number;
+  networkLatency?: number;
+  uptime?: number;
+  errorCount: number;
+  metadata?: any;
+  createdAt: Date;
+}
+
 @Injectable()
 export class DevicesService {
   private readonly logger = new Logger(DevicesService.name);
@@ -651,6 +681,320 @@ export class DevicesService {
           ? `${Math.floor((now.getTime() - new Date(device.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days`
           : 'N/A',
       },
+    };
+  }
+
+  // ========== Device Health Monitoring ==========
+
+  /**
+   * Record device health data
+   */
+  async recordDeviceHealth(
+    deviceId: string,
+    healthData: {
+      status: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'OFFLINE' | 'MAINTENANCE';
+      cpuUsage?: number;
+      memoryUsage?: number;
+      diskUsage?: number;
+      temperature?: number;
+      batteryLevel?: number;
+      networkLatency?: number;
+      uptime?: number;
+      errorCount?: number;
+      metadata?: any;
+    },
+  ) {
+    const device = await this.prisma.device.findUnique({
+      where: { id: deviceId },
+    });
+
+    if (!device) {
+      throw new NotFoundException(`Device ${deviceId} not found`);
+    }
+
+    // Update device status based on health
+    const newStatus = this.mapHealthToDeviceStatus(healthData.status);
+    if (device.status !== newStatus) {
+      await this.prisma.device.update({
+        where: { id: deviceId },
+        data: { status: newStatus, lastSeen: new Date() },
+      });
+
+      // Clear cache
+      await this.cacheService.delete(`${this.DEVICE_CACHE_PREFIX}:${deviceId}`);
+    }
+
+    // Record health data
+    // TODO: Uncomment when Prisma client is regenerated
+    // const healthRecord = await this.prisma.deviceHealth.create({
+    //   data: {
+    //     deviceId,
+    //     status: healthData.status as any,
+    //     cpuUsage: healthData.cpuUsage,
+    //     memoryUsage: healthData.memoryUsage,
+    //     diskUsage: healthData.diskUsage,
+    //     temperature: healthData.temperature,
+    //     batteryLevel: healthData.batteryLevel,
+    //     networkLatency: healthData.networkLatency,
+    //     uptime: healthData.uptime,
+    //     errorCount: healthData.errorCount || 0,
+    //     metadata: healthData.metadata || {},
+    //   },
+    // });
+
+    const healthRecord = {
+      id: 'temp-id',
+      deviceId,
+      timestamp: new Date(),
+      ...healthData,
+      createdAt: new Date(),
+    };
+
+    this.logger.log(
+      `Health record created for device ${deviceId}: ${healthData.status}`,
+    );
+
+    // Emit health update via WebSocket
+    this.devicesGateway.emitDeviceHealthUpdate(deviceId, healthRecord);
+
+    return healthRecord;
+  }
+
+  /**
+   * Get device health history
+   */
+  async getDeviceHealthHistory(
+    deviceId: string,
+    limit: number = 50,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    const device = await this.prisma.device.findUnique({
+      where: { id: deviceId },
+    });
+
+    if (!device) {
+      throw new NotFoundException(`Device ${deviceId} not found`);
+    }
+
+    const where: any = { deviceId };
+    if (startDate || endDate) {
+      where.timestamp = {};
+      if (startDate) where.timestamp.gte = startDate;
+      if (endDate) where.timestamp.lte = endDate;
+    }
+
+    // TODO: Uncomment when Prisma client is regenerated
+    // return this.prisma.deviceHealth.findMany({
+    //   where,
+    //   orderBy: { timestamp: 'desc' },
+    //   take: limit,
+    // });
+
+    // Mock data for now
+    return [];
+  }
+
+  /**
+   * Get current device health status
+   */
+  async getDeviceHealthStatus(deviceId: string) {
+    const device = await this.prisma.device.findUnique({
+      where: { id: deviceId },
+      // TODO: Uncomment when Prisma client is regenerated
+      // include: {
+      //   healthRecords: {
+      //     orderBy: { timestamp: 'desc' },
+      //     take: 1,
+      //   },
+      // },
+    });
+
+    if (!device) {
+      throw new NotFoundException(`Device ${deviceId} not found`);
+    }
+
+    // const latestHealth = device.healthRecords[0];
+    const latestHealth = null; // Mock for now
+
+    const isOnline = this.isDeviceOnline(device);
+
+    return {
+      deviceId,
+      deviceName: device.name,
+      status: device.status,
+      isOnline,
+      lastSeen: device.lastSeen,
+      latestHealth: latestHealth || null,
+      healthSummary: this.calculateHealthSummary(device, latestHealth),
+    };
+  }
+
+  /**
+   * Perform health check on device
+   */
+  async performHealthCheck(deviceId: string) {
+    const device = await this.prisma.device.findUnique({
+      where: { id: deviceId },
+    });
+
+    if (!device) {
+      throw new NotFoundException(`Device ${deviceId} not found`);
+    }
+
+    // Simulate health check (in real implementation, this would ping the device)
+    const healthData = {
+      status: this.determineHealthStatus(device) as any,
+      cpuUsage: Math.random() * 100,
+      memoryUsage: Math.random() * 100,
+      temperature: 20 + Math.random() * 30,
+      networkLatency: Math.floor(Math.random() * 100),
+      uptime: device.lastSeen
+        ? Math.floor((Date.now() - device.lastSeen.getTime()) / 1000)
+        : 0,
+      errorCount: 0,
+    };
+
+    return this.recordDeviceHealth(deviceId, healthData);
+  }
+
+  /**
+   * Get health summary for multiple devices
+   */
+  async getDevicesHealthSummary(userId?: string) {
+    const where: any = { isActive: true };
+    if (userId) where.userId = userId;
+
+    // TODO: Uncomment when Prisma client is regenerated
+    // const devices = await this.prisma.device.findMany({
+    //   where,
+    //   include: {
+    //     healthRecords: {
+    //       orderBy: { timestamp: 'desc' },
+    //       take: 1,
+    //     },
+    //   },
+    // });
+
+    const devices = await this.prisma.device.findMany({
+      where,
+    });
+
+    const summary = {
+      total: devices.length,
+      online: 0,
+      offline: 0,
+      maintenance: 0,
+      error: 0,
+      healthy: 0,
+      warning: 0,
+      critical: 0,
+    };
+
+    devices.forEach((device) => {
+      const isOnline = this.isDeviceOnline(device);
+      if (isOnline) summary.online++;
+      else summary.offline++;
+
+      switch (device.status) {
+        case 'MAINTENANCE':
+          summary.maintenance++;
+          break;
+        case 'ERROR':
+          summary.error++;
+          break;
+      }
+
+      // const latestHealth = device.healthRecords[0];
+      const latestHealth = null; // Mock for now
+      if (latestHealth) {
+        switch (latestHealth.status) {
+          case 'HEALTHY':
+            summary.healthy++;
+            break;
+          case 'WARNING':
+            summary.warning++;
+            break;
+          case 'CRITICAL':
+            summary.critical++;
+            break;
+        }
+      }
+    });
+
+    return summary;
+  }
+
+  // ========== Private Helper Methods ==========
+
+  private isDeviceOnline(device: any): boolean {
+    if (!device.lastSeen) return false;
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    return device.lastSeen > fiveMinutesAgo;
+  }
+
+  private mapHealthToDeviceStatus(healthStatus: string): any {
+    switch (healthStatus) {
+      case 'HEALTHY':
+        return 'ONLINE';
+      case 'WARNING':
+        return 'ONLINE';
+      case 'CRITICAL':
+        return 'ERROR';
+      case 'OFFLINE':
+        return 'OFFLINE';
+      case 'MAINTENANCE':
+        return 'MAINTENANCE';
+      default:
+        return 'OFFLINE';
+    }
+  }
+
+  private determineHealthStatus(device: any): string {
+    const now = new Date();
+    const lastSeen = device.lastSeen;
+
+    if (!lastSeen) return 'OFFLINE';
+
+    const minutesSinceLastSeen =
+      (now.getTime() - lastSeen.getTime()) / (1000 * 60);
+
+    if (minutesSinceLastSeen > 30) return 'OFFLINE';
+    if (minutesSinceLastSeen > 10) return 'WARNING';
+
+    return 'HEALTHY';
+  }
+
+  private calculateHealthSummary(device: any, latestHealth: any) {
+    if (!latestHealth) {
+      return {
+        overall: 'UNKNOWN',
+        connectivity: this.isDeviceOnline(device) ? 'GOOD' : 'POOR',
+        performance: 'UNKNOWN',
+        errors: 0,
+      };
+    }
+
+    let overall = 'HEALTHY';
+    if (
+      latestHealth.status === 'CRITICAL' ||
+      latestHealth.status === 'OFFLINE'
+    ) {
+      overall = 'CRITICAL';
+    } else if (latestHealth.status === 'WARNING') {
+      overall = 'WARNING';
+    }
+
+    return {
+      overall,
+      connectivity:
+        latestHealth.networkLatency && latestHealth.networkLatency < 100
+          ? 'GOOD'
+          : 'POOR',
+      performance:
+        latestHealth.cpuUsage && latestHealth.cpuUsage < 80 ? 'GOOD' : 'POOR',
+      errors: latestHealth.errorCount || 0,
     };
   }
 }

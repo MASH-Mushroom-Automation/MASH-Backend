@@ -1,6 +1,6 @@
 /**
  * Test Configuration
- * 
+ *
  * Central configuration for all test environments.
  * Uses separate database and Redis instances to avoid conflicts with development.
  */
@@ -25,7 +25,8 @@ export const testConfig = {
 
   jwt: {
     // Test JWT secret - different from development
-    secret: process.env.TEST_JWT_SECRET || 'test-jwt-secret-change-in-production',
+    secret:
+      process.env.TEST_JWT_SECRET || 'test-jwt-secret-change-in-production',
     expiresIn: '1h',
     // Short expiration for faster test cycles
     refreshExpiresIn: '7d',
@@ -98,7 +99,9 @@ export const testConfig = {
 /**
  * Environment-specific configuration overrides
  */
-export const getTestConfig = (environment: 'unit' | 'integration' | 'e2e' = 'unit') => {
+export const getTestConfig = (
+  environment: 'unit' | 'integration' | 'e2e' = 'unit',
+) => {
   const baseConfig = { ...testConfig };
 
   switch (environment) {

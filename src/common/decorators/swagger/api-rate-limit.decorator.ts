@@ -50,7 +50,8 @@ export function ApiRateLimit(limit: number, windowMs: number) {
     }),
     ApiHeader({
       name: 'X-RateLimit-Reset',
-      description: 'Unix timestamp (seconds since epoch) when rate limit resets',
+      description:
+        'Unix timestamp (seconds since epoch) when rate limit resets',
       required: false,
       schema: {
         type: 'integer',

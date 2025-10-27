@@ -55,6 +55,9 @@ model User {
   requestQueues      RequestQueue[]
   apiVersionUsage    ApiVersionUsage[]
 
+  // Push Notifications Relations (Issue #29)
+  pushSubscriptions PushSubscription[]
+
   // Performance Indexes for analytics queries
   @@index([createdAt])
   @@index([isActive, role])
@@ -84,6 +87,8 @@ model Device {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   sensorData     SensorData[]
   sensors        Sensor[]
+  healthRecords  DeviceHealth[]
+  pushSubscriptions PushSubscription[]
 
   // Performance Indexes (Task 1.2)
   @@index([userId, status, isActive])
@@ -1342,4 +1347,68 @@ model CircuitBreakerState {
   @@index([state])
   @@map("circuit_breaker_states")
 }
+
+// ============================================
+// PUSH NOTIFICATIONS (Issue #29)
+// ============================================
+model PushSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  deviceId    String?
+  endpoint    String   @unique
+  keys        Json // { p256dh: string, auth: string }
+  userAgent   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+// ============================================
+// DEVICE HEALTH MONITORING (Issue #29)
+// ============================================
+model DeviceHealth {
+  id          String            @id @default(uuid())
+  deviceId    String
+  timestamp   DateTime          @default(now())
+  status      DeviceHealthStatus
+  cpuUsage    Float? // CPU usage percentage
+  memoryUsage Float? // Memory usage percentage
+  diskUsage   Float? // Disk usage percentage
+  temperature Float? // Device temperature
+  batteryLevel Float? // Battery level percentage (if applicable)
+  networkLatency Int? // Network latency in ms
+  uptime      Int? // Uptime in seconds
+  errorCount  Int               @default(0) // Number of errors since last check
+  metadata    Json? // Additional health data
+  createdAt   DateTime          @default(now())
+
+  // Relations
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp(sort: Desc)])
+  @@index([status])
+  @@index([timestamp])
+  @@map("device_health")
+}
+
+enum DeviceHealthStatus {
+  HEALTHY
+  WARNING
+  CRITICAL
+  OFFLINE
+  MAINTENANCE
+}
+
+// Add relation to Device model
+// In the Device model, add:
+// healthRecords DeviceHealth[]
  

@@ -36,7 +36,7 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
   });
-  
+
   logger.log('✅ Stage 1 complete: Application created');
 
   logger.log('🔧 Stage 2: Setting up custom logger...');
@@ -521,21 +521,24 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
-  const logger = new Logger('UnhandledRejection');
-  logger.error('🔥 UNHANDLED REJECTION:');
-  logger.error('Promise:', promise);
-  
-  if (reason instanceof Error) {
-    logger.error(`Reason type: ${reason.constructor.name}`);
-    logger.error(`Reason: ${reason.message}`);
-    logger.error(`Stack: ${reason.stack}`);
-  } else {
-    logger.error(`Reason: ${String(reason)}`);
-  }
-  
-  process.exit(1);
-});
+process.on(
+  'unhandledRejection',
+  (reason: unknown, promise: Promise<unknown>) => {
+    const logger = new Logger('UnhandledRejection');
+    logger.error('🔥 UNHANDLED REJECTION:');
+    logger.error('Promise:', promise);
+
+    if (reason instanceof Error) {
+      logger.error(`Reason type: ${reason.constructor.name}`);
+      logger.error(`Reason: ${reason.message}`);
+      logger.error(`Stack: ${reason.stack}`);
+    } else {
+      logger.error(`Reason: ${String(reason)}`);
+    }
+
+    process.exit(1);
+  },
+);
 
 bootstrap().catch((error) => {
   const logger = new Logger('Bootstrap');
