@@ -23,6 +23,10 @@ import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import { NotificationPreferencesDto } from './dto/notification-preferences.dto';
+import {
+  SendDeviceHealthAlertDto,
+  DeviceHealthAlertResponseDto,
+} from './dto/device-health-alert.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -490,22 +494,29 @@ export class NotificationsController {
   @Post('communication/device-health-alert')
   @ApiOperation({
     summary: 'Send device health alert through communication channels',
+    description: `Send a device health alert that will be delivered through multiple communication channels based on the health status:
+
+    - **HEALTHY/WARNING**: Sent via push notification and email only
+    - **CRITICAL/OFFLINE**: Sent via push notification, email, and SMS (with automatic provider failover)
+
+    The system automatically selects the appropriate channels and handles provider failover for SMS delivery.`,
   })
-  @ApiResponse({ status: 200, description: 'Health alert sent' })
+  @ApiResponse({
+    status: 200,
+    description: 'Device health alert sent successfully through appropriate channels',
+    type: DeviceHealthAlertResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request data or missing required fields',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error during alert processing',
+  })
   async sendDeviceHealthAlert(
-    @Body()
-    body: {
-      userId: string;
-      deviceId: string;
-      healthStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'OFFLINE';
-      metrics?: {
-        cpuUsage?: number;
-        memoryUsage?: number;
-        temperature?: number;
-        lastSeen?: string;
-      };
-    },
-  ) {
+    @Body() body: SendDeviceHealthAlertDto,
+  ): Promise<DeviceHealthAlertResponseDto> {
     await this.communicationHubService.sendDeviceHealthAlert(
       body.userId,
       body.deviceId,
@@ -521,6 +532,6 @@ export class NotificationsController {
     return {
       success: true,
       message: 'Device health alert sent',
-    };
+    } as DeviceHealthAlertResponseDto;
   }
 }
