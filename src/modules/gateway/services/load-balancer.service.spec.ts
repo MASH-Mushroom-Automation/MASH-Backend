@@ -140,7 +140,11 @@ describe('LoadBalancerService', () => {
     it('should handle updating health for non-existent service gracefully', () => {
       // Act & Assert - should not throw
       expect(() => {
-        service.updateInstanceHealth('non-existent', 'http://localhost:3001', true);
+        service.updateInstanceHealth(
+          'non-existent',
+          'http://localhost:3001',
+          true,
+        );
       }).not.toThrow();
     });
 
@@ -151,7 +155,11 @@ describe('LoadBalancerService', () => {
 
       // Act & Assert - should not throw
       expect(() => {
-        service.updateInstanceHealth(serviceName, 'http://localhost:9999', false);
+        service.updateInstanceHealth(
+          serviceName,
+          'http://localhost:9999',
+          false,
+        );
       }).not.toThrow();
     });
   });
@@ -363,8 +371,12 @@ describe('LoadBalancerService', () => {
       }
 
       // Assert - 3002 should appear 3x more often than 3001
-      const count3001 = results.filter((r) => r === 'http://localhost:3001').length;
-      const count3002 = results.filter((r) => r === 'http://localhost:3002').length;
+      const count3001 = results.filter(
+        (r) => r === 'http://localhost:3001',
+      ).length;
+      const count3002 = results.filter(
+        (r) => r === 'http://localhost:3002',
+      ).length;
 
       expect(count3001).toBe(2); // 1/4 of 8 = 2
       expect(count3002).toBe(6); // 3/4 of 8 = 6
@@ -486,9 +498,24 @@ describe('LoadBalancerService', () => {
       service.registerInstance(serviceName, 'http://localhost:3003');
 
       // Set different response times
-      service.updateInstanceHealth(serviceName, 'http://localhost:3001', true, 500);
-      service.updateInstanceHealth(serviceName, 'http://localhost:3002', true, 50);
-      service.updateInstanceHealth(serviceName, 'http://localhost:3003', true, 200);
+      service.updateInstanceHealth(
+        serviceName,
+        'http://localhost:3001',
+        true,
+        500,
+      );
+      service.updateInstanceHealth(
+        serviceName,
+        'http://localhost:3002',
+        true,
+        50,
+      );
+      service.updateInstanceHealth(
+        serviceName,
+        'http://localhost:3003',
+        true,
+        200,
+      );
 
       // Act
       const instance = await service.getNextInstance(
@@ -507,8 +534,18 @@ describe('LoadBalancerService', () => {
       service.registerInstance(serviceName, 'http://localhost:3002');
 
       // 3001 is fastest but unhealthy
-      service.updateInstanceHealth(serviceName, 'http://localhost:3001', false, 10);
-      service.updateInstanceHealth(serviceName, 'http://localhost:3002', true, 100);
+      service.updateInstanceHealth(
+        serviceName,
+        'http://localhost:3001',
+        false,
+        10,
+      );
+      service.updateInstanceHealth(
+        serviceName,
+        'http://localhost:3002',
+        true,
+        100,
+      );
 
       // Act
       const instance = await service.getNextInstance(
@@ -566,8 +603,14 @@ describe('LoadBalancerService', () => {
       expect(stats).toEqual({
         totalServices: 2,
         services: expect.arrayContaining([
-          expect.objectContaining({ serviceName: 'service-a', totalInstances: 1 }),
-          expect.objectContaining({ serviceName: 'service-b', totalInstances: 1 }),
+          expect.objectContaining({
+            serviceName: 'service-a',
+            totalInstances: 1,
+          }),
+          expect.objectContaining({
+            serviceName: 'service-b',
+            totalInstances: 1,
+          }),
         ]),
       });
     });

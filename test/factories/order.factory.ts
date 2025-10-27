@@ -1,6 +1,6 @@
 /**
  * Order Factory
- * 
+ *
  * Factory for creating test Order instances with realistic fake data.
  */
 
@@ -32,19 +32,32 @@ export class OrderFactory {
    * Create a single order with optional overrides
    */
   static create(overrides?: Partial<OrderFactoryOptions>) {
-    const subtotal = overrides?.subtotal || faker.number.float({ min: 100, max: 5000, fractionDigits: 2 });
+    const subtotal =
+      overrides?.subtotal ||
+      faker.number.float({ min: 100, max: 5000, fractionDigits: 2 });
     const tax = overrides?.tax || subtotal * 0.12; // 12% VAT in Philippines
-    const shipping = overrides?.shipping || faker.number.float({ min: 50, max: 200, fractionDigits: 2 });
+    const shipping =
+      overrides?.shipping ||
+      faker.number.float({ min: 50, max: 200, fractionDigits: 2 });
     const discount = overrides?.discount || 0;
-    const total = overrides?.total || (subtotal + tax + shipping - discount);
-    
+    const total = overrides?.total || subtotal + tax + shipping - discount;
+
     const shippingAddress = overrides?.shippingAddress || {
       name: faker.person.fullName(),
       phone: faker.phone.number('+639#########'),
       street: faker.location.streetAddress(),
       barangay: faker.location.street(),
-      city: faker.helpers.arrayElement(['Manila', 'Quezon City', 'Cebu City', 'Davao City']),
-      province: faker.helpers.arrayElement(['Metro Manila', 'Cebu', 'Davao del Sur']),
+      city: faker.helpers.arrayElement([
+        'Manila',
+        'Quezon City',
+        'Cebu City',
+        'Davao City',
+      ]),
+      province: faker.helpers.arrayElement([
+        'Metro Manila',
+        'Cebu',
+        'Davao del Sur',
+      ]),
       postalCode: faker.location.zipCode('####'),
       country: 'Philippines',
       isDefault: true,
@@ -52,7 +65,9 @@ export class OrderFactory {
 
     return {
       id: overrides?.id || faker.string.uuid(),
-      orderNumber: overrides?.orderNumber || `ORD-${faker.string.alphanumeric(10).toUpperCase()}`,
+      orderNumber:
+        overrides?.orderNumber ||
+        `ORD-${faker.string.alphanumeric(10).toUpperCase()}`,
       userId: overrides?.userId || faker.string.uuid(),
       status: overrides?.status || OrderStatus.PENDING,
       subtotal,
@@ -61,7 +76,9 @@ export class OrderFactory {
       discount,
       total,
       currency: overrides?.currency || 'PHP',
-      notes: overrides?.notes || (faker.datatype.boolean() ? faker.lorem.sentence() : null),
+      notes:
+        overrides?.notes ||
+        (faker.datatype.boolean() ? faker.lorem.sentence() : null),
       shippingAddress,
       billingAddress: overrides?.billingAddress || shippingAddress,
       trackingNumber: overrides?.trackingNumber || null,
@@ -76,9 +93,12 @@ export class OrderFactory {
   /**
    * Create order with items
    */
-  static createWithItems(itemCount: number = 3, overrides?: Partial<OrderFactoryOptions>) {
+  static createWithItems(
+    itemCount: number = 3,
+    overrides?: Partial<OrderFactoryOptions>,
+  ) {
     const order = this.create(overrides);
-    
+
     const items = Array.from({ length: itemCount }, () => ({
       id: faker.string.uuid(),
       orderId: order.id,
@@ -147,8 +167,11 @@ export class OrderFactory {
    */
   static createDelivered(overrides?: Partial<OrderFactoryOptions>) {
     const shippedAt = faker.date.recent({ days: 7 });
-    const deliveredAt = new Date(shippedAt.getTime() + faker.number.int({ min: 1, max: 5 }) * 24 * 60 * 60 * 1000);
-    
+    const deliveredAt = new Date(
+      shippedAt.getTime() +
+        faker.number.int({ min: 1, max: 5 }) * 24 * 60 * 60 * 1000,
+    );
+
     return this.create({
       ...overrides,
       status: OrderStatus.DELIVERED,
@@ -172,15 +195,22 @@ export class OrderFactory {
   /**
    * Create order with discount
    */
-  static createWithDiscount(discountAmount?: number, overrides?: Partial<OrderFactoryOptions>) {
-    const subtotal = faker.number.float({ min: 500, max: 5000, fractionDigits: 2 });
+  static createWithDiscount(
+    discountAmount?: number,
+    overrides?: Partial<OrderFactoryOptions>,
+  ) {
+    const subtotal = faker.number.float({
+      min: 500,
+      max: 5000,
+      fractionDigits: 2,
+    });
     const discount = discountAmount || subtotal * 0.15; // 15% discount
-    
+
     return this.create({
       ...overrides,
       subtotal,
       discount,
-      total: subtotal + (subtotal * 0.12) + 100 - discount, // subtotal + tax + shipping - discount
+      total: subtotal + subtotal * 0.12 + 100 - discount, // subtotal + tax + shipping - discount
     });
   }
 
@@ -203,11 +233,20 @@ export class OrderFactory {
    */
   static createStatusSet(userId?: string) {
     const commonOverrides = userId ? { userId } : {};
-    
+
     return {
-      pending: this.createMany(3, { ...commonOverrides, status: OrderStatus.PENDING }),
-      confirmed: this.createMany(2, { ...commonOverrides, status: OrderStatus.CONFIRMED }),
-      processing: this.createMany(2, { ...commonOverrides, status: OrderStatus.PROCESSING }),
+      pending: this.createMany(3, {
+        ...commonOverrides,
+        status: OrderStatus.PENDING,
+      }),
+      confirmed: this.createMany(2, {
+        ...commonOverrides,
+        status: OrderStatus.CONFIRMED,
+      }),
+      processing: this.createMany(2, {
+        ...commonOverrides,
+        status: OrderStatus.PROCESSING,
+      }),
       shipped: this.createMany(4, {
         ...commonOverrides,
         status: OrderStatus.SHIPPED,
@@ -230,12 +269,16 @@ export class OrderFactory {
    * Create high-value order (for testing limits)
    */
   static createHighValue(overrides?: Partial<OrderFactoryOptions>) {
-    const subtotal = faker.number.float({ min: 10000, max: 50000, fractionDigits: 2 });
-    
+    const subtotal = faker.number.float({
+      min: 10000,
+      max: 50000,
+      fractionDigits: 2,
+    });
+
     return this.create({
       ...overrides,
       subtotal,
-      total: subtotal + (subtotal * 0.12) + 500, // High shipping for high-value order
+      total: subtotal + subtotal * 0.12 + 500, // High shipping for high-value order
     });
   }
 
@@ -243,14 +286,18 @@ export class OrderFactory {
    * Create bulk order (for growers)
    */
   static createBulkOrder(overrides?: Partial<OrderFactoryOptions>) {
-    const subtotal = faker.number.float({ min: 5000, max: 20000, fractionDigits: 2 });
-    const discount = subtotal * 0.10; // 10% bulk discount
-    
+    const subtotal = faker.number.float({
+      min: 5000,
+      max: 20000,
+      fractionDigits: 2,
+    });
+    const discount = subtotal * 0.1; // 10% bulk discount
+
     return this.createWithItems(10, {
       ...overrides,
       subtotal,
       discount,
-      total: subtotal + (subtotal * 0.12) + 300 - discount,
+      total: subtotal + subtotal * 0.12 + 300 - discount,
       notes: 'Bulk order - Grower purchase',
     });
   }

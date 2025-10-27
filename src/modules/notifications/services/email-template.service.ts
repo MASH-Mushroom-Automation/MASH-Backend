@@ -6,7 +6,7 @@ import { promisify } from 'util';
 const readFile = promisify(fs.readFile);
 
 export interface EmailTemplateVariables {
-  [key: string]: string | number | boolean;
+  [key: string]: string | number | boolean | object;
 }
 
 export enum EmailTemplateType {
@@ -20,6 +20,26 @@ export enum EmailTemplateType {
   EMAIL_CHANGED = 'email-changed',
   ACCOUNT_DELETION = 'account-deletion',
   WELCOME = 'welcome',
+  // Add more template types for device monitoring
+  DEVICE_OFFLINE = 'device-offline',
+  DEVICE_ERROR = 'device-error',
+  HEALTH_WARNING = 'health-warning',
+  HEALTH_CRITICAL = 'health-critical',
+}
+
+export interface TemplateMetadata {
+  name: string;
+  description?: string;
+  variables: Record<
+    string,
+    {
+      type: 'string' | 'number' | 'boolean' | 'object';
+      description: string;
+      required: boolean;
+      default?: any;
+    }
+  >;
+  conditionals?: string[]; // List of conditional variables
 }
 
 @Injectable()
@@ -68,7 +88,7 @@ export class EmailTemplateService {
   }
 
   /**
-   * Replace variables in template
+   * Replace variables in template with advanced features
    */
   private replaceVariables(
     template: string,
@@ -78,9 +98,22 @@ export class EmailTemplateService {
 
     // Replace all {{variable}} with actual values
     Object.keys(variables).forEach((key) => {
+      const value = variables[key];
       const regex = new RegExp(`{{${key}}}`, 'g');
-      result = result.replace(regex, String(variables[key]));
+
+      // Handle different value types
+      let stringValue: string;
+      if (typeof value === 'object' && value !== null) {
+        stringValue = JSON.stringify(value);
+      } else {
+        stringValue = String(value);
+      }
+
+      result = result.replace(regex, stringValue);
     });
+
+    // Handle conditional blocks {{#if condition}}content{{/if}}
+    result = this.processConditionals(result, variables);
 
     // Add current year for copyright
     result = result.replace(/{{year}}/g, new Date().getFullYear().toString());
@@ -97,6 +130,36 @@ export class EmailTemplateService {
     if (!variables.companyName) {
       result = result.replace(/{{companyName}}/g, 'MASH');
     }
+
+    return result;
+  }
+
+  /**
+   * Process conditional blocks in template
+   */
+  private processConditionals(
+    template: string,
+    variables: EmailTemplateVariables,
+  ): string {
+    let result = template;
+
+    // Simple conditional processing: {{#if variable}}content{{/if}}
+    const conditionalRegex = /{{#if\s+(\w+)}}(.*?){{\/if}}/gs;
+
+    result = result.replace(conditionalRegex, (match, variable, content) => {
+      const value = variables[variable];
+      // Show content if variable is truthy
+      return value ? content : '';
+    });
+
+    // Negated conditional: {{#unless variable}}content{{/unless}}
+    const unlessRegex = /{{#unless\s+(\w+)}}(.*?){{\/unless}}/gs;
+
+    result = result.replace(unlessRegex, (match, variable, content) => {
+      const value = variables[variable];
+      // Show content if variable is falsy
+      return !value ? content : '';
+    });
 
     return result;
   }
@@ -137,6 +200,11 @@ export class EmailTemplateService {
       [EmailTemplateType.ACCOUNT_DELETION]:
         'Account Deletion Confirmation - MASH',
       [EmailTemplateType.WELCOME]: 'Welcome to MASH! 🍄',
+      [EmailTemplateType.DEVICE_OFFLINE]: 'Device Offline Alert - MASH',
+      [EmailTemplateType.DEVICE_ERROR]: 'Device Error Alert - MASH',
+      [EmailTemplateType.HEALTH_WARNING]: 'Device Health Warning - MASH',
+      [EmailTemplateType.HEALTH_CRITICAL]:
+        'Critical Device Health Alert - MASH',
     };
 
     return subjects[templateType] || 'MASH Notification';

@@ -1,6 +1,6 @@
 /**
  * User Factory
- * 
+ *
  * Factory for creating test User instances with realistic fake data.
  * Uses @faker-js/faker for data generation.
  */
@@ -33,16 +33,21 @@ export class UserFactory {
     const firstName = overrides?.firstName || faker.person.firstName();
     const lastName = overrides?.lastName || faker.person.lastName();
     const role = overrides?.role || UserRole.USER;
-    
+
     const user = {
       id: overrides?.id || faker.string.uuid(),
       clerkId: overrides?.clerkId || `clerk_${faker.string.alphanumeric(24)}`,
-      email: overrides?.email || faker.internet.email({ firstName, lastName }).toLowerCase(),
-      username: overrides?.username || faker.internet.userName({ firstName, lastName }).toLowerCase(),
+      email:
+        overrides?.email ||
+        faker.internet.email({ firstName, lastName }).toLowerCase(),
+      username:
+        overrides?.username ||
+        faker.internet.userName({ firstName, lastName }).toLowerCase(),
       firstName,
       lastName,
       imageUrl: overrides?.imageUrl || faker.image.avatar(),
-      phoneNumber: overrides?.phoneNumber || faker.phone.number('+639#########'),
+      phoneNumber:
+        overrides?.phoneNumber || faker.phone.number('+639#########'),
       role,
       isActive: overrides?.isActive !== undefined ? overrides.isActive : true,
       preferences: overrides?.preferences || {
@@ -135,8 +140,8 @@ export class UserFactory {
       ...overrides,
       twoFactorEnabled: true,
       twoFactorSecret: faker.string.alphanumeric(32).toUpperCase(),
-      twoFactorBackupCodes: Array.from({ length: 10 }, () => 
-        faker.string.alphanumeric(8).toUpperCase()
+      twoFactorBackupCodes: Array.from({ length: 10 }, () =>
+        faker.string.alphanumeric(8).toUpperCase(),
       ),
     });
   }
@@ -162,7 +167,7 @@ export class UserFactory {
       email: user.email,
       role: user.role,
     });
-    
+
     return {
       ...user,
       token,
@@ -181,7 +186,7 @@ export class UserFactory {
    * Create users with different roles
    */
   static createWithRoles(roles: UserRole[]) {
-    return roles.map(role => this.create({ role }));
+    return roles.map((role) => this.create({ role }));
   }
 
   /**
@@ -206,7 +211,7 @@ export class UserFactory {
       email: user.email,
       role: user.role,
     });
-    
+
     return {
       user,
       token,

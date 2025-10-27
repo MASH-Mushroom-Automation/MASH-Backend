@@ -47,6 +47,11 @@ export class DevicesGateway
     this.server.emit(`device:${deviceId}:data`, data);
   }
 
+  // Emit device health update to all connected clients
+  emitDeviceHealthUpdate(deviceId: string, healthData: any) {
+    this.server.emit(`device:${deviceId}:health`, healthData);
+  }
+
   // Emit device connection event
   emitDeviceConnected(deviceId: string) {
     this.server.emit('device:connected', { deviceId, timestamp: new Date() });
