@@ -503,7 +503,8 @@ export class NotificationsController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Device health alert sent successfully through appropriate channels',
+    description:
+      'Device health alert sent successfully through appropriate channels',
     type: DeviceHealthAlertResponseDto,
   })
   @ApiResponse({

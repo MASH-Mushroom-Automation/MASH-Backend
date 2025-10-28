@@ -10,15 +10,15 @@ import {
 // 🔥 CRITICAL FIX: Use type placeholders instead of static import
 // Static import loads native query engine DLL at parse time, which crashes on Windows
 // We'll use dynamic import inside getClient() to defer DLL loading until runtime
-type PrismaClient = any;
-type Prisma = any;
+import type { PrismaClient } from '@prisma/client';
+type Prisma = typeof import('@prisma/client').Prisma;
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
   private client: PrismaClient | null = null; // 🔥 LAZY: Don't create client in constructor
-  private PrismaClientClass: any = null; // 🔥 Store dynamically imported PrismaClient class
-  private PrismaNamespace: any = null; // 🔥 Store dynamically imported Prisma namespace
+  private PrismaClientClass: typeof PrismaClient | null = null; // 🔥 Store dynamically imported PrismaClient class
+  private PrismaNamespace: Prisma | null = null; // 🔥 Store dynamically imported Prisma namespace
   private isConnected = false;
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;

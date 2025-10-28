@@ -3,7 +3,6 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 /**
  * Base Service Class
@@ -26,7 +25,15 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
    * Prisma model delegate
    * Must be provided by child class
    */
-  protected abstract model: any;
+  protected abstract model: {
+    findMany: (args?: any) => Promise<T[]>;
+    findUnique: (args?: any) => Promise<T | null>;
+    findFirst: (args?: any) => Promise<T | null>;
+    create: (args?: any) => Promise<T>;
+    update: (args?: any) => Promise<T>;
+    delete: (args?: any) => Promise<T>;
+    count: (args?: any) => Promise<number>;
+  };
 
   /**
    * Entity name (for error messages)
