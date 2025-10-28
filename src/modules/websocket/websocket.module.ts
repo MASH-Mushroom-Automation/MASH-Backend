@@ -28,9 +28,7 @@ import { WsJwtGuard } from './guards/ws-jwt.guard';
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (
-        configService: ConfigService,
-      ): Promise<JwtModuleOptions> => ({
+      useFactory: (configService: ConfigService): JwtModuleOptions => ({
         secret: configService.get<string>('JWT_SECRET') ?? '',
         signOptions: {
           // ✅ Explicitly cast to the correct allowed types

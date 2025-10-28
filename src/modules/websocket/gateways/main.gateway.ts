@@ -48,7 +48,7 @@ export class MainGateway
   /**
    * Gateway initialization lifecycle hook
    */
-  afterInit(server: Server) {
+  afterInit() {
     this.logger.log('WebSocket Gateway initialized');
     this.logger.log(`Namespace: ${process.env.WS_NAMESPACE || '/ws'}`);
     this.logger.log(`CORS Origins: ${process.env.WS_CORS_ORIGIN}`);
@@ -61,7 +61,7 @@ export class MainGateway
    * Handle new client connections
    * Note: Authentication happens via WsJwtGuard on message handlers
    */
-  async handleConnection(client: AuthenticatedSocket) {
+  handleConnection(client: AuthenticatedSocket) {
     try {
       // Log connection attempt
       this.logger.log(`Client connecting: ${client.id}`);

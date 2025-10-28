@@ -16,7 +16,6 @@ import {
   Controller,
   Get,
   Post,
-  UseGuards,
   HttpCode,
   HttpStatus,
   Headers,
@@ -60,7 +59,7 @@ mash_http_requests_total{method="POST",route="/api/v1/orders",status_code="201"}
       },
     },
   })
-  async getMetrics(@Headers('accept') accept?: string) {
+  async getMetrics() {
     return this.prometheusService.getMetrics();
   }
 
@@ -138,7 +137,7 @@ mash_http_requests_total{method="POST",route="/api/v1/orders",status_code="201"}
     status: 403,
     description: 'Forbidden - Admin access required',
   })
-  async resetMetrics() {
+  resetMetrics() {
     this.prometheusService.resetMetrics();
 
     return {

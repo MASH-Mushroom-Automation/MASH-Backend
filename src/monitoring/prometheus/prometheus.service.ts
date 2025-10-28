@@ -76,7 +76,7 @@ export class PrometheusService implements OnModuleInit {
   public apiEndpointDuration: Histogram<string>;
   public apiEndpointErrors: Counter<string>;
 
-  async onModuleInit() {
+  onModuleInit() {
     this.initializeMetrics();
     this.logger.log('✅ Prometheus metrics initialized');
   }

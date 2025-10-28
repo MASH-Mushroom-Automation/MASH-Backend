@@ -26,13 +26,13 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
    * Must be provided by child class
    */
   protected abstract model: {
-    findMany: (args?: any) => Promise<T[]>;
-    findUnique: (args?: any) => Promise<T | null>;
-    findFirst: (args?: any) => Promise<T | null>;
-    create: (args?: any) => Promise<T>;
-    update: (args?: any) => Promise<T>;
-    delete: (args?: any) => Promise<T>;
-    count: (args?: any) => Promise<number>;
+    findMany: (args?: unknown) => Promise<T[]>;
+    findUnique: (args?: unknown) => Promise<T | null>;
+    findFirst: (args?: unknown) => Promise<T | null>;
+    create: (args?: unknown) => Promise<T>;
+    update: (args?: unknown) => Promise<T>;
+    delete: (args?: unknown) => Promise<T>;
+    count: (args?: unknown) => Promise<number>;
   };
 
   /**
