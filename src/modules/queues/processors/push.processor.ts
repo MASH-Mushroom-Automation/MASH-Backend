@@ -6,7 +6,8 @@ import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { PushNotificationJob } from '../services/notification-queue.service';
 
-@Processor('push-notifications')
+// 🔧 TEMPORARILY DISABLED - Processor causes conflicts when Bull is initialized elsewhere
+// @Processor('push-notifications')
 export class PushProcessor {
   private readonly logger = new Logger(PushProcessor.name);
 

@@ -1,0 +1,543 @@
+{
+  "info": {
+    "name": "14-Import-Export-API",
+    "description": "API endpoints for Data Export & Import Backend System (Issue #30)\n\nFeatures:\n- Upload files for import (CSV, Excel, JSON, XML)\n- Track job progress in real-time\n- Manage import jobs (get, list, cancel, retry)\n- Download error reports\n\nPrerequisites:\n- Authentication token required\n- Sample import files in test/fixtures/import-export\n\nWebSocket Connection:\n- Namespace: /import-export\n- Subscribe to job updates: socket.emit('subscribe:job', { jobId })\n- Receive progress: socket.on('job:progress', callback)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload Import File - Products CSV",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 202 Accepted', function () {",
+              "    pm.response.to.have.status(202);",
+              "});",
+              "",
+              "pm.test('Response has jobId', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('jobId');",
+              "    pm.collectionVariables.set('importJobId', jsonData.jobId);",
+              "});",
+              "",
+              "pm.test('Response has job status', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('status');",
+              "    pm.expect(['PENDING', 'QUEUED']).to.include(jsonData.status);",
+              "});",
+              "",
+              "pm.test('Response has validation summary', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('totalRecords');",
+              "    pm.expect(jsonData).to.have.property('validRecords');",
+              "    pm.expect(jsonData).to.have.property('invalidRecords');",
+              "});",
+              "",
+              "pm.test('Response has preview data', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('preview');",
+              "    pm.expect(jsonData.preview).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "test/fixtures/import-export/products-100.csv",
+              "description": "CSV file with 100 product records"
+            },
+            {
+              "key": "entityType",
+              "value": "PRODUCT",
+              "type": "text"
+            },
+            {
+              "key": "priority",
+              "value": "NORMAL",
+              "type": "text"
+            },
+            {
+              "key": "skipInvalid",
+              "value": "false",
+              "type": "text"
+            },
+            {
+              "key": "batchSize",
+              "value": "1000",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/upload",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "upload"]
+        },
+        "description": "Upload a CSV file containing product data for import.\n\nSupported file formats:\n- CSV (.csv)\n- Excel (.xlsx, .xls)\n- JSON (.json)\n- XML (.xml)\n\nMax file size: 50MB\n\nThe endpoint will:\n1. Validate the file format and size\n2. Parse the file\n3. Validate data against entity rules\n4. Create an import job\n5. Queue the job for background processing\n6. Return job ID and preview of first 10 records"
+      },
+      "response": []
+    },
+    {
+      "name": "Upload Import File - Users Excel",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 202 Accepted', function () {",
+              "    pm.response.to.have.status(202);",
+              "});",
+              "",
+              "pm.test('File format is Excel', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.fileFormat).to.equal('XLSX');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "test/fixtures/import-export/users-50.xlsx"
+            },
+            {
+              "key": "entityType",
+              "value": "USER",
+              "type": "text"
+            },
+            {
+              "key": "priority",
+              "value": "URGENT",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/upload",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "upload"]
+        },
+        "description": "Upload an Excel file with user data"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Import Job Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has job details', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('id');",
+              "    pm.expect(jsonData).to.have.property('status');",
+              "    pm.expect(jsonData).to.have.property('fileName');",
+              "    pm.expect(jsonData).to.have.property('totalRecords');",
+              "    pm.expect(jsonData).to.have.property('processedRecords');",
+              "});",
+              "",
+              "pm.test('Response has progress info', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('progressPercent');",
+              "    pm.expect(jsonData.progressPercent).to.be.a('number');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs/{{importJobId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs", "{{importJobId}}"]
+        },
+        "description": "Retrieve detailed information about a specific import job.\n\nReturns:\n- Job metadata (ID, status, file info)\n- Progress information (processed/total, percentage)\n- Success/failure counts\n- First 100 validation errors (if any)\n- Estimated time remaining"
+      },
+      "response": []
+    },
+    {
+      "name": "List Import Jobs - All",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has pagination info', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('jobs');",
+              "    pm.expect(jsonData).to.have.property('total');",
+              "    pm.expect(jsonData).to.have.property('page');",
+              "    pm.expect(jsonData).to.have.property('limit');",
+              "});",
+              "",
+              "pm.test('Jobs array is returned', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.jobs).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "List all import jobs for the authenticated user with pagination.\n\nQuery parameters:\n- page: Page number (default: 1)\n- limit: Items per page (default: 20, max: 100)\n- entityType: Filter by entity type (PRODUCT, USER, ORDER, etc.)\n- status: Filter by job status (PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED)"
+      },
+      "response": []
+    },
+    {
+      "name": "List Import Jobs - By Entity Type",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs?entityType=PRODUCT&page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs"],
+          "query": [
+            {
+              "key": "entityType",
+              "value": "PRODUCT"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Filter import jobs by entity type"
+      },
+      "response": []
+    },
+    {
+      "name": "List Import Jobs - By Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs?status=COMPLETED&page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs"],
+          "query": [
+            {
+              "key": "status",
+              "value": "COMPLETED"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Filter import jobs by status"
+      },
+      "response": []
+    },
+    {
+      "name": "Cancel Import Job",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Job status is CANCELLED', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.equal('CANCELLED');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs/{{importJobId}}/cancel",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs", "{{importJobId}}", "cancel"]
+        },
+        "description": "Cancel a pending or processing import job.\n\nNote:\n- Only jobs in PENDING or PROCESSING status can be cancelled\n- Completed or failed jobs cannot be cancelled\n- The job will be removed from the queue and marked as CANCELLED"
+      },
+      "response": []
+    },
+    {
+      "name": "Retry Failed Import Job",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Job status is PENDING', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.equal('PENDING');",
+              "});",
+              "",
+              "pm.test('Counters are reset', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.processedRecords).to.equal(0);",
+              "    pm.expect(jsonData.successCount).to.equal(0);",
+              "    pm.expect(jsonData.failureCount).to.equal(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs/{{importJobId}}/retry",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs", "{{importJobId}}", "retry"]
+        },
+        "description": "Retry a failed import job.\n\nNote:\n- Only jobs in FAILED status can be retried\n- The job will be reset (counters cleared) and re-queued\n- Original file and validation errors are preserved"
+      },
+      "response": []
+    },
+    {
+      "name": "Download Error Report - CSV",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Content-Type is text/csv', function () {",
+              "    pm.response.to.have.header('Content-Type', 'text/csv');",
+              "});",
+              "",
+              "pm.test('Response contains CSV data', function () {",
+              "    var body = pm.response.text();",
+              "    pm.expect(body).to.include('Row,Column,Field,Error Type,Severity,Code,Message,Suggestion');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs/{{importJobId}}/errors/download?format=csv",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs", "{{importJobId}}", "errors", "download"],
+          "query": [
+            {
+              "key": "format",
+              "value": "csv"
+            }
+          ]
+        },
+        "description": "Download error report as CSV file.\n\nFormat: CSV\n- Headers: Row, Column, Field, Error Type, Severity, Code, Message, Suggestion\n- One row per error\n- Downloadable file"
+      },
+      "response": []
+    },
+    {
+      "name": "Download Error Report - JSON",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.response.to.have.header('Content-Type', 'application/json');",
+              "});",
+              "",
+              "pm.test('Response is valid JSON array', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/import/jobs/{{importJobId}}/errors/download?format=json",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "import", "jobs", "{{importJobId}}", "errors", "download"],
+          "query": [
+            {
+              "key": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "description": "Download error report as JSON file.\n\nFormat: JSON\n- Array of error objects\n- Each object contains: row, column, field, errorType, severity, errorCode, message, suggestion\n- Pretty-printed for readability"
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set baseUrl if not already set",
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "    pm.collectionVariables.set('baseUrl', 'http://localhost:3000');",
+          "}",
+          "",
+          "// Set accessToken from environment or prompt",
+          "if (!pm.collectionVariables.get('accessToken')) {",
+          "    console.log('Access token not set. Please authenticate first.');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "importJobId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

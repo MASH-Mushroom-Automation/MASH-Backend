@@ -6,15 +6,22 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+
+// 🔥 CRITICAL FIX: Use type placeholders instead of static import
+// Static import loads native query engine DLL at parse time, which crashes on Windows
+// We'll use dynamic import inside getClient() to defer DLL loading until runtime
+type PrismaClient = any;
+type Prisma = any;
 
 @Injectable()
-export class PrismaService
-  extends PrismaClient<Prisma.PrismaClientOptions, 'query' | 'error' | 'warn'>
-  implements OnModuleInit, OnModuleDestroy
-{
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  private client: PrismaClient | null = null; // 🔥 LAZY: Don't create client in constructor
+  private PrismaClientClass: any = null; // 🔥 Store dynamically imported PrismaClient class
+  private PrismaNamespace: any = null; // 🔥 Store dynamically imported Prisma namespace
   private isConnected = false;
+  private isInitializing = false;
+  private initPromise: Promise<void> | null = null;
   private readonly queryTimeoutMs: number; // Query timeout in milliseconds
   private readonly startupTime = Date.now(); // Track startup time to suppress cache warming warnings
 
@@ -28,15 +35,8 @@ export class PrismaService
   };
 
   constructor() {
-    super({
-      log: [
-        { emit: 'event', level: 'query' },
-        { emit: 'event', level: 'error' },
-        { emit: 'event', level: 'warn' },
-        { emit: 'stdout', level: 'info' },
-      ],
-      errorFormat: 'pretty',
-    });
+    // 🔥 DON'T create PrismaClient here - defer until first database operation
+    // This prevents the native engine DLL from loading during NestJS module initialization
 
     // Get query timeout from environment variable (default: 30 seconds)
     const timeoutFromEnv = parseInt(
@@ -45,8 +45,229 @@ export class PrismaService
     );
     this.queryTimeoutMs = timeoutFromEnv > 0 ? timeoutFromEnv : 30000;
 
+    this.logger.log(
+      '📊 PrismaService constructor called - client will be created lazily',
+    );
+  }
+
+  /**
+   * Proxy all property access to the underlying Prisma Client
+   * This allows services to use prisma.user.findMany() even though we're not extending PrismaClient
+   */
+  get address() {
+    return this.getClient().address;
+  }
+  get alert() {
+    return this.getClient().alert;
+  }
+  get alertAcknowledgment() {
+    return this.getClient().alertAcknowledgment;
+  }
+  get alertEscalationPolicy() {
+    return this.getClient().alertEscalationPolicy;
+  }
+  get alertRule() {
+    return this.getClient().alertRule;
+  }
+  get alertRuleRecipient() {
+    return this.getClient().alertRuleRecipient;
+  }
+  get apiGatewayConfig() {
+    return this.getClient().apiGatewayConfig;
+  }
+  get apiKey() {
+    return this.getClient().apiKey;
+  }
+  get apiUsageLog() {
+    return this.getClient().apiUsageLog;
+  }
+  get apiVersionUsage() {
+    return this.getClient().apiVersionUsage;
+  }
+  get auditLog() {
+    return this.getClient().auditLog;
+  }
+  get category() {
+    return this.getClient().category;
+  }
+  get circuitBreakerState() {
+    return this.getClient().circuitBreakerState;
+  }
+  get device() {
+    return this.getClient().device;
+  }
+  get deviceCommand() {
+    return this.getClient().deviceCommand;
+  }
+  get importExportError() {
+    return this.getClient().importExportError;
+  }
+  get importExportJob() {
+    return this.getClient().importExportJob;
+  }
+  get importExportTemplate() {
+    return this.getClient().importExportTemplate;
+  }
+  get notification() {
+    return this.getClient().notification;
+  }
+  get notificationTemplate() {
+    return this.getClient().notificationTemplate;
+  }
+  get order() {
+    return this.getClient().order;
+  }
+  get orderItem() {
+    return this.getClient().orderItem;
+  }
+  get payment() {
+    return this.getClient().payment;
+  }
+  get permission() {
+    return this.getClient().permission;
+  }
+  get product() {
+    return this.getClient().product;
+  }
+  get pushSubscription() {
+    return this.getClient().pushSubscription;
+  }
+  get rateLimitLog() {
+    return this.getClient().rateLimitLog;
+  }
+  get rateLimitOverride() {
+    return this.getClient().rateLimitOverride;
+  }
+  get report() {
+    return this.getClient().report;
+  }
+  get reportExecution() {
+    return this.getClient().reportExecution;
+  }
+  get reportSubscription() {
+    return this.getClient().reportSubscription;
+  }
+  get requestQueue() {
+    return this.getClient().requestQueue;
+  }
+  get role() {
+    return this.getClient().role;
+  }
+  get rolePermission() {
+    return this.getClient().rolePermission;
+  }
+  get searchLog() {
+    return this.getClient().searchLog;
+  }
+  get securityLog() {
+    return this.getClient().securityLog;
+  }
+  get sensor() {
+    return this.getClient().sensor;
+  }
+  get sensorAlert() {
+    return this.getClient().sensorAlert;
+  }
+  get sensorData() {
+    return this.getClient().sensorData;
+  }
+  get session() {
+    return this.getClient().session;
+  }
+  get systemConfig() {
+    return this.getClient().systemConfig;
+  }
+  get user() {
+    return this.getClient().user;
+  }
+  get userNotification() {
+    return this.getClient().userNotification;
+  }
+  get userRoleAssignment() {
+    return this.getClient().userRoleAssignment;
+  }
+
+  /**
+   * Proxy Prisma Client methods
+   */
+  $connect() {
+    return this.getClient().$connect();
+  }
+  $disconnect() {
+    return this.getClient().$disconnect();
+  }
+  $queryRaw<T = unknown>(query: any, ...values: any[]): Promise<T> {
+    return this.getClient().$queryRaw(query, ...values) as Promise<T>;
+  }
+  $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Promise<T> {
+    return this.getClient().$queryRawUnsafe(query, ...values) as Promise<T>;
+  }
+  $executeRaw(query: any, ...values: any[]): Promise<number> {
+    return this.getClient().$executeRaw(query, ...values) as Promise<number>;
+  }
+  $executeRawUnsafe(query: string, ...values: any[]): Promise<number> {
+    return this.getClient().$executeRawUnsafe(
+      query,
+      ...values,
+    ) as Promise<number>;
+  }
+  $transaction<R>(
+    fn: (prisma: Omit<PrismaClient, '$transaction'>) => Promise<R>,
+  ): Promise<R>;
+  $transaction<P extends any[]>(
+    arg: [...P],
+    options?: { isolationLevel?: any },
+  ): Promise<any>;
+  $transaction(arg: any, options?: any): Promise<any> {
+    return this.getClient().$transaction(arg, options);
+  }
+
+  /**
+   * Initialize Prisma Client with dynamic import
+   * 🔥 CRITICAL: Uses dynamic import to defer native DLL loading until this method is called
+   */
+  private async initializeClient(): Promise<void> {
+    if (this.client) {
+      return; // Already initialized
+    }
+
+    // 🔥 DYNAMIC IMPORT: Load @prisma/client at runtime, not parse time
+    // This prevents native query engine DLL from loading during module initialization
+    if (!this.PrismaClientClass) {
+      this.logger.log('🔄 Dynamically importing @prisma/client module...');
+
+      try {
+        const prismaModule = await import('@prisma/client');
+        this.PrismaClientClass = prismaModule.PrismaClient;
+        this.PrismaNamespace = prismaModule.Prisma;
+        this.logger.log('✅ @prisma/client imported successfully');
+      } catch (error) {
+        this.logger.error('❌ Failed to import @prisma/client:', error);
+        throw error;
+      }
+    }
+
+    this.logger.log('🔄 Creating PrismaClient instance...');
+
+    try {
+      this.client = new this.PrismaClientClass({
+        log: [
+          { emit: 'event', level: 'query' },
+          { emit: 'event', level: 'error' },
+          { emit: 'event', level: 'warn' },
+          { emit: 'stdout', level: 'info' },
+        ],
+        errorFormat: 'pretty',
+      });
+      this.logger.log('✅ PrismaClient instance created successfully');
+    } catch (error) {
+      this.logger.error('❌ Failed to create PrismaClient instance:', error);
+      console.error('❌ Failed to create PrismaClient instance:', error);
+      throw error;
+    }
+
     // 🚀 Enhanced query performance monitoring (Task 1.1.1)
-    this.$on('query', (e: Prisma.QueryEvent) => {
+    this.client.$on('query', (e: any) => {
       this.queryStats.totalQueries++;
       this.queryStats.totalDuration += e.duration;
 
@@ -78,14 +299,26 @@ export class PrismaService
     });
 
     // Error logging
-    this.$on('error', (e: Prisma.LogEvent) => {
+    this.client.$on('error', (e: any) => {
       this.logger.error(`Prisma Error: ${e.message}`);
     });
 
     // Warning logging
-    this.$on('warn', (e: Prisma.LogEvent) => {
+    this.client.$on('warn', (e: any) => {
       this.logger.warn(`Prisma Warning: ${e.message}`);
     });
+  }
+
+  /**
+   * Get the Prisma Client instance (must be initialized first)
+   */
+  private getClient(): PrismaClient {
+    if (!this.client) {
+      throw new Error(
+        'PrismaClient not initialized. Did you forget to call onModuleInit()?',
+      );
+    }
+    return this.client;
   }
 
   /**
@@ -206,18 +439,68 @@ export class PrismaService
   }
 
   async onModuleInit() {
+    // 🔥 DYNAMIC IMPORT: Initialize Prisma Client with dynamic import
+    // This defers native DLL loading until now, not during module parse
+    this.logger.log('📊 PrismaService: Initializing with dynamic import...');
+
     try {
-      this.logger.log('🔄 Connecting to Neon PostgreSQL...');
+      await this.initializeClient();
+      this.logger.log('✅ PrismaClient initialized successfully');
+      this.logger.log(
+        '⏳ Database connection will be established on first query',
+      );
+    } catch (error) {
+      this.logger.error('❌ Failed to initialize PrismaClient:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ensure database connection is established before executing queries
+   * Implements lazy connection pattern for better reliability
+   */
+  async ensureConnected(): Promise<void> {
+    // Already connected
+    if (this.isConnected) {
+      return;
+    }
+
+    // Connection in progress - wait for it
+    if (this.isInitializing && this.initPromise) {
+      return this.initPromise;
+    }
+
+    // Start new connection
+    this.isInitializing = true;
+    this.initPromise = this._connect();
+
+    try {
+      await this.initPromise;
+    } finally {
+      this.isInitializing = false;
+    }
+  }
+
+  /**
+   * Internal method to establish database connection
+   * @private
+   */
+  private async _connect(): Promise<void> {
+    try {
+      this.logger.log(
+        '🔄 Connecting to Neon PostgreSQL (lazy initialization)...',
+      );
 
       // Set a timeout for the connection attempt
       const connectWithTimeout = Promise.race([
-        this.$connect(),
-        new Promise((_, reject) =>
-          setTimeout(
-            () =>
-              reject(new Error('Database connection timeout after 10 seconds')),
-            10000,
-          ),
+        this.getClient().$connect(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            this.logger.error(
+              '⏰ Database connection TIMEOUT after 10 seconds',
+            );
+            reject(new Error('Database connection timeout after 10 seconds'));
+          }, 10000),
         ),
       ]);
 
@@ -227,12 +510,12 @@ export class PrismaService
 
       // Test connection with timeout
       const testQueryWithTimeout = Promise.race([
-        this.$queryRaw`SELECT 1`,
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error('Test query timeout after 5 seconds')),
-            5000,
-          ),
+        this.getClient().$queryRaw`SELECT 1`,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            this.logger.error('⏰ Test query TIMEOUT after 5 seconds');
+            reject(new Error('Test query timeout after 5 seconds'));
+          }, 5000),
         ),
       ]);
 
@@ -240,11 +523,15 @@ export class PrismaService
       this.logger.log('✅ Database connection verified');
     } catch (error) {
       this.isConnected = false;
-      this.logger.error('❌ Failed to connect to database:', error);
-      this.logger.error(
-        '⚠️  Starting server without database connection - some features will be unavailable',
-      );
-      // Don't throw - allow server to start without DB
+      this.initPromise = null; // Allow retry
+      this.logger.error('❌ Failed to connect to database:');
+      this.logger.error(`   Error type: ${typeof error}`);
+      this.logger.error(`   Error: ${error}`);
+      if (error instanceof Error) {
+        this.logger.error(`   Message: ${error.message}`);
+        this.logger.error(`   Stack: ${error.stack}`);
+      }
+      throw error; // Propagate error to caller
     }
   }
 
@@ -261,6 +548,7 @@ export class PrismaService
   async healthCheck() {
     const startTime = Date.now();
     try {
+      await this.ensureConnected(); // Ensure connection before health check
       await this.$queryRaw`SELECT 1`;
       const responseTime = Date.now() - startTime;
       return {
@@ -281,13 +569,23 @@ export class PrismaService
     }
   }
 
+  // Note: For transparent lazy connection, Prisma Client Extensions could be used
+  // For now, services should call ensureConnected() explicitly before queries
+  // Example in a service:
+  //   async findUser(id: string) {
+  //     await this.prisma.ensureConnected();
+  //     return this.prisma.user.findUnique({ where: { id } });
+  //   }
+
   /**
    * Execute transaction with retry logic
    */
   async executeTransaction<T>(
-    fn: (prisma: Omit<PrismaClient, '$connect' | '$disconnect'>) => Promise<T>,
+    fn: (prisma: Omit<PrismaClient, '$transaction'>) => Promise<T>,
     maxRetries = 3,
   ): Promise<T> {
+    await this.ensureConnected(); // Ensure connection before transaction
+
     let lastError: Error;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {

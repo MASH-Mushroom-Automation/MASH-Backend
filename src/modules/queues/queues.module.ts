@@ -41,6 +41,19 @@ import { DatabaseModule } from '../../database/database.module';
       name: 'push-notifications',
       adapter: BullAdapter,
     }),
+    // Import/Export queues (Issue #30)
+    BullBoardModule.forFeature({
+      name: 'import',
+      adapter: BullAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'export',
+      adapter: BullAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'cleanup',
+      adapter: BullAdapter,
+    }),
   ],
   providers: [
     NotificationQueueService,

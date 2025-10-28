@@ -48,7 +48,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -66,7 +66,7 @@ jobs:
           done
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -90,31 +90,58 @@ jobs:
 
       - name: Create minimal .env for build
         run: |
-          cat > .env << EOF
-          # Database
-          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
-          DIRECT_URL=postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          cat > .env << 'EOF'
+          # Database - PostgreSQL connection
+          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
+          DIRECT_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
           
-          # Server
+          # Server Configuration
           NODE_ENV=production
           PORT=3000
           
-          # Redis
+          # Redis Configuration
           REDIS_URL=redis://localhost:6379
           REDIS_HOST=localhost
           REDIS_PORT=6379
           
-          # JWT
+          # JWT Authentication
           JWT_SECRET=test-jwt-secret-for-performance-tests-min-32-chars-long
           JWT_EXPIRATION=1d
           
-          # Throttling
+          # Clerk Authentication (Placeholders)
+          CLERK_SECRET_KEY=sk_test_placeholder
+          CLERK_PUBLISHABLE_KEY=pk_test_placeholder
+          CLERK_WEBHOOK_SECRET=whsec_placeholder
+          
+          # Firebase (Empty to disable)
+          FIREBASE_PROJECT_ID=
+          FIREBASE_CLIENT_EMAIL=
+          FIREBASE_PRIVATE_KEY=
+          
+          # SendGrid (Placeholder)
+          SENDGRID_API_KEY=SG.test-key
+          
+          # Twilio (Placeholders)
+          TWILIO_ACCOUNT_SID=ACtest
+          TWILIO_AUTH_TOKEN=test-token
+          TWILIO_PHONE_NUMBER=+1234567890
+          
+          # Elasticsearch (Local)
+          ELASTICSEARCH_NODE=http://localhost:9200
+          ELASTICSEARCH_USERNAME=elastic
+          ELASTICSEARCH_PASSWORD=changeme
+          
+          # Rate Limiting
           THROTTLE_TTL=60
           THROTTLE_LIMIT=100
           
           # Logging
           LOG_LEVEL=log
           EOF
+          
+          echo "=== Created .env file ==="
+          echo "Verifying DATABASE_URL in .env:"
+          grep DATABASE_URL .env
 
       - name: Run database migrations
         run: npx prisma migrate deploy
@@ -124,54 +151,83 @@ jobs:
 
       - name: Build application
         run: npm run build
+        
+      - name: Verify environment configuration
+        run: |
+          echo "=== Environment Verification ==="
+          echo "NODE_ENV: $NODE_ENV"
+          echo "DATABASE_URL (masked): postgresql://postgres:****@localhost:5432/mash_test?schema=public"
+          echo "REDIS_URL: $REDIS_URL"
+          echo ""
+          echo "=== Checking .env file ==="
+          if [ -f .env ]; then
+            echo "✅ .env file exists"
+            echo "DATABASE_URL in .env:"
+            grep DATABASE_URL .env | head -1
+          else
+            echo "❌ .env file not found"
+          fi
+          echo ""
+          echo "=== Checking build output ==="
+          if [ -d dist ]; then
+            echo "✅ dist directory exists"
+            ls -la dist/
+          else
+            echo "❌ dist directory not found"
+          fi
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          REDIS_URL: redis://localhost:6379
 
       - name: Start application in background
         run: |
+          # Export all environment variables explicitly before starting
+          export NODE_ENV=production
+          export PORT=3000
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
+          export DIRECT_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
+          export REDIS_HOST=localhost
+          export REDIS_PORT=6379
+          export REDIS_URL="redis://localhost:6379"
+          export JWT_SECRET="test-jwt-secret-for-performance-tests-min-32-chars-long"
+          export JWT_EXPIRATION=1d
+          export CLERK_SECRET_KEY=sk_test_placeholder
+          export CLERK_PUBLISHABLE_KEY=pk_test_placeholder
+          export CLERK_WEBHOOK_SECRET=whsec_placeholder
+          export FIREBASE_PROJECT_ID=""
+          export FIREBASE_CLIENT_EMAIL=""
+          export FIREBASE_PRIVATE_KEY=""
+          export SENDGRID_API_KEY=SG.test-key
+          export TWILIO_ACCOUNT_SID=ACtest
+          export TWILIO_AUTH_TOKEN=test-token
+          export TWILIO_PHONE_NUMBER="+1234567890"
+          export ELASTICSEARCH_NODE=http://localhost:9200
+          export ELASTICSEARCH_USERNAME=elastic
+          export ELASTICSEARCH_PASSWORD=changeme
+          export LOG_LEVEL=log
+          export THROTTLE_TTL=60
+          export THROTTLE_LIMIT=100
+          
+          # Verify DATABASE_URL is set correctly
+          echo "=== Verifying DATABASE_URL ==="
+          echo "DATABASE_URL: $DATABASE_URL"
+          
+          # Start application
           nohup npm run start:prod > app.log 2>&1 &
           echo $! > .pidfile
           echo "Application started with PID: $(cat .pidfile)"
-          sleep 3
+          sleep 5
+          
           # Check if process is still running
           if ps -p $(cat .pidfile) > /dev/null; then
             echo "✅ Application process is running"
           else
             echo "❌ Application process died immediately"
-            cat app.log
+            echo "=== Last 100 lines of app.log ==="
+            tail -100 app.log
             exit 1
           fi
-        env:
-          NODE_ENV: production
-          PORT: 3000
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
-          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_URL: redis://localhost:6379
-          # JWT & Auth
-          JWT_SECRET: test-jwt-secret-for-performance-tests-min-32-chars-long
-          JWT_EXPIRATION: 1d
-          # Clerk (optional for perf tests)
-          CLERK_SECRET_KEY: sk_test_placeholder
-          CLERK_PUBLISHABLE_KEY: pk_test_placeholder
-          CLERK_WEBHOOK_SECRET: whsec_placeholder
-          # Firebase (optional for perf tests) - not set to avoid malformed key during CI
-          FIREBASE_PROJECT_ID: ''
-          FIREBASE_CLIENT_EMAIL: ''
-          FIREBASE_PRIVATE_KEY: ''
-          # SendGrid (optional for perf tests)
-          SENDGRID_API_KEY: SG.test-key
-          # Twilio (optional for perf tests)
-          TWILIO_ACCOUNT_SID: ACtest
-          TWILIO_AUTH_TOKEN: test-token
-          TWILIO_PHONE_NUMBER: "+1234567890"
-          # Elasticsearch (if needed)
-          ELASTICSEARCH_NODE: http://localhost:9200
-          ELASTICSEARCH_USERNAME: elastic
-          ELASTICSEARCH_PASSWORD: changeme
-          # Misc
-          LOG_LEVEL: log
-          THROTTLE_TTL: 60
-          THROTTLE_LIMIT: 100
 
       - name: Wait for application
         run: |
@@ -182,8 +238,12 @@ jobs:
             # Check if process is still running
             if ! ps -p $(cat .pidfile) > /dev/null; then
               echo "❌ Application process died!"
-              echo "=== Last 50 lines of app.log ==="
-              tail -50 app.log
+              echo ""
+              echo "=== Last 100 lines of app.log ==="
+              tail -100 app.log
+              echo ""
+              echo "=== Checking for PostgreSQL connection errors ==="
+              grep -i "postgres\|database\|connection" app.log | tail -20
               exit 1
             fi
             
@@ -203,10 +263,15 @@ jobs:
           done
           
           echo "❌ Application did not become ready in time"
+          echo ""
           echo "=== Full app.log ==="
           cat app.log
+          echo ""
           echo "=== Process list ==="
           ps aux | grep node
+          echo ""
+          echo "=== PostgreSQL connection check ==="
+          PGPASSWORD=postgres psql -h localhost -U postgres -d mash_test -c "SELECT version();" || echo "Cannot connect to PostgreSQL"
           exit 1
 
       - name: Check app logs if startup failed

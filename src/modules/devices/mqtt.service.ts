@@ -16,7 +16,10 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly devicesGateway: DevicesGateway) {}
 
   async onModuleInit() {
-    await this.connect();
+    // Connect in background - don't block startup
+    this.connect().catch((error) => {
+      this.logger.error('Failed to initialize MQTT connection:', error);
+    });
   }
 
   async onModuleDestroy() {
@@ -37,55 +40,72 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      const options: mqtt.IClientOptions = {
-        clientId: `mash-backend-${Math.random().toString(16).slice(3)}`,
-        username: process.env.MQTT_USERNAME,
-        password: process.env.MQTT_PASSWORD,
-        clean: true,
-        reconnectPeriod: 5000,
-        connectTimeout: 5000, // 5 second timeout
-      };
+      this.logger.log('🔌 Connecting to MQTT broker...');
 
-      this.client = mqtt.connect(brokerUrl, options);
+      // Wrap the event-based connection in a Promise with timeout
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('MQTT connection timeout after 5 seconds'));
+        }, 5000);
 
-      this.client.on('connect', () => {
-        this.connected = true;
-        this.logger.log('📡 Connected to MQTT broker');
+        const options: mqtt.IClientOptions = {
+          clientId: `mash-backend-${Math.random().toString(16).slice(3)}`,
+          username: process.env.MQTT_USERNAME,
+          password: process.env.MQTT_PASSWORD,
+          clean: true,
+          reconnectPeriod: 5000,
+          connectTimeout: 5000, // 5 second timeout
+        };
 
-        // Subscribe to device topics
-        this.client.subscribe('devices/+/status', (err) => {
-          if (err) {
-            this.logger.error('Failed to subscribe to device status', err);
-          }
+        this.client = mqtt.connect(brokerUrl, options);
+
+        this.client.on('connect', () => {
+          clearTimeout(timeout);
+          this.connected = true;
+          this.logger.log('📡 Connected to MQTT broker');
+
+          // Subscribe to device topics
+          this.client.subscribe('devices/+/status', (err) => {
+            if (err) {
+              this.logger.error('Failed to subscribe to device status', err);
+            }
+          });
+
+          this.client.subscribe('devices/+/data', (err) => {
+            if (err) {
+              this.logger.error('Failed to subscribe to device data', err);
+            }
+          });
+
+          resolve();
         });
 
-        this.client.subscribe('devices/+/data', (err) => {
-          if (err) {
-            this.logger.error('Failed to subscribe to device data', err);
-          }
+        this.client.on('error', (error) => {
+          clearTimeout(timeout);
+          this.logger.warn(
+            '⚠️ MQTT connection error (broker may not be running):',
+            error.message,
+          );
+          this.connected = false;
+          // Resolve instead of reject to allow server to start
+          resolve();
         });
-      });
 
-      this.client.on('message', (topic, message) => {
-        this.handleMessage(topic, message);
-      });
+        this.client.on('close', () => {
+          this.connected = false;
+          this.logger.log('MQTT connection closed');
+        });
 
-      this.client.on('error', (error) => {
-        this.logger.warn(
-          '⚠️ MQTT connection error (broker may not be running):',
-          error.message,
-        );
-        this.connected = false;
-      });
-
-      this.client.on('close', () => {
-        this.connected = false;
-        this.logger.log('MQTT connection closed');
+        this.client.on('message', (topic, message) => {
+          this.handleMessage(topic, message);
+        });
       });
     } catch (error) {
       this.logger.warn(
         '⚠️ MQTT broker not available. IoT features will be limited.',
+        error,
       );
+      // Don't throw - allow server to start without MQTT
     }
   }
 

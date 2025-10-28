@@ -1,11 +1,13 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import type { Job } from 'bull';
+// import * as twilio from 'twilio';
 import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { SmsNotificationJob } from '../services/notification-queue.service';
 
-@Processor('sms-notifications')
+// 🔧 TEMPORARILY DISABLED - Processor causes conflicts when Bull is initialized elsewhere
+// @Processor('sms-notifications')
 export class SmsProcessor {
   private readonly logger = new Logger(SmsProcessor.name);
   private twilioClient: any; // Will be typed as twilio.Twilio when configured

@@ -19,9 +19,12 @@ export class ProductIndexerService implements OnModuleInit {
     private readonly prisma: PrismaService,
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async onModuleInit() {
-    // Create product index with mapping on startup
-    await this.createIndexIfNotExists();
+    // Create product index with mapping on startup (non-blocking)
+    this.createIndexIfNotExists().catch((error) => {
+      this.logger.error('Failed to initialize product index:', error);
+    });
   }
 
   /**
@@ -30,6 +33,15 @@ export class ProductIndexerService implements OnModuleInit {
   private async createIndexIfNotExists(): Promise<void> {
     try {
       const client = this.elasticsearch.getClient();
+
+      // Skip if Elasticsearch is not configured
+      if (!client) {
+        this.logger.warn(
+          '⚠️ Elasticsearch not configured - product indexing disabled',
+        );
+        return;
+      }
+
       const exists = await client.indices.exists({
         index: this.indexName,
       });
@@ -42,9 +54,10 @@ export class ProductIndexerService implements OnModuleInit {
         this.logger.log(`✅ Index ${this.indexName} already exists`);
       }
     } catch (error) {
-      this.logger.error(
-        `Failed to create index ${this.indexName}:`,
-        error.message,
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `⚠️ Failed to create index ${this.indexName}: ${errorMessage} (Search functionality will be limited)`,
       );
       // Don't throw - allow app to start even if indexing fails
     }

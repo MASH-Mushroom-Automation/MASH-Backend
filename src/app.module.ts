@@ -26,7 +26,7 @@ import { AuthViewsModule } from './modules/auth/views/auth-views.module';
 // import { OrdersModule } from './modules/orders/orders.module';
 // import { ProductsModule } from './modules/products/products.module';
 // import { AnalyticsModule } from './modules/analytics/analytics.module';
-// import { NotificationsModule } from './modules/notifications/notifications.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 // import { PaymentsModule } from './modules/payments/payments.module';
 // import { AdminModule } from './modules/admin/admin.module';
 
@@ -37,21 +37,29 @@ import { CommonModule } from './common/common.module';
 import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
 import { TracingModule } from './monitoring/tracing/tracing.module';
 import { UsersModule } from './modules/users/users.module';
-import { DevicesModule } from './modules/devices/devices.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+// import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { CategoriesModule } from './modules/categories/categories.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+// import { AnalyticsModule } from './modules/analytics/analytics.module';
+// import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
-import { AlertsModule } from './modules/alerts/alerts.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+// import { AlertsModule } from './modules/alerts/alerts.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing hang
 import { QueuesModule } from './modules/queues/queues.module';
-import { WebsocketModule } from './modules/websocket/websocket.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+// import { WebsocketModule } from './modules/websocket/websocket.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
-import { SearchModule } from './modules/search/search.module';
+// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+// import { SearchModule } from './modules/search/search.module';
+import { ImportExportModule } from './modules/import-export/import-export.module';
+import { GatewayModule } from './modules/gateway/gateway.module';
 import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -102,7 +110,8 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     UsersModule,
 
-    DevicesModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
+    // DevicesModule,
 
     SensorsModule,
 
@@ -112,23 +121,34 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     CategoriesModule,
 
-    AnalyticsModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+    // AnalyticsModule,
 
     NotificationsModule,
 
     AdminModule,
 
-    AlertsModule,
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
+    // AlertsModule,
 
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing startup hang
     QueuesModule,
 
     InventoryModule,
 
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
     // Search Engine Module (Issue #28 - Advanced Search & Filtering)
-    SearchModule,
+    // SearchModule,
 
+    // Import/Export Module (Issue #30 - Data Export & Import Backend System)
+    ImportExportModule,
+
+    // API Gateway Module (Issue #32 - API Gateway & Rate Limiting Backend)
+    GatewayModule,
+
+    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
     // WebSocket module for real-time communication
-    WebsocketModule,
+    // WebsocketModule,
     // UsersModule,
     // DevicesModule,
     // SensorsModule,

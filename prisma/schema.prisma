@@ -46,6 +46,18 @@ model User {
   notificationTemplates NotificationTemplate[] @relation("NotificationTemplateCreator")
   alertNotifications    Notification[]
 
+  // Import/Export System Relations
+  importExportJobs ImportExportJob[] @relation("ImportExportJobsCreated")
+
+  // API Gateway & Rate Limiting Relations (Issue #32)
+  rateLimitOverrides RateLimitOverride[]
+  apiUsageLogs       ApiUsageLog[]
+  requestQueues      RequestQueue[]
+  apiVersionUsage    ApiVersionUsage[]
+
+  // Push Notifications Relations (Issue #29)
+  pushSubscriptions PushSubscription[]
+
   // Performance Indexes for analytics queries
   @@index([createdAt])
   @@index([isActive, role])
@@ -75,6 +87,8 @@ model Device {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   sensorData     SensorData[]
   sensors        Sensor[]
+  healthRecords  DeviceHealth[]
+  pushSubscriptions PushSubscription[]
 
   // Performance Indexes (Task 1.2)
   @@index([userId, status, isActive])
@@ -1010,3 +1024,391 @@ model SearchLog {
   @@index([index, createdAt]) // Index-specific analytics
   @@map("search_logs")
 }
+
+// ============================================
+// IMPORT/EXPORT SYSTEM
+// ============================================
+
+model ImportExportJob {
+  id         String      @id @default(cuid())
+  type       JobType // IMPORT | EXPORT
+  entityType EntityType // PRODUCT | ORDER | USER | CATEGORY | etc.
+  status     JobStatus // QUEUED | PROCESSING | COMPLETED | FAILED | CANCELLED
+  priority   JobPriority // URGENT | NORMAL | LOW
+
+  // File information
+  fileName      String
+  fileFormat    FileFormat // CSV | EXCEL | JSON | XML
+  fileSize      Int // in bytes
+  fileUrl       String? // S3/MinIO URL
+  resultFileUrl String? // For exports
+
+  // Progress tracking
+  totalRecords     Int   @default(0)
+  processedRecords Int   @default(0)
+  successCount     Int   @default(0)
+  failureCount     Int   @default(0)
+  warningCount     Int   @default(0)
+  progressPercent  Float @default(0)
+
+  // Timing
+  startedAt       DateTime?
+  completedAt     DateTime?
+  estimatedTimeMs Int?
+
+  // Configuration
+  options Json? // Import/export options (delimiter, skipRows, etc.)
+  filters Json? // Export filters
+
+  // Error tracking
+  errors ImportExportError[]
+
+  // Audit
+  createdBy     String
+  createdByUser User     @relation("ImportExportJobsCreated", fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([entityType, type])
+  @@index([createdBy])
+  @@map("import_export_jobs")
+}
+
+model ImportExportError {
+  id    String          @id @default(cuid())
+  jobId String
+  job   ImportExportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  // Error location
+  rowNumber  Int? // Row in file (1-indexed)
+  columnName String?
+  fieldPath  String? // For nested JSON/XML
+
+  // Error details
+  errorType  ErrorType // VALIDATION | CONSTRAINT | FORMAT | BUSINESS_RULE
+  severity   ErrorSeverity // ERROR | WARNING
+  errorCode  String // E.g., "REQUIRED_FIELD_MISSING"
+  message    String
+  suggestion String? // How to fix
+
+  // Original data
+  originalValue  String?
+  expectedFormat String?
+
+  createdAt DateTime @default(now())
+
+  @@index([jobId, severity])
+  @@map("import_export_errors")
+}
+
+model ImportExportTemplate {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  entityType  EntityType
+  fileFormat  FileFormat
+
+  // Template configuration
+  headers    Json // Column names and order
+  sampleData Json // Example rows
+  validation Json // Validation rules
+
+  isActive  Boolean  @default(true)
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entityType, fileFormat])
+  @@map("import_export_templates")
+}
+
+// Enums for Import/Export System
+enum JobType {
+  IMPORT
+  EXPORT
+}
+
+enum EntityType {
+  PRODUCT
+  ORDER
+  USER
+  CATEGORY
+  SELLER
+  BUYER
+  TRANSACTION
+  INVENTORY
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum JobPriority {
+  URGENT
+  NORMAL
+  LOW
+}
+
+enum FileFormat {
+  CSV
+  EXCEL
+  JSON
+  XML
+}
+
+enum ErrorType {
+  VALIDATION
+  CONSTRAINT
+  FORMAT
+  BUSINESS_RULE
+}
+
+enum ErrorSeverity {
+  ERROR
+  WARNING
+}
+
+// ============================================
+// API GATEWAY & RATE LIMITING (Issue #32)
+// ============================================
+
+// Load Balancing Strategy enum
+enum LoadBalancingStrategy {
+  ROUND_ROBIN
+  LEAST_CONNECTIONS
+  WEIGHTED_ROUND_ROBIN
+  IP_HASH
+  HEALTH_BASED
+}
+
+// Rate Limit Strategy enum
+enum RateLimitStrategy {
+  TOKEN_BUCKET
+  LEAKY_BUCKET
+  FIXED_WINDOW
+  SLIDING_WINDOW
+  ADAPTIVE
+}
+
+// Request Queue Status enum
+enum RequestQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+// Circuit Breaker State enum
+enum CircuitBreakerStateEnum {
+  CLOSED
+  OPEN
+  HALF_OPEN
+}
+
+// 1. API Gateway Configuration - Routing rules and service registry
+model ApiGatewayConfig {
+  id               String                 @id @default(cuid())
+  serviceName      String                 @unique
+  basePath         String                 // e.g., /api/v1/orders
+  targetUrl        String                 // e.g., http://orders-service:3001
+  healthCheckUrl   String?                // e.g., http://orders-service:3001/health
+  timeout          Int                    @default(30000) // milliseconds
+  retryAttempts    Int                    @default(3)
+  circuitBreaker   Boolean                @default(true)
+  loadBalancing    LoadBalancingStrategy  @default(ROUND_ROBIN)
+  isActive         Boolean                @default(true)
+  priority         Int                    @default(0) // Higher priority routes checked first
+  metadata         Json?                  // Additional configuration
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@map("api_gateway_configs")
+}
+
+// 2. Rate Limit Overrides - Per-user or per-API-key custom limits
+model RateLimitOverride {
+  id            String            @id @default(cuid())
+  userId        String?
+  apiKey        String?
+  endpoint      String            // e.g., /api/v1/products
+  requestLimit  Int               // Number of requests allowed
+  timeWindowMs  Int               // Time window in milliseconds
+  strategy      RateLimitStrategy @default(TOKEN_BUCKET)
+  priority      Int               @default(0)
+  reason        String?           // Why this override exists
+  expiresAt     DateTime?         // When this override expires
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([apiKey])
+  @@index([endpoint])
+  @@map("rate_limit_overrides")
+}
+
+// 3. API Usage Logs - Detailed analytics for every API request
+model ApiUsageLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  apiKey        String?
+  endpoint      String
+  method        String   // HTTP method (GET, POST, etc.)
+  version       String   // API version (v1, v2)
+  statusCode    Int
+  responseTime  Int      // milliseconds
+  requestSize   Int?     // bytes
+  responseSize  Int?     // bytes
+  ipAddress     String
+  userAgent     String?
+  referer       String?
+  rateLimitHit  Boolean  @default(false)
+  throttled     Boolean  @default(false)
+  queueTime     Int?     // milliseconds in queue
+  metadata      Json?
+  timestamp     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, timestamp])
+  @@index([endpoint, timestamp])
+  @@index([timestamp])
+  @@index([apiKey])
+  @@map("api_usage_logs")
+}
+
+// 4. Request Queue - Throttled requests waiting to be processed
+model RequestQueue {
+  id               String             @id @default(cuid())
+  userId           String?
+  endpoint         String
+  method           String
+  priority         Int                @default(50) // 0-100 scale (higher = more priority)
+  payload          Json?
+  headers          Json?
+  status           RequestQueueStatus @default(PENDING)
+  estimatedWaitMs  Int?
+  queuedAt         DateTime           @default(now())
+  processedAt      DateTime?
+  completedAt      DateTime?
+  expiresAt        DateTime
+  retryCount       Int                @default(0)
+  errorMessage     String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, priority, queuedAt])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("request_queues")
+}
+
+// 5. API Version Usage - Track which API versions are being used
+model ApiVersionUsage {
+  id           String   @id @default(cuid())
+  version      String
+  endpoint     String
+  userId       String?
+  requestCount Int      @default(1)
+  lastUsedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([version, endpoint, userId])
+  @@index([version])
+  @@index([userId])
+  @@map("api_version_usage")
+}
+
+// 6. Circuit Breaker State - Track circuit breaker state for each service
+model CircuitBreakerState {
+  id            String                  @id @default(cuid())
+  serviceName   String                  @unique
+  state         CircuitBreakerStateEnum @default(CLOSED)
+  failureCount  Int                     @default(0)
+  successCount  Int                     @default(0)
+  lastFailureAt DateTime?
+  lastSuccessAt DateTime?
+  nextRetryAt   DateTime?
+  openedAt      DateTime?
+  metadata      Json?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([state])
+  @@map("circuit_breaker_states")
+}
+
+// ============================================
+// PUSH NOTIFICATIONS (Issue #29)
+// ============================================
+model PushSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  deviceId    String?
+  endpoint    String   @unique
+  keys        Json // { p256dh: string, auth: string }
+  userAgent   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+// ============================================
+// DEVICE HEALTH MONITORING (Issue #29)
+// ============================================
+model DeviceHealth {
+  id          String            @id @default(uuid())
+  deviceId    String
+  timestamp   DateTime          @default(now())
+  status      DeviceHealthStatus
+  cpuUsage    Float? // CPU usage percentage
+  memoryUsage Float? // Memory usage percentage
+  diskUsage   Float? // Disk usage percentage
+  temperature Float? // Device temperature
+  batteryLevel Float? // Battery level percentage (if applicable)
+  networkLatency Int? // Network latency in ms
+  uptime      Int? // Uptime in seconds
+  errorCount  Int               @default(0) // Number of errors since last check
+  metadata    Json? // Additional health data
+  createdAt   DateTime          @default(now())
+
+  // Relations
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp(sort: Desc)])
+  @@index([status])
+  @@index([timestamp])
+  @@map("device_health")
+}
+
+enum DeviceHealthStatus {
+  HEALTHY
+  WARNING
+  CRITICAL
+  OFFLINE
+  MAINTENANCE
+}
+
+// Add relation to Device model
+// In the Device model, add:
+// healthRecords DeviceHealth[]
+ 

@@ -6,7 +6,9 @@ import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { EmailNotificationJob } from '../services/notification-queue.service';
 
-@Processor('email-notifications')
+// 🔧 TEMPORARILY DISABLED - Processor causes "Cannot define the same handler twice" error
+// when Bull is initialized elsewhere (e.g. ImportExportModule)
+// @Processor('email-notifications')
 export class EmailProcessor {
   private readonly logger = new Logger(EmailProcessor.name);
   private transporter: nodemailer.Transporter;

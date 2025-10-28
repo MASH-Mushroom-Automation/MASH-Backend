@@ -157,7 +157,10 @@ export class RedisService implements OnModuleDestroy {
       }
       return JSON.parse(value) as T;
     } catch (error) {
-      this.logger.error(`Redis GET error for key ${key}:`, error);
+      this.logger.error(
+        `Redis GET error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return null;
     }
   }
@@ -178,7 +181,10 @@ export class RedisService implements OnModuleDestroy {
       await this.client.setex(key, ttlSeconds, serialized);
       return true;
     } catch (error) {
-      this.logger.error(`Redis SET error for key ${key}:`, error);
+      this.logger.error(
+        `Redis SET error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return false;
     }
   }
@@ -196,7 +202,10 @@ export class RedisService implements OnModuleDestroy {
       await this.client.del(key);
       return true;
     } catch (error) {
-      this.logger.error(`Redis DEL error for key ${key}:`, error);
+      this.logger.error(
+        `Redis DEL error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return false;
     }
   }
@@ -220,7 +229,10 @@ export class RedisService implements OnModuleDestroy {
       this.logger.debug(`Deleted ${keys.length} keys matching ${pattern}`);
       return keys.length;
     } catch (error) {
-      this.logger.error(`Redis DELETE PATTERN error for ${pattern}:`, error);
+      this.logger.error(
+        `Redis DELETE PATTERN error for ${pattern}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return 0;
     }
   }
@@ -238,7 +250,10 @@ export class RedisService implements OnModuleDestroy {
       const result = await this.client.exists(key);
       return result === 1;
     } catch (error) {
-      this.logger.error(`Redis EXISTS error for key ${key}:`, error);
+      this.logger.error(
+        `Redis EXISTS error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return false;
     }
   }
@@ -256,7 +271,10 @@ export class RedisService implements OnModuleDestroy {
     try {
       return await this.client.ttl(key);
     } catch (error) {
-      this.logger.error(`Redis TTL error for key ${key}:`, error);
+      this.logger.error(
+        `Redis TTL error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return -2;
     }
   }
@@ -283,7 +301,10 @@ export class RedisService implements OnModuleDestroy {
     try {
       return await this.client.incr(key);
     } catch (error) {
-      this.logger.error(`Redis INCR error for key ${key}:`, error);
+      this.logger.error(
+        `Redis INCR error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return 0;
     }
   }
@@ -302,7 +323,10 @@ export class RedisService implements OnModuleDestroy {
     try {
       return await this.client.incrby(key, amount);
     } catch (error) {
-      this.logger.error(`Redis INCRBY error for key ${key}:`, error);
+      this.logger.error(
+        `Redis INCRBY error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return 0;
     }
   }
@@ -322,7 +346,10 @@ export class RedisService implements OnModuleDestroy {
       const result = await this.client.expire(key, seconds);
       return result === 1;
     } catch (error) {
-      this.logger.error(`Redis EXPIRE error for key ${key}:`, error);
+      this.logger.error(
+        `Redis EXPIRE error for key ${key}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return false;
     }
   }
@@ -341,7 +368,10 @@ export class RedisService implements OnModuleDestroy {
       this.logger.warn('⚠️ Redis: Flushed all keys');
       return true;
     } catch (error) {
-      this.logger.error('Redis FLUSHDB error:', error);
+      this.logger.error(
+        `Redis FLUSHDB error: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return false;
     }
   }

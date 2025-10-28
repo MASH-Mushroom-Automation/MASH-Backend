@@ -58,9 +58,10 @@ export class ElasticsearchService implements OnModuleInit {
       this.logger.log(`📊 Cluster status: ${health.status}`);
       this.logger.log(`🔢 Number of nodes: ${health.number_of_nodes}`);
     } catch (error) {
-      this.logger.error(
-        '❌ Elasticsearch connection check failed:',
-        error.message,
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `⚠️ Elasticsearch connection check failed: ${errorMessage}`,
       );
       throw error;
     }
