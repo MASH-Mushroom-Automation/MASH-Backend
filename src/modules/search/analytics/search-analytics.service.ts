@@ -86,9 +86,7 @@ export class SearchAnalyticsService {
   /**
    * Get popular search queries
    */
-  async getPopularQueries(
-    limit = 20,
-  ): Promise<Array<{ query: string; count: number }>> {
+  async getPopularQueries(limit = 20): Promise<Array<{ query: string; count: number }>> {
     const result = await this.prisma.searchLog.groupBy({
       by: ['query'],
       _count: {
@@ -107,7 +105,7 @@ export class SearchAnalyticsService {
       },
     });
 
-    return result.map((item) => ({
+    return result.map(item => ({
       query: item.query,
       count: item._count.query,
     }));
@@ -116,9 +114,7 @@ export class SearchAnalyticsService {
   /**
    * Get queries that returned zero results
    */
-  async getZeroResultQueries(
-    limit = 20,
-  ): Promise<Array<{ query: string; count: number }>> {
+  async getZeroResultQueries(limit = 20): Promise<Array<{ query: string; count: number }>> {
     const result = await this.prisma.searchLog.groupBy({
       by: ['query'],
       _count: {
@@ -138,7 +134,7 @@ export class SearchAnalyticsService {
       take: limit,
     });
 
-    return result.map((item) => ({
+    return result.map(item => ({
       query: item.query,
       count: item._count.query,
     }));
@@ -199,7 +195,7 @@ export class SearchAnalyticsService {
       };
     }
 
-    const times = searches.map((s) => s.took);
+    const times = searches.map(s => s.took);
     const sum = times.reduce((a, b) => a + b, 0);
 
     return {
@@ -216,54 +212,48 @@ export class SearchAnalyticsService {
    * Get comprehensive analytics
    */
   async getAnalytics(): Promise<SearchAnalytics> {
-    const [
-      totalSearches,
-      avgResponse,
-      slowQueries,
-      popularQueries,
-      zeroResultQueries,
-      topClicked,
-    ] = await Promise.all([
-      // Total searches (last 30 days)
-      this.prisma.searchLog.count({
-        where: {
-          createdAt: {
-            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    const [totalSearches, avgResponse, slowQueries, popularQueries, zeroResultQueries, topClicked] =
+      await Promise.all([
+        // Total searches (last 30 days)
+        this.prisma.searchLog.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            },
           },
-        },
-      }),
+        }),
 
-      // Average response time
-      this.prisma.searchLog.aggregate({
-        _avg: {
-          took: true,
-        },
-        where: {
-          createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+        // Average response time
+        this.prisma.searchLog.aggregate({
+          _avg: {
+            took: true,
           },
-        },
-      }),
-
-      // Slow queries count
-      this.prisma.searchLog.count({
-        where: {
-          isSlowQuery: true,
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+            },
           },
-        },
-      }),
+        }),
 
-      // Popular queries
-      this.getPopularQueries(10),
+        // Slow queries count
+        this.prisma.searchLog.count({
+          where: {
+            isSlowQuery: true,
+            createdAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+            },
+          },
+        }),
 
-      // Zero result queries
-      this.getZeroResultQueries(10),
+        // Popular queries
+        this.getPopularQueries(10),
 
-      // Top clicked products
-      this.getTopClickedProducts(10),
-    ]);
+        // Zero result queries
+        this.getZeroResultQueries(10),
+
+        // Top clicked products
+        this.getTopClickedProducts(10),
+      ]);
 
     return {
       totalSearches,
@@ -302,7 +292,7 @@ export class SearchAnalyticsService {
       take: limit,
     });
 
-    return result.map((item) => ({
+    return result.map(item => ({
       productId: item.clickedResult,
       clicks: item._count.clickedResult,
     }));
@@ -332,9 +322,7 @@ export class SearchAnalyticsService {
       },
     });
 
-    this.logger.log(
-      `🗑️ Cleaned up ${result.count} search logs older than ${daysToKeep} days`,
-    );
+    this.logger.log(`🗑️ Cleaned up ${result.count} search logs older than ${daysToKeep} days`);
     return result.count;
   }
 }

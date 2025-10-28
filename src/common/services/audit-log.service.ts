@@ -126,10 +126,7 @@ export class AuditLogService {
       // Log to file (for backup and compliance)
       await this.logToFile(entry);
     } catch (error) {
-      this.logger.error(
-        `Failed to log audit event: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to log audit event: ${error.message}`, error.stack);
       // Don't throw - audit logging should never break the app
     }
   }
@@ -145,12 +142,8 @@ export class AuditLogService {
           action: entry.action,
           entity: entry.entity,
           entityId: entry.entityId,
-          oldValues: entry.oldValues
-            ? (entry.oldValues as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          newValues: entry.newValues
-            ? (entry.newValues as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
+          oldValues: entry.oldValues ? (entry.oldValues as Prisma.InputJsonValue) : Prisma.JsonNull,
+          newValues: entry.newValues ? (entry.newValues as Prisma.InputJsonValue) : Prisma.JsonNull,
           ipAddress: entry.ipAddress,
           userAgent: entry.userAgent,
         },
@@ -287,11 +280,7 @@ export class AuditLogService {
   /**
    * Get security events (failed logins, rate limits, suspicious activity)
    */
-  async getSecurityEvents(options?: {
-    limit?: number;
-    startDate?: Date;
-    endDate?: Date;
-  }) {
+  async getSecurityEvents(options?: { limit?: number; startDate?: Date; endDate?: Date }) {
     const securityActions = [
       AuditAction.LOGIN_FAILED,
       AuditAction.RATE_LIMIT_EXCEEDED,
@@ -348,11 +337,7 @@ export class AuditLogService {
   /**
    * Get user activity summary
    */
-  async getUserActivitySummary(
-    userId: string,
-    startDate?: Date,
-    endDate?: Date,
-  ) {
+  async getUserActivitySummary(userId: string, startDate?: Date, endDate?: Date) {
     const logs = await this.findByUserId(userId, {
       startDate,
       endDate,
@@ -393,9 +378,7 @@ export class AuditLogService {
       },
     });
 
-    this.logger.log(
-      `Deleted ${result.count} audit logs older than ${daysToKeep} days`,
-    );
+    this.logger.log(`Deleted ${result.count} audit logs older than ${daysToKeep} days`);
     return result.count;
   }
 }

@@ -12,13 +12,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AlertRuleService } from '../services/alert-rule.service';
 import { CreateAlertRuleDto } from '../dto/create-alert-rule.dto';
 import { UpdateAlertRuleDto } from '../dto/update-alert-rule.dto';
@@ -43,8 +37,7 @@ export class AlertRulesController {
   @Post()
   @ApiOperation({
     summary: 'Create alert rule',
-    description:
-      'Create a new alert rule with specified conditions and thresholds',
+    description: 'Create a new alert rule with specified conditions and thresholds',
   })
   @ApiResponse({
     status: 201,
@@ -58,10 +51,7 @@ export class AlertRulesController {
     status: 409,
     description: 'Alert rule with this name already exists',
   })
-  async create(
-    @Body() createAlertRuleDto: CreateAlertRuleDto,
-    @Request() req: any,
-  ) {
+  async create(@Body() createAlertRuleDto: CreateAlertRuleDto, @Request() req: any) {
     // TODO: Get userId from JWT token when auth is implemented
     const userId = req.user?.id || 'system'; // Temporary fallback
 
@@ -75,22 +65,13 @@ export class AlertRulesController {
   @Get()
   @ApiOperation({
     summary: 'List alert rules',
-    description:
-      'Get all alert rules with optional filtering by category, priority, and status',
+    description: 'Get all alert rules with optional filtering by category, priority, and status',
   })
   @ApiQuery({
     name: 'category',
     required: false,
     description: 'Filter by alert category',
-    enum: [
-      'SYSTEM',
-      'SECURITY',
-      'BUSINESS',
-      'USER',
-      'SENSOR',
-      'ORDER',
-      'PAYMENT',
-    ],
+    enum: ['SYSTEM', 'SECURITY', 'BUSINESS', 'USER', 'SENSOR', 'ORDER', 'PAYMENT'],
   })
   @ApiQuery({
     name: 'priority',

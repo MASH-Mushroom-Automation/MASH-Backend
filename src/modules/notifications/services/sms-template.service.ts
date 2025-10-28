@@ -42,8 +42,7 @@ export class SMSTemplateService {
     // Device offline template
     this.templates.set(SMSTemplateType.DEVICE_OFFLINE, {
       type: SMSTemplateType.DEVICE_OFFLINE,
-      template:
-        'ALERT: Device {{deviceId}} is offline. Last seen: {{lastSeen}}',
+      template: 'ALERT: Device {{deviceId}} is offline. Last seen: {{lastSeen}}',
       maxLength: 160,
       variables: {
         deviceId: {
@@ -82,8 +81,7 @@ export class SMSTemplateService {
     // Health warning template
     this.templates.set(SMSTemplateType.HEALTH_WARNING, {
       type: SMSTemplateType.HEALTH_WARNING,
-      template:
-        'WARNING: Device {{deviceId}} health issue - {{metric}}: {{value}}%',
+      template: 'WARNING: Device {{deviceId}} health issue - {{metric}}: {{value}}%',
       maxLength: 160,
       variables: {
         deviceId: {
@@ -132,8 +130,7 @@ export class SMSTemplateService {
     // Test message template
     this.templates.set(SMSTemplateType.TEST_MESSAGE, {
       type: SMSTemplateType.TEST_MESSAGE,
-      template:
-        'Test SMS from MASH Device Monitoring System. Time: {{timestamp}}',
+      template: 'Test SMS from MASH Device Monitoring System. Time: {{timestamp}}',
       maxLength: 160,
       variables: {
         timestamp: {
@@ -149,10 +146,7 @@ export class SMSTemplateService {
   /**
    * Render SMS template with variables
    */
-  renderTemplate(
-    type: SMSTemplateType,
-    variables: SMSTemplateVariables = {},
-  ): string {
+  renderTemplate(type: SMSTemplateType, variables: SMSTemplateVariables = {}): string {
     const template = this.templates.get(type);
     if (!template) {
       throw new Error(`SMS template '${type}' not found`);
@@ -164,9 +158,7 @@ export class SMSTemplateService {
         if (config.default !== undefined) {
           variables[key] = config.default;
         } else if (config.required) {
-          throw new Error(
-            `Required variable '${key}' missing for SMS template '${type}'`,
-          );
+          throw new Error(`Required variable '${key}' missing for SMS template '${type}'`);
         }
       }
     }

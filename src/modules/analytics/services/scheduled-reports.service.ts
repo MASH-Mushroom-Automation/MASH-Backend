@@ -55,9 +55,7 @@ export class ScheduledReportsService {
       },
     });
 
-    this.logger.log(
-      `Created subscription ${subscription.id} for user ${userId}`,
-    );
+    this.logger.log(`Created subscription ${subscription.id} for user ${userId}`);
 
     return subscription;
   }
@@ -95,9 +93,7 @@ export class ScheduledReportsService {
     });
 
     if (!subscription) {
-      throw new NotFoundException(
-        `Subscription with ID ${subscriptionId} not found`,
-      );
+      throw new NotFoundException(`Subscription with ID ${subscriptionId} not found`);
     }
 
     return this.prisma.reportSubscription.update({
@@ -122,9 +118,7 @@ export class ScheduledReportsService {
     });
 
     if (!subscription) {
-      throw new NotFoundException(
-        `Subscription with ID ${subscriptionId} not found`,
-      );
+      throw new NotFoundException(`Subscription with ID ${subscriptionId} not found`);
     }
 
     await this.prisma.reportSubscription.delete({
@@ -151,18 +145,13 @@ export class ScheduledReportsService {
     });
 
     if (!subscription) {
-      throw new NotFoundException(
-        `Subscription with ID ${subscriptionId} not found`,
-      );
+      throw new NotFoundException(`Subscription with ID ${subscriptionId} not found`);
     }
 
     this.logger.log(`Manually triggering subscription ${subscriptionId}`);
 
     // Execute report and return result
-    const result = await this.reportBuilder.executeReport(
-      subscription.reportId,
-      userId,
-    );
+    const result = await this.reportBuilder.executeReport(subscription.reportId, userId);
 
     return {
       message: 'Report generation triggered successfully',
@@ -289,13 +278,9 @@ export class ScheduledReportsService {
 
     if (this.emailEnabled) {
       // In a real implementation, send email with report data
-      this.logger.log(
-        `Email sending would happen here for subscription ${subscription.id}`,
-      );
+      this.logger.log(`Email sending would happen here for subscription ${subscription.id}`);
     }
 
-    this.logger.log(
-      `Successfully generated report for subscription ${subscription.id}`,
-    );
+    this.logger.log(`Successfully generated report for subscription ${subscription.id}`);
   }
 }

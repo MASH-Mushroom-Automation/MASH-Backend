@@ -76,12 +76,7 @@ export interface TypeRule extends ValidationRule {
  */
 export interface FormatRule extends ValidationRule {
   type: ValidationRuleType.FORMAT;
-  format:
-    | DataType.EMAIL
-    | DataType.PHONE
-    | DataType.URL
-    | DataType.DATE
-    | DataType.DATETIME;
+  format: DataType.EMAIL | DataType.PHONE | DataType.URL | DataType.DATE | DataType.DATETIME;
 }
 
 /**
@@ -316,11 +311,7 @@ export class ValidationRuleBuilder {
     };
   }
 
-  static stringLength(
-    field: string,
-    minLength?: number,
-    maxLength?: number,
-  ): LengthRule {
+  static stringLength(field: string, minLength?: number, maxLength?: number): LengthRule {
     return {
       field,
       type: ValidationRuleType.LENGTH,
@@ -358,11 +349,7 @@ export class ValidationRuleBuilder {
     };
   }
 
-  static enum(
-    field: string,
-    allowedValues: string[] | number[],
-    caseSensitive = true,
-  ): EnumRule {
+  static enum(field: string, allowedValues: string[] | number[], caseSensitive = true): EnumRule {
     return {
       field,
       type: ValidationRuleType.ENUM,
@@ -373,11 +360,7 @@ export class ValidationRuleBuilder {
     };
   }
 
-  static pattern(
-    field: string,
-    pattern: string | RegExp,
-    flags?: string,
-  ): PatternRule {
+  static pattern(field: string, pattern: string | RegExp, flags?: string): PatternRule {
     return {
       field,
       type: ValidationRuleType.PATTERN,
@@ -390,10 +373,7 @@ export class ValidationRuleBuilder {
 
   static custom(
     field: string,
-    validator: (
-      value: any,
-      record: Record<string, any>,
-    ) => boolean | Promise<boolean>,
+    validator: (value: any, record: Record<string, any>) => boolean | Promise<boolean>,
     message?: string,
   ): CustomRule {
     return {

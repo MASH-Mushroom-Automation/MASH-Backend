@@ -111,10 +111,7 @@ export class ProductsService {
     };
 
     // Cache for 10 minutes with tags
-    await this.cacheService.set(cacheKey, result, this.PRODUCT_TTL, [
-      'products',
-      'products:list',
-    ]);
+    await this.cacheService.set(cacheKey, result, this.PRODUCT_TTL, ['products', 'products:list']);
 
     return result;
   }
@@ -159,11 +156,8 @@ export class ProductsService {
     });
 
     // Auto-index in Elasticsearch (non-blocking)
-    this.productIndexer.indexProduct(product.id).catch((error) => {
-      this.logger.error(
-        `Failed to index product ${product.id} in Elasticsearch:`,
-        error.message,
-      );
+    this.productIndexer.indexProduct(product.id).catch(error => {
+      this.logger.error(`Failed to index product ${product.id} in Elasticsearch:`, error.message);
     });
 
     return product;
@@ -312,11 +306,8 @@ export class ProductsService {
     ]);
 
     // Auto-update in Elasticsearch (non-blocking)
-    this.productIndexer.indexProduct(id).catch((error) => {
-      this.logger.error(
-        `Failed to update product ${id} in Elasticsearch:`,
-        error.message,
-      );
+    this.productIndexer.indexProduct(id).catch(error => {
+      this.logger.error(`Failed to update product ${id} in Elasticsearch:`, error.message);
     });
 
     return updated;
@@ -344,11 +335,8 @@ export class ProductsService {
 
     // Auto-remove from Elasticsearch (non-blocking)
     // Since this is a soft delete, we update the index to reflect inactive status
-    this.productIndexer.indexProduct(id).catch((error) => {
-      this.logger.error(
-        `Failed to update product ${id} status in Elasticsearch:`,
-        error.message,
-      );
+    this.productIndexer.indexProduct(id).catch(error => {
+      this.logger.error(`Failed to update product ${id} status in Elasticsearch:`, error.message);
     });
 
     return deleted;
@@ -443,10 +431,7 @@ export class ProductsService {
     };
 
     // Cache search results for 5 minutes
-    await this.cacheService.set(cacheKey, result, this.SEARCH_TTL, [
-      'products',
-      'products:search',
-    ]);
+    await this.cacheService.set(cacheKey, result, this.SEARCH_TTL, ['products', 'products:search']);
 
     return result;
   }

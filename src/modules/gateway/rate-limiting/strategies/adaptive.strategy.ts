@@ -87,10 +87,7 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
   /**
    * Check if request should be rate limited with adaptive adjustment
    */
-  async checkLimit(
-    key: string,
-    config: IRateLimitConfig,
-  ): Promise<IRateLimitResult> {
+  async checkLimit(key: string, config: IRateLimitConfig): Promise<IRateLimitResult> {
     const redisKey = `${this.KEY_PREFIX}${key}`;
     const now = Date.now();
 
@@ -103,13 +100,11 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
 
       // Get current count from Redis (sliding window log)
       const stateJson = await this.redis.get(redisKey);
-      const timestamps: number[] = stateJson
-        ? JSON.parse(stateJson as string)
-        : [];
+      const timestamps: number[] = stateJson ? JSON.parse(stateJson as string) : [];
 
       // Filter expired timestamps
       const windowStart = now - config.windowMs;
-      const validTimestamps = timestamps.filter((ts) => ts > windowStart);
+      const validTimestamps = timestamps.filter(ts => ts > windowStart);
 
       // Check if limit reached
       const currentCount = validTimestamps.length;
@@ -120,11 +115,7 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
         validTimestamps.push(now);
 
         // Save to Redis
-        await this.redis.set(
-          redisKey,
-          JSON.stringify(validTimestamps),
-          config.windowMs + 1000,
-        );
+        await this.redis.set(redisKey, JSON.stringify(validTimestamps), config.windowMs + 1000);
 
         // Update user behavior score (positive interaction)
         this.updateUserScore(key, true);
@@ -148,10 +139,7 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
         // Limit reached - update user score (negative interaction)
         this.updateUserScore(key, false);
 
-        const resetMs = this.calculateResetTime(
-          validTimestamps,
-          config.windowMs,
-        );
+        const resetMs = this.calculateResetTime(validTimestamps, config.windowMs);
 
         return {
           allowed: false,
@@ -166,8 +154,7 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
             adaptiveLimit,
             systemLoad: this.systemLoad,
             userScore: this.getUserScore(key),
-            message:
-              'Adaptive rate limit exceeded - limit adjusted based on system load',
+            message: 'Adaptive rate limit exceeded - limit adjusted based on system load',
           },
         };
       }
@@ -187,10 +174,7 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
   /**
    * Calculate adaptive limit based on system load and user behavior
    */
-  private calculateAdaptiveLimit(
-    key: string,
-    config: IRateLimitConfig,
-  ): number {
+  private calculateAdaptiveLimit(key: string, config: IRateLimitConfig): number {
     const baseLimit = config.limit;
     const targetUtilization = config.options?.targetUtilization || 0.7;
     const adjustmentFactor = config.options?.adjustmentFactor || 0.3;
@@ -209,10 +193,7 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
     // Apply safety bounds
     const minLimit = config.options?.minLimit || Math.floor(baseLimit * 0.3);
     const maxLimit = config.options?.maxLimit || Math.floor(baseLimit * 2.0);
-    adaptiveLimit = Math.max(
-      minLimit,
-      Math.min(maxLimit, Math.floor(adaptiveLimit)),
-    );
+    adaptiveLimit = Math.max(minLimit, Math.min(maxLimit, Math.floor(adaptiveLimit)));
 
     return adaptiveLimit;
   }
@@ -301,9 +282,7 @@ export class AdaptiveStrategy implements IRateLimitStrategy {
    */
   private startMetricsUpdater(): void {
     setInterval(() => {
-      this.updateSystemMetrics().catch((err) =>
-        this.logger.error('Metrics update failed', err),
-      );
+      this.updateSystemMetrics().catch(err => this.logger.error('Metrics update failed', err));
     }, this.METRICS_CACHE_MS);
   }
 

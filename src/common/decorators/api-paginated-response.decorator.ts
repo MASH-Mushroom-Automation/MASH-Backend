@@ -27,9 +27,7 @@ export class PaginatedDto<T> {
  * @ApiPaginatedResponse(UserDto)
  * findAll() {}
  */
-export const ApiPaginatedResponse = <TModel extends Type<any>>(
-  model: TModel,
-) => {
+export const ApiPaginatedResponse = <TModel extends Type<any>>(model: TModel) => {
   return applyDecorators(
     ApiExtraModels(PaginatedDto, model),
     ApiOkResponse({

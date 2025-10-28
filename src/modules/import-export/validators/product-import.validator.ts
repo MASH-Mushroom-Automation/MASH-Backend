@@ -202,8 +202,7 @@ export class ProductImportValidator extends BaseImportValidator {
           }
           return true;
         },
-        message:
-          'Compare price should be greater than or equal to regular price',
+        message: 'Compare price should be greater than or equal to regular price',
         severity: ErrorSeverity.WARNING,
       },
 
@@ -238,9 +237,7 @@ export class ProductImportValidator extends BaseImportValidator {
       try {
         transformed.images = JSON.parse(transformed.images);
       } catch {
-        this.logger.warn(
-          `Failed to parse images JSON for product: ${transformed.name}`,
-        );
+        this.logger.warn(`Failed to parse images JSON for product: ${transformed.name}`);
       }
     }
 
@@ -248,9 +245,7 @@ export class ProductImportValidator extends BaseImportValidator {
       try {
         transformed.categories = JSON.parse(transformed.categories);
       } catch {
-        this.logger.warn(
-          `Failed to parse categories JSON for product: ${transformed.name}`,
-        );
+        this.logger.warn(`Failed to parse categories JSON for product: ${transformed.name}`);
       }
     }
 
@@ -258,9 +253,7 @@ export class ProductImportValidator extends BaseImportValidator {
       try {
         transformed.tags = JSON.parse(transformed.tags);
       } catch {
-        this.logger.warn(
-          `Failed to parse tags JSON for product: ${transformed.name}`,
-        );
+        this.logger.warn(`Failed to parse tags JSON for product: ${transformed.name}`);
       }
     }
 
@@ -268,9 +261,7 @@ export class ProductImportValidator extends BaseImportValidator {
       try {
         transformed.attributes = JSON.parse(transformed.attributes);
       } catch {
-        this.logger.warn(
-          `Failed to parse attributes JSON for product: ${transformed.name}`,
-        );
+        this.logger.warn(`Failed to parse attributes JSON for product: ${transformed.name}`);
       }
     }
 
@@ -278,23 +269,19 @@ export class ProductImportValidator extends BaseImportValidator {
       try {
         transformed.dimensions = JSON.parse(transformed.dimensions);
       } catch {
-        this.logger.warn(
-          `Failed to parse dimensions JSON for product: ${transformed.name}`,
-        );
+        this.logger.warn(`Failed to parse dimensions JSON for product: ${transformed.name}`);
       }
     }
 
     // Convert boolean strings
     if (typeof transformed.isActive === 'string') {
       transformed.isActive =
-        transformed.isActive.toLowerCase() === 'true' ||
-        transformed.isActive === '1';
+        transformed.isActive.toLowerCase() === 'true' || transformed.isActive === '1';
     }
 
     if (typeof transformed.isFeatured === 'string') {
       transformed.isFeatured =
-        transformed.isFeatured.toLowerCase() === 'true' ||
-        transformed.isFeatured === '1';
+        transformed.isFeatured.toLowerCase() === 'true' || transformed.isFeatured === '1';
     }
 
     // Convert numbers
@@ -328,9 +315,7 @@ export class ProductImportValidator extends BaseImportValidator {
   /**
    * Transform for database (prepare for Prisma)
    */
-  async transformForDatabase(
-    data: Record<string, any>,
-  ): Promise<Record<string, any>> {
+  async transformForDatabase(data: Record<string, any>): Promise<Record<string, any>> {
     const transformed = { ...data };
 
     // Set defaults
@@ -346,10 +331,7 @@ export class ProductImportValidator extends BaseImportValidator {
       transformed.isActive = true;
     }
 
-    if (
-      transformed.isFeatured === undefined ||
-      transformed.isFeatured === null
-    ) {
+    if (transformed.isFeatured === undefined || transformed.isFeatured === null) {
       transformed.isFeatured = false;
     }
 

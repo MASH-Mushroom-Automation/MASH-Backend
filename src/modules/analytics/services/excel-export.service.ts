@@ -42,9 +42,7 @@ export class ExcelExportService {
       const headers = columns || Object.keys(data[0]);
 
       // Add header row with styling
-      const headerRow = worksheet.addRow(
-        headers.map((col) => this.formatColumnName(col)),
-      );
+      const headerRow = worksheet.addRow(headers.map(col => this.formatColumnName(col)));
       headerRow.font = { bold: true, size: 12 };
       headerRow.fill = {
         type: 'pattern',
@@ -55,8 +53,8 @@ export class ExcelExportService {
       headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
       // Add data rows
-      data.forEach((row) => {
-        const values = headers.map((col) => {
+      data.forEach(row => {
+        const values = headers.map(col => {
           const value = row[col];
 
           // Format dates
@@ -78,7 +76,7 @@ export class ExcelExportService {
       worksheet.columns.forEach((column, index) => {
         if (!column) return;
         let maxLength = 0;
-        column?.eachCell?.({ includeEmpty: false }, (cell) => {
+        column?.eachCell?.({ includeEmpty: false }, cell => {
           const cellValue = cell.value?.toString() || '';
           maxLength = Math.max(maxLength, cellValue.length);
         });
@@ -87,7 +85,7 @@ export class ExcelExportService {
 
       // Add borders to all cells
       worksheet.eachRow((row, rowNumber) => {
-        row.eachCell((cell) => {
+        row.eachCell(cell => {
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -146,9 +144,7 @@ export class ExcelExportService {
         const headers = sheet.columns || Object.keys(sheet.data[0] || {});
 
         // Add header
-        const headerRow = worksheet.addRow(
-          headers.map((col) => this.formatColumnName(col)),
-        );
+        const headerRow = worksheet.addRow(headers.map(col => this.formatColumnName(col)));
         headerRow.font = { bold: true };
         headerRow.fill = {
           type: 'pattern',
@@ -157,16 +153,16 @@ export class ExcelExportService {
         };
 
         // Add data
-        sheet.data.forEach((row) => {
-          const values = headers.map((col) => row[col]);
+        sheet.data.forEach(row => {
+          const values = headers.map(col => row[col]);
           worksheet.addRow(values);
         });
 
         // Auto-fit columns
-        worksheet.columns.forEach((column) => {
+        worksheet.columns.forEach(column => {
           if (!column) return;
           let maxLength = 0;
-          column?.eachCell?.({ includeEmpty: false }, (cell) => {
+          column?.eachCell?.({ includeEmpty: false }, cell => {
             const cellValue = cell.value?.toString() || '';
             maxLength = Math.max(maxLength, cellValue.length);
           });
@@ -203,7 +199,7 @@ export class ExcelExportService {
   private formatColumnName(columnName: string): string {
     return columnName
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase())
+      .replace(/^./, str => str.toUpperCase())
       .trim();
   }
 

@@ -296,9 +296,7 @@ export class PrometheusService implements OnModuleInit {
     responseSize?: number,
   ) {
     this.httpRequestsTotal.labels(method, route, statusCode.toString()).inc();
-    this.httpRequestDuration
-      .labels(method, route, statusCode.toString())
-      .observe(duration / 1000); // Convert ms to seconds
+    this.httpRequestDuration.labels(method, route, statusCode.toString()).observe(duration / 1000); // Convert ms to seconds
 
     if (responseSize) {
       this.httpResponseSize.labels(method, route).observe(responseSize);
@@ -339,14 +337,8 @@ export class PrometheusService implements OnModuleInit {
     this.cacheMissesTotal.labels(cacheKeyPrefix).inc();
   }
 
-  recordCacheOperation(
-    operation: string,
-    cacheKeyPrefix: string,
-    duration: number,
-  ) {
-    this.cacheOperationDuration
-      .labels(operation, cacheKeyPrefix)
-      .observe(duration / 1000);
+  recordCacheOperation(operation: string, cacheKeyPrefix: string, duration: number) {
+    this.cacheOperationDuration.labels(operation, cacheKeyPrefix).observe(duration / 1000);
   }
 
   updateCacheStats(keyCount: number, memoryUsage: number, hitRate: number) {
@@ -358,14 +350,8 @@ export class PrometheusService implements OnModuleInit {
   /**
    * Record rate limiting metrics
    */
-  recordRateLimitViolation(
-    userRole: string,
-    endpointCategory: string,
-    source: string,
-  ) {
-    this.rateLimitViolationsTotal
-      .labels(userRole, endpointCategory, source)
-      .inc();
+  recordRateLimitViolation(userRole: string, endpointCategory: string, source: string) {
+    this.rateLimitViolationsTotal.labels(userRole, endpointCategory, source).inc();
   }
 
   updateBackoffCount(count: number) {

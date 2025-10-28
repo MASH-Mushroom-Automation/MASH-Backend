@@ -26,9 +26,7 @@ describe('SearchController (Integration)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
     await app.init();
     server = app.getHttpServer();
   });
@@ -39,9 +37,7 @@ describe('SearchController (Integration)', () => {
 
   describe('GET /api/v1/search/test-connection', () => {
     it('should test Elasticsearch connection successfully', async () => {
-      const response = await request(server)
-        .get('/api/v1/search/test-connection')
-        .expect(200);
+      const response = await request(server).get('/api/v1/search/test-connection').expect(200);
 
       expect(response.body).toEqual(
         expect.objectContaining({
@@ -425,19 +421,14 @@ describe('SearchController (Integration)', () => {
     });
 
     it('should validate limit parameter', async () => {
-      await request(server)
-        .get('/api/v1/search/similar/some-id')
-        .query({ limit: 200 })
-        .expect(400);
+      await request(server).get('/api/v1/search/similar/some-id').query({ limit: 200 }).expect(400);
     });
   });
 
   describe('Analytics Endpoints', () => {
     describe('GET /api/v1/search/analytics', () => {
       it('should return analytics overview', async () => {
-        const response = await request(server)
-          .get('/api/v1/search/analytics')
-          .expect(200);
+        const response = await request(server).get('/api/v1/search/analytics').expect(200);
 
         expect(response.body).toEqual(
           expect.objectContaining({
@@ -572,7 +563,7 @@ describe('SearchController (Integration)', () => {
 
       const results = await Promise.all(promises);
 
-      results.forEach((response) => {
+      results.forEach(response => {
         expect(response.status).toBe(201);
         expect(response.body).toHaveProperty('hits');
       });
@@ -596,8 +587,7 @@ describe('SearchController (Integration)', () => {
         responseTimes.push(Date.now() - start);
       }
 
-      const avgResponseTime =
-        responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
 
       // Average response time should be reasonable
       expect(avgResponseTime).toBeLessThan(500); // 500ms threshold

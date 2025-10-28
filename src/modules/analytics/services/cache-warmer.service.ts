@@ -28,10 +28,7 @@ export class CacheWarmerService {
     private readonly configService: ConfigService,
   ) {
     this.enabled =
-      this.configService.get<string>(
-        'ANALYTICS_CACHE_WARMER_ENABLED',
-        'true',
-      ) === 'true';
+      this.configService.get<string>('ANALYTICS_CACHE_WARMER_ENABLED', 'true') === 'true';
   }
 
   /**
@@ -61,7 +58,7 @@ export class CacheWarmerService {
 
       // Warm dashboard statistics
       await Promise.allSettled(
-        dateRanges.map(async (range) => {
+        dateRanges.map(async range => {
           try {
             await this.analyticsService.getDashboardStats({
               startDate: range.startDate,
@@ -69,17 +66,14 @@ export class CacheWarmerService {
             });
             this.logger.debug(`Warmed dashboard stats for: ${range.name}`);
           } catch (error) {
-            this.logger.error(
-              `Failed to warm dashboard stats for ${range.name}:`,
-              error.message,
-            );
+            this.logger.error(`Failed to warm dashboard stats for ${range.name}:`, error.message);
           }
         }),
       );
 
       // Warm sales analytics
       await Promise.allSettled(
-        dateRanges.map(async (range) => {
+        dateRanges.map(async range => {
           try {
             await this.analyticsService.getSalesAnalytics({
               startDate: range.startDate,
@@ -87,10 +81,7 @@ export class CacheWarmerService {
             });
             this.logger.debug(`Warmed sales analytics for: ${range.name}`);
           } catch (error) {
-            this.logger.error(
-              `Failed to warm sales analytics for ${range.name}:`,
-              error.message,
-            );
+            this.logger.error(`Failed to warm sales analytics for ${range.name}:`, error.message);
           }
         }),
       );
@@ -140,8 +131,7 @@ export class CacheWarmerService {
    * Get cache hit rate statistics
    */
   getCacheHitRate(): { hits: number; total: number; rate: number } {
-    const rate =
-      this.totalRequests > 0 ? (this.cacheHits / this.totalRequests) * 100 : 0;
+    const rate = this.totalRequests > 0 ? (this.cacheHits / this.totalRequests) * 100 : 0;
     return {
       hits: this.cacheHits,
       total: this.totalRequests,

@@ -90,7 +90,7 @@ export class CacheManagerService implements OnModuleInit {
     // Warm cache on startup (async, don't block startup)
     // Use setTimeout to defer execution until after module initialization completes
     setTimeout(() => {
-      void this.warmCache().catch((error) => {
+      void this.warmCache().catch(error => {
         this.logger.error('Failed to warm cache on startup', error);
       });
     }, 1000); // Wait 1 second after module init
@@ -122,7 +122,7 @@ export class CacheManagerService implements OnModuleInit {
       // 1. Warm system configuration (critical for app startup)
       if (warmConfig.systemConfig) {
         warmingTasks.push(
-          this.warmSystemConfig().catch((err) =>
+          this.warmSystemConfig().catch(err =>
             this.logger.warn('Failed to warm system config', err),
           ),
         );
@@ -131,16 +131,14 @@ export class CacheManagerService implements OnModuleInit {
       // 2. Warm categories (frequently accessed in navigation)
       if (warmConfig.categories) {
         warmingTasks.push(
-          this.warmCategories().catch((err) =>
-            this.logger.warn('Failed to warm categories', err),
-          ),
+          this.warmCategories().catch(err => this.logger.warn('Failed to warm categories', err)),
         );
       }
 
       // 3. Warm featured products (homepage)
       if (warmConfig.featuredProducts) {
         warmingTasks.push(
-          this.warmFeaturedProducts().catch((err) =>
+          this.warmFeaturedProducts().catch(err =>
             this.logger.warn('Failed to warm featured products', err),
           ),
         );
@@ -149,16 +147,14 @@ export class CacheManagerService implements OnModuleInit {
       // 4. Warm top products (analytics)
       if (warmConfig.topProducts) {
         warmingTasks.push(
-          this.warmTopProducts().catch((err) =>
-            this.logger.warn('Failed to warm top products', err),
-          ),
+          this.warmTopProducts().catch(err => this.logger.warn('Failed to warm top products', err)),
         );
       }
 
       // 5. Warm dashboard stats (admin panel)
       if (warmConfig.dashboardStats) {
         warmingTasks.push(
-          this.warmDashboardStats().catch((err) =>
+          this.warmDashboardStats().catch(err =>
             this.logger.warn('Failed to warm dashboard stats', err),
           ),
         );
@@ -168,9 +164,7 @@ export class CacheManagerService implements OnModuleInit {
       await Promise.all(warmingTasks);
 
       const duration = Date.now() - startTime;
-      this.logger.log(
-        `✅ Cache warming completed successfully in ${duration}ms`,
-      );
+      this.logger.log(`✅ Cache warming completed successfully in ${duration}ms`);
     } catch (error) {
       this.logger.error('Cache warming failed', error);
       this.trackError('Cache warming failed');
@@ -243,9 +237,7 @@ export class CacheManagerService implements OnModuleInit {
         ['products', 'products:list'],
       );
 
-      this.logger.debug(
-        `✅ Warmed featured products (${products.length} items)`,
-      );
+      this.logger.debug(`✅ Warmed featured products (${products.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm featured products', error);
       // Non-fatal: products can load on-demand
@@ -312,9 +304,7 @@ export class CacheManagerService implements OnModuleInit {
         ['analytics', 'analytics:products'],
       );
 
-      this.logger.debug(
-        `✅ Warmed top products analytics (${topProducts.length} items)`,
-      );
+      this.logger.debug(`✅ Warmed top products analytics (${topProducts.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm top products', error);
       // Non-fatal: analytics can load on-demand
@@ -326,17 +316,16 @@ export class CacheManagerService implements OnModuleInit {
    */
   private async warmDashboardStats(): Promise<void> {
     try {
-      const [totalOrders, totalRevenue, totalUsers, deviceStats] =
-        await Promise.all([
-          this.prisma.order.count(),
-          this.prisma.order.aggregate({
-            _sum: { total: true },
-          }),
-          this.prisma.user.count(),
-          this.prisma.device.aggregate({
-            _count: true,
-          }),
-        ]);
+      const [totalOrders, totalRevenue, totalUsers, deviceStats] = await Promise.all([
+        this.prisma.order.count(),
+        this.prisma.order.aggregate({
+          _sum: { total: true },
+        }),
+        this.prisma.user.count(),
+        this.prisma.device.aggregate({
+          _count: true,
+        }),
+      ]);
 
       const stats = {
         totalOrders,
@@ -521,13 +510,9 @@ export class CacheManagerService implements OnModuleInit {
       const health = await this.getCacheHealth();
 
       if (health.status === 'unhealthy') {
-        this.logger.error(
-          `🚨 Cache health is UNHEALTHY: ${health.alerts.join(', ')}`,
-        );
+        this.logger.error(`🚨 Cache health is UNHEALTHY: ${health.alerts.join(', ')}`);
       } else if (health.status === 'degraded') {
-        this.logger.warn(
-          `⚠️  Cache health is DEGRADED: ${health.alerts.join(', ')}`,
-        );
+        this.logger.warn(`⚠️  Cache health is DEGRADED: ${health.alerts.join(', ')}`);
       } else {
         this.logger.debug(
           `✅ Cache health is HEALTHY (hit rate: ${health.hitRate.toFixed(2)}%, avg response: ${health.averageResponseTime.toFixed(2)}ms)`,

@@ -41,7 +41,7 @@ export class TracingService {
     operation: (span: Span) => Promise<T>,
     attributes?: Record<string, string | number | boolean>,
   ): Promise<T> {
-    return this.tracer.startActiveSpan(operationName, async (span) => {
+    return this.tracer.startActiveSpan(operationName, async span => {
       try {
         // Add custom attributes
         if (attributes) {
@@ -137,10 +137,7 @@ export class TracingService {
    * @param name - Event name
    * @param attributes - Event attributes
    */
-  addEvent(
-    name: string,
-    attributes?: Record<string, string | number | boolean>,
-  ): void {
+  addEvent(name: string, attributes?: Record<string, string | number | boolean>): void {
     const span = trace.getActiveSpan();
     if (span) {
       span.addEvent(name, attributes);

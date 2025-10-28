@@ -2,10 +2,7 @@ import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { RedisService } from '../../../database/redis.service';
 import { PrometheusService } from '../../../monitoring/prometheus/prometheus.service';
-import {
-  IGatewayRoute,
-  IRouteMatch,
-} from '../interfaces/gateway-route.interface';
+import { IGatewayRoute, IRouteMatch } from '../interfaces/gateway-route.interface';
 import { LoadBalancingStrategy } from '@prisma/client';
 
 /**
@@ -50,27 +47,20 @@ export class GatewayService {
       });
 
       // Map to interface type
-      const routes: IGatewayRoute[] = dbRoutes.map((route) => ({
+      const routes: IGatewayRoute[] = dbRoutes.map(route => ({
         ...route,
         metadata: route.metadata as Record<string, any> | undefined,
         healthCheckUrl: route.healthCheckUrl ?? undefined,
       }));
 
       // Cache the routes
-      await this.redis.set(
-        this.ROUTES_CACHE_KEY,
-        JSON.stringify(routes),
-        this.ROUTES_CACHE_TTL,
-      );
+      await this.redis.set(this.ROUTES_CACHE_KEY, JSON.stringify(routes), this.ROUTES_CACHE_TTL);
 
       this.logger.log(`Loaded ${routes.length} active routes from database`);
       return routes;
     } catch (error) {
       this.logger.error('Failed to get routes', error.stack);
-      throw new HttpException(
-        'Failed to load gateway routes',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('Failed to load gateway routes', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -90,9 +80,7 @@ export class GatewayService {
       if (match) {
         const queryParams = this.parseQueryString(queryString);
 
-        this.logger.debug(
-          `Route matched: ${method} ${path} -> ${route.serviceName}`,
-        );
+        this.logger.debug(`Route matched: ${method} ${path} -> ${route.serviceName}`);
 
         // Record route usage metric
         this.prometheus.apiEndpointRequests.inc({
@@ -117,10 +105,7 @@ export class GatewayService {
    * Test if a route matches the given path
    * Extracts path parameters if match found
    */
-  private testRoute(
-    route: IGatewayRoute,
-    path: string,
-  ): { params: Record<string, string> } | null {
+  private testRoute(route: IGatewayRoute, path: string): { params: Record<string, string> } | null {
     const routePattern = route.basePath;
 
     // Simple exact match
@@ -158,9 +143,7 @@ export class GatewayService {
   /**
    * Parse query string into object
    */
-  private parseQueryString(
-    queryString?: string,
-  ): Record<string, string | string[]> {
+  private parseQueryString(queryString?: string): Record<string, string | string[]> {
     if (!queryString) {
       return {};
     }
@@ -204,22 +187,20 @@ export class GatewayService {
    */
   async getStatistics() {
     const routes = await this.getRoutes();
-    const activeServices = routes.map((r) => r.serviceName);
+    const activeServices = routes.map(r => r.serviceName);
 
     return {
       totalRoutes: routes.length,
       activeServices: [...new Set(activeServices)].length,
       loadBalancingStrategies: this.getStrategyDistribution(routes),
-      circuitBreakerEnabled: routes.filter((r) => r.circuitBreaker).length,
+      circuitBreakerEnabled: routes.filter(r => r.circuitBreaker).length,
     };
   }
 
   /**
    * Get distribution of load balancing strategies
    */
-  private getStrategyDistribution(
-    routes: IGatewayRoute[],
-  ): Record<string, number> {
+  private getStrategyDistribution(routes: IGatewayRoute[]): Record<string, number> {
     const distribution: Record<string, number> = {};
 
     for (const route of routes) {
@@ -246,9 +227,7 @@ export class GatewayService {
     const queryString = Object.entries(queryParams)
       .map(([key, value]) => {
         if (Array.isArray(value)) {
-          return value
-            .map((v) => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`)
-            .join('&');
+          return value.map(v => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join('&');
         }
         return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
       })

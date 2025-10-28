@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClerkClient } from '@clerk/backend';
 import type { ClerkClient } from '@clerk/backend';
@@ -37,9 +32,7 @@ export class ClerkService {
     }
 
     if (!webhookSecret || webhookSecret.includes('disabled')) {
-      this.logger.warn(
-        '⚠️ Clerk webhook secret not configured - Webhooks will not work',
-      );
+      this.logger.warn('⚠️ Clerk webhook secret not configured - Webhooks will not work');
       this.webhookSecret = '';
     } else {
       this.webhookSecret = webhookSecret;
@@ -59,9 +52,7 @@ export class ClerkService {
    */
   getClient(): ClerkClient {
     if (!this.clerkClient) {
-      throw new Error(
-        'Clerk client is not initialized - check your configuration',
-      );
+      throw new Error('Clerk client is not initialized - check your configuration');
     }
     return this.clerkClient;
   }
@@ -69,10 +60,7 @@ export class ClerkService {
   /**
    * Verify Clerk webhook signature using Svix
    */
-  verifyWebhook(
-    payload: string,
-    headers: Record<string, string>,
-  ): Promise<any> {
+  verifyWebhook(payload: string, headers: Record<string, string>): Promise<any> {
     if (!this.webhookSecret) {
       this.logger.error('❌ Webhook secret not configured');
       throw new UnauthorizedException('Webhook verification not configured');
@@ -178,10 +166,7 @@ export class ClerkService {
    */
   async verifySessionToken(sessionToken: string) {
     try {
-      const session = await this.clerkClient.sessions.verifySession(
-        sessionToken,
-        sessionToken,
-      );
+      const session = await this.clerkClient.sessions.verifySession(sessionToken, sessionToken);
       return session;
     } catch (error) {
       this.logger.error('Session verification failed:', error);
@@ -279,8 +264,7 @@ export class ClerkService {
 
       // Handle Clerk-specific errors with detailed messages
       if (error.clerkError && error.errors && error.errors.length > 0) {
-        const clerkErrorMessage =
-          error.errors[0].longMessage || error.errors[0].message;
+        const clerkErrorMessage = error.errors[0].longMessage || error.errors[0].message;
         throw new BadRequestException(clerkErrorMessage);
       }
 
@@ -303,7 +287,7 @@ export class ClerkService {
 
       // Find the email address that needs verification
       const emailAddress = user.emailAddresses.find(
-        (e) => e.emailAddress.toLowerCase() === email.toLowerCase(),
+        e => e.emailAddress.toLowerCase() === email.toLowerCase(),
       );
 
       if (!emailAddress) {
@@ -333,16 +317,11 @@ export class ClerkService {
         alreadyVerified: false,
       };
     } catch (error) {
-      this.logger.error(
-        `Error checking verification status for ${email}:`,
-        error,
-      );
+      this.logger.error(`Error checking verification status for ${email}:`, error);
 
       // Don't fail the registration just because we can't verify email status
       // Clerk should have sent the email automatically during user creation
-      this.logger.log(
-        `Assuming Clerk sent verification email during user creation: ${email}`,
-      );
+      this.logger.log(`Assuming Clerk sent verification email during user creation: ${email}`);
       return {
         success: true,
         message: 'Verification email sent. Please check your inbox.',
@@ -362,20 +341,15 @@ export class ClerkService {
       }
 
       // Find the email address to verify
-      const emailAddress = user.emailAddresses.find(
-        (e) => e.emailAddress === email,
-      );
+      const emailAddress = user.emailAddresses.find(e => e.emailAddress === email);
       if (!emailAddress) {
         throw new BadRequestException('Email address not found');
       }
 
       // Attempt verification
-      await this.clerkClient.emailAddresses.updateEmailAddress(
-        emailAddress.id,
-        {
-          verified: true,
-        },
-      );
+      await this.clerkClient.emailAddresses.updateEmailAddress(emailAddress.id, {
+        verified: true,
+      });
 
       this.logger.log(`✅ Verified email: ${email}`);
       return {
@@ -402,9 +376,7 @@ export class ClerkService {
       const user = await this.getUserByEmail(email);
       if (!user) {
         // Don't reveal if user exists for security
-        this.logger.log(
-          `Password reset requested for non-existent email: ${email}`,
-        );
+        this.logger.log(`Password reset requested for non-existent email: ${email}`);
         return {
           success: true,
           message: 'If the email exists, a password reset link has been sent',
@@ -420,10 +392,7 @@ export class ClerkService {
         email,
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to initiate password reset for ${email}:`,
-        error,
-      );
+      this.logger.error(`Failed to initiate password reset for ${email}:`, error);
       throw new BadRequestException('Failed to initiate password reset');
     }
   }
@@ -431,11 +400,7 @@ export class ClerkService {
   /**
    * Reset password with code
    */
-  async resetPasswordWithCode(
-    email: string,
-    code: string,
-    newPassword: string,
-  ) {
+  async resetPasswordWithCode(email: string, code: string, newPassword: string) {
     try {
       const user = await this.getUserByEmail(email);
       if (!user) {
@@ -461,10 +426,7 @@ export class ClerkService {
   /**
    * Get OAuth authorization URL for Google
    */
-  getOAuthUrl(
-    provider: 'google' | 'github' | 'facebook',
-    redirectUrl?: string,
-  ) {
+  getOAuthUrl(provider: 'google' | 'github' | 'facebook', redirectUrl?: string) {
     const baseUrl = this.configService.get<string>('clerk.frontendUrl');
     const callbackUrl = redirectUrl || `${baseUrl}/auth/callback`;
 

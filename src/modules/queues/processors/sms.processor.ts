@@ -33,9 +33,7 @@ export class SmsProcessor {
         this.isConfigured = false;
       }
     } else {
-      this.logger.warn(
-        '⚠️ Twilio not configured. SMS notifications will be simulated.',
-      );
+      this.logger.warn('⚠️ Twilio not configured. SMS notifications will be simulated.');
     }
   }
 
@@ -54,7 +52,7 @@ export class SmsProcessor {
         this.logger.log(`📱 [SIMULATION] SMS to ${to}: ${body}`);
 
         // Simulate delivery delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         await this.prisma.notification.update({
           where: { id: notification.id },
@@ -135,9 +133,7 @@ export class SmsProcessor {
           },
         });
       } catch (dbError) {
-        this.logger.error(
-          `Failed to update notification status: ${dbError.message}`,
-        );
+        this.logger.error(`Failed to update notification status: ${dbError.message}`);
       }
 
       throw error; // Bull will retry

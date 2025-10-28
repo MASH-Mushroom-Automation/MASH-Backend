@@ -1,10 +1,4 @@
-import {
-  Processor,
-  Process,
-  OnQueueActive,
-  OnQueueCompleted,
-  OnQueueFailed,
-} from '@nestjs/bull';
+import { Processor, Process, OnQueueActive, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { PrismaService } from '../../../database/prisma.service';
@@ -71,19 +65,11 @@ export class ExportProcessor {
       });
 
       // Transform records for export
-      const transformedRecords = this.transformRecordsForExport(
-        records,
-        entityType,
-      );
+      const transformedRecords = this.transformRecordsForExport(records, entityType);
 
       // Generate file using appropriate parser
       const parser = this.fileParserFactory.getParser(fileFormat);
-      const fileBuffer = await this.generateFile(
-        parser,
-        transformedRecords,
-        options,
-        fileFormat,
-      );
+      const fileBuffer = await this.generateFile(parser, transformedRecords, options, fileFormat);
 
       // Generate file name
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -128,14 +114,9 @@ export class ExportProcessor {
       // Clean up progress tracking in Redis
       await this.redis.delete(`export:progress:${jobId}`);
 
-      this.logger.log(
-        `Export job ${jobId} completed successfully. Generated file: ${fileName}`,
-      );
+      this.logger.log(`Export job ${jobId} completed successfully. Generated file: ${fileName}`);
     } catch (error) {
-      this.logger.error(
-        `Export job ${jobId} failed: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Export job ${jobId} failed: ${error.message}`, error.stack);
 
       // Update job as failed
       await this.prisma.importExportJob.update({
@@ -162,10 +143,7 @@ export class ExportProcessor {
   /**
    * Fetch records from database based on entity type and filters
    */
-  private async fetchRecords(
-    entityType: string,
-    filters: Record<string, any>,
-  ): Promise<any[]> {
+  private async fetchRecords(entityType: string, filters: Record<string, any>): Promise<any[]> {
     const where = this.buildWhereClause(filters);
 
     switch (entityType) {
@@ -240,11 +218,11 @@ export class ExportProcessor {
    * Transform records for export (flatten nested objects, format dates, etc.)
    */
   private transformRecordsForExport(records: any[], entityType: string): any[] {
-    return records.map((record) => {
+    return records.map(record => {
       const transformed: any = { ...record };
 
       // Format dates to ISO string
-      Object.keys(transformed).forEach((key) => {
+      Object.keys(transformed).forEach(key => {
         if (transformed[key] instanceof Date) {
           transformed[key] = transformed[key].toISOString();
         }
@@ -343,8 +321,7 @@ export class ExportProcessor {
     }
 
     if (filters.isFeatured !== undefined) {
-      where.isFeatured =
-        filters.isFeatured === 'true' || filters.isFeatured === true;
+      where.isFeatured = filters.isFeatured === 'true' || filters.isFeatured === true;
     }
 
     // Date range filters
@@ -400,7 +377,7 @@ export class ExportProcessor {
       'categoryId',
       'role',
     ];
-    Object.keys(filters).forEach((key) => {
+    Object.keys(filters).forEach(key => {
       if (!excludeKeys.includes(key) && filters[key] !== undefined) {
         where[key] = filters[key];
       }
@@ -457,9 +434,6 @@ export class ExportProcessor {
 
   @OnQueueFailed()
   onError(job: Job, error: Error) {
-    this.logger.error(
-      `Failed job ${job.id} of type ${job.name}: ${error.message}`,
-      error.stack,
-    );
+    this.logger.error(`Failed job ${job.id} of type ${job.name}: ${error.message}`, error.stack);
   }
 }

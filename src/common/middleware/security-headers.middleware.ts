@@ -68,10 +68,7 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     // Cache-Control for sensitive endpoints
     // Prevents caching of sensitive data (auth, user data, etc.)
     if (this.isSensitiveEndpoint(req.path)) {
-      res.setHeader(
-        'Cache-Control',
-        'no-store, no-cache, must-revalidate, proxy-revalidate',
-      );
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
@@ -79,10 +76,7 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     // Clear-Site-Data for logout endpoints
     // Clears browser storage when user logs out
     if (req.path.includes('/logout') || req.path.includes('/signout')) {
-      res.setHeader(
-        'Clear-Site-Data',
-        '"cache", "cookies", "storage", "executionContexts"',
-      );
+      res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
     }
 
     // Server header obfuscation
@@ -110,9 +104,7 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
       '/api/v1/sessions',
     ];
 
-    return sensitivePaths.some((sensitivePath) =>
-      path.startsWith(sensitivePath),
-    );
+    return sensitivePaths.some(sensitivePath => path.startsWith(sensitivePath));
   }
 }
 

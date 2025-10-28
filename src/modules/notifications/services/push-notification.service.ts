@@ -58,20 +58,14 @@ export class PushNotificationService {
       this.vapidKeys = { publicKey, privateKey };
       this.logger.log('VAPID keys configured for web push notifications');
     } else {
-      this.logger.warn(
-        'VAPID keys not configured - web push notifications disabled',
-      );
+      this.logger.warn('VAPID keys not configured - web push notifications disabled');
     }
   }
 
   /**
    * Register a push subscription for a user
    */
-  async registerSubscription(
-    userId: string,
-    subscription: PushSubscription,
-    deviceId?: string,
-  ) {
+  async registerSubscription(userId: string, subscription: PushSubscription, deviceId?: string) {
     try {
       // Check if subscription already exists
       const existing = await this.prisma.pushSubscription.findFirst({
@@ -109,9 +103,7 @@ export class PushNotificationService {
 
       return { success: true };
     } catch (error) {
-      this.logger.error(
-        `Failed to register push subscription: ${error.message}`,
-      );
+      this.logger.error(`Failed to register push subscription: ${error.message}`);
       throw error;
     }
   }
@@ -130,9 +122,7 @@ export class PushNotificationService {
       this.logger.log(`Unregistered push subscription for user ${userId}`);
       return { success: true };
     } catch (error) {
-      this.logger.error(
-        `Failed to unregister push subscription: ${error.message}`,
-      );
+      this.logger.error(`Failed to unregister push subscription: ${error.message}`);
       throw error;
     }
   }
@@ -158,11 +148,11 @@ export class PushNotificationService {
       }
 
       const results = await Promise.allSettled(
-        subscriptions.map((sub) => this.sendToSubscription(sub, payload)),
+        subscriptions.map(sub => this.sendToSubscription(sub, payload)),
       );
 
-      const successful = results.filter((r) => r.status === 'fulfilled').length;
-      const failed = results.filter((r) => r.status === 'rejected').length;
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
 
       this.logger.log(
         `Push notification sent to user ${userId}: ${successful} successful, ${failed} failed`,
@@ -175,9 +165,7 @@ export class PushNotificationService {
         total: subscriptions.length,
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to send push notification to user: ${error.message}`,
-      );
+      this.logger.error(`Failed to send push notification to user: ${error.message}`);
       throw error;
     }
   }
@@ -185,15 +173,10 @@ export class PushNotificationService {
   /**
    * Send push notification to specific subscription
    */
-  private async sendToSubscription(
-    subscription: any,
-    payload: PushNotificationPayload,
-  ) {
+  private async sendToSubscription(subscription: any, payload: PushNotificationPayload) {
     // TODO: Implement actual web push sending using web-push library
     // For now, just log the attempt
-    this.logger.log(
-      `Sending push notification to ${subscription.endpoint}: ${payload.title}`,
-    );
+    this.logger.log(`Sending push notification to ${subscription.endpoint}: ${payload.title}`);
 
     // Mock successful send
     return { success: true, endpoint: subscription.endpoint };
@@ -254,26 +237,16 @@ export class PushNotificationService {
       const currentPrefs = user?.preferences || {};
       const updatedPrefs = {
         ...currentPrefs,
-        pushEnabled:
-          preferences.pushEnabled ?? currentPrefs.pushEnabled ?? true,
+        pushEnabled: preferences.pushEnabled ?? currentPrefs.pushEnabled ?? true,
         notifications: {
           ...currentPrefs.notifications,
           deviceOffline:
-            preferences.deviceOffline ??
-            currentPrefs.notifications?.deviceOffline ??
-            true,
+            preferences.deviceOffline ?? currentPrefs.notifications?.deviceOffline ?? true,
           healthWarnings:
-            preferences.healthWarnings ??
-            currentPrefs.notifications?.healthWarnings ??
-            true,
+            preferences.healthWarnings ?? currentPrefs.notifications?.healthWarnings ?? true,
           systemAlerts:
-            preferences.systemAlerts ??
-            currentPrefs.notifications?.systemAlerts ??
-            true,
-          marketing:
-            preferences.marketing ??
-            currentPrefs.notifications?.marketing ??
-            false,
+            preferences.systemAlerts ?? currentPrefs.notifications?.systemAlerts ?? true,
+          marketing: preferences.marketing ?? currentPrefs.notifications?.marketing ?? false,
         },
         quietHours: preferences.quietHours ?? currentPrefs.quietHours ?? null,
       };
@@ -294,11 +267,7 @@ export class PushNotificationService {
   /**
    * Check if notification should be sent based on user preferences and quiet hours
    */
-  shouldSendNotification(
-    userId: string,
-    notificationType: string,
-    preferences?: any,
-  ): boolean {
+  shouldSendNotification(userId: string, notificationType: string, preferences?: any): boolean {
     if (!preferences) {
       return true; // Send by default if no preferences
     }

@@ -34,9 +34,7 @@ export class SessionService {
       // this.logger.log(`✅ Created session for user: ${data.userId}`);
       // return session;
 
-      this.logger.log(
-        `⚠️ Session creation pending - need to run Phase 2 migration first`,
-      );
+      this.logger.log(`⚠️ Session creation pending - need to run Phase 2 migration first`);
       return {
         id: 'temp-session-id',
         userId: data.userId,
@@ -65,9 +63,7 @@ export class SessionService {
       //   },
       // });
 
-      this.logger.log(
-        `⚠️ Session lookup pending - need to run Phase 2 migration first`,
-      );
+      this.logger.log(`⚠️ Session lookup pending - need to run Phase 2 migration first`);
       return [];
     } catch (error) {
       this.logger.error(`Failed to get sessions for user ${userId}:`, error);
@@ -154,10 +150,7 @@ export class SessionService {
       // });
       return true;
     } catch (error) {
-      this.logger.error(
-        `Failed to update session activity ${sessionId}:`,
-        error,
-      );
+      this.logger.error(`Failed to update session activity ${sessionId}:`, error);
       return false;
     }
   }

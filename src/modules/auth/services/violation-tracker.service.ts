@@ -188,9 +188,7 @@ export class ViolationTrackerService {
 
     // Use backoff schedule or max for high counts
     const scheduleKey = Math.min(count, 4);
-    return this.BACKOFF_SCHEDULE[
-      scheduleKey as keyof typeof this.BACKOFF_SCHEDULE
-    ];
+    return this.BACKOFF_SCHEDULE[scheduleKey as keyof typeof this.BACKOFF_SCHEDULE];
   }
 
   /**

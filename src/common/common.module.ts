@@ -11,11 +11,7 @@ import {
 } from './filters';
 
 // Interceptors
-import {
-  TransformInterceptor,
-  LoggingInterceptor,
-  TimeoutInterceptor,
-} from './interceptors';
+import { TransformInterceptor, LoggingInterceptor, TimeoutInterceptor } from './interceptors';
 import { FieldSelectionInterceptor } from './interceptors/field-selection.interceptor';
 
 // Pipes

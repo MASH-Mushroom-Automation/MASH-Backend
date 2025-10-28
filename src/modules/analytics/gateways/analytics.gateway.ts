@@ -17,9 +17,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
     credentials: true,
   },
 })
-export class AnalyticsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class AnalyticsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -64,9 +62,7 @@ export class AnalyticsGateway
     this.metricsInterval = setInterval(() => {
       // Prevent overlapping runs
       if (isRunning) {
-        this.logger.warn(
-          'Skipping metrics emission - previous cycle still running',
-        );
+        this.logger.warn('Skipping metrics emission - previous cycle still running');
         return;
       }
 

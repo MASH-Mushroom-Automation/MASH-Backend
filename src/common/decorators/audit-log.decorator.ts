@@ -86,5 +86,4 @@ export interface AuditLogOptions {
  * Audit Log Decorator
  * Marks a method for automatic audit logging
  */
-export const AuditLog = (options: AuditLogOptions) =>
-  SetMetadata(AUDIT_LOG_METADATA, options);
+export const AuditLog = (options: AuditLogOptions) => SetMetadata(AUDIT_LOG_METADATA, options);

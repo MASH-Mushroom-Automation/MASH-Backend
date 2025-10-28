@@ -91,9 +91,7 @@ export interface FieldSelectionConfig {
  * })
  * ```
  */
-export const SelectableFields = (
-  config: string[] | FieldSelectionConfig = {},
-): MethodDecorator => {
+export const SelectableFields = (config: string[] | FieldSelectionConfig = {}): MethodDecorator => {
   // Normalize config to FieldSelectionConfig
   const normalizedConfig: FieldSelectionConfig = Array.isArray(config)
     ? { allowedFields: config }

@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../../../database/redis.service';
-import {
-  QuotaInfo,
-  QuotaPeriod,
-  getRoleQuota,
-} from '../interfaces/quota.interface';
+import { QuotaInfo, QuotaPeriod, getRoleQuota } from '../interfaces/quota.interface';
 
 /**
  * QuotaService - Daily/Monthly Usage Tracking
@@ -48,11 +44,7 @@ export class QuotaService {
    * @param cost - Request cost (default: 1)
    * @returns true if quota available, false if exceeded
    */
-  async checkQuota(
-    userId: string,
-    role: string,
-    cost: number = 1,
-  ): Promise<boolean> {
+  async checkQuota(userId: string, role: string, cost: number = 1): Promise<boolean> {
     const config = getRoleQuota(role);
 
     // Check daily quota
@@ -65,11 +57,7 @@ export class QuotaService {
     }
 
     // Check monthly quota
-    const monthlyOk = await this.checkMonthlyQuota(
-      userId,
-      config.monthlyLimit,
-      cost,
-    );
+    const monthlyOk = await this.checkMonthlyQuota(userId, config.monthlyLimit, cost);
     if (!monthlyOk) {
       this.logger.warn(
         `Monthly quota exceeded for user ${userId} (${role}): ${config.monthlyLimit} req/month`,
@@ -126,11 +114,7 @@ export class QuotaService {
   /**
    * Check daily quota
    */
-  private async checkDailyQuota(
-    userId: string,
-    limit: number,
-    cost: number,
-  ): Promise<boolean> {
+  private async checkDailyQuota(userId: string, limit: number, cost: number): Promise<boolean> {
     const key = this.getDailyKey(userId);
     const current = await this.incrementQuota(key, cost);
 
@@ -144,11 +128,7 @@ export class QuotaService {
   /**
    * Check monthly quota
    */
-  private async checkMonthlyQuota(
-    userId: string,
-    limit: number,
-    cost: number,
-  ): Promise<boolean> {
+  private async checkMonthlyQuota(userId: string, limit: number, cost: number): Promise<boolean> {
     const key = this.getMonthlyKey(userId);
     const current = await this.incrementQuota(key, cost);
 

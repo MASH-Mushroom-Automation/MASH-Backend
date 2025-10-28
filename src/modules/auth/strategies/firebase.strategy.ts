@@ -12,21 +12,11 @@ export class FirebaseStrategy extends PassportStrategy(Strategy, 'firebase') {
 
     // Initialize Firebase Admin SDK only when credentials are present and valid
     if (!admin.apps.length) {
-      const projectId = String(
-        this.configService.get('FIREBASE_PROJECT_ID') || '',
-      );
-      const clientEmail = String(
-        this.configService.get('FIREBASE_CLIENT_EMAIL') || '',
-      );
-      const rawPrivateKey = String(
-        this.configService.get('FIREBASE_PRIVATE_KEY') || '',
-      );
+      const projectId = String(this.configService.get('FIREBASE_PROJECT_ID') || '');
+      const clientEmail = String(this.configService.get('FIREBASE_CLIENT_EMAIL') || '');
+      const rawPrivateKey = String(this.configService.get('FIREBASE_PRIVATE_KEY') || '');
 
-      if (
-        projectId.length > 0 &&
-        clientEmail.length > 0 &&
-        rawPrivateKey.length > 0
-      ) {
+      if (projectId.length > 0 && clientEmail.length > 0 && rawPrivateKey.length > 0) {
         const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
 
         try {
@@ -48,9 +38,7 @@ export class FirebaseStrategy extends PassportStrategy(Strategy, 'firebase') {
           );
         }
       } else {
-        console.warn(
-          '⚠️ Firebase credentials not provided - Firebase authentication disabled',
-        );
+        console.warn('⚠️ Firebase credentials not provided - Firebase authentication disabled');
       }
     }
   }

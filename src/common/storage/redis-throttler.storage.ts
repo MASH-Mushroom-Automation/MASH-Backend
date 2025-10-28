@@ -48,10 +48,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
   private readonly keyPrefix = 'throttle:';
 
   // Fallback in-memory storage if Redis unavailable
-  private readonly inMemoryStorage = new Map<
-    string,
-    { totalHits: number; expiresAt: number }
-  >();
+  private readonly inMemoryStorage = new Map<string, { totalHits: number; expiresAt: number }>();
 
   constructor(private readonly redisService: RedisService) {
     if (!redisService.isAvailable()) {
@@ -92,10 +89,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
       try {
         return await this.incrementRedis(redisKey, ttl);
       } catch (error) {
-        this.logger.error(
-          'Redis increment failed, falling back to memory:',
-          error,
-        );
+        this.logger.error('Redis increment failed, falling back to memory:', error);
         // Fallback to in-memory
       }
     }

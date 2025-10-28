@@ -4,11 +4,7 @@
  * Provides functions for transforming data between formats
  */
 
-import {
-  ClassConstructor,
-  plainToClass,
-  classToPlain,
-} from 'class-transformer';
+import { ClassConstructor, plainToClass, classToPlain } from 'class-transformer';
 
 /**
  * Transform plain object to DTO class instance
@@ -29,7 +25,7 @@ export function toDto<T, V>(cls: ClassConstructor<T>, plain: V): T {
  * @returns Array of DTO instances
  */
 export function toDtoArray<T, V>(cls: ClassConstructor<T>, plain: V[]): T[] {
-  return plain.map((item) => toDto(cls, item));
+  return plain.map(item => toDto(cls, item));
 }
 
 /**
@@ -55,7 +51,7 @@ export function exclude<T extends Record<string, any>, K extends keyof T>(
 ): Omit<T, K> {
   const result = { ...obj };
 
-  keys.forEach((key) => {
+  keys.forEach(key => {
     delete result[key];
   });
 
@@ -75,7 +71,7 @@ export function pick<T extends Record<string, any>, K extends keyof T>(
 ): Pick<T, K> {
   const result: any = {};
 
-  keys.forEach((key) => {
+  keys.forEach(key => {
     if (key in obj) {
       result[key] = obj[key];
     }
@@ -91,7 +87,7 @@ export function pick<T extends Record<string, any>, K extends keyof T>(
  * @returns snake_case string
  */
 export function camelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
 }
 
 /**
@@ -118,14 +114,10 @@ export function keysToCamel<T extends Record<string, any>>(obj: T): any {
       const camelKey = snakeToCamel(key);
       const value = obj[key];
 
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         result[camelKey] = keysToCamel(value);
       } else if (Array.isArray(value)) {
-        result[camelKey] = value.map((item) =>
+        result[camelKey] = value.map(item =>
           typeof item === 'object' && item !== null ? keysToCamel(item) : item,
         );
       } else {
@@ -151,14 +143,10 @@ export function keysToSnake<T extends Record<string, any>>(obj: T): any {
       const snakeKey = camelToSnake(key);
       const value = obj[key];
 
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         result[snakeKey] = keysToSnake(value);
       } else if (Array.isArray(value)) {
-        result[snakeKey] = value.map((item) =>
+        result[snakeKey] = value.map(item =>
           typeof item === 'object' && item !== null ? keysToSnake(item) : item,
         );
       } else {
@@ -187,10 +175,7 @@ export function deepClone<T>(obj: T): T {
  * @param source - Source object
  * @returns Merged object
  */
-export function deepMerge<T extends Record<string, any>>(
-  target: T,
-  source: Partial<T>,
-): T {
+export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
   const result = { ...target };
 
   for (const key in source) {

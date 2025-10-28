@@ -1,14 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  IsUrl,
-  IsInt,
-  IsBoolean,
-  IsEnum,
-  IsOptional,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsString, IsUrl, IsInt, IsBoolean, IsEnum, IsOptional, Min, Max } from 'class-validator';
 import { LoadBalancingStrategy } from '@prisma/client';
 
 export class CreateGatewayConfigDto {

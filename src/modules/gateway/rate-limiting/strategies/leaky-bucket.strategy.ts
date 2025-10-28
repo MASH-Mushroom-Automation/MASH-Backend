@@ -47,10 +47,7 @@ export class LeakyBucketStrategy implements IRateLimitStrategy {
     return 'LEAKY_BUCKET';
   }
 
-  async checkLimit(
-    key: string,
-    config: IRateLimitConfig,
-  ): Promise<IRateLimitResult> {
+  async checkLimit(key: string, config: IRateLimitConfig): Promise<IRateLimitResult> {
     const storeKey = `${this.KEY_PREFIX}${key}`;
     const now = Date.now();
 
@@ -72,9 +69,7 @@ export class LeakyBucketStrategy implements IRateLimitStrategy {
     }
 
     // Calculate leak rate (requests per millisecond)
-    const leakRate =
-      (config.options?.leakRate || config.limit / (config.windowMs / 1000)) /
-      1000;
+    const leakRate = (config.options?.leakRate || config.limit / (config.windowMs / 1000)) / 1000;
     const elapsedMs = now - state.lastLeakMs;
     const leaked = Math.floor(elapsedMs * leakRate);
 
@@ -91,9 +86,7 @@ export class LeakyBucketStrategy implements IRateLimitStrategy {
     }
 
     // Calculate time until bucket has space
-    const timeUntilSpaceMs = allowed
-      ? 0
-      : (state.queueSize - config.limit + 1) / leakRate;
+    const timeUntilSpaceMs = allowed ? 0 : (state.queueSize - config.limit + 1) / leakRate;
 
     // Save state
     await this.redis.set(storeKey, JSON.stringify(state), config.windowMs * 2);

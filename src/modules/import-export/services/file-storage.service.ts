@@ -25,10 +25,7 @@ export class FileStorageService {
   constructor(private configService: ConfigService) {
     // For now, use local filesystem storage
     // In production, this should be replaced with S3/MinIO
-    this.uploadDir = this.configService.get(
-      'UPLOAD_DIR',
-      './uploads/import-export',
-    );
+    this.uploadDir = this.configService.get('UPLOAD_DIR', './uploads/import-export');
     this.baseUrl = this.configService.get('BASE_URL', 'http://localhost:3000');
 
     // Ensure upload directory exists
@@ -59,10 +56,7 @@ export class FileStorageService {
   ): Promise<{ url: string; key: string }> {
     try {
       const timestamp = Date.now();
-      const sanitizedFilename = file.originalname.replace(
-        /[^a-zA-Z0-9.-]/g,
-        '_',
-      );
+      const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
       const key = `${folder}/${timestamp}-${sanitizedFilename}`;
       const filePath = path.join(this.uploadDir, key);
 

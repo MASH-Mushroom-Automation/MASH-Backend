@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNumber,
-  IsNotEmpty,
-  IsDateString,
-  IsOptional,
-} from 'class-validator';
+import { IsNumber, IsNotEmpty, IsDateString, IsOptional } from 'class-validator';
 import { IsNotFutureDate } from '../../../common/validators';
 
 export class IngestSensorDataDto {

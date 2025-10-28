@@ -23,13 +23,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiConsumes,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ImportService } from '../services/import.service';
 import { StartImportDto } from '../dto/import-export.dto';
@@ -138,8 +132,7 @@ export class ImportController {
   @Get('jobs/:jobId')
   @ApiOperation({
     summary: 'Get job details',
-    description:
-      'Retrieve detailed information about an import job including status and errors',
+    description: 'Retrieve detailed information about an import job including status and errors',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -195,8 +188,7 @@ export class ImportController {
   @Get('jobs')
   @ApiOperation({
     summary: 'List import jobs',
-    description:
-      'Retrieve a paginated list of import jobs with optional filters',
+    description: 'Retrieve a paginated list of import jobs with optional filters',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -264,10 +256,7 @@ export class ImportController {
     status: HttpStatus.NOT_FOUND,
     description: 'Job not found',
   })
-  async cancelJob(
-    @Param('jobId', ParseUUIDPipe) jobId: string,
-    @Req() req: any,
-  ) {
+  async cancelJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
     const userId = req.user?.id || 'system';
     return this.importService.cancelJob(jobId, userId);
   }
@@ -292,10 +281,7 @@ export class ImportController {
     status: HttpStatus.NOT_FOUND,
     description: 'Job not found',
   })
-  async retryJob(
-    @Param('jobId', ParseUUIDPipe) jobId: string,
-    @Req() req: any,
-  ) {
+  async retryJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
     const userId = req.user?.id || 'system';
     return this.importService.retryJob(jobId, userId);
   }
@@ -335,10 +321,7 @@ export class ImportController {
 
     if (format === 'json') {
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename=errors-${jobId}.json`,
-      );
+      res.setHeader('Content-Disposition', `attachment; filename=errors-${jobId}.json`);
       res.send(JSON.stringify(job.errors, null, 2));
     } else {
       // CSV format
@@ -354,7 +337,7 @@ export class ImportController {
       ];
       const csvRows = [
         headers.join(','),
-        ...job.errors.map((error) =>
+        ...job.errors.map(error =>
           [
             error.row,
             error.column || '',
@@ -369,10 +352,7 @@ export class ImportController {
       ];
 
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename=errors-${jobId}.csv`,
-      );
+      res.setHeader('Content-Disposition', `attachment; filename=errors-${jobId}.csv`);
       res.send(csvRows.join('\n'));
     }
   }

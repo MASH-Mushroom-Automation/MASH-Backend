@@ -22,7 +22,7 @@ export class ProductIndexerService implements OnModuleInit {
   // eslint-disable-next-line @typescript-eslint/require-await
   async onModuleInit() {
     // Create product index with mapping on startup (non-blocking)
-    this.createIndexIfNotExists().catch((error) => {
+    this.createIndexIfNotExists().catch(error => {
       this.logger.error('Failed to initialize product index:', error);
     });
   }
@@ -36,9 +36,7 @@ export class ProductIndexerService implements OnModuleInit {
 
       // Skip if Elasticsearch is not configured
       if (!client) {
-        this.logger.warn(
-          '⚠️ Elasticsearch not configured - product indexing disabled',
-        );
+        this.logger.warn('⚠️ Elasticsearch not configured - product indexing disabled');
         return;
       }
 
@@ -54,8 +52,7 @@ export class ProductIndexerService implements OnModuleInit {
         this.logger.log(`✅ Index ${this.indexName} already exists`);
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.warn(
         `⚠️ Failed to create index ${this.indexName}: ${errorMessage} (Search functionality will be limited)`,
       );
@@ -82,11 +79,7 @@ export class ProductIndexerService implements OnModuleInit {
       const document = this.transformProduct(product);
 
       // Index the document
-      await this.elasticsearch.indexDocument(
-        this.indexName,
-        productId,
-        document,
-      );
+      await this.elasticsearch.indexDocument(this.indexName, productId, document);
 
       this.logger.debug(`✅ Indexed product: ${product.name}`);
     } catch (error) {
@@ -110,7 +103,7 @@ export class ProductIndexerService implements OnModuleInit {
       });
 
       // Transform products to Elasticsearch documents
-      const documents = products.map((product) => ({
+      const documents = products.map(product => ({
         id: product.id,
         data: this.transformProduct(product),
       }));
@@ -128,23 +121,13 @@ export class ProductIndexerService implements OnModuleInit {
   /**
    * Update a product in the index
    */
-  async updateProduct(
-    productId: string,
-    updates: Record<string, any>,
-  ): Promise<void> {
+  async updateProduct(productId: string, updates: Record<string, any>): Promise<void> {
     try {
-      await this.elasticsearch.updateDocument(
-        this.indexName,
-        productId,
-        updates,
-      );
+      await this.elasticsearch.updateDocument(this.indexName, productId, updates);
 
       this.logger.debug(`✅ Updated product: ${productId}`);
     } catch (error) {
-      this.logger.error(
-        `Failed to update product ${productId}:`,
-        error.message,
-      );
+      this.logger.error(`Failed to update product ${productId}:`, error.message);
       throw error;
     }
   }
@@ -158,10 +141,7 @@ export class ProductIndexerService implements OnModuleInit {
 
       this.logger.debug(`✅ Deleted product from index: ${productId}`);
     } catch (error) {
-      this.logger.error(
-        `Failed to delete product ${productId}:`,
-        error.message,
-      );
+      this.logger.error(`Failed to delete product ${productId}:`, error.message);
       throw error;
     }
   }
@@ -189,7 +169,7 @@ export class ProductIndexerService implements OnModuleInit {
         });
 
         // Transform and bulk index
-        const documents = products.map((product) => ({
+        const documents = products.map(product => ({
           id: product.id,
           data: this.transformProduct(product),
         }));
@@ -197,9 +177,7 @@ export class ProductIndexerService implements OnModuleInit {
         await this.elasticsearch.bulkIndex(this.indexName, documents);
 
         processedCount += products.length;
-        this.logger.log(
-          `Progress: ${processedCount}/${totalProducts} products indexed`,
-        );
+        this.logger.log(`Progress: ${processedCount}/${totalProducts} products indexed`);
       }
 
       this.logger.log(`✅ Reindexing completed: ${totalProducts} products`);
@@ -214,9 +192,7 @@ export class ProductIndexerService implements OnModuleInit {
    */
   private transformProduct(product: any): Record<string, any> {
     // Parse categories from JSON field
-    const categories = Array.isArray(product.categories)
-      ? product.categories
-      : [];
+    const categories = Array.isArray(product.categories) ? product.categories : [];
 
     const primaryCategory = categories[0] || 'Uncategorized';
 

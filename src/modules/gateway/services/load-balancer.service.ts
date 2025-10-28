@@ -31,12 +31,10 @@ export class LoadBalancerService {
     clientIp?: string,
   ): Promise<string | null> {
     const instances = this.serviceInstances.get(serviceName) || [];
-    const healthyInstances = instances.filter((i) => i.healthy);
+    const healthyInstances = instances.filter(i => i.healthy);
 
     if (healthyInstances.length === 0) {
-      this.logger.warn(
-        `No healthy instances available for service: ${serviceName}`,
-      );
+      this.logger.warn(`No healthy instances available for service: ${serviceName}`);
       return null;
     }
 
@@ -64,10 +62,7 @@ export class LoadBalancerService {
   /**
    * Round Robin: Simple circular distribution
    */
-  private roundRobin(
-    serviceName: string,
-    instances: IServiceInstance[],
-  ): string {
+  private roundRobin(serviceName: string, instances: IServiceInstance[]): string {
     const currentIndex = this.roundRobinIndexes.get(serviceName) || 0;
     const instance = instances[currentIndex % instances.length];
 
@@ -90,10 +85,7 @@ export class LoadBalancerService {
   /**
    * Weighted Round Robin: Distribution based on instance weights
    */
-  private weightedRoundRobin(
-    serviceName: string,
-    instances: IServiceInstance[],
-  ): string {
+  private weightedRoundRobin(serviceName: string, instances: IServiceInstance[]): string {
     // Calculate total weight
     const totalWeight = instances.reduce((sum, i) => sum + (i.weight || 1), 0);
 
@@ -119,10 +111,7 @@ export class LoadBalancerService {
   /**
    * IP Hash: Consistent hashing for sticky sessions
    */
-  private ipHash(
-    clientIp: string | undefined,
-    instances: IServiceInstance[],
-  ): string {
+  private ipHash(clientIp: string | undefined, instances: IServiceInstance[]): string {
     if (!clientIp) {
       // Fallback to round robin if no IP
       return instances[0].url;
@@ -142,9 +131,7 @@ export class LoadBalancerService {
    */
   private healthBased(instances: IServiceInstance[]): string {
     // Sort by response time (fastest first)
-    const sorted = [...instances].sort(
-      (a, b) => a.responseTime - b.responseTime,
-    );
+    const sorted = [...instances].sort((a, b) => a.responseTime - b.responseTime);
     return sorted[0].url;
   }
 
@@ -154,7 +141,7 @@ export class LoadBalancerService {
   registerInstance(serviceName: string, url: string, weight?: number): void {
     const instances = this.serviceInstances.get(serviceName) || [];
 
-    const existingIndex = instances.findIndex((i) => i.url === url);
+    const existingIndex = instances.findIndex(i => i.url === url);
 
     if (existingIndex >= 0) {
       // Update existing instance
@@ -187,7 +174,7 @@ export class LoadBalancerService {
     const instances = this.serviceInstances.get(serviceName);
     if (!instances) return;
 
-    const instance = instances.find((i) => i.url === url);
+    const instance = instances.find(i => i.url === url);
     if (instance) {
       instance.healthy = healthy;
       instance.lastChecked = new Date();
@@ -195,9 +182,7 @@ export class LoadBalancerService {
         instance.responseTime = responseTime;
       }
 
-      this.logger.debug(
-        `Instance ${url} health updated: ${healthy ? 'healthy' : 'unhealthy'}`,
-      );
+      this.logger.debug(`Instance ${url} health updated: ${healthy ? 'healthy' : 'unhealthy'}`);
     }
   }
 
@@ -208,7 +193,7 @@ export class LoadBalancerService {
     const instances = this.serviceInstances.get(serviceName);
     if (!instances) return;
 
-    const instance = instances.find((i) => i.url === url);
+    const instance = instances.find(i => i.url === url);
     if (instance) {
       instance.activeConnections++;
     }
@@ -221,7 +206,7 @@ export class LoadBalancerService {
     const instances = this.serviceInstances.get(serviceName);
     if (!instances) return;
 
-    const instance = instances.find((i) => i.url === url);
+    const instance = instances.find(i => i.url === url);
     if (instance && instance.activeConnections > 0) {
       instance.activeConnections--;
     }
@@ -243,12 +228,9 @@ export class LoadBalancerService {
       return {
         serviceName,
         totalInstances: instances.length,
-        healthyInstances: instances.filter((i) => i.healthy).length,
-        totalConnections: instances.reduce(
-          (sum, i) => sum + i.activeConnections,
-          0,
-        ),
-        instances: instances.map((i) => ({
+        healthyInstances: instances.filter(i => i.healthy).length,
+        totalConnections: instances.reduce((sum, i) => sum + i.activeConnections, 0),
+        instances: instances.map(i => ({
           url: i.url,
           healthy: i.healthy,
           connections: i.activeConnections,
@@ -258,17 +240,12 @@ export class LoadBalancerService {
     }
 
     // Statistics for all services
-    const allStats = Array.from(this.serviceInstances.entries()).map(
-      ([service, instances]) => ({
-        serviceName: service,
-        totalInstances: instances.length,
-        healthyInstances: instances.filter((i) => i.healthy).length,
-        totalConnections: instances.reduce(
-          (sum, i) => sum + i.activeConnections,
-          0,
-        ),
-      }),
-    );
+    const allStats = Array.from(this.serviceInstances.entries()).map(([service, instances]) => ({
+      serviceName: service,
+      totalInstances: instances.length,
+      healthyInstances: instances.filter(i => i.healthy).length,
+      totalConnections: instances.reduce((sum, i) => sum + i.activeConnections, 0),
+    }));
 
     return {
       totalServices: this.serviceInstances.size,

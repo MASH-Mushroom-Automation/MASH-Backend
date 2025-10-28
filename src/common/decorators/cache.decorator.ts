@@ -114,9 +114,7 @@ export const Cacheable = (options: CacheableOptions = {}): MethodDecorator => {
  * }
  * ```
  */
-export const CacheEvict = (
-  options: CacheEvictOptions = {},
-): MethodDecorator => {
+export const CacheEvict = (options: CacheEvictOptions = {}): MethodDecorator => {
   return SetMetadata(CACHE_EVICT_KEY, {
     tags: options.tags || [],
     pattern: options.pattern,
@@ -166,7 +164,7 @@ export function generateCacheKey(
   if (options.includeArgs && args.length > 0) {
     // Simple serialization of arguments (stringify IDs, omit complex objects)
     const argsKey = args
-      .map((arg) => {
+      .map(arg => {
         if (typeof arg === 'string' || typeof arg === 'number') {
           return arg;
         }

@@ -211,9 +211,7 @@ export class CircuitBreakerService {
    */
   async reset(serviceName: string): Promise<void> {
     await this.transitionToClosed(serviceName);
-    this.logger.log(
-      `Circuit breaker manually reset for service: ${serviceName}`,
-    );
+    this.logger.log(`Circuit breaker manually reset for service: ${serviceName}`);
   }
 
   /**
@@ -233,14 +231,10 @@ export class CircuitBreakerService {
 
     return {
       total: states.length,
-      closed: states.filter((s) => s.state === CircuitBreakerStateEnum.CLOSED)
-        .length,
-      open: states.filter((s) => s.state === CircuitBreakerStateEnum.OPEN)
-        .length,
-      halfOpen: states.filter(
-        (s) => s.state === CircuitBreakerStateEnum.HALF_OPEN,
-      ).length,
-      states: states.map((s) => ({
+      closed: states.filter(s => s.state === CircuitBreakerStateEnum.CLOSED).length,
+      open: states.filter(s => s.state === CircuitBreakerStateEnum.OPEN).length,
+      halfOpen: states.filter(s => s.state === CircuitBreakerStateEnum.HALF_OPEN).length,
+      states: states.map(s => ({
         serviceName: s.serviceName,
         state: s.state,
         failureCount: s.failureCount,

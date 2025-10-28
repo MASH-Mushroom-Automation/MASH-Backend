@@ -268,9 +268,7 @@ export class AuthService {
         };
       }
     } catch {
-      this.logger.warn(
-        'Clerk auth not available or failed - falling back to local auth',
-      );
+      this.logger.warn('Clerk auth not available or failed - falling back to local auth');
     }
 
     // Development fallback: validate user exists and password length only
@@ -402,8 +400,7 @@ export class AuthService {
 
       // Generate DiceBear avatar URL based on username or email
       // Uses bottts-neutral style for consistent, professional avatars
-      const avatarSeed =
-        registerDto.username || registerDto.email.split('@')[0];
+      const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
       const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
       // Create user in local database with generated avatar
@@ -436,24 +433,18 @@ export class AuthService {
           verificationLink,
           '24 hours',
         );
-        this.logger.log(
-          `✅ MASH verification email sent successfully to: ${registerDto.email}`,
-        );
+        this.logger.log(`✅ MASH verification email sent successfully to: ${registerDto.email}`);
       } catch (emailError: any) {
         // Don't fail registration if custom email fails
         this.logger.error(
           `❌ CRITICAL: Failed to send MASH verification email to ${registerDto.email}`,
         );
-        this.logger.error(
-          `Error details: ${emailError?.message || 'Unknown error'}`,
-        );
+        this.logger.error(`Error details: ${emailError?.message || 'Unknown error'}`);
         if (
           emailError?.message?.includes('Missing credentials') ||
           emailError?.message?.includes('Invalid login')
         ) {
-          this.logger.error(
-            '🔧 FIX: Add EMAIL_* environment variables to Railway dashboard',
-          );
+          this.logger.error('🔧 FIX: Add EMAIL_* environment variables to Railway dashboard');
           this.logger.error(
             '📋 Required: EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM',
           );
@@ -582,10 +573,7 @@ export class AuthService {
   /**
    * Initiate OAuth flow
    */
-  async initiateOAuth(
-    provider: 'google' | 'github' | 'facebook',
-    redirectUrl?: string,
-  ) {
+  async initiateOAuth(provider: 'google' | 'github' | 'facebook', redirectUrl?: string) {
     try {
       const oauthData = this.clerkService.getOAuthUrl(provider, redirectUrl);
       return oauthData;

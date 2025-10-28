@@ -18,8 +18,7 @@ export class IsValidDeviceIdConstraint implements ValidatorConstraintInterface {
     // 2. MAC Address: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX
     // 3. Custom MASH format: MASH-DEV-XXXXX (alphanumeric)
 
-    const uuidV4Regex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const macAddressRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
     const mashDeviceIdRegex = /^MASH-DEV-[A-Z0-9]{5,10}$/i;
 

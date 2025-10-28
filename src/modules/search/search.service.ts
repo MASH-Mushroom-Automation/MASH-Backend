@@ -45,10 +45,7 @@ export class SearchService {
         nodes: health.number_of_nodes,
       };
     } catch (error) {
-      this.logger.error(
-        '❌ Elasticsearch connection test failed:',
-        error.message,
-      );
+      this.logger.error('❌ Elasticsearch connection test failed:', error.message);
       throw error;
     }
   }
@@ -65,9 +62,7 @@ export class SearchService {
     const { query, page = 1, limit = 20, includeFacets } = dto;
     const from = (page - 1) * limit;
 
-    this.logger.log(
-      `🔍 Searching products: "${query || 'all'}" (page ${page}, limit ${limit})`,
-    );
+    this.logger.log(`🔍 Searching products: "${query || 'all'}" (page ${page}, limit ${limit})`);
 
     // Generate cache key
     const cacheKey = `search:products:${this.generateCacheKey(dto)}`;
@@ -100,13 +95,9 @@ export class SearchService {
 
       const took = Date.now() - startTime;
       const total =
-        typeof result.hits.total === 'number'
-          ? result.hits.total
-          : result.hits.total.value;
+        typeof result.hits.total === 'number' ? result.hits.total : result.hits.total.value;
 
-      this.logger.log(
-        `✅ Search completed in ${took}ms (ES: ${result.took}ms) - ${total} results`,
-      );
+      this.logger.log(`✅ Search completed in ${took}ms (ES: ${result.took}ms) - ${total} results`);
 
       const response: SearchResult = {
         hits: result.hits.hits.map((hit: any) => ({
@@ -129,9 +120,7 @@ export class SearchService {
       // Cache the results (non-blocking)
       this.cacheService
         .set(cacheKey, response, this.CACHE_TTL)
-        .catch((error) =>
-          this.logger.error(`Failed to cache search results: ${error.message}`),
-        );
+        .catch(error => this.logger.error(`Failed to cache search results: ${error.message}`));
 
       // Log search analytics (non-blocking)
       this.analyticsService
@@ -145,9 +134,7 @@ export class SearchService {
           userId,
           ipAddress,
         })
-        .catch((error) =>
-          this.logger.error(`Failed to log search: ${error.message}`),
-        );
+        .catch(error => this.logger.error(`Failed to log search: ${error.message}`));
 
       return response;
     } catch (error) {
@@ -286,8 +273,7 @@ export class SearchService {
    * Build Elasticsearch query from DTO
    */
   private buildQuery(dto: SearchProductsDto): any {
-    const { query, minPrice, maxPrice, categories, minRating, inStock, tags } =
-      dto;
+    const { query, minPrice, maxPrice, categories, minRating, inStock, tags } = dto;
 
     const mustClauses: any[] = [];
     const filterClauses: any[] = [

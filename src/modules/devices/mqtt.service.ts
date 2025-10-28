@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as mqtt from 'mqtt';
 import { DevicesGateway } from './devices.gateway';
 
@@ -17,7 +12,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     // Connect in background - don't block startup
-    this.connect().catch((error) => {
+    this.connect().catch(error => {
       this.logger.error('Failed to initialize MQTT connection:', error);
     });
   }
@@ -34,9 +29,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
       // Skip MQTT connection if explicitly disabled
       if (process.env.MQTT_ENABLED === 'false') {
-        this.logger.warn(
-          '⚠️ MQTT is disabled. IoT device communication unavailable.',
-        );
+        this.logger.warn('⚠️ MQTT is disabled. IoT device communication unavailable.');
         return;
       }
 
@@ -65,13 +58,13 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           this.logger.log('📡 Connected to MQTT broker');
 
           // Subscribe to device topics
-          this.client.subscribe('devices/+/status', (err) => {
+          this.client.subscribe('devices/+/status', err => {
             if (err) {
               this.logger.error('Failed to subscribe to device status', err);
             }
           });
 
-          this.client.subscribe('devices/+/data', (err) => {
+          this.client.subscribe('devices/+/data', err => {
             if (err) {
               this.logger.error('Failed to subscribe to device data', err);
             }
@@ -80,12 +73,9 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           resolve();
         });
 
-        this.client.on('error', (error) => {
+        this.client.on('error', error => {
           clearTimeout(timeout);
-          this.logger.warn(
-            '⚠️ MQTT connection error (broker may not be running):',
-            error.message,
-          );
+          this.logger.warn('⚠️ MQTT connection error (broker may not be running):', error.message);
           this.connected = false;
           // Resolve instead of reject to allow server to start
           resolve();
@@ -101,10 +91,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         });
       });
     } catch (error) {
-      this.logger.warn(
-        '⚠️ MQTT broker not available. IoT features will be limited.',
-        error,
-      );
+      this.logger.warn('⚠️ MQTT broker not available. IoT features will be limited.', error);
       // Don't throw - allow server to start without MQTT
     }
   }
@@ -138,7 +125,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      this.client.publish(topic, JSON.stringify(message), (error) => {
+      this.client.publish(topic, JSON.stringify(message), error => {
         if (error) {
           this.logger.error(`Failed to publish to ${topic}:`, error);
           reject(error);
@@ -150,11 +137,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async sendCommand(
-    deviceId: string,
-    command: string,
-    parameters: any = {},
-  ): Promise<void> {
+  async sendCommand(deviceId: string, command: string, parameters: any = {}): Promise<void> {
     const topic = `devices/${deviceId}/command`;
     const payload = {
       command,
@@ -164,10 +147,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     return this.publish(topic, payload);
   }
 
-  async updateConfiguration(
-    deviceId: string,
-    configuration: any,
-  ): Promise<void> {
+  async updateConfiguration(deviceId: string, configuration: any): Promise<void> {
     const topic = `devices/${deviceId}/config`;
     const payload = {
       configuration,

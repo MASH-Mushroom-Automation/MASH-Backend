@@ -59,18 +59,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     // Log the error
-    this.logger.error(
-      `HTTP ${status} Error: ${errorResponse.message || exception.message}`,
-      {
-        correlationId,
-        path: request.url,
-        method: request.method,
-        statusCode: status,
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: exception.stack,
-        }),
-      },
-    );
+    this.logger.error(`HTTP ${status} Error: ${errorResponse.message || exception.message}`, {
+      correlationId,
+      path: request.url,
+      method: request.method,
+      statusCode: status,
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: exception.stack,
+      }),
+    });
 
     response.status(status).json(errorOutput);
   }

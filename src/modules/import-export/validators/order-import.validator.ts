@@ -204,10 +204,7 @@ export class OrderImportValidator extends BaseImportValidator {
           if (value === 'SHIPPED' && !record.shippedAt) {
             return false;
           }
-          if (
-            value === 'DELIVERED' &&
-            (!record.shippedAt || !record.deliveredAt)
-          ) {
+          if (value === 'DELIVERED' && (!record.shippedAt || !record.deliveredAt)) {
             return false;
           }
           if (value === 'CANCELLED' && !record.cancelledAt) {
@@ -215,8 +212,7 @@ export class OrderImportValidator extends BaseImportValidator {
           }
           return true;
         },
-        message:
-          'Status must have corresponding date field (e.g., SHIPPED requires shippedAt)',
+        message: 'Status must have corresponding date field (e.g., SHIPPED requires shippedAt)',
         severity: ErrorSeverity.WARNING,
       },
     ];
@@ -280,17 +276,11 @@ export class OrderImportValidator extends BaseImportValidator {
       transformed.shippedAt = new Date(transformed.shippedAt);
     }
 
-    if (
-      transformed.deliveredAt &&
-      typeof transformed.deliveredAt === 'string'
-    ) {
+    if (transformed.deliveredAt && typeof transformed.deliveredAt === 'string') {
       transformed.deliveredAt = new Date(transformed.deliveredAt);
     }
 
-    if (
-      transformed.cancelledAt &&
-      typeof transformed.cancelledAt === 'string'
-    ) {
+    if (transformed.cancelledAt && typeof transformed.cancelledAt === 'string') {
       transformed.cancelledAt = new Date(transformed.cancelledAt);
     }
 
@@ -300,9 +290,7 @@ export class OrderImportValidator extends BaseImportValidator {
   /**
    * Transform for database
    */
-  async transformForDatabase(
-    data: Record<string, any>,
-  ): Promise<Record<string, any>> {
+  async transformForDatabase(data: Record<string, any>): Promise<Record<string, any>> {
     const transformed = { ...data };
 
     // Set defaults

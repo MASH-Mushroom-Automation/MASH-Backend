@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
@@ -36,9 +32,7 @@ export class TwoFactorService {
 
     // Check if 2FA is already enabled
     if (user.twoFactorEnabled) {
-      throw new BadRequestException(
-        'Two-factor authentication is already enabled',
-      );
+      throw new BadRequestException('Two-factor authentication is already enabled');
     }
 
     // Generate TOTP secret
@@ -63,8 +57,7 @@ export class TwoFactorService {
       qrCodeUrl,
       secret: secret.base32,
       otpauthUrl: secret.otpauth_url,
-      message:
-        'Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)',
+      message: 'Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)',
     };
   }
 
@@ -91,9 +84,7 @@ export class TwoFactorService {
     }
 
     if (user.twoFactorEnabled) {
-      throw new BadRequestException(
-        'Two-factor authentication is already enabled',
-      );
+      throw new BadRequestException('Two-factor authentication is already enabled');
     }
 
     // Verify TOTP code
@@ -105,9 +96,7 @@ export class TwoFactorService {
     });
 
     if (!verified) {
-      throw new BadRequestException(
-        'Invalid verification code. Please try again.',
-      );
+      throw new BadRequestException('Invalid verification code. Please try again.');
     }
 
     // Generate 10 backup codes

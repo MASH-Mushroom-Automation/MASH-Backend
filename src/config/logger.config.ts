@@ -23,15 +23,7 @@ const logDir = process.env.LOG_DIR || 'logs';
 
 // Custom log format
 const customFormat = winston.format.printf(
-  ({
-    timestamp,
-    level,
-    message,
-    context,
-    trace,
-    correlationId,
-    ...metadata
-  }) => {
+  ({ timestamp, level, message, context, trace, correlationId, ...metadata }) => {
     let msg = `${timestamp} [${level}] [${context || 'Application'}]`;
 
     if (correlationId) {
@@ -160,9 +152,4 @@ export const loggerConfig = {
 /**
  * Export individual transports for testing
  */
-export {
-  consoleTransport,
-  fileTransport,
-  errorFileTransport,
-  combinedFileTransport,
-};
+export { consoleTransport, fileTransport, errorFileTransport, combinedFileTransport };

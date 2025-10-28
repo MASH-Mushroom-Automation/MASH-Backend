@@ -66,8 +66,7 @@ export class ComparisonService {
 
     // Calculate comparison metrics
     const change = currentData.total - previousData.total;
-    const percentChange =
-      previousData.total === 0 ? 0 : (change / previousData.total) * 100;
+    const percentChange = previousData.total === 0 ? 0 : (change / previousData.total) * 100;
 
     const result = {
       current: {
@@ -87,12 +86,7 @@ export class ComparisonService {
       comparison: {
         change: Math.round(change * 100) / 100,
         percentChange: Math.round(percentChange * 100) / 100,
-        trend:
-          percentChange > 5
-            ? 'increasing'
-            : percentChange < -5
-              ? 'decreasing'
-              : 'stable',
+        trend: percentChange > 5 ? 'increasing' : percentChange < -5 ? 'decreasing' : 'stable',
         improvement: change > 0,
       },
       metadata: {
@@ -136,7 +130,7 @@ export class ComparisonService {
     // Get orders for these users
     const orders = await this.prisma.order.findMany({
       where: {
-        userId: { in: users.map((u) => u.id) },
+        userId: { in: users.map(u => u.id) },
         status: OrderStatus.DELIVERED,
       },
       select: {
@@ -157,16 +151,11 @@ export class ComparisonService {
       summary: {
         totalCohorts: analysis.length,
         avgRetention:
-          Math.round(
-            (analysis.reduce((sum, c) => sum + c.retention, 0) /
-              analysis.length) *
-              100,
-          ) / 100,
+          Math.round((analysis.reduce((sum, c) => sum + c.retention, 0) / analysis.length) * 100) /
+          100,
         avgLifetimeValue:
           Math.round(
-            (analysis.reduce((sum, c) => sum + c.lifetimeValue, 0) /
-              analysis.length) *
-              100,
+            (analysis.reduce((sum, c) => sum + c.lifetimeValue, 0) / analysis.length) * 100,
           ) / 100,
       },
       metadata: {
@@ -183,11 +172,7 @@ export class ComparisonService {
   /**
    * Compare product performance
    */
-  async compareProducts(
-    productIds: string[],
-    startDate: Date,
-    endDate: Date,
-  ): Promise<any> {
+  async compareProducts(productIds: string[], startDate: Date, endDate: Date): Promise<any> {
     const cacheKey = `${this.COMPARISON_CACHE_PREFIX}:products:${productIds.join(',')}:${startDate.toISOString()}`;
     const cached = await this.cacheService.get(cacheKey);
     if (cached) {
@@ -229,13 +214,10 @@ export class ComparisonService {
     });
 
     // Calculate metrics for each product
-    const comparisons = products.map((product) => {
-      const sales = orderItems.filter((item) => item.productId === product.id);
+    const comparisons = products.map(product => {
+      const sales = orderItems.filter(item => item.productId === product.id);
       const totalQuantity = sales.reduce((sum, s) => sum + s.quantity, 0);
-      const totalRevenue = sales.reduce(
-        (sum, s) => sum + Number(s.price) * s.quantity,
-        0,
-      );
+      const totalRevenue = sales.reduce((sum, s) => sum + Number(s.price) * s.quantity, 0);
       const avgOrderValue = sales.length > 0 ? totalRevenue / sales.length : 0;
 
       // Calculate daily sales trend
@@ -254,8 +236,7 @@ export class ComparisonService {
           orderCount: sales.length,
         },
         performance: {
-          dailyAverage:
-            Math.round((totalQuantity / dailySales.length) * 100) / 100,
+          dailyAverage: Math.round((totalQuantity / dailySales.length) * 100) / 100,
           trend: this.calculateProductTrend(dailySales),
         },
       };
@@ -275,9 +256,7 @@ export class ComparisonService {
         productsCompared: ranked.length,
         topPerformer: ranked[0]?.product.name,
         totalRevenue:
-          Math.round(
-            ranked.reduce((sum, p) => sum + p.metrics.totalRevenue, 0) * 100,
-          ) / 100,
+          Math.round(ranked.reduce((sum, p) => sum + p.metrics.totalRevenue, 0) * 100) / 100,
       },
       metadata: {
         period: { start: startDate, end: endDate },
@@ -328,17 +307,13 @@ export class ComparisonService {
     });
 
     // Calculate metrics for each category
-    const comparisons = categories.map((category) => {
-      const sales = orderItems.filter((item) => {
-        if (!item.product || !Array.isArray(item.product.categories))
-          return false;
+    const comparisons = categories.map(category => {
+      const sales = orderItems.filter(item => {
+        if (!item.product || !Array.isArray(item.product.categories)) return false;
         return (item.product.categories as any[]).includes(category.id);
       });
       const totalQuantity = sales.reduce((sum, s) => sum + s.quantity, 0);
-      const totalRevenue = sales.reduce(
-        (sum, s) => sum + Number(s.price) * s.quantity,
-        0,
-      );
+      const totalRevenue = sales.reduce((sum, s) => sum + Number(s.price) * s.quantity, 0);
 
       return {
         category: {
@@ -362,15 +337,11 @@ export class ComparisonService {
         marketShare: 0, // Will calculate below
       }));
 
-    const totalRevenue = ranked.reduce(
-      (sum, c) => sum + c.metrics.totalRevenue,
-      0,
-    );
-    ranked.forEach((category) => {
+    const totalRevenue = ranked.reduce((sum, c) => sum + c.metrics.totalRevenue, 0);
+    ranked.forEach(category => {
       category.marketShare =
         totalRevenue > 0
-          ? Math.round((category.metrics.totalRevenue / totalRevenue) * 10000) /
-            100
+          ? Math.round((category.metrics.totalRevenue / totalRevenue) * 10000) / 100
           : 0;
     });
 
@@ -406,17 +377,13 @@ export class ComparisonService {
     });
 
     const total = orders.reduce((sum, o) => sum + Number(o.total), 0);
-    const days = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
       total: Math.round(total * 100) / 100,
       average: Math.round((total / days) * 100) / 100,
       count: orders.length,
-      daily: this.aggregateByDay(
-        orders.map((o) => ({ date: o.createdAt, value: Number(o.total) })),
-      ),
+      daily: this.aggregateByDay(orders.map(o => ({ date: o.createdAt, value: Number(o.total) }))),
     };
   }
 
@@ -427,9 +394,7 @@ export class ComparisonService {
       },
     });
 
-    const days = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
       total: orders,
@@ -446,9 +411,7 @@ export class ComparisonService {
       },
     });
 
-    const days = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
       total: users,
@@ -471,9 +434,7 @@ export class ComparisonService {
     });
 
     const total = products.reduce((sum, p) => sum + (p._sum.quantity || 0), 0);
-    const days = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
       total: total,
@@ -483,14 +444,10 @@ export class ComparisonService {
     };
   }
 
-  private groupIntoCohorts(
-    users: any[],
-    orders: any[],
-    cohortType: 'weekly' | 'monthly',
-  ): any[] {
+  private groupIntoCohorts(users: any[], orders: any[], cohortType: 'weekly' | 'monthly'): any[] {
     const cohortMap = new Map<string, any>();
 
-    users.forEach((user) => {
+    users.forEach(user => {
       const cohortKey = this.getCohortKey(user.createdAt, cohortType);
 
       if (!cohortMap.has(cohortKey)) {
@@ -504,8 +461,8 @@ export class ComparisonService {
       cohortMap.get(cohortKey)!.users.push(user);
     });
 
-    orders.forEach((order) => {
-      const user = users.find((u) => u.id === order.userId);
+    orders.forEach(order => {
+      const user = users.find(u => u.id === order.userId);
       if (user) {
         const cohortKey = this.getCohortKey(user.createdAt, cohortType);
         if (cohortMap.has(cohortKey)) {
@@ -527,9 +484,7 @@ export class ComparisonService {
   }
 
   private getWeekNumber(date: Date): number {
-    const d = new Date(
-      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-    );
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -537,29 +492,20 @@ export class ComparisonService {
   }
 
   private analyzeCohortMetrics(cohorts: any[]): any[] {
-    return cohorts.map((cohort) => {
+    return cohorts.map(cohort => {
       const userCount = cohort.users.length;
       const orderCount = cohort.orders.length;
       const activeUsers = new Set(cohort.orders.map((o: any) => o.userId)).size;
-      const totalRevenue = cohort.orders.reduce(
-        (sum: number, o: any) => sum + Number(o.total),
-        0,
-      );
+      const totalRevenue = cohort.orders.reduce((sum: number, o: any) => sum + Number(o.total), 0);
 
       return {
         cohort: cohort.cohort,
         userCount: userCount,
         activeUsers: activeUsers,
-        retention:
-          userCount > 0
-            ? Math.round((activeUsers / userCount) * 10000) / 100
-            : 0,
+        retention: userCount > 0 ? Math.round((activeUsers / userCount) * 10000) / 100 : 0,
         orderCount: orderCount,
         totalRevenue: Math.round(totalRevenue * 100) / 100,
-        lifetimeValue:
-          userCount > 0
-            ? Math.round((totalRevenue / userCount) * 100) / 100
-            : 0,
+        lifetimeValue: userCount > 0 ? Math.round((totalRevenue / userCount) * 100) / 100 : 0,
       };
     });
   }
@@ -567,7 +513,7 @@ export class ComparisonService {
   private aggregateByDay(data: any[]): any[] {
     const dailyMap = new Map<string, number>();
 
-    data.forEach((item) => {
+    data.forEach(item => {
       const date = item.date.toISOString().split('T')[0];
       const current = dailyMap.get(date) || 0;
       dailyMap.set(date, current + item.value);
@@ -581,7 +527,7 @@ export class ComparisonService {
   private aggregateDailySales(sales: any[]): any[] {
     const dailyMap = new Map<string, number>();
 
-    sales.forEach((sale) => {
+    sales.forEach(sale => {
       const date = sale.order.createdAt.toISOString().split('T')[0];
       const current = dailyMap.get(date) || 0;
       dailyMap.set(date, current + sale.quantity);
@@ -598,10 +544,8 @@ export class ComparisonService {
     const firstHalf = dailySales.slice(0, Math.floor(dailySales.length / 2));
     const secondHalf = dailySales.slice(Math.floor(dailySales.length / 2));
 
-    const firstAvg =
-      firstHalf.reduce((sum, d) => sum + d.quantity, 0) / firstHalf.length;
-    const secondAvg =
-      secondHalf.reduce((sum, d) => sum + d.quantity, 0) / secondHalf.length;
+    const firstAvg = firstHalf.reduce((sum, d) => sum + d.quantity, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((sum, d) => sum + d.quantity, 0) / secondHalf.length;
 
     const change = ((secondAvg - firstAvg) / firstAvg) * 100;
 

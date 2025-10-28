@@ -61,10 +61,7 @@ export class FixedWindowStrategy implements IRateLimitStrategy {
   /**
    * Check if request should be rate limited
    */
-  async checkLimit(
-    key: string,
-    config: IRateLimitConfig,
-  ): Promise<IRateLimitResult> {
+  async checkLimit(key: string, config: IRateLimitConfig): Promise<IRateLimitResult> {
     const redisKey = `${this.KEY_PREFIX}${key}`;
     const now = Date.now();
 
@@ -76,8 +73,7 @@ export class FixedWindowStrategy implements IRateLimitStrategy {
     try {
       // Get current count
       const countStr = await this.redis.get(redisKey);
-      const currentCount =
-        countStr && typeof countStr === 'string' ? parseInt(countStr, 10) : 0;
+      const currentCount = countStr && typeof countStr === 'string' ? parseInt(countStr, 10) : 0;
 
       // Check if limit reached
       const allowed = currentCount < config.limit;
@@ -87,10 +83,7 @@ export class FixedWindowStrategy implements IRateLimitStrategy {
         const newCount = await this.redis.increment(redisKey);
         // Set expiration only if key is new (first request in window)
         if (newCount === 1) {
-          await this.redis.setExpiration(
-            redisKey,
-            Math.ceil(config.windowMs / 1000),
-          );
+          await this.redis.setExpiration(redisKey, Math.ceil(config.windowMs / 1000));
         }
 
         return {
@@ -151,8 +144,7 @@ export class FixedWindowStrategy implements IRateLimitStrategy {
 
     if (!countStr) return null;
 
-    const count =
-      countStr && typeof countStr === 'string' ? parseInt(countStr, 10) : 0;
+    const count = countStr && typeof countStr === 'string' ? parseInt(countStr, 10) : 0;
     const ttl = await this.redis.getTTL(redisKey);
     const now = Date.now();
     const windowStart = now - ttl * 1000; // TTL is in seconds

@@ -39,9 +39,7 @@ const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 };
 
 @ValidatorConstraint({ name: 'isValidOrderStatus', async: false })
-export class IsValidOrderStatusConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsValidOrderStatusConstraint implements ValidatorConstraintInterface {
   validate(newStatus: string, args: ValidationArguments): boolean {
     if (!newStatus || typeof newStatus !== 'string') {
       return false;
@@ -61,8 +59,7 @@ export class IsValidOrderStatusConstraint
     }
 
     // Validate status transition
-    const allowedTransitions =
-      VALID_STATUS_TRANSITIONS[currentStatus as OrderStatus];
+    const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus as OrderStatus];
     if (!allowedTransitions) {
       return false; // Invalid current status
     }
@@ -78,8 +75,7 @@ export class IsValidOrderStatusConstraint
       return `Order status must be one of: ${Object.values(OrderStatus).join(', ')}`;
     }
 
-    const allowedTransitions =
-      VALID_STATUS_TRANSITIONS[currentStatus as OrderStatus];
+    const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus as OrderStatus];
     if (!allowedTransitions || allowedTransitions.length === 0) {
       return `Cannot change status from ${currentStatus} (terminal state)`;
     }

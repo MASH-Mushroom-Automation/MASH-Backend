@@ -1,20 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -105,10 +90,7 @@ export class CategoriesController {
     description: 'Forbidden - Admin access required',
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  async update(
-    @Param('id') id: string,
-    @Body() updateCategoryDto: UpdateCategoryDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
@@ -144,10 +126,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Get all products in a category' })
   @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  async getCategoryProducts(
-    @Param('id') id: string,
-    @Query() query: CategoryQueryDto,
-  ) {
+  async getCategoryProducts(@Param('id') id: string, @Query() query: CategoryQueryDto) {
     return this.categoriesService.getCategoryProducts(id, query);
   }
 }

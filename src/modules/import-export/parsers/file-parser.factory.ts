@@ -68,9 +68,7 @@ export class FileParserFactory {
   detectFormatFromFilename(filename: string): FileFormat {
     const extension = filename.split('.').pop()?.toLowerCase();
 
-    this.logger.log(
-      `Detecting format from filename: ${filename} (extension: ${extension})`,
-    );
+    this.logger.log(`Detecting format from filename: ${filename} (extension: ${extension})`);
 
     switch (extension) {
       case 'csv':
@@ -126,9 +124,7 @@ export class FileParserFactory {
         return FileFormat.XML;
 
       default:
-        throw new Error(
-          `Unable to detect file format from MIME type: ${mimeType}`,
-        );
+        throw new Error(`Unable to detect file format from MIME type: ${mimeType}`);
     }
   }
 
@@ -188,11 +184,7 @@ export class FileParserFactory {
    * @param fileBuffer Optional file buffer for content detection
    * @returns Parser instance
    */
-  getParserAuto(
-    filename: string,
-    mimeType?: string,
-    fileBuffer?: Buffer,
-  ): IFileParser {
+  getParserAuto(filename: string, mimeType?: string, fileBuffer?: Buffer): IFileParser {
     this.logger.log(`Auto-detecting parser for file: ${filename}`);
 
     let format: FileFormat | null = null;

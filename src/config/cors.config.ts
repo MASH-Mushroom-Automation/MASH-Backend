@@ -69,8 +69,8 @@ export function getCorsConfig(
     if (corsOrigins && corsOrigins.trim() !== '') {
       const origins = corsOrigins
         .split(',')
-        .map((origin) => origin.trim())
-        .filter((origin) => origin.length > 0);
+        .map(origin => origin.trim())
+        .filter(origin => origin.length > 0);
 
       if (origins.length === 0) {
         throw new Error(
@@ -189,7 +189,7 @@ export function validateCorsOrigin(
   }
 
   // Check against allowed patterns
-  const isAllowed = allowedPatterns.some((pattern) => {
+  const isAllowed = allowedPatterns.some(pattern => {
     if (typeof pattern === 'string') {
       return origin === pattern;
     } else if (pattern instanceof RegExp) {
@@ -202,9 +202,7 @@ export function validateCorsOrigin(
     callback(null, true);
   } else {
     callback(
-      new Error(
-        `CORS policy: Origin '${origin}' is not allowed by Access-Control-Allow-Origin`,
-      ),
+      new Error(`CORS policy: Origin '${origin}' is not allowed by Access-Control-Allow-Origin`),
       false,
     );
   }
@@ -247,10 +245,7 @@ export const CORS_PRESETS = {
       if (!origin) {
         callback(null, true);
       } else {
-        callback(
-          new Error('CORS: Only mobile apps without origin are allowed'),
-          false,
-        );
+        callback(new Error('CORS: Only mobile apps without origin are allowed'), false);
       }
     },
   },
@@ -276,8 +271,7 @@ export const CORS_HEADERS = {
 export const CORS_ERRORS = {
   ORIGIN_NOT_ALLOWED:
     'The CORS policy for this site does not allow access from the specified origin',
-  METHOD_NOT_ALLOWED:
-    'Method not allowed by Access-Control-Allow-Methods in preflight response',
+  METHOD_NOT_ALLOWED: 'Method not allowed by Access-Control-Allow-Methods in preflight response',
   HEADER_NOT_ALLOWED:
     'Request header field not allowed by Access-Control-Allow-Headers in preflight response',
   CREDENTIALS_WITHOUT_ORIGIN:

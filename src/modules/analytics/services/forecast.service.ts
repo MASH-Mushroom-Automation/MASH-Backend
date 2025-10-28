@@ -49,9 +49,7 @@ export class ForecastService {
     });
 
     if (orders.length === 0) {
-      throw new NotFoundException(
-        'No historical data available for forecasting',
-      );
+      throw new NotFoundException('No historical data available for forecasting');
     }
 
     // Aggregate by day
@@ -61,10 +59,7 @@ export class ForecastService {
     const forecast = this.calculateLinearRegression(dailyRevenue, days);
 
     // Calculate confidence intervals
-    const confidence = this.calculateConfidenceIntervals(
-      dailyRevenue,
-      forecast,
-    );
+    const confidence = this.calculateConfidenceIntervals(dailyRevenue, forecast);
 
     const result = {
       historical: dailyRevenue.slice(-30), // Last 30 days
@@ -120,45 +115,38 @@ export class ForecastService {
     });
 
     if (orderItems.length === 0) {
-      throw new NotFoundException(
-        'No sales data available for demand prediction',
-      );
+      throw new NotFoundException('No sales data available for demand prediction');
     }
 
     // Group by product and calculate trends
     const demandByProduct = this.groupDemandByProduct(orderItems);
 
     // Calculate predictions for each product
-    const predictions = Object.entries(demandByProduct).map(
-      ([prodId, data]: [string, any]) => {
-        const dailyDemand = this.aggregateDemandByDay(data.sales);
-        const avgDailyDemand =
-          dailyDemand.reduce((sum, d) => sum + d.quantity, 0) /
-          dailyDemand.length;
-        const trend = this.calculateTrend(dailyDemand);
+    const predictions = Object.entries(demandByProduct).map(([prodId, data]: [string, any]) => {
+      const dailyDemand = this.aggregateDemandByDay(data.sales);
+      const avgDailyDemand =
+        dailyDemand.reduce((sum, d) => sum + d.quantity, 0) / dailyDemand.length;
+      const trend = this.calculateTrend(dailyDemand);
 
-        return {
-          productId: prodId,
-          productName: data.productName,
-          historical: {
-            totalSold: data.totalQuantity,
-            avgDailyDemand: Math.round(avgDailyDemand * 100) / 100,
-            trend: trend.direction,
-            trendStrength: trend.strength,
-          },
-          forecast: {
-            nextPeriod: Math.round(avgDailyDemand * days),
-            dailyAverage: Math.round(avgDailyDemand * 100) / 100,
-            confidence: trend.confidence,
-          },
-        };
-      },
-    );
+      return {
+        productId: prodId,
+        productName: data.productName,
+        historical: {
+          totalSold: data.totalQuantity,
+          avgDailyDemand: Math.round(avgDailyDemand * 100) / 100,
+          trend: trend.direction,
+          trendStrength: trend.strength,
+        },
+        forecast: {
+          nextPeriod: Math.round(avgDailyDemand * days),
+          dailyAverage: Math.round(avgDailyDemand * 100) / 100,
+          confidence: trend.confidence,
+        },
+      };
+    });
 
     const result = {
-      predictions: predictions.sort(
-        (a, b) => b.historical.totalSold - a.historical.totalSold,
-      ),
+      predictions: predictions.sort((a, b) => b.historical.totalSold - a.historical.totalSold),
       metadata: {
         productsAnalyzed: predictions.length,
         forecastDays: days,
@@ -207,7 +195,7 @@ export class ForecastService {
         where: { createdAt: { gte: startDate } },
         _count: { id: true },
       });
-      dataPoints = orders.map((o) => ({
+      dataPoints = orders.map(o => ({
         date: o.createdAt.toISOString().split('T')[0],
         value: o._count.id,
       }));
@@ -217,7 +205,7 @@ export class ForecastService {
         where: { createdAt: { gte: startDate } },
         _count: { id: true },
       });
-      dataPoints = users.map((u) => ({
+      dataPoints = users.map(u => ({
         date: u.createdAt.toISOString().split('T')[0],
         value: u._count.id,
       }));
@@ -228,7 +216,7 @@ export class ForecastService {
     }
 
     // Calculate statistics
-    const values = dataPoints.map((d) => d.value);
+    const values = dataPoints.map(d => d.value);
     const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
     const stdDev = Math.sqrt(
       values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length,
@@ -242,7 +230,7 @@ export class ForecastService {
         deviation: Math.abs((point.value - mean) / stdDev),
         isAnomaly: Math.abs(point.value - mean) > threshold * stdDev,
       }))
-      .filter((point) => point.isAnomaly);
+      .filter(point => point.isAnomaly);
 
     const result = {
       anomalies: anomalies,
@@ -252,8 +240,7 @@ export class ForecastService {
         threshold: threshold,
         dataPoints: dataPoints.length,
         anomalyCount: anomalies.length,
-        anomalyRate:
-          Math.round((anomalies.length / dataPoints.length) * 10000) / 100,
+        anomalyRate: Math.round((anomalies.length / dataPoints.length) * 10000) / 100,
       },
       metadata: {
         type: type,
@@ -271,7 +258,7 @@ export class ForecastService {
   private aggregateByDay(orders: any[]): any[] {
     const dailyMap = new Map<string, number>();
 
-    orders.forEach((order) => {
+    orders.forEach(order => {
       const date = order.createdAt.toISOString().split('T')[0];
       const current = dailyMap.get(date) || 0;
       dailyMap.set(date, current + Number(order.total));
@@ -285,7 +272,7 @@ export class ForecastService {
   private aggregateDemandByDay(sales: any[]): any[] {
     const dailyMap = new Map<string, number>();
 
-    sales.forEach((sale) => {
+    sales.forEach(sale => {
       const date = sale.createdAt.toISOString().split('T')[0];
       const current = dailyMap.get(date) || 0;
       dailyMap.set(date, current + sale.quantity);
@@ -331,35 +318,23 @@ export class ForecastService {
     return forecast;
   }
 
-  private calculateConfidenceIntervals(
-    historical: any[],
-    forecast: any[],
-  ): any {
-    const values = historical.map((h) => h.value);
+  private calculateConfidenceIntervals(historical: any[], forecast: any[]): any {
+    const values = historical.map(h => h.value);
     const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-    const variance =
-      values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
 
     // Calculate R-squared for accuracy
     const predictions = historical.map((_, i) => {
-      const slope =
-        (forecast[0].value - historical[historical.length - 1].value) /
-        forecast.length;
-      return (
-        historical[historical.length - 1].value +
-        slope * (i - historical.length + 1)
-      );
+      const slope = (forecast[0].value - historical[historical.length - 1].value) / forecast.length;
+      return historical[historical.length - 1].value + slope * (i - historical.length + 1);
     });
 
     const ssRes = historical.reduce(
       (sum, point, i) => sum + Math.pow(point.value - predictions[i], 2),
       0,
     );
-    const ssTot = historical.reduce(
-      (sum, point) => sum + Math.pow(point.value - mean, 2),
-      0,
-    );
+    const ssTot = historical.reduce((sum, point) => sum + Math.pow(point.value - mean, 2), 0);
     const rSquared = 1 - ssRes / ssTot;
 
     return {
@@ -371,7 +346,7 @@ export class ForecastService {
   private groupDemandByProduct(items: any[]): any {
     const grouped: any = {};
 
-    items.forEach((item) => {
+    items.forEach(item => {
       if (!grouped[item.productId]) {
         grouped[item.productId] = {
           productName: item.product.name,
@@ -397,10 +372,8 @@ export class ForecastService {
     const firstHalf = data.slice(0, Math.floor(data.length / 2));
     const secondHalf = data.slice(Math.floor(data.length / 2));
 
-    const firstAvg =
-      firstHalf.reduce((sum, d) => sum + d.quantity, 0) / firstHalf.length;
-    const secondAvg =
-      secondHalf.reduce((sum, d) => sum + d.quantity, 0) / secondHalf.length;
+    const firstAvg = firstHalf.reduce((sum, d) => sum + d.quantity, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((sum, d) => sum + d.quantity, 0) / secondHalf.length;
 
     const change = ((secondAvg - firstAvg) / firstAvg) * 100;
 

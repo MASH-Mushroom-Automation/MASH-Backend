@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateAlertRuleDto } from '../dto/create-alert-rule.dto';
 import { UpdateAlertRuleDto } from '../dto/update-alert-rule.dto';
@@ -160,11 +155,7 @@ export class AlertRuleService {
   /**
    * Update an existing alert rule
    */
-  async update(
-    id: string,
-    dto: UpdateAlertRuleDto,
-    userId: string,
-  ): Promise<AlertRule> {
+  async update(id: string, dto: UpdateAlertRuleDto, userId: string): Promise<AlertRule> {
     this.logger.log(`Updating alert rule: ${id}`);
 
     // Check if rule exists

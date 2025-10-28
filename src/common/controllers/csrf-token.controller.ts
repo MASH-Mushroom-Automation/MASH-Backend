@@ -1,10 +1,5 @@
 import { Controller, Get, Req, Res } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiCookieAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 
 /**
@@ -89,8 +84,7 @@ export class CsrfTokenController {
   getCsrfToken(@Req() req: Request, @Res() res: Response) {
     // Token is automatically set by CsrfProtectionMiddleware
     // Read it from cookie or header
-    const csrfToken =
-      req.cookies?.['XSRF-TOKEN'] || res.getHeader('X-CSRF-Token');
+    const csrfToken = req.cookies?.['XSRF-TOKEN'] || res.getHeader('X-CSRF-Token');
 
     return res.json({
       csrfToken,
@@ -98,8 +92,7 @@ export class CsrfTokenController {
       headerName: 'X-XSRF-TOKEN',
       cookieName: 'XSRF-TOKEN',
       usage: {
-        description:
-          'Include this token in X-XSRF-TOKEN header for POST/PUT/DELETE/PATCH requests',
+        description: 'Include this token in X-XSRF-TOKEN header for POST/PUT/DELETE/PATCH requests',
         example: {
           method: 'POST',
           headers: {

@@ -124,7 +124,7 @@ export class ConnectionManagerService {
     }
 
     return Array.from(socketIds)
-      .map((id) => this.connections.get(id))
+      .map(id => this.connections.get(id))
       .filter((socket): socket is AuthenticatedSocket => socket !== undefined);
   }
 
@@ -194,7 +194,7 @@ export class ConnectionManagerService {
   removeRoomFromConnection(socketId: string, room: string): void {
     const info = this.connectionInfo.get(socketId);
     if (info) {
-      info.rooms = info.rooms.filter((r) => r !== room);
+      info.rooms = info.rooms.filter(r => r !== room);
     }
   }
 
@@ -205,8 +205,7 @@ export class ConnectionManagerService {
     const now = Date.now();
     const timeDiff = (now - this.lastMessageTime) / 1000; // seconds
     const messagesPerSecond = timeDiff > 0 ? this.messageCount / timeDiff : 0;
-    const errorRate =
-      this.messageCount > 0 ? this.errorCount / this.messageCount : 0;
+    const errorRate = this.messageCount > 0 ? this.errorCount / this.messageCount : 0;
 
     // Calculate memory usage
     const memUsage = process.memoryUsage();
@@ -240,7 +239,7 @@ export class ConnectionManagerService {
   private getTotalRooms(): number {
     const rooms = new Set<string>();
     for (const info of this.connectionInfo.values()) {
-      info.rooms.forEach((room) => rooms.add(room));
+      info.rooms.forEach(room => rooms.add(room));
     }
     return rooms.size;
   }
@@ -282,10 +281,7 @@ export class ConnectionManagerService {
    * Check if a user is connected
    */
   isUserConnected(userId: string): boolean {
-    return (
-      this.userConnections.has(userId) &&
-      this.userConnections.get(userId).size > 0
-    );
+    return this.userConnections.has(userId) && this.userConnections.get(userId).size > 0;
   }
 
   /**

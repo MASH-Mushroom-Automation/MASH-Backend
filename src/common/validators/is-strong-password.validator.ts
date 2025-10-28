@@ -44,9 +44,7 @@ export interface IsStrongPasswordOptions {
 }
 
 @ValidatorConstraint({ name: 'isStrongPassword', async: false })
-export class IsStrongPasswordConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsStrongPasswordConstraint implements ValidatorConstraintInterface {
   validate(password: string, args: ValidationArguments): boolean {
     if (!password || typeof password !== 'string') {
       return false;
@@ -102,10 +100,7 @@ export class IsStrongPasswordConstraint
 
       // Check if password is just the username (if available in object)
       const object = args.object as any;
-      if (
-        object.username &&
-        lowerPassword.includes(object.username.toLowerCase())
-      ) {
+      if (object.username && lowerPassword.includes(object.username.toLowerCase())) {
         return false;
       }
       if (object.email) {
@@ -131,10 +126,8 @@ export class IsStrongPasswordConstraint
 
     const requirements: string[] = [];
     requirements.push(`at least ${minLength} characters`);
-    if (minLowercase > 0)
-      requirements.push(`${minLowercase} lowercase letter(s)`);
-    if (minUppercase > 0)
-      requirements.push(`${minUppercase} uppercase letter(s)`);
+    if (minLowercase > 0) requirements.push(`${minLowercase} lowercase letter(s)`);
+    if (minUppercase > 0) requirements.push(`${minUppercase} uppercase letter(s)`);
     if (minNumbers > 0) requirements.push(`${minNumbers} number(s)`);
     if (minSymbols > 0) requirements.push(`${minSymbols} special character(s)`);
 

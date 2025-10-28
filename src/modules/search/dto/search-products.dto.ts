@@ -1,12 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsNumber,
-  IsArray,
-  IsBoolean,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsArray, IsBoolean, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -115,8 +107,7 @@ export class SearchProductsDto {
   })
   @IsOptional()
   @IsString()
-  sortBy?: 'relevance' | 'price' | 'rating' | 'createdAt' | 'name' =
-    'relevance';
+  sortBy?: 'relevance' | 'price' | 'rating' | 'createdAt' | 'name' = 'relevance';
 
   @ApiPropertyOptional({
     description: 'Sort order',

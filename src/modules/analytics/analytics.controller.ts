@@ -9,12 +9,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -29,10 +24,7 @@ import { DrillDownService } from './services/drilldown.service';
 import { ScheduledReportsService } from './services/scheduled-reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ExecuteReportDto } from './dto/execute-report.dto';
-import {
-  ReportResponseDto,
-  ReportExecutionResponseDto,
-} from './dto/report-response.dto';
+import { ReportResponseDto, ReportExecutionResponseDto } from './dto/report-response.dto';
 import { ExportConfigDto, ExportResponseDto } from './dto/export-config.dto';
 import { ReportType } from '@prisma/client';
 
@@ -324,11 +316,7 @@ export class AnalyticsController {
     const metricsArray = metrics.split(',');
     const categoriesArray = categories.split(',');
     const dateRange = { start: new Date(startDate), end: new Date(endDate) };
-    return this.chartDataService.getBarChartData(
-      metricsArray,
-      categoriesArray,
-      dateRange,
-    );
+    return this.chartDataService.getBarChartData(metricsArray, categoriesArray, dateRange);
   }
 
   @Get('visualizations/pie-chart')
@@ -357,11 +345,7 @@ export class AnalyticsController {
   ) {
     const metricsArray = metrics.split(',');
     const dateRange = { start: new Date(startDate), end: new Date(endDate) };
-    return this.chartDataService.getAreaChartData(
-      metricsArray,
-      dateRange,
-      groupBy,
-    );
+    return this.chartDataService.getAreaChartData(metricsArray, dateRange, groupBy);
   }
 
   // Export Engine Endpoints
@@ -420,23 +404,15 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Forecast revenue for next N days' })
   @ApiResponse({ status: 200, description: 'Revenue forecast generated' })
   async forecastRevenue(@Query('days') days?: number) {
-    return this.forecastService.forecastRevenue(
-      days ? parseInt(days.toString()) : 30,
-    );
+    return this.forecastService.forecastRevenue(days ? parseInt(days.toString()) : 30);
   }
 
   @Get('forecast/demand')
   @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Predict product demand' })
   @ApiResponse({ status: 200, description: 'Demand prediction generated' })
-  async predictDemand(
-    @Query('productId') productId?: string,
-    @Query('days') days?: number,
-  ) {
-    return this.forecastService.predictDemand(
-      productId,
-      days ? parseInt(days.toString()) : 30,
-    );
+  async predictDemand(@Query('productId') productId?: string, @Query('days') days?: number) {
+    return this.forecastService.predictDemand(productId, days ? parseInt(days.toString()) : 30);
   }
 
   @Get('forecast/anomalies')
@@ -499,11 +475,7 @@ export class AnalyticsController {
     @Query('endDate') endDate: string,
   ) {
     const ids = productIds.split(',');
-    return this.comparisonService.compareProducts(
-      ids,
-      new Date(startDate),
-      new Date(endDate),
-    );
+    return this.comparisonService.compareProducts(ids, new Date(startDate), new Date(endDate));
   }
 
   @Get('comparison/categories')
@@ -514,10 +486,7 @@ export class AnalyticsController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.comparisonService.compareCategories(
-      new Date(startDate),
-      new Date(endDate),
-    );
+    return this.comparisonService.compareCategories(new Date(startDate), new Date(endDate));
   }
 
   // ==================== Day 6: Drill-Down Analytics ====================
@@ -526,8 +495,7 @@ export class AnalyticsController {
   @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({
     summary: 'Drill down from category to products',
-    description:
-      'Get detailed product performance metrics for a specific category',
+    description: 'Get detailed product performance metrics for a specific category',
   })
   @ApiResponse({
     status: 200,
@@ -620,11 +588,7 @@ export class AnalyticsController {
       recipients?: string[];
     },
   ) {
-    return this.scheduledReportsService.createSubscription(
-      data.reportId,
-      req.user.id,
-      data,
-    );
+    return this.scheduledReportsService.createSubscription(data.reportId, req.user.id, data);
   }
 
   @Get('reports/subscriptions')
@@ -651,14 +615,8 @@ export class AnalyticsController {
     status: 200,
     description: 'Subscription deleted successfully',
   })
-  async deleteSubscription(
-    @Param('id') subscriptionId: string,
-    @Request() req,
-  ) {
-    return this.scheduledReportsService.deleteSubscription(
-      subscriptionId,
-      req.user.id,
-    );
+  async deleteSubscription(@Param('id') subscriptionId: string, @Request() req) {
+    return this.scheduledReportsService.deleteSubscription(subscriptionId, req.user.id);
   }
 
   @Post('reports/subscribe/:id/trigger')
@@ -671,13 +629,7 @@ export class AnalyticsController {
     status: 200,
     description: 'Report generation triggered successfully',
   })
-  async triggerSubscription(
-    @Param('id') subscriptionId: string,
-    @Request() req,
-  ) {
-    return this.scheduledReportsService.triggerSubscription(
-      subscriptionId,
-      req.user.id,
-    );
+  async triggerSubscription(@Param('id') subscriptionId: string, @Request() req) {
+    return this.scheduledReportsService.triggerSubscription(subscriptionId, req.user.id);
   }
 }

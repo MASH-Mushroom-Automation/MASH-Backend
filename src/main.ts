@@ -107,9 +107,7 @@ async function bootstrap() {
   // Audit logging interceptor - Track sensitive operations
   const reflector = app.get(Reflector);
   const auditLogService = app.get(AuditLogService);
-  app.useGlobalInterceptors(
-    new AuditLogInterceptor(reflector, auditLogService),
-  );
+  app.useGlobalInterceptors(new AuditLogInterceptor(reflector, auditLogService));
 
   logger.log('🔧 Stage 7: Applying global exception filters...');
   // ==================== GLOBAL EXCEPTION FILTERS ====================
@@ -127,14 +125,7 @@ async function bootstrap() {
 
   // API prefix - exclude auth HTML pages from the prefix
   app.setGlobalPrefix('api/v1', {
-    exclude: [
-      '/',
-      '/register',
-      '/verify',
-      '/forgot-password',
-      '/reset-password',
-      '/dashboard',
-    ],
+    exclude: ['/', '/register', '/verify', '/forgot-password', '/reset-password', '/dashboard'],
   });
 
   // Swagger/OpenAPI documentation - Enhanced Configuration
@@ -442,15 +433,9 @@ See [API Changelog](/docs/API_CHANGELOG.md) for version history and breaking cha
       'OAuth2',
     )
     // Server Configurations
-    .addServer(
-      'https://mash-backend-api.up.railway.app',
-      'Production Server (Railway)',
-    )
+    .addServer('https://mash-backend-api.up.railway.app', 'Production Server (Railway)')
     .addServer(`http://localhost:${port}`, 'Local Development')
-    .addServer(
-      'https://staging-api.mash.com',
-      'Staging Environment (Coming Soon)',
-    )
+    .addServer('https://staging-api.mash.com', 'Staging Environment (Coming Soon)')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
@@ -512,7 +497,7 @@ See [API Changelog](/docs/API_CHANGELOG.md) for version history and breaking cha
 }
 
 // 🔧 DEBUGGING: Add global error handlers to catch unhandled errors
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   const logger = new Logger('UncaughtException');
   logger.error('🔥 UNCAUGHT EXCEPTION:');
   logger.error(`Error type: ${error.constructor.name}`);
@@ -521,26 +506,23 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on(
-  'unhandledRejection',
-  (reason: unknown, promise: Promise<unknown>) => {
-    const logger = new Logger('UnhandledRejection');
-    logger.error('🔥 UNHANDLED REJECTION:');
-    logger.error('Promise:', promise);
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+  const logger = new Logger('UnhandledRejection');
+  logger.error('🔥 UNHANDLED REJECTION:');
+  logger.error('Promise:', promise);
 
-    if (reason instanceof Error) {
-      logger.error(`Reason type: ${reason.constructor.name}`);
-      logger.error(`Reason: ${reason.message}`);
-      logger.error(`Stack: ${reason.stack}`);
-    } else {
-      logger.error(`Reason: ${String(reason)}`);
-    }
+  if (reason instanceof Error) {
+    logger.error(`Reason type: ${reason.constructor.name}`);
+    logger.error(`Reason: ${reason.message}`);
+    logger.error(`Stack: ${reason.stack}`);
+  } else {
+    logger.error(`Reason: ${String(reason)}`);
+  }
 
-    process.exit(1);
-  },
-);
+  process.exit(1);
+});
 
-bootstrap().catch((error) => {
+bootstrap().catch(error => {
   const logger = new Logger('Bootstrap');
   logger.error('❌ FATAL ERROR DURING BOOTSTRAP:');
   logger.error(`Error type: ${typeof error}`);

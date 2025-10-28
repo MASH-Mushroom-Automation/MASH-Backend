@@ -105,10 +105,7 @@ export class SanitizationService {
    * // Returns: 'Hello' (script removed, paragraph stripped)
    * ```
    */
-  sanitizeHtml(
-    input: string,
-    level: 'strict' | 'moderate' | 'rich' = 'strict',
-  ): string {
+  sanitizeHtml(input: string, level: 'strict' | 'moderate' | 'rich' = 'strict'): string {
     if (!input || typeof input !== 'string') {
       return '';
     }
@@ -201,9 +198,7 @@ export class SanitizationService {
           // Remove slash if in traversal context (already handled above)
           const before = filename[offset - 1];
           const after = filename[offset + match.length];
-          return before && after && /[a-zA-Z0-9]/.test(before + after)
-            ? '-'
-            : '';
+          return before && after && /[a-zA-Z0-9]/.test(before + after) ? '-' : '';
         })
         .replace(/[<>:"|?*\x00-\x1f]/g, '-') // Replace dangerous chars with dash
         .replace(/\s+/g, '-') // Replace spaces with dash
@@ -282,10 +277,7 @@ export class SanitizationService {
    * // Returns: 'https://example.com'
    * ```
    */
-  sanitizeUrl(
-    url: string,
-    allowedProtocols: string[] = ['http', 'https', 'mailto'],
-  ): string {
+  sanitizeUrl(url: string, allowedProtocols: string[] = ['http', 'https', 'mailto']): string {
     if (!url || typeof url !== 'string') {
       return '';
     }
@@ -293,13 +285,7 @@ export class SanitizationService {
     const trimmedUrl = url.trim();
 
     // Block dangerous protocols
-    const dangerousProtocols = [
-      'javascript:',
-      'data:',
-      'vbscript:',
-      'file:',
-      'about:',
-    ];
+    const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'file:', 'about:'];
 
     for (const protocol of dangerousProtocols) {
       if (trimmedUrl.toLowerCase().startsWith(protocol)) {
@@ -336,16 +322,13 @@ export class SanitizationService {
    * // Returns: { name: 'John', age: 25, bio: '<b>Developer</b>' }
    * ```
    */
-  sanitizeObject(
-    obj: any,
-    level: 'strict' | 'moderate' | 'rich' = 'strict',
-  ): any {
+  sanitizeObject(obj: any, level: 'strict' | 'moderate' | 'rich' = 'strict'): any {
     if (!obj || typeof obj !== 'object') {
       return obj;
     }
 
     if (Array.isArray(obj)) {
-      return obj.map((item) => {
+      return obj.map(item => {
         if (typeof item === 'string') {
           return this.sanitizeHtml(item, level);
         }
@@ -447,16 +430,11 @@ export class SanitizationService {
    * @param level - Sanitization level
    * @returns Array of sanitized strings
    */
-  batchSanitize(
-    inputs: string[],
-    level: 'strict' | 'moderate' | 'rich' = 'strict',
-  ): string[] {
+  batchSanitize(inputs: string[], level: 'strict' | 'moderate' | 'rich' = 'strict'): string[] {
     if (!Array.isArray(inputs)) {
       return [];
     }
 
-    return inputs.map((input) =>
-      typeof input === 'string' ? this.sanitizeHtml(input, level) : '',
-    );
+    return inputs.map(input => (typeof input === 'string' ? this.sanitizeHtml(input, level) : ''));
   }
 }

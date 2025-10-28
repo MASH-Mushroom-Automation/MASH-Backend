@@ -13,13 +13,7 @@ import {
   HttpCode,
   Logger,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBody,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ExportService } from '../services/export.service';
 import { StartExportDto, GetJobsQueryDto } from '../dto/import-export.dto';
@@ -68,9 +62,7 @@ export class ExportController {
     // TODO: Get userId from authentication guard (req.user.id)
     const userId = 'system-user-id'; // Temporary placeholder
 
-    this.logger.log(
-      `Creating export job for entity ${dto.entityType} in ${dto.fileFormat} format`,
-    );
+    this.logger.log(`Creating export job for entity ${dto.entityType} in ${dto.fileFormat} format`);
     return this.exportService.createExport(dto, userId);
   }
 
@@ -207,10 +199,7 @@ export class ExportController {
   })
   @ApiResponse({ status: 404, description: 'Export job not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async cancelJob(
-    @Param('jobId', ParseUUIDPipe) jobId: string,
-    @Req() req: any,
-  ) {
+  async cancelJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
     const userId = 'system-user-id'; // TODO: Get from req.user.id
     return this.exportService.cancelJob(jobId, userId);
   }
@@ -222,8 +211,7 @@ export class ExportController {
   @Post('jobs/:jobId/retry')
   @ApiOperation({
     summary: 'Retry failed export job',
-    description:
-      'Re-queue a failed export job for processing. Resets all counters and status.',
+    description: 'Re-queue a failed export job for processing. Resets all counters and status.',
   })
   @ApiResponse({
     status: 200,
@@ -244,10 +232,7 @@ export class ExportController {
   })
   @ApiResponse({ status: 404, description: 'Export job not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async retryJob(
-    @Param('jobId', ParseUUIDPipe) jobId: string,
-    @Req() req: any,
-  ) {
+  async retryJob(@Param('jobId', ParseUUIDPipe) jobId: string, @Req() req: any) {
     const userId = 'system-user-id'; // TODO: Get from req.user.id
     return this.exportService.retryJob(jobId, userId);
   }
@@ -259,8 +244,7 @@ export class ExportController {
   @Get('jobs/:jobId/download')
   @ApiOperation({
     summary: 'Download export file',
-    description:
-      'Download the generated export file. Only available when job status is COMPLETED.',
+    description: 'Download the generated export file. Only available when job status is COMPLETED.',
   })
   @ApiResponse({
     status: 200,
@@ -285,16 +269,13 @@ export class ExportController {
   ) {
     const userId = 'system-user-id'; // TODO: Get from req.user.id
 
-    const { buffer, fileName, mimeType } =
-      await this.exportService.downloadFile(jobId, userId);
+    const { buffer, fileName, mimeType } = await this.exportService.downloadFile(jobId, userId);
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('Content-Length', buffer.length);
 
-    this.logger.log(
-      `Downloading export file: ${fileName} (${buffer.length} bytes)`,
-    );
+    this.logger.log(`Downloading export file: ${fileName} (${buffer.length} bytes)`);
     res.send(buffer);
   }
 }

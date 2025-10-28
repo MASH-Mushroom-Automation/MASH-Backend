@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { randomBytes, createHash } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../database/prisma.service';
@@ -16,12 +12,7 @@ export class ApiKeyService {
    * Format: mash_sk_{64_random_chars}
    * @returns Full API key (only shown once)
    */
-  async generateApiKey(
-    userId: string,
-    name: string,
-    scopes: string[] = [],
-    expiresAt?: Date,
-  ) {
+  async generateApiKey(userId: string, name: string, scopes: string[] = [], expiresAt?: Date) {
     // Generate crypto-secure random key
     const randomKey = randomBytes(32).toString('hex'); // 64 chars
     const fullKey = `mash_sk_${randomKey}`;
@@ -55,8 +46,7 @@ export class ApiKeyService {
     return {
       ...apiKey,
       fullKey, // ⚠️ ONLY SHOWN ONCE - User must save it
-      warning:
-        'This is the only time you will see the full API key. Please save it securely.',
+      warning: 'This is the only time you will see the full API key. Please save it securely.',
     };
   }
 
@@ -84,7 +74,7 @@ export class ApiKeyService {
     });
 
     // Mask the key prefix (show first 8 chars + last 4)
-    return apiKeys.map((key) => ({
+    return apiKeys.map(key => ({
       ...key,
       maskedKey: `${key.keyPrefix}...${key.keyPrefix.slice(-4)}`, // e.g., "mash_sk_1234...1234"
     }));
@@ -109,9 +99,7 @@ export class ApiKeyService {
     }
 
     if (apiKey.userId !== userId) {
-      throw new BadRequestException(
-        'You do not have permission to revoke this API key',
-      );
+      throw new BadRequestException('You do not have permission to revoke this API key');
     }
 
     if (apiKey.revokedAt) {

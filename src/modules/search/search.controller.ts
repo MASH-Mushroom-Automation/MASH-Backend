@@ -1,19 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Param,
-  Logger,
-  Req,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
-  ApiParam,
-} from '@nestjs/swagger';
+import { Controller, Get, Post, Query, Param, Logger, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { Request } from 'express';
 import { SearchService } from './search.service';
 import { ProductIndexerService } from './indexers/product-indexer.service';
@@ -129,11 +115,7 @@ export class SearchController {
     const userId = (req as any).user?.id; // If you have auth middleware
     const ipAddress = req.ip || req.connection.remoteAddress;
 
-    const results = await this.searchService.searchProducts(
-      dto,
-      userId,
-      ipAddress,
-    );
+    const results = await this.searchService.searchProducts(dto, userId, ipAddress);
     const totalTime = Date.now() - startTime;
 
     this.logger.log(`✅ Search completed in ${totalTime}ms`);
@@ -193,8 +175,7 @@ export class SearchController {
   @Get('products/:id/similar')
   @ApiOperation({
     summary: 'Find similar products',
-    description:
-      'Get products similar to the specified product based on content',
+    description: 'Get products similar to the specified product based on content',
   })
   @ApiResponse({ status: 200, description: 'Similar products returned' })
   @ApiParam({ name: 'id', type: String, description: 'Product ID' })
@@ -204,15 +185,9 @@ export class SearchController {
     type: Number,
     description: 'Max results (default 5)',
   })
-  async findSimilarProducts(
-    @Param('id') id: string,
-    @Query('limit') limit?: number,
-  ) {
+  async findSimilarProducts(@Param('id') id: string, @Query('limit') limit?: number) {
     const startTime = Date.now();
-    const results = await this.searchService.findSimilarProducts(
-      id,
-      limit || 5,
-    );
+    const results = await this.searchService.findSimilarProducts(id, limit || 5);
     const took = Date.now() - startTime;
 
     this.logger.log(`🔗 Similar products for ${id} found in ${took}ms`);
@@ -231,8 +206,7 @@ export class SearchController {
   @Post('reindex/products')
   @ApiOperation({
     summary: 'Reindex all products',
-    description:
-      'Triggers a full reindex of all products from database to Elasticsearch',
+    description: 'Triggers a full reindex of all products from database to Elasticsearch',
   })
   @ApiResponse({
     status: 200,

@@ -162,16 +162,13 @@ export class AnalyticsService {
       }),
     ]);
 
-    const trends = await this.getOrderTrendsGrouped(
-      where,
-      query.interval || TimeInterval.DAILY,
-    );
+    const trends = await this.getOrderTrendsGrouped(where, query.interval || TimeInterval.DAILY);
 
     const result = {
       totalSales: Number(salesData._sum.total) || 0,
       averageOrderValue: Number(salesData._avg.total) || 0,
       orderCount: salesData._count,
-      ordersByStatus: ordersByStatus.map((status) => ({
+      ordersByStatus: ordersByStatus.map(status => ({
         status: status.status,
         count: status._count,
         total: Number(status._sum.total) || 0,
@@ -222,7 +219,7 @@ export class AnalyticsService {
     });
 
     const result = {
-      products: orderItems.map((item) => ({
+      products: orderItems.map(item => ({
         productId: item.productId,
         totalQuantity: item._sum.quantity || 0,
         totalRevenue: Number(item._sum.total) || 0,
@@ -260,23 +257,22 @@ export class AnalyticsService {
       };
     }
 
-    const [totalUsers, activeUsers, newSignups, usersByRole] =
-      await Promise.all([
-        this.prisma.user.count(),
-        this.prisma.user.count({ where: { isActive: true } }),
-        this.prisma.user.count({ where }),
-        this.prisma.user.groupBy({
-          by: ['role'],
-          _count: true,
-        }),
-      ]);
+    const [totalUsers, activeUsers, newSignups, usersByRole] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { isActive: true } }),
+      this.prisma.user.count({ where }),
+      this.prisma.user.groupBy({
+        by: ['role'],
+        _count: true,
+      }),
+    ]);
 
     const result = {
       totalUsers,
       activeUsers,
       newSignups,
       engagementRate: totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0,
-      usersByRole: usersByRole.map((role) => ({
+      usersByRole: usersByRole.map(role => ({
         role: role.role,
         count: role._count,
       })),
@@ -302,27 +298,23 @@ export class AnalyticsService {
       return cached;
     }
 
-    const [
-      totalDevices,
-      activeDevices,
-      devicesByType,
-      sensorCount,
-      sensorData,
-    ] = await Promise.all([
-      this.prisma.device.count(),
-      this.prisma.device.count({ where: { isActive: true } }),
-      this.prisma.device.groupBy({
-        by: ['type'],
-        _count: true,
-      }),
-      this.prisma.sensor.count(),
-      this.prisma.sensorData.count(),
-    ]);
+    const [totalDevices, activeDevices, devicesByType, sensorCount, sensorData] = await Promise.all(
+      [
+        this.prisma.device.count(),
+        this.prisma.device.count({ where: { isActive: true } }),
+        this.prisma.device.groupBy({
+          by: ['type'],
+          _count: true,
+        }),
+        this.prisma.sensor.count(),
+        this.prisma.sensorData.count(),
+      ],
+    );
 
     const result = {
       totalDevices,
       activeDevices,
-      devicesByType: devicesByType.map((type) => ({
+      devicesByType: devicesByType.map(type => ({
         type: type.type,
         count: type._count,
       })),
@@ -361,10 +353,7 @@ export class AnalyticsService {
       };
     }
 
-    const trends = await this.getOrderTrendsGrouped(
-      where,
-      interval || TimeInterval.DAILY,
-    );
+    const trends = await this.getOrderTrendsGrouped(where, interval || TimeInterval.DAILY);
 
     const result = {
       trends,
@@ -423,7 +412,7 @@ export class AnalyticsService {
 
     const result = {
       totalRevenue: Number(revenueData._sum.total) || 0,
-      revenueByStatus: revenueByStatus.map((status) => ({
+      revenueByStatus: revenueByStatus.map(status => ({
         status: status.status,
         revenue: Number(status._sum.total) || 0,
       })),
@@ -453,50 +442,40 @@ export class AnalyticsService {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastYear = new Date(now.getFullYear() - 1, now.getMonth(), 1);
 
-    const [currentMonth, previousMonth, currentYear, previousYear] =
-      await Promise.all([
-        this.getMonthStats(now),
-        this.getMonthStats(lastMonth),
-        this.getMonthStats(now),
-        this.getMonthStats(lastYear),
-      ]);
+    const [currentMonth, previousMonth, currentYear, previousYear] = await Promise.all([
+      this.getMonthStats(now),
+      this.getMonthStats(lastMonth),
+      this.getMonthStats(now),
+      this.getMonthStats(lastYear),
+    ]);
 
     const monthOverMonth = {
       revenue:
         previousMonth.revenue > 0
-          ? ((currentMonth.revenue - previousMonth.revenue) /
-              previousMonth.revenue) *
-            100
+          ? ((currentMonth.revenue - previousMonth.revenue) / previousMonth.revenue) * 100
           : 0,
       orders:
         previousMonth.orders > 0
-          ? ((currentMonth.orders - previousMonth.orders) /
-              previousMonth.orders) *
-            100
+          ? ((currentMonth.orders - previousMonth.orders) / previousMonth.orders) * 100
           : 0,
       users:
         previousMonth.users > 0
-          ? ((currentMonth.users - previousMonth.users) / previousMonth.users) *
-            100
+          ? ((currentMonth.users - previousMonth.users) / previousMonth.users) * 100
           : 0,
     };
 
     const yearOverYear = {
       revenue:
         previousYear.revenue > 0
-          ? ((currentYear.revenue - previousYear.revenue) /
-              previousYear.revenue) *
-            100
+          ? ((currentYear.revenue - previousYear.revenue) / previousYear.revenue) * 100
           : 0,
       orders:
         previousYear.orders > 0
-          ? ((currentYear.orders - previousYear.orders) / previousYear.orders) *
-            100
+          ? ((currentYear.orders - previousYear.orders) / previousYear.orders) * 100
           : 0,
       users:
         previousYear.users > 0
-          ? ((currentYear.users - previousYear.users) / previousYear.users) *
-            100
+          ? ((currentYear.users - previousYear.users) / previousYear.users) * 100
           : 0,
     };
 
@@ -613,8 +592,8 @@ export class AnalyticsService {
       }),
     ]);
 
-    const categoryStats = categories.map((category) => {
-      const productCount = products.filter((product) =>
+    const categoryStats = categories.map(category => {
+      const productCount = products.filter(product =>
         (product.categories as string[])?.includes(category.id),
       ).length;
 
@@ -697,7 +676,7 @@ export class AnalyticsService {
 
     const grouped: Record<string, any> = {};
 
-    orders.forEach((order) => {
+    orders.forEach(order => {
       const date = order.createdAt.toISOString().split('T')[0];
       if (!grouped[date]) {
         grouped[date] = {

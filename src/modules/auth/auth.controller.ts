@@ -10,13 +10,7 @@ import {
   BadRequestException,
   Query,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -48,7 +42,7 @@ export class AuthController {
   @AuditLog({
     action: AuditAction.USER_CREATE,
     entity: 'User',
-    getEntityId: (args) => args[0]?.email,
+    getEntityId: args => args[0]?.email,
   })
   @ApiOperation({
     summary: 'Register new user',
@@ -66,8 +60,7 @@ export class AuthController {
         userId: 'user_2abc123xyz',
         email: 'john.doe@example.com',
         username: 'johndoe',
-        avatarUrl:
-          'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=johndoe',
+        avatarUrl: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=johndoe',
         verificationSent: true,
       },
     },
@@ -116,8 +109,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Verify email with code',
-    description:
-      'Verify user email address using the 6-digit code sent to their email',
+    description: 'Verify user email address using the 6-digit code sent to their email',
   })
   @ApiBody({ type: VerifyEmailDto })
   @ApiResponse({
@@ -179,8 +171,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Request password reset',
-    description:
-      'Send password reset code to user email. Does not reveal if email exists.',
+    description: 'Send password reset code to user email. Does not reveal if email exists.',
   })
   @ApiBody({ type: ForgotPasswordDto })
   @ApiResponse({
@@ -299,8 +290,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Handle OAuth callback',
-    description:
-      'Process OAuth callback with authorization code. Called by OAuth provider.',
+    description: 'Process OAuth callback with authorization code. Called by OAuth provider.',
   })
   @ApiBody({ type: OAuthCallbackDto })
   @ApiResponse({
@@ -333,7 +323,7 @@ export class AuthController {
   @AuditLog({
     action: AuditAction.USER_CREATE,
     entity: 'User',
-    getEntityId: (args) => args[0]?.data?.id,
+    getEntityId: args => args[0]?.data?.id,
   })
   @ApiOperation({
     summary: 'Clerk webhook handler',
@@ -378,7 +368,7 @@ export class AuthController {
   @AuditLog({
     action: AuditAction.LOGOUT,
     entity: 'User',
-    getEntityId: (args) => args[0]?.user?.userId as string,
+    getEntityId: args => args[0]?.user?.userId as string,
   })
   @ApiOperation({
     summary: 'Logout user',
@@ -532,10 +522,7 @@ export class AuthController {
     description: 'Forbidden - Insufficient permissions',
   })
   @ApiResponse({ status: 404, description: 'Target user not found' })
-  async impersonateUser(
-    @Request() req: any,
-    @Body() body: { targetUserId: string },
-  ) {
+  async impersonateUser(@Request() req: any, @Body() body: { targetUserId: string }) {
     if (!body.targetUserId) {
       throw new BadRequestException('targetUserId is required');
     }

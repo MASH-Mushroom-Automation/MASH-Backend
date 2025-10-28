@@ -75,14 +75,7 @@ export class FileValidationService {
       'video/x-ms-wmv',
       'video/webm',
     ],
-    audio: [
-      'audio/mpeg',
-      'audio/mp3',
-      'audio/wav',
-      'audio/x-wav',
-      'audio/ogg',
-      'audio/webm',
-    ],
+    audio: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm'],
   };
 
   /**
@@ -180,11 +173,7 @@ export class FileValidationService {
     this.validateSize(file.size, options.category, options.maxSize);
 
     // 4. Validate MIME type
-    this.validateMimeType(
-      file.mimetype,
-      options.category,
-      options.allowedMimeTypes,
-    );
+    this.validateMimeType(file.mimetype, options.category, options.allowedMimeTypes);
 
     // 5. Validate magic numbers (file signature)
     if (file.buffer) {
@@ -201,9 +190,7 @@ export class FileValidationService {
   private validateFilename(filename: string): void {
     // Check for directory traversal
     if (filename.includes('../') || filename.includes('..\\')) {
-      throw new BadRequestException(
-        'Filename contains directory traversal characters',
-      );
+      throw new BadRequestException('Filename contains directory traversal characters');
     }
 
     // Check for path separators
@@ -218,9 +205,7 @@ export class FileValidationService {
 
     // Check filename length
     if (filename.length > 255) {
-      throw new BadRequestException(
-        'Filename is too long (max 255 characters)',
-      );
+      throw new BadRequestException('Filename is too long (max 255 characters)');
     }
 
     // Check for empty filename
@@ -233,10 +218,7 @@ export class FileValidationService {
    * Validate file extension
    * Blocks dangerous extensions and checks against whitelist
    */
-  private validateExtension(
-    filename: string,
-    allowedExtensions?: string[],
-  ): void {
+  private validateExtension(filename: string, allowedExtensions?: string[]): void {
     const extension = this.getExtension(filename);
 
     // Check against dangerous extensions
@@ -248,10 +230,8 @@ export class FileValidationService {
 
     // Check against whitelist if provided
     if (allowedExtensions && allowedExtensions.length > 0) {
-      const normalizedAllowed = allowedExtensions.map((ext) =>
-        ext.toLowerCase().startsWith('.')
-          ? ext.toLowerCase()
-          : `.${ext.toLowerCase()}`,
+      const normalizedAllowed = allowedExtensions.map(ext =>
+        ext.toLowerCase().startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`,
       );
 
       if (!normalizedAllowed.includes(extension.toLowerCase())) {
@@ -265,11 +245,7 @@ export class FileValidationService {
   /**
    * Validate file size
    */
-  private validateSize(
-    size: number,
-    category?: string,
-    maxSize?: number,
-  ): void {
+  private validateSize(size: number, category?: string, maxSize?: number): void {
     const limit =
       maxSize ||
       this.maxFileSizes[category as keyof typeof this.maxFileSizes] ||
@@ -290,11 +266,7 @@ export class FileValidationService {
   /**
    * Validate MIME type
    */
-  private validateMimeType(
-    mimetype: string,
-    category?: string,
-    allowedMimeTypes?: string[],
-  ): void {
+  private validateMimeType(mimetype: string, category?: string, allowedMimeTypes?: string[]): void {
     // Use provided whitelist if available
     if (allowedMimeTypes && allowedMimeTypes.length > 0) {
       if (!allowedMimeTypes.includes(mimetype)) {
@@ -307,8 +279,7 @@ export class FileValidationService {
 
     // Use category-based whitelist
     if (category) {
-      const allowed =
-        this.allowedMimeTypes[category as keyof typeof this.allowedMimeTypes];
+      const allowed = this.allowedMimeTypes[category as keyof typeof this.allowedMimeTypes];
       if (allowed && !allowed.includes(mimetype)) {
         throw new BadRequestException(
           `MIME type '${mimetype}' is not allowed for category '${category}'`,
@@ -321,10 +292,7 @@ export class FileValidationService {
    * Validate file magic numbers (file signature)
    * Prevents MIME type spoofing attacks
    */
-  private async validateMagicNumbers(
-    buffer: Buffer,
-    expectedMimetype: string,
-  ): Promise<void> {
+  private async validateMagicNumbers(buffer: Buffer, expectedMimetype: string): Promise<void> {
     const signatures = this.mimeSignatures[expectedMimetype];
     if (!signatures) {
       // No signature defined for this MIME type, skip validation
@@ -333,9 +301,7 @@ export class FileValidationService {
 
     const fileHeader = buffer.toString('hex', 0, 12).toUpperCase();
 
-    const matches = signatures.some((signature) =>
-      fileHeader.startsWith(signature.toUpperCase()),
-    );
+    const matches = signatures.some(signature => fileHeader.startsWith(signature.toUpperCase()));
 
     if (!matches) {
       throw new BadRequestException(

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestMiddleware,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestMiddleware, ForbiddenException, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { randomBytes, createHmac } from 'crypto';
 
@@ -52,8 +47,7 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
   private readonly bodyFieldName = '_csrf';
 
   // HMAC secret for token generation (rotate periodically in production)
-  private readonly hmacSecret =
-    process.env.CSRF_SECRET || this.generateSecret();
+  private readonly hmacSecret = process.env.CSRF_SECRET || this.generateSecret();
 
   /**
    * Safe HTTP methods that don't require CSRF protection
@@ -86,32 +80,25 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
 
     // Skip CSRF for API key authenticated requests
     if (req.headers['x-api-key']) {
-      this.logger.debug(
-        `Skipping CSRF for API key authenticated request: ${req.path}`,
-      );
+      this.logger.debug(`Skipping CSRF for API key authenticated request: ${req.path}`);
       return next();
     }
 
     try {
       // Get CSRF token from request
-      const token =
-        req.headers[this.headerName] || req.body?.[this.bodyFieldName];
+      const token = req.headers[this.headerName] || req.body?.[this.bodyFieldName];
 
       // Get CSRF secret from cookie
       const secret = req.cookies?.[this.secretCookieName];
 
       if (!token || !secret) {
-        this.logger.warn(
-          `CSRF token missing for ${req.method} ${req.path} from IP ${req.ip}`,
-        );
+        this.logger.warn(`CSRF token missing for ${req.method} ${req.path} from IP ${req.ip}`);
         throw new ForbiddenException('CSRF token missing');
       }
 
       // Validate token
       if (!this.validateToken(token as string, secret)) {
-        this.logger.warn(
-          `Invalid CSRF token for ${req.method} ${req.path} from IP ${req.ip}`,
-        );
+        this.logger.warn(`Invalid CSRF token for ${req.method} ${req.path} from IP ${req.ip}`);
         throw new ForbiddenException('Invalid CSRF token');
       }
 
@@ -235,7 +222,7 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
    * Check if path is excluded from CSRF protection
    */
   private isExcludedPath(path: string): boolean {
-    return this.excludedPaths.some((excluded) => path.startsWith(excluded));
+    return this.excludedPaths.some(excluded => path.startsWith(excluded));
   }
 }
 

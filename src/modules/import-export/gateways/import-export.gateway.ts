@@ -60,9 +60,7 @@ interface JobFailedData {
   },
   namespace: process.env.WS_NAMESPACE || '/import-export',
 })
-export class ImportExportGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class ImportExportGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 

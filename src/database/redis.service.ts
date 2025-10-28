@@ -50,9 +50,7 @@ export class RedisService implements OnModuleDestroy {
         retryStrategy: (times: number) => {
           if (times > 3) {
             // Reduce retries to fail fast
-            this.logger.error(
-              '❌ Redis: Max retries reached. Continuing without Redis.',
-            );
+            this.logger.error('❌ Redis: Max retries reached. Continuing without Redis.');
             this.isConnected = false;
             return null; // Stop retrying
           }
@@ -69,7 +67,7 @@ export class RedisService implements OnModuleDestroy {
           this.logger.log('✅ Redis connected successfully');
           this.isConnected = true;
         })
-        .catch((error) => {
+        .catch(error => {
           this.handleConnectionError(error);
         });
 
@@ -78,7 +76,7 @@ export class RedisService implements OnModuleDestroy {
         this.isConnected = true;
       });
 
-      this.client.on('error', (error) => {
+      this.client.on('error', error => {
         this.handleConnectionError(error);
       });
 
@@ -108,9 +106,7 @@ export class RedisService implements OnModuleDestroy {
       error.message?.includes('Usage:')
     ) {
       this.logger.error('❌ REDIS QUOTA EXCEEDED!');
-      this.logger.error(
-        '💰 Your Upstash Redis free tier limit has been reached',
-      );
+      this.logger.error('💰 Your Upstash Redis free tier limit has been reached');
       this.logger.error(
         '📝 Options: 1) Upgrade Upstash plan, 2) Reset database, 3) Continue without Redis',
       );

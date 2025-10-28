@@ -197,9 +197,7 @@ export function getHelmetConfig(nodeEnv: string = 'production'): HelmetOptions {
      */
     crossOriginEmbedderPolicy: isDevelopment ? false : true,
     crossOriginOpenerPolicy: isDevelopment ? false : { policy: 'same-origin' },
-    crossOriginResourcePolicy: isDevelopment
-      ? false
-      : { policy: 'same-origin' },
+    crossOriginResourcePolicy: isDevelopment ? false : { policy: 'same-origin' },
   };
 }
 

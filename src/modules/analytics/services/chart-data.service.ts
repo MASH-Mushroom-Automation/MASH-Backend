@@ -95,23 +95,14 @@ export class ChartDataService {
       return cached;
     }
 
-    this.logger.log(
-      `Generating line chart data for metric: ${metric}, groupBy: ${groupBy}`,
-    );
+    this.logger.log(`Generating line chart data for metric: ${metric}, groupBy: ${groupBy}`);
 
     // Generate date labels based on groupBy
     const labels = this.generateDateLabels(dateRange, groupBy);
-    const data = await this.getMetricDataForDates(
-      metric,
-      dateRange,
-      labels,
-      groupBy,
-    );
+    const data = await this.getMetricDataForDates(metric, dateRange, labels, groupBy);
 
     const chartData: LineChartData = {
-      labels: labels.map((date) =>
-        format(date, groupBy === 'month' ? 'MMM yyyy' : 'MMM dd'),
-      ),
+      labels: labels.map(date => format(date, groupBy === 'month' ? 'MMM yyyy' : 'MMM dd')),
       datasets: [
         {
           label: this.getMetricLabel(metric),
@@ -144,27 +135,17 @@ export class ChartDataService {
       return cached;
     }
 
-    this.logger.log(
-      `Generating bar chart data for metrics: ${metrics.join(', ')}`,
-    );
+    this.logger.log(`Generating bar chart data for metrics: ${metrics.join(', ')}`);
 
     const datasets = await Promise.all(
       metrics.map(async (metric, index) => {
-        const data = await this.getMetricDataForCategories(
-          metric,
-          categories,
-          dateRange,
-        );
+        const data = await this.getMetricDataForCategories(metric, categories, dateRange);
 
         return {
           label: this.getMetricLabel(metric),
           data,
-          backgroundColor: categories.map(
-            (_, i) => this.colors[i % this.colors.length].bg,
-          ),
-          borderColor: categories.map(
-            (_, i) => this.colors[i % this.colors.length].border,
-          ),
+          backgroundColor: categories.map((_, i) => this.colors[i % this.colors.length].bg),
+          borderColor: categories.map((_, i) => this.colors[i % this.colors.length].border),
           borderWidth: 1,
         };
       }),
@@ -196,15 +177,9 @@ export class ChartDataService {
       return cached;
     }
 
-    this.logger.log(
-      `Generating pie chart data for metric: ${metric}, groupBy: ${groupBy}`,
-    );
+    this.logger.log(`Generating pie chart data for metric: ${metric}, groupBy: ${groupBy}`);
 
-    const distributionData = await this.getMetricDistribution(
-      metric,
-      groupBy,
-      dateRange,
-    );
+    const distributionData = await this.getMetricDistribution(metric, groupBy, dateRange);
 
     const chartData: PieChartData = {
       labels: distributionData.labels,
@@ -243,20 +218,13 @@ export class ChartDataService {
       return cached;
     }
 
-    this.logger.log(
-      `Generating area chart data for metrics: ${metrics.join(', ')}`,
-    );
+    this.logger.log(`Generating area chart data for metrics: ${metrics.join(', ')}`);
 
     const labels = this.generateDateLabels(dateRange, groupBy);
 
     const datasets = await Promise.all(
       metrics.map(async (metric, index) => {
-        const data = await this.getMetricDataForDates(
-          metric,
-          dateRange,
-          labels,
-          groupBy,
-        );
+        const data = await this.getMetricDataForDates(metric, dateRange, labels, groupBy);
 
         return {
           label: this.getMetricLabel(metric),
@@ -269,9 +237,7 @@ export class ChartDataService {
     );
 
     const chartData: AreaChartData = {
-      labels: labels.map((date) =>
-        format(date, groupBy === 'month' ? 'MMM yyyy' : 'MMM dd'),
-      ),
+      labels: labels.map(date => format(date, groupBy === 'month' ? 'MMM yyyy' : 'MMM dd')),
       datasets,
     };
 
@@ -284,10 +250,7 @@ export class ChartDataService {
   /**
    * Generate date labels based on grouping
    */
-  private generateDateLabels(
-    dateRange: DateRange,
-    groupBy: 'day' | 'week' | 'month',
-  ): Date[] {
+  private generateDateLabels(dateRange: DateRange, groupBy: 'day' | 'week' | 'month'): Date[] {
     switch (groupBy) {
       case 'day':
         return eachDayOfInterval(dateRange);
@@ -330,7 +293,7 @@ export class ChartDataService {
     dateRange: DateRange,
   ): Promise<number[]> {
     const data = await Promise.all(
-      categories.map(async (category) => {
+      categories.map(async category => {
         switch (metric) {
           case 'revenue':
             return this.getRevenueByCategory(category, dateRange);
@@ -375,7 +338,7 @@ export class ChartDataService {
     groupBy: 'day' | 'week' | 'month',
   ): Promise<number[]> {
     return Promise.all(
-      dates.map(async (date) => {
+      dates.map(async date => {
         const start = this.getStartOfPeriod(date, groupBy);
         const end = endOfDay(this.getEndOfPeriod(date, groupBy));
 
@@ -400,7 +363,7 @@ export class ChartDataService {
     groupBy: 'day' | 'week' | 'month',
   ): Promise<number[]> {
     return Promise.all(
-      dates.map(async (date) => {
+      dates.map(async date => {
         const start = this.getStartOfPeriod(date, groupBy);
         const end = endOfDay(this.getEndOfPeriod(date, groupBy));
 
@@ -421,7 +384,7 @@ export class ChartDataService {
     groupBy: 'day' | 'week' | 'month',
   ): Promise<number[]> {
     return Promise.all(
-      dates.map(async (date) => {
+      dates.map(async date => {
         const start = this.getStartOfPeriod(date, groupBy);
         const end = endOfDay(this.getEndOfPeriod(date, groupBy));
 
@@ -442,7 +405,7 @@ export class ChartDataService {
     groupBy: 'day' | 'week' | 'month',
   ): Promise<number[]> {
     return Promise.all(
-      dates.map(async (date) => {
+      dates.map(async date => {
         const start = this.getStartOfPeriod(date, groupBy);
         const end = endOfDay(this.getEndOfPeriod(date, groupBy));
 
@@ -466,10 +429,7 @@ export class ChartDataService {
    * Note: Product.categories is a Json array, not a relation
    * Uses Prisma JSON filtering with array_contains to filter products by category
    */
-  private async getRevenueByCategory(
-    categoryId: string,
-    dateRange: DateRange,
-  ): Promise<number> {
+  private async getRevenueByCategory(categoryId: string, dateRange: DateRange): Promise<number> {
     // Use Prisma JSON filtering for Product.categories array
     const result = await this.prisma.orderItem.aggregate({
       where: {
@@ -495,10 +455,7 @@ export class ChartDataService {
    * Note: Product.categories is a Json array, not a relation
    * Uses Prisma JSON filtering with array_contains to filter products by category
    */
-  private async getOrdersByCategory(
-    categoryId: string,
-    dateRange: DateRange,
-  ): Promise<number> {
+  private async getOrdersByCategory(categoryId: string, dateRange: DateRange): Promise<number> {
     // Use Prisma JSON filtering for Product.categories array
     return this.prisma.order.count({
       where: {
@@ -558,14 +515,12 @@ export class ChartDataService {
     });
 
     const values = await Promise.all(
-      categories.map((cat) =>
-        this.getMetricDataForCategories(metric, [cat.id], dateRange),
-      ),
+      categories.map(cat => this.getMetricDataForCategories(metric, [cat.id], dateRange)),
     );
 
     return {
-      labels: categories.map((cat) => cat.name),
-      values: values.map((v) => v[0]),
+      labels: categories.map(cat => cat.name),
+      values: values.map(v => v[0]),
     };
   }
 
@@ -586,11 +541,11 @@ export class ChartDataService {
     });
 
     return {
-      labels: orders.map((o) => o.status),
+      labels: orders.map(o => o.status),
       values:
         metric === 'revenue'
-          ? orders.map((o) => Number(o._sum?.total || 0))
-          : orders.map((o) => o._count),
+          ? orders.map(o => Number(o._sum?.total || 0))
+          : orders.map(o => o._count),
     };
   }
 
@@ -615,28 +570,25 @@ export class ChartDataService {
     });
 
     const products = await this.prisma.product.findMany({
-      where: { id: { in: topProducts.map((p) => p.productId) } },
+      where: { id: { in: topProducts.map(p => p.productId) } },
     });
 
     return {
-      labels: topProducts.map((item) => {
-        const product = products.find((p) => p.id === item.productId);
+      labels: topProducts.map(item => {
+        const product = products.find(p => p.id === item.productId);
         return product?.name || 'Unknown';
       }),
       values:
         metric === 'revenue'
-          ? topProducts.map((item) => Number(item._sum?.total || 0)) // Sum line totals, not unit price
-          : topProducts.map((item) => item._sum?.quantity || 0),
+          ? topProducts.map(item => Number(item._sum?.total || 0)) // Sum line totals, not unit price
+          : topProducts.map(item => item._sum?.quantity || 0),
     };
   }
 
   /**
    * Get start of period based on groupBy
    */
-  private getStartOfPeriod(
-    date: Date,
-    groupBy: 'day' | 'week' | 'month',
-  ): Date {
+  private getStartOfPeriod(date: Date, groupBy: 'day' | 'week' | 'month'): Date {
     switch (groupBy) {
       case 'day':
         return startOfDay(date);

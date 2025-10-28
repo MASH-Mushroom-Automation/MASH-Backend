@@ -10,12 +10,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SensorsService } from './sensors.service';
 import { CreateSensorDto } from './dto/create-sensor.dto';
 import { UpdateSensorDto } from './dto/update-sensor.dto';
@@ -104,10 +99,7 @@ export class SensorsController {
   @ApiOperation({ summary: 'Update sensor configuration' })
   @ApiResponse({ status: 200, description: 'Sensor updated successfully' })
   @ApiResponse({ status: 404, description: 'Sensor not found' })
-  async update(
-    @Param('id') id: string,
-    @Body() updateSensorDto: UpdateSensorDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateSensorDto: UpdateSensorDto) {
     return this.sensorsService.update(id, updateSensorDto);
   }
 
@@ -143,11 +135,7 @@ export class SensorsController {
   @ApiOperation({ summary: 'Batch ingest multiple sensor data points' })
   @ApiResponse({ status: 201, description: 'Batch data ingested successfully' })
   @ApiResponse({ status: 404, description: 'Sensor not found' })
-  async batchIngest(
-    @Param('id') id: string,
-    @Body() batchDto: BatchIngestDto,
-    @Request() req,
-  ) {
+  async batchIngest(@Param('id') id: string, @Body() batchDto: BatchIngestDto, @Request() req) {
     return this.sensorsService.batchIngest(id, batchDto, req.user);
   }
 
@@ -183,10 +171,7 @@ export class SensorsController {
     description: 'Aggregated data retrieved successfully',
   })
   @ApiResponse({ status: 404, description: 'Sensor not found' })
-  async getAggregations(
-    @Param('id') id: string,
-    @Query() query: SensorAggregationDto,
-  ) {
+  async getAggregations(@Param('id') id: string, @Query() query: SensorAggregationDto) {
     return this.sensorsService.getAggregations(id, query);
   }
 
@@ -198,10 +183,7 @@ export class SensorsController {
     description: 'Statistics retrieved successfully',
   })
   @ApiResponse({ status: 404, description: 'Sensor not found' })
-  async getStatistics(
-    @Param('id') id: string,
-    @Query() query: SensorDataQueryDto,
-  ) {
+  async getStatistics(@Param('id') id: string, @Query() query: SensorDataQueryDto) {
     return this.sensorsService.getStatistics(id, query);
   }
 
