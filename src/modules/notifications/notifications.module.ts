@@ -13,7 +13,11 @@ import { QueuesModule } from '../queues/queues.module';
 
 @Module({
   imports: [QueuesModule],
-  controllers: [NotificationsController, DebugController, TestNotificationsController],
+  controllers: [
+    NotificationsController,
+    DebugController,
+    TestNotificationsController,
+  ],
   providers: [
     NotificationsService,
     EmailTemplateService,

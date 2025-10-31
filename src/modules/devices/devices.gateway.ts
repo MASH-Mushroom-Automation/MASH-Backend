@@ -17,7 +17,9 @@ import { Logger } from '@nestjs/common';
   },
   namespace: '/devices',
 })
-export class DevicesGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class DevicesGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -70,7 +72,9 @@ export class DevicesGateway implements OnGatewayInit, OnGatewayConnection, OnGat
     @MessageBody() data: { deviceId: string },
   ) {
     client.join(`device:${data.deviceId}`);
-    this.logger.log(`Client ${client.id} subscribed to device ${data.deviceId}`);
+    this.logger.log(
+      `Client ${client.id} subscribed to device ${data.deviceId}`,
+    );
     return { success: true, message: `Subscribed to device ${data.deviceId}` };
   }
 
@@ -81,7 +85,9 @@ export class DevicesGateway implements OnGatewayInit, OnGatewayConnection, OnGat
     @MessageBody() data: { deviceId: string },
   ) {
     client.leave(`device:${data.deviceId}`);
-    this.logger.log(`Client ${client.id} unsubscribed from device ${data.deviceId}`);
+    this.logger.log(
+      `Client ${client.id} unsubscribed from device ${data.deviceId}`,
+    );
     return {
       success: true,
       message: `Unsubscribed from device ${data.deviceId}`,

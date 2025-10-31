@@ -77,7 +77,7 @@ export abstract class BaseEntity {
   toJSON(): Record<string, unknown> {
     const obj: Record<string, unknown> = {};
 
-    Object.keys(this).forEach(key => {
+    Object.keys(this).forEach((key) => {
       const value = (this as Record<string, unknown>)[key];
 
       // Skip null/undefined values

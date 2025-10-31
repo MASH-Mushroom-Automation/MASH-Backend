@@ -13,7 +13,12 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
@@ -99,8 +104,14 @@ export class NotificationsController {
   @Put('preferences')
   @ApiOperation({ summary: 'Update user notification preferences' })
   @ApiResponse({ status: 200, description: 'Preferences updated successfully' })
-  async updatePreferences(@Request() req, @Body() preferencesDto: NotificationPreferencesDto) {
-    return this.notificationsService.updatePreferences(req.user.id, preferencesDto);
+  async updatePreferences(
+    @Request() req,
+    @Body() preferencesDto: NotificationPreferencesDto,
+  ) {
+    return this.notificationsService.updatePreferences(
+      req.user.id,
+      preferencesDto,
+    );
   }
 
   @Get(':id')
@@ -136,12 +147,15 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send test email via queue' })
   @ApiResponse({ status: 200, description: 'Test email queued' })
-  async testEmail(@Body() dto: { to: string; subject?: string; body?: string }) {
+  async testEmail(
+    @Body() dto: { to: string; subject?: string; body?: string },
+  ) {
     await this.notificationQueue.sendEmail({
       to: [dto.to],
       subject: dto.subject || 'Test Email from MASH System',
       body:
-        dto.body || 'This is a test email to verify your email configuration is working correctly.',
+        dto.body ||
+        'This is a test email to verify your email configuration is working correctly.',
       priority: 'normal',
     });
 
@@ -161,7 +175,9 @@ export class NotificationsController {
     summary: 'Send test email directly without queue (no Redis needed)',
   })
   @ApiResponse({ status: 200, description: 'Test email sent directly' })
-  async testEmailDirect(@Body() dto: { to: string; subject?: string; body?: string }) {
+  async testEmailDirect(
+    @Body() dto: { to: string; subject?: string; body?: string },
+  ) {
     // Use your existing Gmail SMTP configuration
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
@@ -285,7 +301,10 @@ export class NotificationsController {
       userId,
     };
 
-    const result = await this.pushNotificationService.registerSubscription(userId, subscription);
+    const result = await this.pushNotificationService.registerSubscription(
+      userId,
+      subscription,
+    );
 
     return {
       success: true,
@@ -298,13 +317,19 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Unsubscribe from push notifications' })
   @ApiResponse({ status: 200, description: 'Push subscription removed' })
   @ApiResponse({ status: 404, description: 'Subscription not found' })
-  async unsubscribeFromPush(@Body() subscriptionData: { endpoint: string }, @Request() req) {
+  async unsubscribeFromPush(
+    @Body() subscriptionData: { endpoint: string },
+    @Request() req,
+  ) {
     const userId = req.user?.id as string;
     if (!userId) {
       throw new BadRequestException('User authentication required');
     }
 
-    await this.pushNotificationService.unregisterSubscription(userId, subscriptionData.endpoint);
+    await this.pushNotificationService.unregisterSubscription(
+      userId,
+      subscriptionData.endpoint,
+    );
 
     return {
       success: true,
@@ -399,7 +424,10 @@ export class NotificationsController {
       throw new BadRequestException('User authentication required');
     }
 
-    const preferences = await this.communicationHubService.getUserCommunicationPreferences(userId);
+    const preferences =
+      await this.communicationHubService.getUserCommunicationPreferences(
+        userId,
+      );
 
     return {
       success: true,
@@ -410,13 +438,19 @@ export class NotificationsController {
   @Put('communication/preferences')
   @ApiOperation({ summary: 'Update user communication preferences' })
   @ApiResponse({ status: 200, description: 'Preferences updated' })
-  async updateCommunicationPreferences(@Body() preferences: any, @Request() req) {
+  async updateCommunicationPreferences(
+    @Body() preferences: any,
+    @Request() req,
+  ) {
     const userId = req.user?.id as string;
     if (!userId) {
       throw new BadRequestException('User authentication required');
     }
 
-    await this.communicationHubService.updateUserCommunicationPreferences(userId, preferences);
+    await this.communicationHubService.updateUserCommunicationPreferences(
+      userId,
+      preferences,
+    );
 
     return {
       success: true,
@@ -469,7 +503,8 @@ export class NotificationsController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Device health alert sent successfully through appropriate channels',
+    description:
+      'Device health alert sent successfully through appropriate channels',
     type: DeviceHealthAlertResponseDto,
   })
   @ApiResponse({
@@ -489,7 +524,9 @@ export class NotificationsController {
       body.healthStatus,
       {
         ...body.metrics,
-        lastSeen: body.metrics?.lastSeen ? new Date(body.metrics.lastSeen) : undefined,
+        lastSeen: body.metrics?.lastSeen
+          ? new Date(body.metrics.lastSeen)
+          : undefined,
       },
     );
 

@@ -44,7 +44,12 @@ export interface TemplateMetadata {
 
 @Injectable()
 export class EmailTemplateService {
-  private readonly templatesPath = path.join(__dirname, '..', 'templates', 'email');
+  private readonly templatesPath = path.join(
+    __dirname,
+    '..',
+    'templates',
+    'email',
+  );
 
   /**
    * Render an email template with variables
@@ -55,7 +60,10 @@ export class EmailTemplateService {
   ): Promise<{ html: string; text: string; subject: string }> {
     try {
       // Read the template file
-      const templatePath = path.join(this.templatesPath, `${templateType}.html`);
+      const templatePath = path.join(
+        this.templatesPath,
+        `${templateType}.html`,
+      );
       let htmlTemplate = await readFile(templatePath, 'utf-8');
 
       // Replace variables in template
@@ -73,18 +81,23 @@ export class EmailTemplateService {
         subject,
       };
     } catch (error) {
-      throw new Error(`Failed to render email template ${templateType}: ${error.message}`);
+      throw new Error(
+        `Failed to render email template ${templateType}: ${error.message}`,
+      );
     }
   }
 
   /**
    * Replace variables in template with advanced features
    */
-  private replaceVariables(template: string, variables: EmailTemplateVariables): string {
+  private replaceVariables(
+    template: string,
+    variables: EmailTemplateVariables,
+  ): string {
     let result = template;
 
     // Replace all {{variable}} with actual values
-    Object.keys(variables).forEach(key => {
+    Object.keys(variables).forEach((key) => {
       const value = variables[key];
       const regex = new RegExp(`{{${key}}}`, 'g');
 
@@ -124,7 +137,10 @@ export class EmailTemplateService {
   /**
    * Process conditional blocks in template
    */
-  private processConditionals(template: string, variables: EmailTemplateVariables): string {
+  private processConditionals(
+    template: string,
+    variables: EmailTemplateVariables,
+  ): string {
     let result = template;
 
     // Simple conditional processing: {{#if variable}}content{{/if}}
@@ -163,22 +179,32 @@ export class EmailTemplateService {
   /**
    * Get email subject based on template type
    */
-  private getSubject(templateType: EmailTemplateType, variables: EmailTemplateVariables): string {
+  private getSubject(
+    templateType: EmailTemplateType,
+    variables: EmailTemplateVariables,
+  ): string {
     const subjects: Record<EmailTemplateType, string> = {
-      [EmailTemplateType.VERIFICATION]: 'Verify Your Email - Welcome to MASH! 🍄',
+      [EmailTemplateType.VERIFICATION]:
+        'Verify Your Email - Welcome to MASH! 🍄',
       [EmailTemplateType.FORGOT_PASSWORD]: 'Reset Your Password - MASH',
-      [EmailTemplateType.PASSWORD_CHANGED]: 'Your Password Has Been Changed - MASH',
-      [EmailTemplateType.RESEND_VERIFICATION]: 'Verify Your Email - Action Required',
+      [EmailTemplateType.PASSWORD_CHANGED]:
+        'Your Password Has Been Changed - MASH',
+      [EmailTemplateType.RESEND_VERIFICATION]:
+        'Verify Your Email - Action Required',
       [EmailTemplateType.ACCOUNT_LOCKED]: 'Account Security Alert - MASH',
-      [EmailTemplateType.TWO_FACTOR_AUTH]: 'Your Two-Factor Authentication Code - MASH',
-      [EmailTemplateType.PASSWORD_RESET_SUCCESS]: 'Password Reset Successful - MASH',
+      [EmailTemplateType.TWO_FACTOR_AUTH]:
+        'Your Two-Factor Authentication Code - MASH',
+      [EmailTemplateType.PASSWORD_RESET_SUCCESS]:
+        'Password Reset Successful - MASH',
       [EmailTemplateType.EMAIL_CHANGED]: 'Email Address Changed - MASH',
-      [EmailTemplateType.ACCOUNT_DELETION]: 'Account Deletion Confirmation - MASH',
+      [EmailTemplateType.ACCOUNT_DELETION]:
+        'Account Deletion Confirmation - MASH',
       [EmailTemplateType.WELCOME]: 'Welcome to MASH! 🍄',
       [EmailTemplateType.DEVICE_OFFLINE]: 'Device Offline Alert - MASH',
       [EmailTemplateType.DEVICE_ERROR]: 'Device Error Alert - MASH',
       [EmailTemplateType.HEALTH_WARNING]: 'Device Health Warning - MASH',
-      [EmailTemplateType.HEALTH_CRITICAL]: 'Critical Device Health Alert - MASH',
+      [EmailTemplateType.HEALTH_CRITICAL]:
+        'Critical Device Health Alert - MASH',
     };
 
     return subjects[templateType] || 'MASH Notification';
@@ -187,7 +213,10 @@ export class EmailTemplateService {
   /**
    * Get template variables for verification email
    */
-  getVerificationVariables(firstName: string, verificationLink: string): EmailTemplateVariables {
+  getVerificationVariables(
+    firstName: string,
+    verificationLink: string,
+  ): EmailTemplateVariables {
     return {
       firstName,
       verificationLink,
@@ -198,7 +227,10 @@ export class EmailTemplateService {
   /**
    * Get template variables for forgot password email
    */
-  getForgotPasswordVariables(firstName: string, resetLink: string): EmailTemplateVariables {
+  getForgotPasswordVariables(
+    firstName: string,
+    resetLink: string,
+  ): EmailTemplateVariables {
     return {
       firstName,
       resetLink,
@@ -209,7 +241,10 @@ export class EmailTemplateService {
   /**
    * Get template variables for password changed email
    */
-  getPasswordChangedVariables(firstName: string, changeDate: Date): EmailTemplateVariables {
+  getPasswordChangedVariables(
+    firstName: string,
+    changeDate: Date,
+  ): EmailTemplateVariables {
     return {
       firstName,
       changeDate: changeDate.toLocaleString(),
@@ -220,7 +255,10 @@ export class EmailTemplateService {
   /**
    * Get template variables for 2FA code email
    */
-  getTwoFactorAuthVariables(firstName: string, code: string): EmailTemplateVariables {
+  getTwoFactorAuthVariables(
+    firstName: string,
+    code: string,
+  ): EmailTemplateVariables {
     return {
       firstName,
       code,

@@ -39,10 +39,15 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     // This prevents the native engine DLL from loading during NestJS module initialization
 
     // Get query timeout from environment variable (default: 30 seconds)
-    const timeoutFromEnv = parseInt(process.env.DATABASE_QUERY_TIMEOUT_MS || '30000', 10);
+    const timeoutFromEnv = parseInt(
+      process.env.DATABASE_QUERY_TIMEOUT_MS || '30000',
+      10,
+    );
     this.queryTimeoutMs = timeoutFromEnv > 0 ? timeoutFromEnv : 30000;
 
-    this.logger.log('📊 PrismaService constructor called - client will be created lazily');
+    this.logger.log(
+      '📊 PrismaService constructor called - client will be created lazily',
+    );
   }
 
   /**
@@ -201,10 +206,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.getClient().$executeRaw(query, ...values) as Promise<number>;
   }
   $executeRawUnsafe(query: string, ...values: any[]): Promise<number> {
-    return this.getClient().$executeRawUnsafe(query, ...values) as Promise<number>;
+    return this.getClient().$executeRawUnsafe(
+      query,
+      ...values,
+    ) as Promise<number>;
   }
-  $transaction<R>(fn: (prisma: Omit<PrismaClient, '$transaction'>) => Promise<R>): Promise<R>;
-  $transaction<P extends any[]>(arg: [...P], options?: { isolationLevel?: any }): Promise<any>;
+  $transaction<R>(
+    fn: (prisma: Omit<PrismaClient, '$transaction'>) => Promise<R>,
+  ): Promise<R>;
+  $transaction<P extends any[]>(
+    arg: [...P],
+    options?: { isolationLevel?: any },
+  ): Promise<any>;
   $transaction(arg: any, options?: any): Promise<any> {
     return this.getClient().$transaction(arg, options);
   }
@@ -301,7 +314,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    */
   private getClient(): PrismaClient {
     if (!this.client) {
-      throw new Error('PrismaClient not initialized. Did you forget to call onModuleInit()?');
+      throw new Error(
+        'PrismaClient not initialized. Did you forget to call onModuleInit()?',
+      );
     }
     return this.client;
   }
@@ -320,7 +335,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    * Truncate query string for logging
    */
   private truncateQuery(query: string, maxLength = 200): string {
-    return query.length > maxLength ? query.substring(0, maxLength) + '...' : query;
+    return query.length > maxLength
+      ? query.substring(0, maxLength) + '...'
+      : query;
   }
 
   /**
@@ -329,7 +346,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   getQueryStats() {
     const avgDuration =
       this.queryStats.totalQueries > 0
-        ? (this.queryStats.totalDuration / this.queryStats.totalQueries).toFixed(2)
+        ? (
+            this.queryStats.totalDuration / this.queryStats.totalQueries
+          ).toFixed(2)
         : 0;
 
     return {
@@ -337,7 +356,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       slowQueries: this.queryStats.slowQueries,
       slowQueryPercentage:
         this.queryStats.totalQueries > 0
-          ? ((this.queryStats.slowQueries / this.queryStats.totalQueries) * 100).toFixed(2) + '%'
+          ? (
+              (this.queryStats.slowQueries / this.queryStats.totalQueries) *
+              100
+            ).toFixed(2) + '%'
           : '0%',
       avgDuration: `${avgDuration}ms`,
       totalDuration: `${this.queryStats.totalDuration}ms`,
@@ -392,8 +414,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       new Promise<T>((_, reject) => {
         setTimeout(() => {
           this.queryStats.timedOutQueries++;
-          this.logger.error(`Query timeout after ${timeoutMs}ms: ${queryDescription}`);
-          reject(new Error(`Query timeout: ${queryDescription} exceeded ${timeoutMs}ms`));
+          this.logger.error(
+            `Query timeout after ${timeoutMs}ms: ${queryDescription}`,
+          );
+          reject(
+            new Error(
+              `Query timeout: ${queryDescription} exceeded ${timeoutMs}ms`,
+            ),
+          );
         }, timeoutMs);
       }),
     ]);
@@ -418,7 +446,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.initializeClient();
       this.logger.log('✅ PrismaClient initialized successfully');
-      this.logger.log('⏳ Database connection will be established on first query');
+      this.logger.log(
+        '⏳ Database connection will be established on first query',
+      );
     } catch (error) {
       this.logger.error('❌ Failed to initialize PrismaClient:', error);
       throw error;
@@ -457,14 +487,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    */
   private async _connect(): Promise<void> {
     try {
-      this.logger.log('🔄 Connecting to Neon PostgreSQL (lazy initialization)...');
+      this.logger.log(
+        '🔄 Connecting to Neon PostgreSQL (lazy initialization)...',
+      );
 
       // Set a timeout for the connection attempt
       const connectWithTimeout = Promise.race([
         this.getClient().$connect(),
         new Promise<never>((_, reject) =>
           setTimeout(() => {
-            this.logger.error('⏰ Database connection TIMEOUT after 10 seconds');
+            this.logger.error(
+              '⏰ Database connection TIMEOUT after 10 seconds',
+            );
             reject(new Error('Database connection timeout after 10 seconds'));
           }, 10000),
         ),
@@ -559,9 +593,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         return await this.$transaction(fn);
       } catch (error) {
         lastError = error as Error;
-        this.logger.warn(`Transaction attempt ${attempt}/${maxRetries} failed: ${error.message}`);
+        this.logger.warn(
+          `Transaction attempt ${attempt}/${maxRetries} failed: ${error.message}`,
+        );
         if (attempt === maxRetries) break;
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100));
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt) * 100),
+        );
       }
     }
 

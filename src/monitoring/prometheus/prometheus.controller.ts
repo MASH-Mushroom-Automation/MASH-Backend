@@ -12,7 +12,14 @@
  * - /metrics/reset requires admin authentication
  */
 
-import { Controller, Get, Post, HttpCode, HttpStatus, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  HttpCode,
+  HttpStatus,
+  Headers,
+} from '@nestjs/common';
 import { PrometheusService } from './prometheus.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';

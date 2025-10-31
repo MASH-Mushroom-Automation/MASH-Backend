@@ -10,7 +10,12 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { DevicesService } from './devices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -87,7 +92,15 @@ export class DevicesController {
       'updatedAt',
     ],
     requiredFields: ['id'],
-    defaultFields: ['id', 'name', 'type', 'status', 'isActive', 'lastSeen', 'firmware'],
+    defaultFields: [
+      'id',
+      'name',
+      'type',
+      'status',
+      'isActive',
+      'lastSeen',
+      'firmware',
+    ],
     maxFields: 15,
   })
   @ApiOperation({ summary: 'Get device details by ID' })
@@ -101,7 +114,11 @@ export class DevicesController {
   @ApiOperation({ summary: 'Update device information' })
   @ApiResponse({ status: 200, description: 'Device updated successfully' })
   @ApiResponse({ status: 404, description: 'Device not found' })
-  async update(@Param('id') id: string, @Body() updateDeviceDto: UpdateDeviceDto, @Request() req) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateDeviceDto: UpdateDeviceDto,
+    @Request() req,
+  ) {
     return this.devicesService.update(id, updateDeviceDto, req.user);
   }
 
@@ -127,7 +144,11 @@ export class DevicesController {
   @ApiOperation({ summary: 'Send command to device via MQTT' })
   @ApiResponse({ status: 200, description: 'Command sent successfully' })
   @ApiResponse({ status: 400, description: 'Invalid command' })
-  async sendCommand(@Param('id') id: string, @Body() commandDto: DeviceCommandDto, @Request() req) {
+  async sendCommand(
+    @Param('id') id: string,
+    @Body() commandDto: DeviceCommandDto,
+    @Request() req,
+  ) {
     return this.devicesService.sendCommand(id, commandDto, req.user);
   }
 
@@ -237,7 +258,10 @@ export class DevicesController {
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Remove sensor from device' })
   @ApiResponse({ status: 200, description: 'Sensor removed' })
-  async removeSensor(@Param('id') id: string, @Param('sensorId') sensorId: string) {
+  async removeSensor(
+    @Param('id') id: string,
+    @Param('sensorId') sensorId: string,
+  ) {
     return this.devicesService.removeSensor(id, sensorId);
   }
 
@@ -250,7 +274,12 @@ export class DevicesController {
     @Body() calibrationDto: SensorCalibrationDto,
     @Request() req,
   ) {
-    return this.devicesService.calibrateSensor(id, sensorId, calibrationDto, req.user);
+    return this.devicesService.calibrateSensor(
+      id,
+      sensorId,
+      calibrationDto,
+      req.user,
+    );
   }
 
   // ========== Analytics & Health (2 endpoints) ==========
@@ -308,7 +337,12 @@ export class DevicesController {
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    return this.devicesService.getDeviceHealthHistory(id, limit || 50, start, end);
+    return this.devicesService.getDeviceHealthHistory(
+      id,
+      limit || 50,
+      start,
+      end,
+    );
   }
 
   @Get(':id/health/status')
