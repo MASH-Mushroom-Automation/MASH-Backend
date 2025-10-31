@@ -2,8 +2,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
@@ -17,7 +15,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
     credentials: true,
   },
 })
-export class AnalyticsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class AnalyticsGateway {
   @WebSocketServer()
   server: Server;
 

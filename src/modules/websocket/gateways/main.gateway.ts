@@ -2,9 +2,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
   ConnectedSocket,
   MessageBody,
   WsException,
@@ -33,7 +30,7 @@ import type { AuthenticatedSocket } from '../interfaces/authenticated-socket.int
   pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '60000'),
   pingInterval: parseInt(process.env.WS_PING_INTERVAL || '25000'),
 })
-export class MainGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class MainGateway {
   @WebSocketServer()
   server!: Server;
 
