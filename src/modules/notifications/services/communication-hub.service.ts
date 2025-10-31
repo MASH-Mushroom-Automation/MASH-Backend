@@ -185,12 +185,15 @@ export class CommunicationHubService {
       const userPrefs = await this.prisma.user.findUnique({
         where: { id: userId },
         select: {
-          notificationPreferences: true,
+          preferences: true,
         },
       });
 
-      if (userPrefs?.notificationPreferences) {
-        return userPrefs.notificationPreferences as UserCommunicationPreferences;
+      if (userPrefs?.preferences) {
+        const prefs = userPrefs.preferences as any;
+        if (prefs.notificationPreferences) {
+          return prefs.notificationPreferences as UserCommunicationPreferences;
+        }
       }
     } catch (error) {
       this.logger.warn(`Failed to get user preferences from database: ${error.message}`);
@@ -226,7 +229,9 @@ export class CommunicationHubService {
       await this.prisma.user.update({
         where: { id: userId },
         data: {
-          notificationPreferences: updatedPrefs,
+          preferences: {
+            notificationPreferences: updatedPrefs,
+          },
         },
       });
     } catch (error) {
