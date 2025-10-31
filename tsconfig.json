@@ -16,6 +16,7 @@
     },
     "incremental": true,
     "skipLibCheck": true,
+    "types": ["node", "express", "multer"],
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
