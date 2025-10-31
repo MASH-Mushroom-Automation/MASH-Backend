@@ -5,11 +5,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { TimeoutInterceptor } from '../timeout.interceptor';
-import {
-  ExecutionContext,
-  CallHandler,
-  RequestTimeoutException,
-} from '@nestjs/common';
+import { ExecutionContext, CallHandler, RequestTimeoutException } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
@@ -37,7 +33,7 @@ describe.skip('TimeoutInterceptor', () => {
   });
 
   describe('Request Timeout', () => {
-    it('should allow requests within timeout limit', (done) => {
+    it('should allow requests within timeout limit', done => {
       const timeout = 5000; // 5 seconds
       interceptor = new TimeoutInterceptor(timeout);
 
@@ -45,17 +41,17 @@ describe.skip('TimeoutInterceptor', () => {
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(100))); // 100ms delay
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
-        next: (data) => {
+        next: data => {
           expect(data).toEqual(mockData);
           done();
         },
-        error: (err) => {
+        error: err => {
           done(err);
         },
       });
     });
 
-    it('should timeout slow requests', (done) => {
+    it('should timeout slow requests', done => {
       const timeout = 100; // 100ms timeout
       interceptor = new TimeoutInterceptor(timeout);
 
@@ -66,7 +62,7 @@ describe.skip('TimeoutInterceptor', () => {
         next: () => {
           done(new Error('Should have timed out'));
         },
-        error: (err) => {
+        error: err => {
           expect(err).toBeInstanceOf(RequestTimeoutException);
           expect(err.message).toContain('timeout');
           done();
@@ -74,36 +70,34 @@ describe.skip('TimeoutInterceptor', () => {
       });
     }, 10000); // Set Jest timeout higher for this test
 
-    it('should use default timeout if not specified', (done) => {
+    it('should use default timeout if not specified', done => {
       interceptor = new TimeoutInterceptor(); // Default should be 5000ms
 
       const mockData = { message: 'Success' };
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(100)));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
-        next: (data) => {
+        next: data => {
           expect(data).toEqual(mockData);
           done();
         },
-        error: (err) => {
+        error: err => {
           done(err);
         },
       });
     });
 
-    it('should include request details in timeout error', (done) => {
+    it('should include request details in timeout error', done => {
       const timeout = 50;
       interceptor = new TimeoutInterceptor(timeout);
 
-      mockCallHandler.handle.mockReturnValue(
-        of({ data: 'test' }).pipe(delay(100)),
-      );
+      mockCallHandler.handle.mockReturnValue(of({ data: 'test' }).pipe(delay(100)));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
         next: () => {
           done(new Error('Should have timed out'));
         },
-        error: (err) => {
+        error: err => {
           expect(err).toBeInstanceOf(RequestTimeoutException);
           // Timeout error should provide useful debugging info
           const errorMessage = err.message.toLowerCase();
@@ -119,7 +113,7 @@ describe.skip('TimeoutInterceptor', () => {
   });
 
   describe('Error Handling', () => {
-    it('should pass through non-timeout errors', (done) => {
+    it('should pass through non-timeout errors', done => {
       interceptor = new TimeoutInterceptor(5000);
 
       const customError = new Error('Custom error');
@@ -129,7 +123,7 @@ describe.skip('TimeoutInterceptor', () => {
         next: () => {
           done(new Error('Should have errored'));
         },
-        error: (err) => {
+        error: err => {
           expect(err).toBe(customError);
           expect(err.message).toBe('Custom error');
           done();
@@ -137,18 +131,16 @@ describe.skip('TimeoutInterceptor', () => {
       });
     });
 
-    it('should handle immediate errors without timeout', (done) => {
+    it('should handle immediate errors without timeout', done => {
       interceptor = new TimeoutInterceptor(5000);
 
-      mockCallHandler.handle.mockReturnValue(
-        throwError(() => new Error('Immediate error')),
-      );
+      mockCallHandler.handle.mockReturnValue(throwError(() => new Error('Immediate error')));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
         next: () => {
           done(new Error('Should have errored'));
         },
-        error: (err) => {
+        error: err => {
           expect(err.message).toBe('Immediate error');
           done();
         },
@@ -157,7 +149,7 @@ describe.skip('TimeoutInterceptor', () => {
   });
 
   describe('Configuration', () => {
-    it('should accept custom timeout values', (done) => {
+    it('should accept custom timeout values', done => {
       const customTimeout = 200;
       interceptor = new TimeoutInterceptor(customTimeout);
 
@@ -165,17 +157,17 @@ describe.skip('TimeoutInterceptor', () => {
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(50)));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
-        next: (data) => {
+        next: data => {
           expect(data).toEqual(mockData);
           done();
         },
-        error: (err) => {
+        error: err => {
           done(err);
         },
       });
     });
 
-    it('should handle zero timeout (immediate timeout)', (done) => {
+    it('should handle zero timeout (immediate timeout)', done => {
       interceptor = new TimeoutInterceptor(0);
 
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
@@ -184,14 +176,14 @@ describe.skip('TimeoutInterceptor', () => {
         next: () => {
           done(new Error('Should have timed out immediately'));
         },
-        error: (err) => {
+        error: err => {
           expect(err).toBeInstanceOf(RequestTimeoutException);
           done();
         },
       });
     });
 
-    it('should handle very large timeout values', (done) => {
+    it('should handle very large timeout values', done => {
       const largeTimeout = 999999;
       interceptor = new TimeoutInterceptor(largeTimeout);
 
@@ -199,11 +191,11 @@ describe.skip('TimeoutInterceptor', () => {
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(100)));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
-        next: (data) => {
+        next: data => {
           expect(data).toEqual(mockData);
           done();
         },
-        error: (err) => {
+        error: err => {
           done(err);
         },
       });

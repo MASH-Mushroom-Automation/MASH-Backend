@@ -116,10 +116,7 @@ describe('AlertEngineService', () => {
         condition: { field: 'value', operator: 'GTE', threshold: 30 },
       };
 
-      mockPrismaService.alertRule.findMany.mockResolvedValue([
-        mockAlertRule,
-        rule2,
-      ]);
+      mockPrismaService.alertRule.findMany.mockResolvedValue([mockAlertRule, rule2]);
       mockPrismaService.alert.findFirst.mockResolvedValue(null);
       mockPrismaService.alert.create.mockResolvedValue({});
 
@@ -135,10 +132,7 @@ describe('AlertEngineService', () => {
         id: 'rule-456',
       };
 
-      mockPrismaService.alertRule.findMany.mockResolvedValue([
-        mockAlertRule,
-        rule2,
-      ]);
+      mockPrismaService.alertRule.findMany.mockResolvedValue([mockAlertRule, rule2]);
       mockPrismaService.alert.findFirst.mockResolvedValue(null);
       mockPrismaService.alert.create
         .mockRejectedValueOnce(new Error('Database error'))
@@ -748,28 +742,21 @@ describe('AlertEngineService', () => {
           },
         },
       };
-      const result = service['getNestedValue'](
-        obj,
-        'sensor.temperature.value',
-      ) as number;
+      const result = service['getNestedValue'](obj, 'sensor.temperature.value') as number;
 
       expect(result).toBe(35);
     });
 
     it('should return undefined for non-existent property', () => {
       const obj = { temperature: 35 };
-      const result = service['getNestedValue'](obj, 'humidity') as
-        | number
-        | undefined;
+      const result = service['getNestedValue'](obj, 'humidity') as number | undefined;
 
       expect(result).toBeUndefined();
     });
 
     it('should return undefined for non-existent nested property', () => {
       const obj = { sensor: { temperature: 35 } };
-      const result = service['getNestedValue'](obj, 'sensor.humidity.value') as
-        | number
-        | undefined;
+      const result = service['getNestedValue'](obj, 'sensor.humidity.value') as number | undefined;
 
       expect(result).toBeUndefined();
     });

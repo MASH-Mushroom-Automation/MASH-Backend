@@ -10,7 +10,7 @@ export class AutocompleteDto {
   })
   @IsNotEmpty()
   @IsString()
-  q: string;
+  q!: string;
 
   @ApiPropertyOptional({
     description: 'Maximum number of suggestions',

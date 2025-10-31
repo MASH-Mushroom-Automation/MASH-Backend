@@ -1,8 +1,5 @@
 import { validate } from 'class-validator';
-import {
-  IsNotFutureDate,
-  IsNotFutureDateConstraint,
-} from '../is-not-future-date.validator';
+import { IsNotFutureDate, IsNotFutureDateConstraint } from '../is-not-future-date.validator';
 
 // Test DTO
 class TestTimestampDto {

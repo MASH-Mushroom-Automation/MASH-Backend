@@ -90,8 +90,8 @@ describe('ConnectionManagerService', () => {
 
       const userConnections = service.getUserConnections('user-1');
       expect(userConnections).toHaveLength(2);
-      expect(userConnections.map((s) => s.id)).toContain('socket-1');
-      expect(userConnections.map((s) => s.id)).toContain('socket-2');
+      expect(userConnections.map(s => s.id)).toContain('socket-1');
+      expect(userConnections.map(s => s.id)).toContain('socket-2');
     });
 
     it('should store connection info with correct metadata', () => {
@@ -208,7 +208,7 @@ describe('ConnectionManagerService', () => {
 
       const user1Connections = service.getUserConnections('user-1');
       expect(user1Connections).toHaveLength(2);
-      expect(user1Connections.map((s) => s.id)).toEqual(
+      expect(user1Connections.map(s => s.id)).toEqual(
         expect.arrayContaining(['socket-1', 'socket-2']),
       );
 
@@ -249,7 +249,7 @@ describe('ConnectionManagerService', () => {
       const initialTime = initialInfo?.lastActivity.getTime();
 
       // Wait a bit to ensure timestamp difference
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       service.updateActivity('socket-1');
 
@@ -309,14 +309,10 @@ describe('ConnectionManagerService', () => {
       service.addConnection(socket);
 
       service.addRoomToConnection('socket-1', 'test:room');
-      expect(service.getConnectionInfo('socket-1')?.rooms).toContain(
-        'test:room',
-      );
+      expect(service.getConnectionInfo('socket-1')?.rooms).toContain('test:room');
 
       service.removeRoomFromConnection('socket-1', 'test:room');
-      expect(service.getConnectionInfo('socket-1')?.rooms).not.toContain(
-        'test:room',
-      );
+      expect(service.getConnectionInfo('socket-1')?.rooms).not.toContain('test:room');
     });
 
     it('should handle removing non-existent room gracefully', () => {
@@ -403,7 +399,7 @@ describe('ConnectionManagerService', () => {
 
       const allConnections = service.getAllConnections();
       expect(allConnections).toHaveLength(2);
-      expect(allConnections.map((s) => s.id)).toEqual(
+      expect(allConnections.map(s => s.id)).toEqual(
         expect.arrayContaining(['socket-1', 'socket-2']),
       );
     });
@@ -507,7 +503,7 @@ describe('ConnectionManagerService', () => {
       }
 
       // Execute all operations
-      operations.forEach((op) => op());
+      operations.forEach(op => op());
 
       expect(service.getAllConnections()).toHaveLength(50);
       expect(service.getActiveUsers()).toBe(10);

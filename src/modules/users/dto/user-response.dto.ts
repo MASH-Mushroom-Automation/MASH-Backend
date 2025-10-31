@@ -5,27 +5,27 @@ import { Exclude, Expose } from 'class-transformer';
 export class UserResponseDto {
   @Expose()
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @Expose()
   @ApiProperty()
-  email: string;
+  email!: string;
 
   @Expose()
   @ApiProperty()
-  username: string;
+  username!: string;
 
   @Expose()
   @ApiProperty()
-  firstName: string;
+  firstName!: string;
 
   @Expose()
   @ApiProperty()
-  lastName: string;
+  lastName!: string;
 
   @Expose()
   @ApiProperty()
-  role: string;
+  role!: string;
 
   @Expose()
   @ApiProperty()
@@ -33,11 +33,11 @@ export class UserResponseDto {
 
   @Expose()
   @ApiProperty()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Expose()
   @ApiProperty()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @Expose()
   @ApiProperty({ description: 'Computed full name' })

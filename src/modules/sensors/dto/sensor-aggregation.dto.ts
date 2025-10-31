@@ -18,7 +18,7 @@ export class SensorAggregationDto {
   })
   @IsArray()
   @IsEnum(AggregationType, { each: true })
-  aggregations: AggregationType[];
+  aggregations!: AggregationType[];
 
   @ApiProperty({
     description: 'Start date for aggregation (ISO 8601)',

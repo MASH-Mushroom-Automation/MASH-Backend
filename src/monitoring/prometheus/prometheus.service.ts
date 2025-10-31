@@ -22,59 +22,59 @@ export class PrometheusService implements OnModuleInit {
   // HTTP Metrics
   // ============================================================================
 
-  public httpRequestsTotal: Counter<string>;
-  public httpRequestDuration: Histogram<string>;
-  public httpRequestErrors: Counter<string>;
-  public httpResponseSize: Summary<string>;
+  public httpRequestsTotal!: Counter<string>;
+  public httpRequestDuration!: Histogram<string>;
+  public httpRequestErrors!: Counter<string>;
+  public httpResponseSize!: Summary<string>;
 
   // ============================================================================
   // Database Metrics
   // ============================================================================
 
-  public dbQueriesTotal: Counter<string>;
-  public dbQueryDuration: Histogram<string>;
-  public dbQueryErrors: Counter<string>;
-  public dbConnectionsActive: Gauge<string>;
-  public dbConnectionsIdle: Gauge<string>;
+  public dbQueriesTotal!: Counter<string>;
+  public dbQueryDuration!: Histogram<string>;
+  public dbQueryErrors!: Counter<string>;
+  public dbConnectionsActive!: Gauge<string>;
+  public dbConnectionsIdle!: Gauge<string>;
 
   // ============================================================================
   // Cache Metrics
   // ============================================================================
 
-  public cacheHitsTotal: Counter<string>;
-  public cacheMissesTotal: Counter<string>;
-  public cacheOperationDuration: Histogram<string>;
-  public cacheKeyCount: Gauge<string>;
-  public cacheMemoryUsage: Gauge<string>;
-  public cacheHitRate: Gauge<string>;
+  public cacheHitsTotal!: Counter<string>;
+  public cacheMissesTotal!: Counter<string>;
+  public cacheOperationDuration!: Histogram<string>;
+  public cacheKeyCount!: Gauge<string>;
+  public cacheMemoryUsage!: Gauge<string>;
+  public cacheHitRate!: Gauge<string>;
 
   // ============================================================================
   // Rate Limiting Metrics
   // ============================================================================
 
-  public rateLimitViolationsTotal: Counter<string>;
-  public rateLimitBackoffActive: Gauge<string>;
-  public rateLimitWhitelistedRequests: Counter<string>;
-  public rateLimitQuotaUsage: Gauge<string>;
+  public rateLimitViolationsTotal!: Counter<string>;
+  public rateLimitBackoffActive!: Gauge<string>;
+  public rateLimitWhitelistedRequests!: Counter<string>;
+  public rateLimitQuotaUsage!: Gauge<string>;
 
   // ============================================================================
   // Business Metrics
   // ============================================================================
 
-  public ordersTotal: Counter<string>;
-  public orderValue: Summary<string>;
-  public productsViewed: Counter<string>;
-  public usersActive: Gauge<string>;
-  public devicesConnected: Gauge<string>;
-  public sensorsActive: Gauge<string>;
+  public ordersTotal!: Counter<string>;
+  public orderValue!: Summary<string>;
+  public productsViewed!: Counter<string>;
+  public usersActive!: Gauge<string>;
+  public devicesConnected!: Gauge<string>;
+  public sensorsActive!: Gauge<string>;
 
   // ============================================================================
   // API Endpoint Metrics
   // ============================================================================
 
-  public apiEndpointRequests: Counter<string>;
-  public apiEndpointDuration: Histogram<string>;
-  public apiEndpointErrors: Counter<string>;
+  public apiEndpointRequests!: Counter<string>;
+  public apiEndpointDuration!: Histogram<string>;
+  public apiEndpointErrors!: Counter<string>;
 
   onModuleInit() {
     this.initializeMetrics();
@@ -296,9 +296,7 @@ export class PrometheusService implements OnModuleInit {
     responseSize?: number,
   ) {
     this.httpRequestsTotal.labels(method, route, statusCode.toString()).inc();
-    this.httpRequestDuration
-      .labels(method, route, statusCode.toString())
-      .observe(duration / 1000); // Convert ms to seconds
+    this.httpRequestDuration.labels(method, route, statusCode.toString()).observe(duration / 1000); // Convert ms to seconds
 
     if (responseSize) {
       this.httpResponseSize.labels(method, route).observe(responseSize);
@@ -339,14 +337,8 @@ export class PrometheusService implements OnModuleInit {
     this.cacheMissesTotal.labels(cacheKeyPrefix).inc();
   }
 
-  recordCacheOperation(
-    operation: string,
-    cacheKeyPrefix: string,
-    duration: number,
-  ) {
-    this.cacheOperationDuration
-      .labels(operation, cacheKeyPrefix)
-      .observe(duration / 1000);
+  recordCacheOperation(operation: string, cacheKeyPrefix: string, duration: number) {
+    this.cacheOperationDuration.labels(operation, cacheKeyPrefix).observe(duration / 1000);
   }
 
   updateCacheStats(keyCount: number, memoryUsage: number, hitRate: number) {
@@ -358,14 +350,8 @@ export class PrometheusService implements OnModuleInit {
   /**
    * Record rate limiting metrics
    */
-  recordRateLimitViolation(
-    userRole: string,
-    endpointCategory: string,
-    source: string,
-  ) {
-    this.rateLimitViolationsTotal
-      .labels(userRole, endpointCategory, source)
-      .inc();
+  recordRateLimitViolation(userRole: string, endpointCategory: string, source: string) {
+    this.rateLimitViolationsTotal.labels(userRole, endpointCategory, source).inc();
   }
 
   updateBackoffCount(count: number) {

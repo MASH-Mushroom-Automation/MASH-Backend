@@ -31,7 +31,7 @@ describe('SMS Integration Tests', () => {
         .post('/test-notifications/test-sms')
         .send(testSmsData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
           expect(res.body).toHaveProperty('message');
           expect(res.body.message).toContain('Test SMS queued');
@@ -48,7 +48,7 @@ describe('SMS Integration Tests', () => {
         .post('/test-notifications/test-sms')
         .send(testSmsData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
           expect(res.body).toHaveProperty('message');
           expect(res.body.message).toContain('Test SMS queued');
@@ -65,7 +65,7 @@ describe('SMS Integration Tests', () => {
         .post('/test-notifications/test-sms')
         .send(incompleteSmsData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           // The endpoint might handle this differently, just check it responds
           expect(res.body).toHaveProperty('success');
           expect(res.body).toHaveProperty('timestamp');
@@ -78,7 +78,7 @@ describe('SMS Integration Tests', () => {
       return request(app.getHttpServer())
         .get('/')
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
           expect(res.body.data).toHaveProperty('name');
           expect(res.body.data).toHaveProperty('status', 'operational');
@@ -104,12 +104,9 @@ describe('SMS Integration Tests', () => {
         .post('/communication/device-health-alert')
         .send(criticalAlertData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
-          expect(res.body).toHaveProperty(
-            'message',
-            'Device health alert sent',
-          );
+          expect(res.body).toHaveProperty('message', 'Device health alert sent');
         });
     });
 
@@ -127,12 +124,9 @@ describe('SMS Integration Tests', () => {
         .post('/communication/device-health-alert')
         .send(offlineAlertData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
-          expect(res.body).toHaveProperty(
-            'message',
-            'Device health alert sent',
-          );
+          expect(res.body).toHaveProperty('message', 'Device health alert sent');
         });
     });
 
@@ -152,12 +146,9 @@ describe('SMS Integration Tests', () => {
         .post('/communication/device-health-alert')
         .send(warningAlertData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
-          expect(res.body).toHaveProperty(
-            'message',
-            'Device health alert sent',
-          );
+          expect(res.body).toHaveProperty('message', 'Device health alert sent');
         });
     });
 
@@ -177,12 +168,9 @@ describe('SMS Integration Tests', () => {
         .post('/communication/device-health-alert')
         .send(healthyAlertData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
-          expect(res.body).toHaveProperty(
-            'message',
-            'Device health alert sent',
-          );
+          expect(res.body).toHaveProperty('message', 'Device health alert sent');
         });
     });
 
@@ -197,12 +185,9 @@ describe('SMS Integration Tests', () => {
         .post('/communication/device-health-alert')
         .send(minimalAlertData)
         .expect(200)
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
-          expect(res.body).toHaveProperty(
-            'message',
-            'Device health alert sent',
-          );
+          expect(res.body).toHaveProperty('message', 'Device health alert sent');
         });
     });
 
@@ -220,12 +205,9 @@ describe('SMS Integration Tests', () => {
         .post('/communication/device-health-alert')
         .send(invalidAlertData)
         .expect(200) // The endpoint might handle this gracefully
-        .expect((res) => {
+        .expect(res => {
           expect(res.body).toHaveProperty('success', true);
-          expect(res.body).toHaveProperty(
-            'message',
-            'Device health alert sent',
-          );
+          expect(res.body).toHaveProperty('message', 'Device health alert sent');
         });
     });
   });

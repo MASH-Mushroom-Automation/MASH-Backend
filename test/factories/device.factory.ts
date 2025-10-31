@@ -28,17 +28,13 @@ export class DeviceFactory {
    * Create a single device with optional overrides
    */
   static create(overrides?: Partial<DeviceFactoryOptions>) {
-    const type =
-      overrides?.type || faker.helpers.arrayElement(Object.values(DeviceType));
+    const type = overrides?.type || faker.helpers.arrayElement(Object.values(DeviceType));
 
     return {
       id: overrides?.id || faker.string.uuid(),
-      name:
-        overrides?.name || `${type} ${faker.number.int({ min: 1, max: 100 })}`,
+      name: overrides?.name || `${type} ${faker.number.int({ min: 1, max: 100 })}`,
       type,
-      serialNumber:
-        overrides?.serialNumber ||
-        `SN-${faker.string.alphanumeric(12).toUpperCase()}`,
+      serialNumber: overrides?.serialNumber || `SN-${faker.string.alphanumeric(12).toUpperCase()}`,
       status: overrides?.status || DeviceStatus.ONLINE,
       userId: overrides?.userId || faker.string.uuid(),
       location:
@@ -80,10 +76,7 @@ export class DeviceFactory {
   /**
    * Create device by type
    */
-  static createByType(
-    type: DeviceType,
-    overrides?: Partial<DeviceFactoryOptions>,
-  ) {
+  static createByType(type: DeviceType, overrides?: Partial<DeviceFactoryOptions>) {
     return this.create({ ...overrides, type });
   }
 

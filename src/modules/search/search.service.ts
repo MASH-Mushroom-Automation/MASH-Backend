@@ -45,7 +45,7 @@ export class SearchService {
         nodes: health.number_of_nodes,
       };
     } catch (error) {
-      this.logger.error('❌ Elasticsearch connection test failed:', error.message);
+      this.logger.error('❌ Elasticsearch connection test failed:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -120,7 +120,7 @@ export class SearchService {
       // Cache the results (non-blocking)
       this.cacheService
         .set(cacheKey, response, this.CACHE_TTL)
-        .catch(error => this.logger.error(`Failed to cache search results: ${error.message}`));
+        .catch(error => this.logger.error(`Failed to cache search results: ${error instanceof Error ? error.message : String(error)}`));
 
       // Log search analytics (non-blocking)
       this.analyticsService
@@ -134,11 +134,11 @@ export class SearchService {
           userId,
           ipAddress,
         })
-        .catch(error => this.logger.error(`Failed to log search: ${error.message}`));
+        .catch(error => this.logger.error(`Failed to log search: ${error instanceof Error ? error.message : String(error)}`));
 
       return response;
     } catch (error) {
-      this.logger.error(`❌ Search failed: ${error.message}`);
+      this.logger.error(`❌ Search failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -218,7 +218,7 @@ export class SearchService {
         category: hit._source.category,
       }));
     } catch (error) {
-      this.logger.error(`❌ Autocomplete failed: ${error.message}`);
+      this.logger.error(`❌ Autocomplete failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -264,7 +264,7 @@ export class SearchService {
         ...hit._source,
       }));
     } catch (error) {
-      this.logger.error(`❌ Similar products search failed: ${error.message}`);
+      this.logger.error(`❌ Similar products search failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }

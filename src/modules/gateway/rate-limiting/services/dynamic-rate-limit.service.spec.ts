@@ -89,9 +89,7 @@ describe('DynamicRateLimitService', () => {
     prometheusService = module.get<PrometheusService>(PrometheusService);
     tokenBucketStrategy = module.get<TokenBucketStrategy>(TokenBucketStrategy);
     leakyBucketStrategy = module.get<LeakyBucketStrategy>(LeakyBucketStrategy);
-    slidingWindowStrategy = module.get<SlidingWindowStrategy>(
-      SlidingWindowStrategy,
-    );
+    slidingWindowStrategy = module.get<SlidingWindowStrategy>(SlidingWindowStrategy);
   });
 
   afterEach(() => {
@@ -126,9 +124,7 @@ describe('DynamicRateLimitService', () => {
           resetMs: 50000,
         };
 
-        mockPrismaService.rateLimitOverride.findFirst.mockResolvedValue(
-          override,
-        );
+        mockPrismaService.rateLimitOverride.findFirst.mockResolvedValue(override);
         mockTokenBucketStrategy.checkLimit.mockResolvedValue(rateLimitResult);
 
         // Act
@@ -145,9 +141,7 @@ describe('DynamicRateLimitService', () => {
             windowMs: 60000,
           }),
         );
-        expect(
-          mockPrometheusService.rateLimitViolationsTotal.inc,
-        ).toHaveBeenCalled();
+        expect(mockPrometheusService.rateLimitViolationsTotal.inc).toHaveBeenCalled();
       });
 
       it('should use endpoint-specific override when user override not found', async () => {
@@ -176,9 +170,7 @@ describe('DynamicRateLimitService', () => {
           resetMs: 40000,
         };
 
-        mockPrismaService.rateLimitOverride.findFirst.mockResolvedValue(
-          override,
-        );
+        mockPrismaService.rateLimitOverride.findFirst.mockResolvedValue(override);
         mockLeakyBucketStrategy.checkLimit.mockResolvedValue(rateLimitResult);
 
         // Act
@@ -216,9 +208,7 @@ describe('DynamicRateLimitService', () => {
           resetMs: 60000,
         };
 
-        mockPrismaService.rateLimitOverride.findFirst.mockResolvedValue(
-          override,
-        );
+        mockPrismaService.rateLimitOverride.findFirst.mockResolvedValue(override);
         mockSlidingWindowStrategy.checkLimit.mockResolvedValue(rateLimitResult);
 
         // Act
@@ -321,9 +311,7 @@ describe('DynamicRateLimitService', () => {
         expect(result.allowed).toBe(false);
         expect(result.remaining).toBe(0);
         expect(result.retryAfterMs).toBe(30000);
-        expect(
-          mockPrometheusService.rateLimitViolationsTotal.inc,
-        ).toHaveBeenCalledWith(
+        expect(mockPrometheusService.rateLimitViolationsTotal.inc).toHaveBeenCalledWith(
           expect.objectContaining({
             allowed: 'no',
           }),
@@ -354,9 +342,7 @@ describe('DynamicRateLimitService', () => {
         // Assert
         expect(result.allowed).toBe(true);
         expect(result.remaining).toBe(50);
-        expect(
-          mockPrometheusService.rateLimitViolationsTotal.inc,
-        ).toHaveBeenCalledWith(
+        expect(mockPrometheusService.rateLimitViolationsTotal.inc).toHaveBeenCalledWith(
           expect.objectContaining({
             allowed: 'yes',
           }),
@@ -372,9 +358,7 @@ describe('DynamicRateLimitService', () => {
         const method = 'POST';
 
         mockPrismaService.rateLimitOverride.findFirst.mockResolvedValue(null);
-        mockTokenBucketStrategy.checkLimit.mockRejectedValue(
-          new Error('Redis connection failed'),
-        );
+        mockTokenBucketStrategy.checkLimit.mockRejectedValue(new Error('Redis connection failed'));
 
         // Act
         const result = await service.checkLimit(userId, endpoint, method);
@@ -426,9 +410,7 @@ describe('DynamicRateLimitService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.rateLimitOverride.create.mockResolvedValue(
-        createdOverride,
-      );
+      mockPrismaService.rateLimitOverride.create.mockResolvedValue(createdOverride);
 
       // Act
       const result = await service.createOverride(dto);
@@ -469,9 +451,7 @@ describe('DynamicRateLimitService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.rateLimitOverride.create.mockResolvedValue(
-        createdOverride,
-      );
+      mockPrismaService.rateLimitOverride.create.mockResolvedValue(createdOverride);
 
       // Act
       const result = await service.createOverride(dto);
@@ -514,12 +494,8 @@ describe('DynamicRateLimitService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.rateLimitOverride.findUnique.mockResolvedValue(
-        existingOverride,
-      );
-      mockPrismaService.rateLimitOverride.update.mockResolvedValue(
-        updatedOverride,
-      );
+      mockPrismaService.rateLimitOverride.findUnique.mockResolvedValue(existingOverride);
+      mockPrismaService.rateLimitOverride.update.mockResolvedValue(updatedOverride);
 
       // Act
       const result = await service.updateOverride(id, dto);
@@ -544,9 +520,7 @@ describe('DynamicRateLimitService', () => {
       mockPrismaService.rateLimitOverride.findUnique.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.updateOverride(id, dto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateOverride(id, dto)).rejects.toThrow(NotFoundException);
       await expect(service.updateOverride(id, dto)).rejects.toThrow(
         `Rate limit override ${id} not found`,
       );
@@ -569,12 +543,8 @@ describe('DynamicRateLimitService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.rateLimitOverride.findUnique.mockResolvedValue(
-        existingOverride,
-      );
-      mockPrismaService.rateLimitOverride.delete.mockResolvedValue(
-        existingOverride,
-      );
+      mockPrismaService.rateLimitOverride.findUnique.mockResolvedValue(existingOverride);
+      mockPrismaService.rateLimitOverride.delete.mockResolvedValue(existingOverride);
 
       // Act
       const result = await service.deleteOverride(id);
@@ -593,9 +563,7 @@ describe('DynamicRateLimitService', () => {
       mockPrismaService.rateLimitOverride.findUnique.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.deleteOverride(id)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteOverride(id)).rejects.toThrow(NotFoundException);
       await expect(service.deleteOverride(id)).rejects.toThrow(
         `Rate limit override ${id} not found`,
       );
@@ -701,9 +669,7 @@ describe('DynamicRateLimitService', () => {
         },
       ];
 
-      mockPrismaService.rateLimitOverride.findMany.mockResolvedValue(
-        userOverrides,
-      );
+      mockPrismaService.rateLimitOverride.findMany.mockResolvedValue(userOverrides);
 
       // Act
       const result = await service.getUserOverrides(userId);
@@ -712,12 +678,10 @@ describe('DynamicRateLimitService', () => {
       expect(result).toHaveLength(2);
       expect(result[0].userId).toBe(userId);
       expect(result[1].userId).toBe(userId);
-      expect(mockPrismaService.rateLimitOverride.findMany).toHaveBeenCalledWith(
-        {
-          where: { userId },
-          orderBy: { createdAt: 'desc' },
-        },
-      );
+      expect(mockPrismaService.rateLimitOverride.findMany).toHaveBeenCalledWith({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
     });
   });
 
@@ -733,9 +697,7 @@ describe('DynamicRateLimitService', () => {
 
       // Assert
       expect(count).toBe(5);
-      expect(
-        mockPrismaService.rateLimitOverride.deleteMany,
-      ).toHaveBeenCalledWith({
+      expect(mockPrismaService.rateLimitOverride.deleteMany).toHaveBeenCalledWith({
         where: {
           expiresAt: {
             lt: expect.any(Date),

@@ -37,17 +37,13 @@ export class UserFactory {
     const user = {
       id: overrides?.id || faker.string.uuid(),
       clerkId: overrides?.clerkId || `clerk_${faker.string.alphanumeric(24)}`,
-      email:
-        overrides?.email ||
-        faker.internet.email({ firstName, lastName }).toLowerCase(),
+      email: overrides?.email || faker.internet.email({ firstName, lastName }).toLowerCase(),
       username:
-        overrides?.username ||
-        faker.internet.userName({ firstName, lastName }).toLowerCase(),
+        overrides?.username || faker.internet.userName({ firstName, lastName }).toLowerCase(),
       firstName,
       lastName,
       imageUrl: overrides?.imageUrl || faker.image.avatar(),
-      phoneNumber:
-        overrides?.phoneNumber || faker.phone.number('+639#########'),
+      phoneNumber: overrides?.phoneNumber || faker.phone.number('+639#########'),
       role,
       isActive: overrides?.isActive !== undefined ? overrides.isActive : true,
       preferences: overrides?.preferences || {
@@ -186,7 +182,7 @@ export class UserFactory {
    * Create users with different roles
    */
   static createWithRoles(roles: UserRole[]) {
-    return roles.map((role) => this.create({ role }));
+    return roles.map(role => this.create({ role }));
   }
 
   /**

@@ -70,11 +70,7 @@ describe('RealtimeAnalyticsService', () => {
       expect(result).toHaveProperty('activeUsers', 5);
       expect(result).toHaveProperty('onlineDevices', 3);
       expect(result).toHaveProperty('timestamp');
-      expect(mockCacheService.set).toHaveBeenCalledWith(
-        'realtime:metrics',
-        result,
-        5,
-      );
+      expect(mockCacheService.set).toHaveBeenCalledWith('realtime:metrics', result, 5);
     });
 
     it('should return cached metrics when available', async () => {
@@ -132,11 +128,7 @@ describe('RealtimeAnalyticsService', () => {
       expect(result).toHaveProperty('count', 2);
       expect(result).toHaveProperty('totalValue', 300);
       expect(result).toHaveProperty('timestamp');
-      expect(mockCacheService.set).toHaveBeenCalledWith(
-        'realtime:sales',
-        result,
-        5,
-      );
+      expect(mockCacheService.set).toHaveBeenCalledWith('realtime:sales', result, 5);
     });
 
     it('should return cached sales data when available', async () => {
@@ -160,14 +152,10 @@ describe('RealtimeAnalyticsService', () => {
     it('should handle database errors gracefully', async () => {
       // Arrange
       mockCacheService.get.mockResolvedValue(null);
-      mockPrismaService.order.findMany.mockRejectedValue(
-        new Error('Database error'),
-      );
+      mockPrismaService.order.findMany.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(service.getLiveSalesData()).rejects.toThrow(
-        'Database error',
-      );
+      await expect(service.getLiveSalesData()).rejects.toThrow('Database error');
     });
   });
 });

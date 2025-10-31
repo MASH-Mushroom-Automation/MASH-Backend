@@ -1,15 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EmailService, SendEmailOptions } from './email.service';
-import {
-  PushNotificationService,
-  PushNotificationPayload,
-} from './push-notification.service';
+import { PushNotificationService, PushNotificationPayload } from './push-notification.service';
 import { SmsService, SMSMessage } from './sms.service';
-import {
-  SMSTemplateService,
-  SMSTemplateType,
-  SMSTemplateVariables,
-} from './sms-template.service';
+import { SMSTemplateService, SMSTemplateType, SMSTemplateVariables } from './sms-template.service';
 import { PrismaService } from '../../../database/prisma.service';
 
 export interface CommunicationMessage {
@@ -78,9 +71,7 @@ export class CommunicationHubService {
 
       // Check if within quiet hours
       if (this.isWithinQuietHours(preferences)) {
-        this.logger.log(
-          `Skipping communication for user ${userId} - within quiet hours`,
-        );
+        this.logger.log(`Skipping communication for user ${userId} - within quiet hours`);
         return result;
       }
 
@@ -88,21 +79,15 @@ export class CommunicationHubService {
       const promises = [];
 
       if (channels.includes('email') && preferences.email) {
-        promises.push(
-          this.sendEmailCommunication(userId, message, options.emailTemplate),
-        );
+        promises.push(this.sendEmailCommunication(userId, message, options.emailTemplate));
       }
 
       if (channels.includes('push') && preferences.push) {
-        promises.push(
-          this.sendPushCommunication(userId, message, options.deviceId),
-        );
+        promises.push(this.sendPushCommunication(userId, message, options.deviceId));
       }
 
       if (channels.includes('sms') && preferences.sms) {
-        promises.push(
-          this.sendSmsCommunication(userId, message, options.smsTemplate),
-        );
+        promises.push(this.sendSmsCommunication(userId, message, options.smsTemplate));
       }
 
       // Wait for all communications to complete
@@ -111,9 +96,7 @@ export class CommunicationHubService {
       // Process results
       let promiseIndex = 0;
       if (channels.includes('email') && preferences.email) {
-        const promiseResult = results[
-          promiseIndex
-        ] as PromiseSettledResult<void>;
+        const promiseResult = results[promiseIndex];
         if (promiseResult.status === 'fulfilled') {
           result.emailSent = true;
         } else {
@@ -123,9 +106,7 @@ export class CommunicationHubService {
       }
 
       if (channels.includes('push') && preferences.push) {
-        const promiseResult = results[
-          promiseIndex
-        ] as PromiseSettledResult<void>;
+        const promiseResult = results[promiseIndex];
         if (promiseResult.status === 'fulfilled') {
           result.pushSent = true;
         } else {
@@ -135,9 +116,7 @@ export class CommunicationHubService {
       }
 
       if (channels.includes('sms') && preferences.sms) {
-        const promiseResult = results[
-          promiseIndex
-        ] as PromiseSettledResult<void>;
+        const promiseResult = results[promiseIndex];
         if (promiseResult.status === 'fulfilled') {
           result.smsSent = true;
         } else {
@@ -145,10 +124,7 @@ export class CommunicationHubService {
         }
       }
     } catch (error) {
-      this.logger.error(
-        `Failed to send communication to user ${userId}`,
-        error,
-      );
+      this.logger.error(`Failed to send communication to user ${userId}`, error);
       result.errors.push(`Communication failed: ${error.message}`);
     }
 
@@ -180,19 +156,14 @@ export class CommunicationHubService {
         timestamp: new Date().toISOString(),
       },
       priority:
-        healthStatus === 'CRITICAL'
-          ? 'urgent'
-          : healthStatus === 'WARNING'
-            ? 'high'
-            : 'normal',
+        healthStatus === 'CRITICAL' ? 'urgent' : healthStatus === 'WARNING' ? 'high' : 'normal',
     };
 
     await this.sendCommunication({
       userId,
       message,
       channels: ['push', 'email'], // SMS for critical alerts only
-      emailTemplate:
-        healthStatus === 'OFFLINE' ? 'device-offline' : 'health-warning',
+      emailTemplate: healthStatus === 'OFFLINE' ? 'device-offline' : 'health-warning',
     });
 
     // Send SMS for critical alerts
@@ -208,9 +179,7 @@ export class CommunicationHubService {
   /**
    * Get user communication preferences
    */
-  async getUserCommunicationPreferences(
-    userId: string,
-  ): Promise<UserCommunicationPreferences> {
+  async getUserCommunicationPreferences(userId: string): Promise<UserCommunicationPreferences> {
     try {
       // Try to get from database first
       const userPrefs = await this.prisma.user.findUnique({
@@ -224,9 +193,7 @@ export class CommunicationHubService {
         return userPrefs.notificationPreferences as UserCommunicationPreferences;
       }
     } catch (error) {
-      this.logger.warn(
-        `Failed to get user preferences from database: ${error.message}`,
-      );
+      this.logger.warn(`Failed to get user preferences from database: ${error.message}`);
     }
 
     // Return default preferences
@@ -263,9 +230,7 @@ export class CommunicationHubService {
         },
       });
     } catch (error) {
-      this.logger.error(
-        `Failed to update user communication preferences: ${error.message}`,
-      );
+      this.logger.error(`Failed to update user communication preferences: ${error.message}`);
       throw error;
     }
   }
@@ -366,14 +331,8 @@ export class CommunicationHubService {
         const templateType = this.mapTemplateToType(template);
         if (templateType) {
           // Extract variables from message data
-          const variables = this.extractTemplateVariables(
-            message,
-            templateType,
-          );
-          smsBody = this.smsTemplateService.renderTemplate(
-            templateType,
-            variables,
-          );
+          const variables = this.extractTemplateVariables(message, templateType);
+          smsBody = this.smsTemplateService.renderTemplate(templateType, variables);
         } else {
           // Use template string directly
           smsBody = this.formatSmsMessage(message, template);
@@ -407,10 +366,7 @@ export class CommunicationHubService {
   /**
    * Format message for SMS (shorter, concise format)
    */
-  private formatSmsMessage(
-    message: CommunicationMessage,
-    template?: string,
-  ): string {
+  private formatSmsMessage(message: CommunicationMessage, template?: string): string {
     if (template) {
       // Use template if provided
       return template
@@ -458,10 +414,8 @@ export class CommunicationHubService {
     if (message.data) {
       if (message.data.deviceId) variables.deviceId = message.data.deviceId;
       if (message.data.metric) variables.metric = message.data.metric;
-      if (message.data.value !== undefined)
-        variables.value = message.data.value;
-      if (message.data.errorMessage)
-        variables.errorMessage = message.data.errorMessage;
+      if (message.data.value !== undefined) variables.value = message.data.value;
+      if (message.data.errorMessage) variables.errorMessage = message.data.errorMessage;
       if (message.data.lastSeen) {
         variables.lastSeen =
           message.data.lastSeen instanceof Date
@@ -481,9 +435,7 @@ export class CommunicationHubService {
   /**
    * Check if current time is within user's quiet hours
    */
-  private isWithinQuietHours(
-    preferences: UserCommunicationPreferences,
-  ): boolean {
+  private isWithinQuietHours(preferences: UserCommunicationPreferences): boolean {
     if (!preferences.quietHours.enabled) {
       return false;
     }
@@ -513,11 +465,7 @@ export class CommunicationHubService {
   /**
    * Generate health alert message
    */
-  private generateHealthAlertMessage(
-    deviceId: string,
-    status: string,
-    metrics: any,
-  ): string {
+  private generateHealthAlertMessage(deviceId: string, status: string, metrics: any): string {
     let message = `Device ${deviceId} is ${status.toLowerCase()}.`;
 
     if (metrics.cpuUsage !== undefined) {

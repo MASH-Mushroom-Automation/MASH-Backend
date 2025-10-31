@@ -37,17 +37,11 @@ describe('MainGateway', () => {
         xdomain: false,
       } as any,
       rooms: new Set<string>(),
-      join: jest.fn(function (
-        this: Partial<AuthenticatedSocket>,
-        room: string,
-      ) {
+      join: jest.fn(function (this: Partial<AuthenticatedSocket>, room: string) {
         this.rooms?.add(room);
         return Promise.resolve(this as any);
       }),
-      leave: jest.fn(function (
-        this: Partial<AuthenticatedSocket>,
-        room: string,
-      ) {
+      leave: jest.fn(function (this: Partial<AuthenticatedSocket>, room: string) {
         this.rooms?.delete(room);
         return Promise.resolve(this as any);
       }),
@@ -96,9 +90,7 @@ describe('MainGateway', () => {
       .compile();
 
     gateway = module.get<MainGateway>(MainGateway);
-    connectionManager = module.get<ConnectionManagerService>(
-      ConnectionManagerService,
-    );
+    connectionManager = module.get<ConnectionManagerService>(ConnectionManagerService);
 
     // Assign mock server to gateway
     gateway.server = mockServer as Server;
@@ -163,10 +155,7 @@ describe('MainGateway', () => {
 
   describe('handleDisconnect', () => {
     it('should remove authenticated user from connection manager', () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       gateway.handleDisconnect(mockSocket);
@@ -180,20 +169,12 @@ describe('MainGateway', () => {
 
       gateway.handleDisconnect(mockSocket);
 
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Unauthenticated'),
-      );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Unauthenticated'));
     });
 
     it('should log active connections count after disconnect', () => {
-      const mockSocket1 = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
-      const mockSocket2 = createMockSocket(
-        'socket-2',
-        'user-2',
-      ) as AuthenticatedSocket;
+      const mockSocket1 = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
+      const mockSocket2 = createMockSocket('socket-2', 'user-2') as AuthenticatedSocket;
 
       connectionManager.addConnection(mockSocket1);
       connectionManager.addConnection(mockSocket2);
@@ -206,16 +187,11 @@ describe('MainGateway', () => {
     });
 
     it('should handle error during disconnection gracefully', () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
 
-      jest
-        .spyOn(connectionManager, 'removeConnection')
-        .mockImplementation(() => {
-          throw new Error('Removal error');
-        });
+      jest.spyOn(connectionManager, 'removeConnection').mockImplementation(() => {
+        throw new Error('Removal error');
+      });
 
       const errorSpy = jest.spyOn(gateway['logger'], 'error');
 
@@ -271,10 +247,7 @@ describe('MainGateway', () => {
 
   describe('handleSubscribe', () => {
     it('should subscribe authenticated user to room', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const result = await gateway.handleSubscribe(mockSocket, {
@@ -287,10 +260,7 @@ describe('MainGateway', () => {
     });
 
     it('should add user to connection manager on first authenticated message', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
 
       const addSpy = jest.spyOn(connectionManager, 'addConnection');
 
@@ -300,10 +270,7 @@ describe('MainGateway', () => {
     });
 
     it('should track room in connection manager', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const addRoomSpy = jest.spyOn(connectionManager, 'addRoomToConnection');
@@ -314,10 +281,7 @@ describe('MainGateway', () => {
     });
 
     it('should update activity on subscribe', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const updateSpy = jest.spyOn(connectionManager, 'updateActivity');
@@ -328,10 +292,7 @@ describe('MainGateway', () => {
     });
 
     it('should track successful message', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const trackSpy = jest.spyOn(connectionManager, 'trackMessage');
@@ -342,10 +303,7 @@ describe('MainGateway', () => {
     });
 
     it('should reject invalid room name (empty)', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
 
       const result = await gateway.handleSubscribe(mockSocket, {
         room: '',
@@ -356,10 +314,7 @@ describe('MainGateway', () => {
     });
 
     it('should reject invalid room name format (special chars)', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
 
       const result = await gateway.handleSubscribe(mockSocket, {
         room: 'room@#$%',
@@ -370,19 +325,10 @@ describe('MainGateway', () => {
     });
 
     it('should accept valid room name formats', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
-      const validRooms = [
-        'simple',
-        'sensor:123',
-        'alert_critical',
-        'room-name',
-        'Room123',
-      ];
+      const validRooms = ['simple', 'sensor:123', 'alert_critical', 'room-name', 'Room123'];
 
       for (const room of validRooms) {
         const result = await gateway.handleSubscribe(mockSocket, { room });
@@ -391,10 +337,7 @@ describe('MainGateway', () => {
     });
 
     it('should track failed message on error', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       const trackSpy = jest.spyOn(connectionManager, 'trackMessage');
 
       await gateway.handleSubscribe(mockSocket, { room: '' });
@@ -405,10 +348,7 @@ describe('MainGateway', () => {
 
   describe('handleUnsubscribe', () => {
     it('should unsubscribe user from room', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       // First subscribe
@@ -425,18 +365,12 @@ describe('MainGateway', () => {
     });
 
     it('should remove room from connection manager', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       await gateway.handleSubscribe(mockSocket, { room: 'test:room' });
 
-      const removeSpy = jest.spyOn(
-        connectionManager,
-        'removeRoomFromConnection',
-      );
+      const removeSpy = jest.spyOn(connectionManager, 'removeRoomFromConnection');
 
       await gateway.handleUnsubscribe(mockSocket, { room: 'test:room' });
 
@@ -444,10 +378,7 @@ describe('MainGateway', () => {
     });
 
     it('should update activity on unsubscribe', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const updateSpy = jest.spyOn(connectionManager, 'updateActivity');
@@ -458,10 +389,7 @@ describe('MainGateway', () => {
     });
 
     it('should reject invalid room name', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
 
       const result = await gateway.handleUnsubscribe(mockSocket, {
         room: '',
@@ -474,10 +402,7 @@ describe('MainGateway', () => {
 
   describe('handleConnectionInfo', () => {
     it('should return connection info for authenticated user', () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const result = gateway.handleConnectionInfo(mockSocket);
@@ -488,10 +413,7 @@ describe('MainGateway', () => {
     });
 
     it('should update activity when requesting connection info', () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const updateSpy = jest.spyOn(connectionManager, 'updateActivity');
@@ -502,10 +424,7 @@ describe('MainGateway', () => {
     });
 
     it('should track message when getting connection info', () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const trackSpy = jest.spyOn(connectionManager, 'trackMessage');
@@ -516,16 +435,11 @@ describe('MainGateway', () => {
     });
 
     it('should handle error when getting connection info', () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
 
-      jest
-        .spyOn(connectionManager, 'getConnectionInfo')
-        .mockImplementation(() => {
-          throw new Error('Info error');
-        });
+      jest.spyOn(connectionManager, 'getConnectionInfo').mockImplementation(() => {
+        throw new Error('Info error');
+      });
 
       const result = gateway.handleConnectionInfo(mockSocket);
 
@@ -566,23 +480,15 @@ describe('MainGateway', () => {
 
       const errorSpy = jest.spyOn(gateway['logger'], 'error');
 
-      expect(() =>
-        gateway.broadcastToRoom('test:room', 'event', {}),
-      ).not.toThrow();
+      expect(() => gateway.broadcastToRoom('test:room', 'event', {})).not.toThrow();
       expect(errorSpy).toHaveBeenCalled();
     });
   });
 
   describe('broadcastToUser', () => {
     it('should broadcast to all user connections', () => {
-      const mockSocket1 = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
-      const mockSocket2 = createMockSocket(
-        'socket-2',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket1 = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
+      const mockSocket2 = createMockSocket('socket-2', 'user-1') as AuthenticatedSocket;
 
       connectionManager.addConnection(mockSocket1);
       connectionManager.addConnection(mockSocket2);
@@ -606,20 +512,12 @@ describe('MainGateway', () => {
     });
 
     it('should handle user with no connections', () => {
-      expect(() =>
-        gateway.broadcastToUser('non-existent', 'event', {}),
-      ).not.toThrow();
+      expect(() => gateway.broadcastToUser('non-existent', 'event', {})).not.toThrow();
     });
 
     it('should log number of connections reached', () => {
-      const mockSocket1 = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
-      const mockSocket2 = createMockSocket(
-        'socket-2',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket1 = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
+      const mockSocket2 = createMockSocket('socket-2', 'user-1') as AuthenticatedSocket;
 
       connectionManager.addConnection(mockSocket1);
       connectionManager.addConnection(mockSocket2);
@@ -628,9 +526,7 @@ describe('MainGateway', () => {
 
       gateway.broadcastToUser('user-1', 'event', {});
 
-      expect(debugSpy).toHaveBeenCalledWith(
-        expect.stringContaining('2 connections'),
-      );
+      expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('2 connections'));
     });
   });
 
@@ -671,10 +567,7 @@ describe('MainGateway', () => {
 
   describe('getConnectionStats', () => {
     it('should return connection statistics', () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
       connectionManager.addConnection(mockSocket);
 
       const stats = gateway.getConnectionStats();
@@ -687,14 +580,8 @@ describe('MainGateway', () => {
 
   describe('getActiveConnections', () => {
     it('should return all active connection info', () => {
-      const mockSocket1 = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
-      const mockSocket2 = createMockSocket(
-        'socket-2',
-        'user-2',
-      ) as AuthenticatedSocket;
+      const mockSocket1 = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
+      const mockSocket2 = createMockSocket('socket-2', 'user-2') as AuthenticatedSocket;
 
       connectionManager.addConnection(mockSocket1);
       connectionManager.addConnection(mockSocket2);
@@ -715,17 +602,11 @@ describe('MainGateway', () => {
 
   describe('integration scenarios', () => {
     it('should handle complete user session lifecycle', async () => {
-      const mockSocket = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
+      const mockSocket = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
 
       // Connect
       await gateway.handleConnection(mockSocket);
-      expect(mockSocket.emit).toHaveBeenCalledWith(
-        'connected',
-        expect.any(Object),
-      );
+      expect(mockSocket.emit).toHaveBeenCalledWith('connected', expect.any(Object));
 
       // Subscribe to room
       await gateway.handleSubscribe(mockSocket, { room: 'test:room' });
@@ -745,18 +626,9 @@ describe('MainGateway', () => {
     });
 
     it('should handle multiple users and rooms', async () => {
-      const user1Socket1 = createMockSocket(
-        'socket-1',
-        'user-1',
-      ) as AuthenticatedSocket;
-      const user1Socket2 = createMockSocket(
-        'socket-2',
-        'user-1',
-      ) as AuthenticatedSocket;
-      const user2Socket = createMockSocket(
-        'socket-3',
-        'user-2',
-      ) as AuthenticatedSocket;
+      const user1Socket1 = createMockSocket('socket-1', 'user-1') as AuthenticatedSocket;
+      const user1Socket2 = createMockSocket('socket-2', 'user-1') as AuthenticatedSocket;
+      const user2Socket = createMockSocket('socket-3', 'user-2') as AuthenticatedSocket;
 
       await gateway.handleConnection(user1Socket1);
       await gateway.handleConnection(user1Socket2);

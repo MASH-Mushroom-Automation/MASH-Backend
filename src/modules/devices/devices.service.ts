@@ -150,10 +150,7 @@ export class DevicesService {
     };
 
     // Cache the result with 5-minute TTL
-    await this.cacheService.set(cacheKey, result, this.DEVICE_TTL, [
-      'devices',
-      'devices:list',
-    ]);
+    await this.cacheService.set(cacheKey, result, this.DEVICE_TTL, ['devices', 'devices:list']);
 
     return result;
   }
@@ -207,9 +204,7 @@ export class DevicesService {
         cached.userId !== currentUser.id &&
         !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
       ) {
-        throw new ForbiddenException(
-          'You do not have permission to view this device',
-        );
+        throw new ForbiddenException('You do not have permission to view this device');
       }
       this.logger.debug(`Cache hit for device: ${cacheKey}`);
       return cached;
@@ -241,20 +236,12 @@ export class DevicesService {
     }
 
     // Check permissions
-    if (
-      device.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
-      throw new ForbiddenException(
-        'You do not have permission to view this device',
-      );
+    if (device.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
+      throw new ForbiddenException('You do not have permission to view this device');
     }
 
     // Cache the result with 5-minute TTL
-    await this.cacheService.set(cacheKey, device, this.DEVICE_TTL, [
-      'devices',
-      `device:${id}`,
-    ]);
+    await this.cacheService.set(cacheKey, device, this.DEVICE_TTL, ['devices', `device:${id}`]);
 
     return device;
   }
@@ -272,11 +259,7 @@ export class DevicesService {
     });
 
     // Invalidate device caches
-    await this.cacheService.invalidateByTags([
-      'devices',
-      'devices:list',
-      `device:${id}`,
-    ]);
+    await this.cacheService.invalidateByTags(['devices', 'devices:list', `device:${id}`]);
 
     this.logger.log(`Device updated: ${id}`);
     return updated;
@@ -290,11 +273,7 @@ export class DevicesService {
     });
 
     // Invalidate device caches
-    await this.cacheService.invalidateByTags([
-      'devices',
-      'devices:list',
-      `device:${id}`,
-    ]);
+    await this.cacheService.invalidateByTags(['devices', 'devices:list', `device:${id}`]);
 
     this.logger.log(`Device deleted: ${id}`);
     return { message: 'Device deleted successfully', device };
@@ -309,11 +288,7 @@ export class DevicesService {
     });
 
     // Invalidate device caches
-    await this.cacheService.invalidateByTags([
-      'devices',
-      'devices:list',
-      `device:${id}`,
-    ]);
+    await this.cacheService.invalidateByTags(['devices', 'devices:list', `device:${id}`]);
 
     return {
       message: `Device ${updated.isActive ? 'activated' : 'deactivated'}`,
@@ -323,11 +298,7 @@ export class DevicesService {
 
   // ========== Device Control & Commands ==========
 
-  async sendCommand(
-    id: string,
-    commandDto: DeviceCommandDto,
-    currentUser: any,
-  ) {
+  async sendCommand(id: string, commandDto: DeviceCommandDto, currentUser: any) {
     const device = await this.findOne(id, currentUser);
 
     if (device.status === 'OFFLINE') {
@@ -346,11 +317,7 @@ export class DevicesService {
 
     // Send command via MQTT
     try {
-      await this.mqttService.sendCommand(
-        id,
-        commandDto.command,
-        commandDto.parameters,
-      );
+      await this.mqttService.sendCommand(id, commandDto.command, commandDto.parameters);
 
       // Update command status
       await this.prisma.deviceCommand.update({
@@ -412,19 +379,11 @@ export class DevicesService {
   }
 
   async restart(id: string, currentUser: any) {
-    return this.sendCommand(
-      id,
-      { command: DeviceCommand.RESTART, parameters: {} },
-      currentUser,
-    );
+    return this.sendCommand(id, { command: DeviceCommand.RESTART, parameters: {} }, currentUser);
   }
 
   async reset(id: string, currentUser: any) {
-    return this.sendCommand(
-      id,
-      { command: DeviceCommand.RESET, parameters: {} },
-      currentUser,
-    );
+    return this.sendCommand(id, { command: DeviceCommand.RESET, parameters: {} }, currentUser);
   }
 
   // ========== Configuration & Firmware ==========
@@ -445,11 +404,7 @@ export class DevicesService {
     };
   }
 
-  async updateConfiguration(
-    id: string,
-    configDto: DeviceConfigurationDto,
-    currentUser: any,
-  ) {
+  async updateConfiguration(id: string, configDto: DeviceConfigurationDto, currentUser: any) {
     const device = await this.findOne(id, currentUser);
 
     // Send configuration to device via MQTT
@@ -467,11 +422,7 @@ export class DevicesService {
     }
   }
 
-  async updateFirmware(
-    id: string,
-    firmwareDto: FirmwareUpdateDto,
-    currentUser: any,
-  ) {
+  async updateFirmware(id: string, firmwareDto: FirmwareUpdateDto, currentUser: any) {
     const device = await this.findOne(id, currentUser);
 
     // Send firmware update command via MQTT
@@ -609,11 +560,7 @@ export class DevicesService {
 
   // ========== Analytics & Health ==========
 
-  async getAnalytics(
-    id: string,
-    query: DeviceAnalyticsQueryDto,
-    currentUser: any,
-  ) {
+  async getAnalytics(id: string, query: DeviceAnalyticsQueryDto, currentUser: any) {
     await this.findOne(id, currentUser);
 
     const { startDate, endDate, metrics = [] } = query;
@@ -627,23 +574,22 @@ export class DevicesService {
         lte: new Date(endDate),
       };
 
-    const [sensorDataCount, commandsCount, successfulCommands] =
-      await Promise.all([
-        this.prisma.sensorData.count({ where: whereClause }),
-        this.prisma.deviceCommand.count({
-          where: {
-            deviceId: id,
-            ...(startDate && { sentAt: { gte: new Date(startDate) } }),
-          },
-        }),
-        this.prisma.deviceCommand.count({
-          where: {
-            deviceId: id,
-            status: 'acknowledged',
-            ...(startDate && { sentAt: { gte: new Date(startDate) } }),
-          },
-        }),
-      ]);
+    const [sensorDataCount, commandsCount, successfulCommands] = await Promise.all([
+      this.prisma.sensorData.count({ where: whereClause }),
+      this.prisma.deviceCommand.count({
+        where: {
+          deviceId: id,
+          ...(startDate && { sentAt: { gte: new Date(startDate) } }),
+        },
+      }),
+      this.prisma.deviceCommand.count({
+        where: {
+          deviceId: id,
+          status: 'acknowledged',
+          ...(startDate && { sentAt: { gte: new Date(startDate) } }),
+        },
+      }),
+    ]);
 
     return {
       deviceId: id,
@@ -652,9 +598,7 @@ export class DevicesService {
         dataPoints: sensorDataCount,
         commandsSent: commandsCount,
         commandSuccessRate:
-          commandsCount > 0
-            ? ((successfulCommands / commandsCount) * 100).toFixed(2)
-            : 0,
+          commandsCount > 0 ? ((successfulCommands / commandsCount) * 100).toFixed(2) : 0,
         uptime: '99.5%', // Placeholder - calculate based on lastSeen timestamps
       },
     };
@@ -750,9 +694,7 @@ export class DevicesService {
       createdAt: new Date(),
     };
 
-    this.logger.log(
-      `Health record created for device ${deviceId}: ${healthData.status}`,
-    );
+    this.logger.log(`Health record created for device ${deviceId}: ${healthData.status}`);
 
     // Emit health update via WebSocket
     this.devicesGateway.emitDeviceHealthUpdate(deviceId, healthRecord);
@@ -849,9 +791,7 @@ export class DevicesService {
       memoryUsage: Math.random() * 100,
       temperature: 20 + Math.random() * 30,
       networkLatency: Math.floor(Math.random() * 100),
-      uptime: device.lastSeen
-        ? Math.floor((Date.now() - device.lastSeen.getTime()) / 1000)
-        : 0,
+      uptime: device.lastSeen ? Math.floor((Date.now() - device.lastSeen.getTime()) / 1000) : 0,
       errorCount: 0,
     };
 
@@ -891,7 +831,7 @@ export class DevicesService {
       critical: 0,
     };
 
-    devices.forEach((device) => {
+    devices.forEach(device => {
       const isOnline = this.isDeviceOnline(device);
       if (isOnline) summary.online++;
       else summary.offline++;
@@ -957,8 +897,7 @@ export class DevicesService {
 
     if (!lastSeen) return 'OFFLINE';
 
-    const minutesSinceLastSeen =
-      (now.getTime() - lastSeen.getTime()) / (1000 * 60);
+    const minutesSinceLastSeen = (now.getTime() - lastSeen.getTime()) / (1000 * 60);
 
     if (minutesSinceLastSeen > 30) return 'OFFLINE';
     if (minutesSinceLastSeen > 10) return 'WARNING';
@@ -977,10 +916,7 @@ export class DevicesService {
     }
 
     let overall = 'HEALTHY';
-    if (
-      latestHealth.status === 'CRITICAL' ||
-      latestHealth.status === 'OFFLINE'
-    ) {
+    if (latestHealth.status === 'CRITICAL' || latestHealth.status === 'OFFLINE') {
       overall = 'CRITICAL';
     } else if (latestHealth.status === 'WARNING') {
       overall = 'WARNING';
@@ -989,11 +925,8 @@ export class DevicesService {
     return {
       overall,
       connectivity:
-        latestHealth.networkLatency && latestHealth.networkLatency < 100
-          ? 'GOOD'
-          : 'POOR',
-      performance:
-        latestHealth.cpuUsage && latestHealth.cpuUsage < 80 ? 'GOOD' : 'POOR',
+        latestHealth.networkLatency && latestHealth.networkLatency < 100 ? 'GOOD' : 'POOR',
+      performance: latestHealth.cpuUsage && latestHealth.cpuUsage < 80 ? 'GOOD' : 'POOR',
       errors: latestHealth.errorCount || 0,
     };
   }

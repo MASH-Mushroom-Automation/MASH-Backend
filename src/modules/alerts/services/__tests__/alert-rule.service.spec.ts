@@ -1,9 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  ConsoleLogger,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConsoleLogger, ConflictException, NotFoundException } from '@nestjs/common';
 import { AlertRuleService } from '../alert-rule.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { AlertCategory, AlertPriority } from '@prisma/client';
@@ -141,9 +137,7 @@ describe('AlertRuleService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      mockPrismaService.alertRule.create.mockRejectedValue(
-        new Error('Database connection failed'),
-      );
+      mockPrismaService.alertRule.create.mockRejectedValue(new Error('Database connection failed'));
 
       await expect(service.create(createDto, 'user-123')).rejects.toThrow(
         'Database connection failed',
@@ -273,9 +267,7 @@ describe('AlertRuleService', () => {
         },
       };
 
-      mockPrismaService.alertRule.findUnique.mockResolvedValue(
-        mockRuleWithRelations,
-      );
+      mockPrismaService.alertRule.findUnique.mockResolvedValue(mockRuleWithRelations);
 
       const result = await service.findOne('rule-123');
 
@@ -322,9 +314,7 @@ describe('AlertRuleService', () => {
     it('should throw NotFoundException when rule does not exist', async () => {
       mockPrismaService.alertRule.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne('nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne('nonexistent')).rejects.toThrow(NotFoundException);
       await expect(service.findOne('nonexistent')).rejects.toThrow(
         "Alert rule with ID 'nonexistent' not found",
       );
@@ -369,9 +359,9 @@ describe('AlertRuleService', () => {
     it('should throw NotFoundException when rule does not exist', async () => {
       mockPrismaService.alertRule.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.update('nonexistent', updateDto, 'user-456'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('nonexistent', updateDto, 'user-456')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should allow partial updates', async () => {
@@ -416,9 +406,7 @@ describe('AlertRuleService', () => {
     it('should throw NotFoundException when rule does not exist', async () => {
       mockPrismaService.alertRule.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove('nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.remove('nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -474,9 +462,9 @@ describe('AlertRuleService', () => {
     it('should throw NotFoundException when rule does not exist', async () => {
       mockPrismaService.alertRule.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.toggleActive('nonexistent', 'user-456'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.toggleActive('nonexistent', 'user-456')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -486,9 +474,7 @@ describe('AlertRuleService', () => {
 
       mockPrismaService.alertRule.findMany.mockResolvedValue(sensorRules);
 
-      const result = await service.getActiveRulesByCategory(
-        AlertCategory.SENSOR,
-      );
+      const result = await service.getActiveRulesByCategory(AlertCategory.SENSOR);
 
       expect(result).toEqual(sensorRules);
       expect(mockPrismaService.alertRule.findMany).toHaveBeenCalledWith({
@@ -516,9 +502,7 @@ describe('AlertRuleService', () => {
     it('should return empty array when no active rules exist for category', async () => {
       mockPrismaService.alertRule.findMany.mockResolvedValue([]);
 
-      const result = await service.getActiveRulesByCategory(
-        AlertCategory.BUSINESS,
-      );
+      const result = await service.getActiveRulesByCategory(AlertCategory.BUSINESS);
 
       expect(result).toEqual([]);
     });

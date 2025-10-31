@@ -1,8 +1,4 @@
-import {
-  getHelmetConfig,
-  HELMET_PRESETS,
-  SECURITY_HEADERS,
-} from '../helmet.config';
+import { getHelmetConfig, HELMET_PRESETS, SECURITY_HEADERS } from '../helmet.config';
 
 describe('HelmetConfig', () => {
   describe('getHelmetConfig', () => {
@@ -113,9 +109,7 @@ describe('HelmetConfig', () => {
 
         expect(config.contentSecurityPolicy).toBeDefined();
         if (typeof config.contentSecurityPolicy === 'object') {
-          expect(config.contentSecurityPolicy.directives?.defaultSrc).toContain(
-            "'self'",
-          );
+          expect(config.contentSecurityPolicy.directives?.defaultSrc).toContain("'self'");
         }
       });
 
@@ -123,9 +117,7 @@ describe('HelmetConfig', () => {
         const config = getHelmetConfig('production');
 
         if (typeof config.contentSecurityPolicy === 'object') {
-          expect(config.contentSecurityPolicy.directives?.scriptSrc).toContain(
-            "'self'",
-          );
+          expect(config.contentSecurityPolicy.directives?.scriptSrc).toContain("'self'");
         }
       });
 
@@ -133,15 +125,9 @@ describe('HelmetConfig', () => {
         const config = getHelmetConfig('production');
 
         if (typeof config.contentSecurityPolicy === 'object') {
-          expect(config.contentSecurityPolicy.directives?.imgSrc).toContain(
-            "'self'",
-          );
-          expect(config.contentSecurityPolicy.directives?.imgSrc).toContain(
-            'data:',
-          );
-          expect(config.contentSecurityPolicy.directives?.imgSrc).toContain(
-            'https:',
-          );
+          expect(config.contentSecurityPolicy.directives?.imgSrc).toContain("'self'");
+          expect(config.contentSecurityPolicy.directives?.imgSrc).toContain('data:');
+          expect(config.contentSecurityPolicy.directives?.imgSrc).toContain('https:');
         }
       });
 
@@ -149,12 +135,8 @@ describe('HelmetConfig', () => {
         const config = getHelmetConfig('production');
 
         if (typeof config.contentSecurityPolicy === 'object') {
-          expect(config.contentSecurityPolicy.directives?.objectSrc).toEqual([
-            "'none'",
-          ]);
-          expect(config.contentSecurityPolicy.directives?.frameSrc).toEqual([
-            "'none'",
-          ]);
+          expect(config.contentSecurityPolicy.directives?.objectSrc).toEqual(["'none'"]);
+          expect(config.contentSecurityPolicy.directives?.frameSrc).toEqual(["'none'"]);
         }
       });
 
@@ -162,9 +144,7 @@ describe('HelmetConfig', () => {
         const config = getHelmetConfig('production');
 
         if (typeof config.contentSecurityPolicy === 'object') {
-          expect(
-            config.contentSecurityPolicy.directives?.upgradeInsecureRequests,
-          ).toEqual([]);
+          expect(config.contentSecurityPolicy.directives?.upgradeInsecureRequests).toEqual([]);
         }
       });
     });
@@ -203,9 +183,7 @@ describe('HelmetConfig', () => {
       expect(SECURITY_HEADERS.CSP).toBe('Content-Security-Policy');
       expect(SECURITY_HEADERS.HSTS).toBe('Strict-Transport-Security');
       expect(SECURITY_HEADERS.FRAME_OPTIONS).toBe('X-Frame-Options');
-      expect(SECURITY_HEADERS.CONTENT_TYPE_OPTIONS).toBe(
-        'X-Content-Type-Options',
-      );
+      expect(SECURITY_HEADERS.CONTENT_TYPE_OPTIONS).toBe('X-Content-Type-Options');
       expect(SECURITY_HEADERS.REFERRER_POLICY).toBe('Referrer-Policy');
       expect(SECURITY_HEADERS.PERMISSIONS_POLICY).toBe('Permissions-Policy');
     });

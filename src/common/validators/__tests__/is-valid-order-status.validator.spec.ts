@@ -233,9 +233,7 @@ describe('IsValidOrderStatus Validator', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.isValidOrderStatus).toContain(
-        'terminal state',
-      );
+      expect(errors[0].constraints?.isValidOrderStatus).toContain('terminal state');
     });
 
     it('should reject CANCELLED -> PROCESSING', async () => {

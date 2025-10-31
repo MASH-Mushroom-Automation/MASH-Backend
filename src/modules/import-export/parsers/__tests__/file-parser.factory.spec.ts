@@ -56,9 +56,7 @@ describe('FileParserFactory', () => {
     });
 
     it('should throw error for unsupported format', () => {
-      expect(() => factory.getParser('INVALID' as FileFormat)).toThrow(
-        'Unsupported file format',
-      );
+      expect(() => factory.getParser('INVALID' as FileFormat)).toThrow('Unsupported file format');
     });
   });
 
@@ -68,15 +66,11 @@ describe('FileParserFactory', () => {
     });
 
     it('should detect Excel from .xlsx extension', () => {
-      expect(factory.detectFormatFromFilename('data.xlsx')).toBe(
-        FileFormat.EXCEL,
-      );
+      expect(factory.detectFormatFromFilename('data.xlsx')).toBe(FileFormat.EXCEL);
     });
 
     it('should detect JSON from .json extension', () => {
-      expect(factory.detectFormatFromFilename('data.json')).toBe(
-        FileFormat.JSON,
-      );
+      expect(factory.detectFormatFromFilename('data.json')).toBe(FileFormat.JSON);
     });
 
     it('should detect XML from .xml extension', () => {
@@ -85,9 +79,7 @@ describe('FileParserFactory', () => {
 
     it('should be case insensitive', () => {
       expect(factory.detectFormatFromFilename('data.CSV')).toBe(FileFormat.CSV);
-      expect(factory.detectFormatFromFilename('data.XLSX')).toBe(
-        FileFormat.EXCEL,
-      );
+      expect(factory.detectFormatFromFilename('data.XLSX')).toBe(FileFormat.EXCEL);
     });
   });
 
@@ -103,21 +95,15 @@ describe('FileParserFactory', () => {
         ),
       ).toBe(FileFormat.EXCEL);
 
-      expect(factory.detectFormatFromMimeType('application/vnd.ms-excel')).toBe(
-        FileFormat.EXCEL,
-      );
+      expect(factory.detectFormatFromMimeType('application/vnd.ms-excel')).toBe(FileFormat.EXCEL);
     });
 
     it('should detect JSON from application/json MIME type', () => {
-      expect(factory.detectFormatFromMimeType('application/json')).toBe(
-        FileFormat.JSON,
-      );
+      expect(factory.detectFormatFromMimeType('application/json')).toBe(FileFormat.JSON);
     });
 
     it('should detect XML from XML MIME types', () => {
-      expect(factory.detectFormatFromMimeType('application/xml')).toBe(
-        FileFormat.XML,
-      );
+      expect(factory.detectFormatFromMimeType('application/xml')).toBe(FileFormat.XML);
       expect(factory.detectFormatFromMimeType('text/xml')).toBe(FileFormat.XML);
     });
   });

@@ -13,5 +13,5 @@ export class BatchIngestDto {
   })
   @IsArray()
   @IsNotEmpty()
-  data: IngestSensorDataDto[];
+  data!: IngestSensorDataDto[];
 }

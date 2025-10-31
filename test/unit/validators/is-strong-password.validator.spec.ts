@@ -83,9 +83,7 @@ describe('IsStrongPassword Validator', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.isStrongPassword).toContain(
-        'at least 8 characters',
-      );
+      expect(errors[0].constraints?.isStrongPassword).toContain('at least 8 characters');
     });
 
     it('should reject empty password', async () => {
@@ -131,9 +129,7 @@ describe('IsStrongPassword Validator', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.isStrongPassword).toContain(
-        'special character',
-      );
+      expect(errors[0].constraints?.isStrongPassword).toContain('special character');
     });
 
     it('should reject password with only lowercase', async () => {
@@ -271,9 +267,7 @@ describe('IsStrongPassword Validator', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.isStrongPassword).toContain(
-        '12 characters',
-      );
+      expect(errors[0].constraints?.isStrongPassword).toContain('12 characters');
     });
 
     it('should enforce custom character counts', async () => {
@@ -298,9 +292,7 @@ describe('IsStrongPassword Validator', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.isStrongPassword).toContain(
-        '2 uppercase letter',
-      );
+      expect(errors[0].constraints?.isStrongPassword).toContain('2 uppercase letter');
     });
 
     it('should reject if not enough symbols', async () => {
@@ -309,9 +301,7 @@ describe('IsStrongPassword Validator', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].constraints?.isStrongPassword).toContain(
-        '2 special character',
-      );
+      expect(errors[0].constraints?.isStrongPassword).toContain('2 special character');
     });
   });
 

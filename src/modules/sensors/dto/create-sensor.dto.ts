@@ -8,7 +8,7 @@ export class CreateSensorDto {
   })
   @IsString()
   @IsNotEmpty()
-  deviceId: string;
+  deviceId!: string;
 
   @ApiProperty({
     description: 'Sensor type',
@@ -17,7 +17,7 @@ export class CreateSensorDto {
   })
   @IsString()
   @IsNotEmpty()
-  type: string;
+  type!: string;
 
   @ApiProperty({
     description: 'Sensor name',
@@ -25,7 +25,7 @@ export class CreateSensorDto {
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Unit of measurement',
@@ -33,7 +33,7 @@ export class CreateSensorDto {
   })
   @IsString()
   @IsNotEmpty()
-  unit: string;
+  unit!: string;
 
   @ApiProperty({
     description: 'Minimum valid value',
@@ -62,7 +62,7 @@ export class CreateSensorDto {
   @IsNumber()
   @Min(5)
   @Max(3600)
-  readingInterval: number;
+  readingInterval!: number;
 
   @ApiProperty({
     description: 'Sensor calibration data',

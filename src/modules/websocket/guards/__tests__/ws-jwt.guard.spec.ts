@@ -32,9 +32,7 @@ describe('WsJwtGuard', () => {
       id: 'socket-123',
       handshake: {
         auth: options.authToken ? { token: options.authToken } : {},
-        headers: options.headerToken
-          ? { authorization: options.headerToken }
-          : ({} as any),
+        headers: options.headerToken ? { authorization: options.headerToken } : ({} as any),
         query: options.queryToken ? { token: options.queryToken } : {},
         address: '127.0.0.1',
         time: Date.now(),
@@ -51,9 +49,7 @@ describe('WsJwtGuard', () => {
   };
 
   // Mock execution context factory
-  const createMockContext = (
-    socket: Partial<AuthenticatedSocket>,
-  ): ExecutionContext => {
+  const createMockContext = (socket: Partial<AuthenticatedSocket>): ExecutionContext => {
     return {
       switchToWs: jest.fn().mockReturnValue({
         getClient: jest.fn().mockReturnValue(socket),
@@ -113,9 +109,7 @@ describe('WsJwtGuard', () => {
         });
         expect((mockSocket as AuthenticatedSocket).user).toBeDefined();
         expect((mockSocket as AuthenticatedSocket).user.id).toBe('user-123');
-        expect((mockSocket as AuthenticatedSocket).user.email).toBe(
-          'test@example.com',
-        );
+        expect((mockSocket as AuthenticatedSocket).user.email).toBe('test@example.com');
       });
 
       it('should authenticate with Bearer token from authorization header', async () => {
@@ -219,9 +213,7 @@ describe('WsJwtGuard', () => {
         const mockSocket = createMockSocket({ authToken: mockToken });
         const mockContext = createMockContext(mockSocket);
 
-        jest
-          .spyOn(jwtService, 'verifyAsync')
-          .mockResolvedValue(payloadWithoutRoles);
+        jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(payloadWithoutRoles);
 
         await guard.canActivate(mockContext);
 
@@ -293,9 +285,7 @@ describe('WsJwtGuard', () => {
         const mockSocket = createMockSocket({});
         const mockContext = createMockContext(mockSocket);
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
         await expect(guard.canActivate(mockContext)).rejects.toThrow(
           'Missing authentication token',
         );
@@ -310,12 +300,8 @@ describe('WsJwtGuard', () => {
         error.name = 'JsonWebTokenError';
         jest.spyOn(jwtService, 'verifyAsync').mockRejectedValue(error);
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          'Invalid token',
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
+        await expect(guard.canActivate(mockContext)).rejects.toThrow('Invalid token');
       });
 
       it('should throw WsException when token is expired', async () => {
@@ -327,12 +313,8 @@ describe('WsJwtGuard', () => {
         error.name = 'TokenExpiredError';
         jest.spyOn(jwtService, 'verifyAsync').mockRejectedValue(error);
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          'Token has expired',
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
+        await expect(guard.canActivate(mockContext)).rejects.toThrow('Token has expired');
       });
 
       it('should handle payload with expired timestamp', async () => {
@@ -347,12 +329,8 @@ describe('WsJwtGuard', () => {
 
         jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(expiredPayload);
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          'Token has expired',
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
+        await expect(guard.canActivate(mockContext)).rejects.toThrow('Token has expired');
       });
 
       it('should handle generic JWT errors', async () => {
@@ -363,9 +341,7 @@ describe('WsJwtGuard', () => {
         const error = new Error('Generic JWT error');
         jest.spyOn(jwtService, 'verifyAsync').mockRejectedValue(error);
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
       });
 
       it('should throw WsException when JWT service throws unexpected error', async () => {
@@ -373,13 +349,9 @@ describe('WsJwtGuard', () => {
         const mockSocket = createMockSocket({ authToken: mockToken });
         const mockContext = createMockContext(mockSocket);
 
-        jest
-          .spyOn(jwtService, 'verifyAsync')
-          .mockRejectedValue(new Error('Unexpected error'));
+        jest.spyOn(jwtService, 'verifyAsync').mockRejectedValue(new Error('Unexpected error'));
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
       });
     });
 
@@ -388,22 +360,16 @@ describe('WsJwtGuard', () => {
         const mockSocket = createMockSocket({ authToken: '' });
         const mockContext = createMockContext(mockSocket);
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
       });
 
       it('should handle whitespace-only token', async () => {
         const mockSocket = createMockSocket({ authToken: '   ' });
         const mockContext = createMockContext(mockSocket);
 
-        jest
-          .spyOn(jwtService, 'verifyAsync')
-          .mockRejectedValue(new Error('Invalid token'));
+        jest.spyOn(jwtService, 'verifyAsync').mockRejectedValue(new Error('Invalid token'));
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
       });
 
       it('should handle malformed Bearer header', async () => {
@@ -411,13 +377,9 @@ describe('WsJwtGuard', () => {
         const mockContext = createMockContext(mockSocket);
 
         // Should extract "Bearer" as the token itself (fallback behavior)
-        jest
-          .spyOn(jwtService, 'verifyAsync')
-          .mockRejectedValue(new Error('Invalid token'));
+        jest.spyOn(jwtService, 'verifyAsync').mockRejectedValue(new Error('Invalid token'));
 
-        await expect(guard.canActivate(mockContext)).rejects.toThrow(
-          WsException,
-        );
+        await expect(guard.canActivate(mockContext)).rejects.toThrow(WsException);
       });
 
       it('should handle payload without required fields', async () => {
@@ -430,9 +392,7 @@ describe('WsJwtGuard', () => {
         const mockSocket = createMockSocket({ authToken: mockToken });
         const mockContext = createMockContext(mockSocket);
 
-        jest
-          .spyOn(jwtService, 'verifyAsync')
-          .mockResolvedValue(incompletePayload);
+        jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(incompletePayload);
 
         const result = await guard.canActivate(mockContext);
 
@@ -476,9 +436,7 @@ describe('WsJwtGuard', () => {
 
         await guard.canActivate(mockContext);
 
-        expect((mockSocket as AuthenticatedSocket).user.id).toBe(
-          'user-from-sub',
-        );
+        expect((mockSocket as AuthenticatedSocket).user.id).toBe('user-from-sub');
       });
 
       it('should extract user ID from "userId" field when "sub" is missing', async () => {
@@ -494,9 +452,7 @@ describe('WsJwtGuard', () => {
 
         await guard.canActivate(mockContext);
 
-        expect((mockSocket as AuthenticatedSocket).user.id).toBe(
-          'user-from-userId',
-        );
+        expect((mockSocket as AuthenticatedSocket).user.id).toBe('user-from-userId');
       });
 
       it('should extract user ID from "id" field when others are missing', async () => {
@@ -509,9 +465,7 @@ describe('WsJwtGuard', () => {
 
         await guard.canActivate(mockContext);
 
-        expect((mockSocket as AuthenticatedSocket).user.id).toBe(
-          'user-from-id',
-        );
+        expect((mockSocket as AuthenticatedSocket).user.id).toBe('user-from-id');
       });
 
       it('should extract Firebase UID when present', async () => {
@@ -528,9 +482,7 @@ describe('WsJwtGuard', () => {
 
         await guard.canActivate(mockContext);
 
-        expect((mockSocket as AuthenticatedSocket).user.firebaseUid).toBe(
-          'firebase-uid-123',
-        );
+        expect((mockSocket as AuthenticatedSocket).user.firebaseUid).toBe('firebase-uid-123');
       });
 
       it('should handle multiple role formats', async () => {
@@ -565,12 +517,10 @@ describe('WsJwtGuard', () => {
 
         jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(mockJwtPayload);
 
-        const results = await Promise.all(
-          contexts.map((ctx) => guard.canActivate(ctx)),
-        );
+        const results = await Promise.all(contexts.map(ctx => guard.canActivate(ctx)));
 
         expect(results).toHaveLength(10);
-        expect(results.every((r) => r === true)).toBe(true);
+        expect(results.every(r => r === true)).toBe(true);
       });
     });
   });

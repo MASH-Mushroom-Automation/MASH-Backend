@@ -9,7 +9,7 @@ export class IngestSensorDataDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  value: number;
+  value!: number;
 
   @ApiProperty({
     description: 'Timestamp of the reading (ISO 8601, cannot be in the future)',

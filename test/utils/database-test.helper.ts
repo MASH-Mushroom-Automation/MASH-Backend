@@ -31,9 +31,7 @@ export class DatabaseTestHelper {
    */
   static getPrisma(): PrismaClient {
     if (!this.prisma) {
-      throw new Error(
-        'Prisma client not initialized. Call initialize() first.',
-      );
+      throw new Error('Prisma client not initialized. Call initialize() first.');
     }
     return this.prisma;
   }
@@ -55,9 +53,7 @@ export class DatabaseTestHelper {
     // Truncate all tables
     for (const { tablename } of tables) {
       if (tablename !== '_prisma_migrations') {
-        await prisma.$executeRawUnsafe(
-          `TRUNCATE TABLE "${tablename}" CASCADE;`,
-        );
+        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tablename}" CASCADE;`);
       }
     }
 
@@ -88,8 +84,7 @@ export class DatabaseTestHelper {
       execSync('npx prisma migrate deploy', {
         env: {
           ...process.env,
-          DATABASE_URL:
-            process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
+          DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
         },
         stdio: 'inherit',
       });
@@ -120,11 +115,9 @@ export class DatabaseTestHelper {
   /**
    * Create a transaction for testing
    */
-  static async withTransaction<T>(
-    callback: (prisma: PrismaClient) => Promise<T>,
-  ): Promise<T> {
+  static async withTransaction<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
     const prisma = this.getPrisma();
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       return await callback(tx as PrismaClient);
     });
   }
@@ -143,10 +136,7 @@ export class DatabaseTestHelper {
   /**
    * Check if a record exists
    */
-  static async recordExists(
-    tableName: string,
-    conditions: Record<string, any>,
-  ): Promise<boolean> {
+  static async recordExists(tableName: string, conditions: Record<string, any>): Promise<boolean> {
     const prisma = this.getPrisma();
     const whereClause = Object.entries(conditions)
       .map(([key, value]) => `"${key}" = '${value}'`)
@@ -205,10 +195,7 @@ export class DatabaseTestHelper {
   /**
    * Find test data by ID
    */
-  static async findTestData<T>(
-    modelName: string,
-    id: string,
-  ): Promise<T | null> {
+  static async findTestData<T>(modelName: string, id: string): Promise<T | null> {
     const prisma = this.getPrisma();
     // @ts-expect-error - Dynamic model access
     return await prisma[modelName].findUnique({ where: { id } });

@@ -37,24 +37,18 @@ export class ApiGatewayConfigFactory {
         overrides?.name ||
         `${faker.helpers.arrayElement(['Product', 'Order', 'User', 'Auth'])} API`,
       path:
-        overrides?.path ||
-        `/api/v1/${faker.helpers.arrayElement(['products', 'orders', 'users'])}`,
+        overrides?.path || `/api/v1/${faker.helpers.arrayElement(['products', 'orders', 'users'])}`,
       targetUrl:
         overrides?.targetUrl ||
         `http://internal-service-${faker.number.int({ min: 1, max: 5 })}.local:3000`,
-      method:
-        overrides?.method ||
-        faker.helpers.arrayElement(['GET', 'POST', 'PUT', 'DELETE']),
+      method: overrides?.method || faker.helpers.arrayElement(['GET', 'POST', 'PUT', 'DELETE']),
       isActive: overrides?.isActive !== undefined ? overrides.isActive : true,
       timeout: overrides?.timeout || 5000,
       retries: overrides?.retries || 3,
       cacheEnabled:
-        overrides?.cacheEnabled !== undefined
-          ? overrides.cacheEnabled
-          : faker.datatype.boolean(),
+        overrides?.cacheEnabled !== undefined ? overrides.cacheEnabled : faker.datatype.boolean(),
       cacheTtl: overrides?.cacheTtl || 300,
-      loadBalancing:
-        overrides?.loadBalancing || LoadBalancingStrategy.ROUND_ROBIN,
+      loadBalancing: overrides?.loadBalancing || LoadBalancingStrategy.ROUND_ROBIN,
       healthCheck: overrides?.healthCheck || {
         enabled: true,
         interval: 30000,
@@ -115,10 +109,7 @@ export class ApiGatewayConfigFactory {
   /**
    * Create multiple configs
    */
-  static createMany(
-    count: number,
-    overrides?: Partial<ApiGatewayConfigFactoryOptions>,
-  ) {
+  static createMany(count: number, overrides?: Partial<ApiGatewayConfigFactoryOptions>) {
     return Array.from({ length: count }, () => this.create(overrides));
   }
 }

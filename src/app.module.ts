@@ -11,10 +11,7 @@ import { AppService } from './app.service';
 import { createAppConfig } from './config/app.config';
 import { createDatabaseConfig } from './config/database.config';
 import { createJwtConfig } from './config/jwt.config';
-import {
-  envValidationSchema,
-  envValidationOptions,
-} from './config/env-validation.config';
+import { envValidationSchema, envValidationOptions } from './config/env-validation.config';
 import { getThrottlerConfig } from './common/config/throttler.config';
 
 // Import modules (will be created)

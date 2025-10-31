@@ -175,9 +175,7 @@ describe('ExportProcessor', () => {
       });
 
       expect(mockGateway.emitJobCompleted).toHaveBeenCalled();
-      expect(mockRedisService.delete).toHaveBeenCalledWith(
-        `export:progress:${jobData.jobId}`,
-      );
+      expect(mockRedisService.delete).toHaveBeenCalledWith(`export:progress:${jobData.jobId}`);
     });
 
     it('should handle empty results', async () => {
@@ -360,12 +358,7 @@ describe('ExportProcessor', () => {
       const jsonContent = JSON.stringify(mockRecords);
       mockParser.generate.mockReturnValue(jsonContent);
 
-      const result = await processor['generateFile'](
-        mockParser,
-        mockRecords,
-        {},
-        FileFormat.JSON,
-      );
+      const result = await processor['generateFile'](mockParser, mockRecords, {}, FileFormat.JSON);
 
       expect(result).toBeInstanceOf(Buffer);
       expect(result.toString()).toBe(jsonContent);
@@ -375,12 +368,7 @@ describe('ExportProcessor', () => {
       const xmlContent = '<root><item>1</item></root>';
       mockParser.generate.mockReturnValue(xmlContent);
 
-      const result = await processor['generateFile'](
-        mockParser,
-        mockRecords,
-        {},
-        FileFormat.XML,
-      );
+      const result = await processor['generateFile'](mockParser, mockRecords, {}, FileFormat.XML);
 
       expect(result).toBeInstanceOf(Buffer);
       expect(result.toString()).toBe(xmlContent);

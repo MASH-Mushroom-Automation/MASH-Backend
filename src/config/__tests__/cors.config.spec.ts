@@ -19,30 +19,21 @@ describe('CorsConfig', () => {
         const origins = 'https://app.example.com,https://admin.example.com';
         const config = getCorsConfig('production', origins);
 
-        expect(config.origin).toEqual([
-          'https://app.example.com',
-          'https://admin.example.com',
-        ]);
+        expect(config.origin).toEqual(['https://app.example.com', 'https://admin.example.com']);
       });
 
       it('should trim whitespace from origins', () => {
         const origins = ' https://app.example.com , https://admin.example.com ';
         const config = getCorsConfig('production', origins);
 
-        expect(config.origin).toEqual([
-          'https://app.example.com',
-          'https://admin.example.com',
-        ]);
+        expect(config.origin).toEqual(['https://app.example.com', 'https://admin.example.com']);
       });
 
       it('should filter out empty strings', () => {
         const origins = 'https://app.example.com,,https://admin.example.com';
         const config = getCorsConfig('production', origins);
 
-        expect(config.origin).toEqual([
-          'https://app.example.com',
-          'https://admin.example.com',
-        ]);
+        expect(config.origin).toEqual(['https://app.example.com', 'https://admin.example.com']);
       });
 
       it('should throw error if CORS_ORIGINS contains only commas', () => {
@@ -59,11 +50,7 @@ describe('CorsConfig', () => {
       });
 
       it('should allow disabling credentials', () => {
-        const config = getCorsConfig(
-          'production',
-          'https://app.example.com',
-          false,
-        );
+        const config = getCorsConfig('production', 'https://app.example.com', false);
 
         expect(config.credentials).toBe(false);
       });
@@ -152,7 +139,7 @@ describe('CorsConfig', () => {
   });
 
   describe('validateCorsOrigin', () => {
-    it('should allow requests with no origin (mobile apps)', (done) => {
+    it('should allow requests with no origin (mobile apps)', done => {
       validateCorsOrigin(
         undefined,
         (error, allow) => {
@@ -164,7 +151,7 @@ describe('CorsConfig', () => {
       );
     });
 
-    it('should allow origin matching string pattern', (done) => {
+    it('should allow origin matching string pattern', done => {
       const allowedPatterns = ['https://app.example.com'];
 
       validateCorsOrigin(
@@ -178,7 +165,7 @@ describe('CorsConfig', () => {
       );
     });
 
-    it('should allow origin matching regex pattern', (done) => {
+    it('should allow origin matching regex pattern', done => {
       const allowedPatterns = [/^https:\/\/.*\.example\.com$/];
 
       validateCorsOrigin(
@@ -192,16 +179,14 @@ describe('CorsConfig', () => {
       );
     });
 
-    it('should reject origin not in allowed patterns', (done) => {
+    it('should reject origin not in allowed patterns', done => {
       const allowedPatterns = ['https://app.example.com'];
 
       validateCorsOrigin(
         'https://evil.com',
         (error, allow) => {
           expect(error).toBeDefined();
-          expect(error?.message).toContain(
-            'not allowed by Access-Control-Allow-Origin',
-          );
+          expect(error?.message).toContain('not allowed by Access-Control-Allow-Origin');
           expect(allow).toBe(false);
           done();
         },
@@ -209,11 +194,8 @@ describe('CorsConfig', () => {
       );
     });
 
-    it('should work with mixed string and regex patterns', (done) => {
-      const allowedPatterns = [
-        'https://app.example.com',
-        /^https:\/\/.*\.example\.com$/,
-      ];
+    it('should work with mixed string and regex patterns', done => {
+      const allowedPatterns = ['https://app.example.com', /^https:\/\/.*\.example\.com$/];
 
       validateCorsOrigin(
         'https://admin.example.com',
@@ -236,9 +218,7 @@ describe('CorsConfig', () => {
 
     it('should have DEVELOPMENT preset', () => {
       expect(CORS_PRESETS.DEVELOPMENT).toBeDefined();
-      expect(CORS_PRESETS.DEVELOPMENT.origin).toContain(
-        'http://localhost:3000',
-      );
+      expect(CORS_PRESETS.DEVELOPMENT.origin).toContain('http://localhost:3000');
       expect(CORS_PRESETS.DEVELOPMENT.credentials).toBe(true);
     });
 
@@ -266,9 +246,7 @@ describe('CorsConfig', () => {
       expect(CORS_HEADERS.ALLOW_HEADERS).toBe('Access-Control-Allow-Headers');
       expect(CORS_HEADERS.EXPOSE_HEADERS).toBe('Access-Control-Expose-Headers');
       expect(CORS_HEADERS.MAX_AGE).toBe('Access-Control-Max-Age');
-      expect(CORS_HEADERS.ALLOW_CREDENTIALS).toBe(
-        'Access-Control-Allow-Credentials',
-      );
+      expect(CORS_HEADERS.ALLOW_CREDENTIALS).toBe('Access-Control-Allow-Credentials');
     });
   });
 

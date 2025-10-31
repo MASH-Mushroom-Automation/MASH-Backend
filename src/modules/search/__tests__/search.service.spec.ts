@@ -78,9 +78,7 @@ describe('SearchService', () => {
       const error = new Error('Connection refused');
       elasticsearchService.getHealth.mockRejectedValue(error);
 
-      await expect(service.testConnection()).rejects.toThrow(
-        'Connection refused',
-      );
+      await expect(service.testConnection()).rejects.toThrow('Connection refused');
     });
   });
 
@@ -141,11 +139,7 @@ describe('SearchService', () => {
       cacheService.set.mockResolvedValue(undefined);
       analyticsService.logSearch.mockResolvedValue(undefined);
 
-      const result = await service.searchProducts(
-        dto,
-        'user-123',
-        '192.168.1.1',
-      );
+      const result = await service.searchProducts(dto, 'user-123', '192.168.1.1');
 
       expect(result.total).toBe(100);
       expect(result.hits).toHaveLength(2);
@@ -414,9 +408,7 @@ describe('SearchService', () => {
     };
 
     it('should return autocomplete suggestions', async () => {
-      mockElasticsearchClient.search.mockResolvedValue(
-        mockAutocompleteResponse,
-      );
+      mockElasticsearchClient.search.mockResolvedValue(mockAutocompleteResponse);
 
       const result = await service.autocomplete('shi', 5);
 
@@ -446,9 +438,7 @@ describe('SearchService', () => {
     });
 
     it('should handle autocomplete with default limit', async () => {
-      mockElasticsearchClient.search.mockResolvedValue(
-        mockAutocompleteResponse,
-      );
+      mockElasticsearchClient.search.mockResolvedValue(mockAutocompleteResponse);
 
       const result = await service.autocomplete('mushroom');
 
@@ -529,13 +519,9 @@ describe('SearchService', () => {
     });
 
     it('should throw error when product not found', async () => {
-      mockElasticsearchClient.get.mockRejectedValue(
-        new Error('Product not found'),
-      );
+      mockElasticsearchClient.get.mockRejectedValue(new Error('Product not found'));
 
-      await expect(service.findSimilarProducts('999', 5)).rejects.toThrow(
-        'Product not found',
-      );
+      await expect(service.findSimilarProducts('999', 5)).rejects.toThrow('Product not found');
     });
   });
 

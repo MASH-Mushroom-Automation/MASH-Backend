@@ -397,16 +397,13 @@ describe('IsValidDeviceId Validator', () => {
     });
 
     it('should return true for valid UUID', () => {
-      const result = validator.validate(
-        '550e8400-e29b-41d4-a716-446655440000',
-        {
-          constraints: [],
-          object: {},
-          property: 'deviceId',
-          targetName: 'TestDto',
-          value: '550e8400-e29b-41d4-a716-446655440000',
-        },
-      );
+      const result = validator.validate('550e8400-e29b-41d4-a716-446655440000', {
+        constraints: [],
+        object: {},
+        property: 'deviceId',
+        targetName: 'TestDto',
+        value: '550e8400-e29b-41d4-a716-446655440000',
+      });
 
       expect(result).toBe(true);
     });

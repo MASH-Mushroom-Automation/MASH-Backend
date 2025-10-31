@@ -5,7 +5,7 @@ import { Client } from '@elastic/elasticsearch';
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
   private readonly logger = new Logger(ElasticsearchService.name);
-  private client: Client | null;
+  private client!: Client | null;
 
   constructor(private config: ConfigService) {}
 
