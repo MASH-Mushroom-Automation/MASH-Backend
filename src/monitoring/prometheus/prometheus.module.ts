@@ -14,13 +14,14 @@
  * - GET /metrics - Prometheus scraping endpoint
  */
 
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { PrometheusModule as NestPrometheusModule } from '@willsoto/nestjs-prometheus';
 import { PrometheusService } from './prometheus.service';
 import { PrometheusController } from './prometheus.controller';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
 import { CacheService } from '../../common/services/cache.service';
 
+@Global()
 @Module({
   imports: [
     NestPrometheusModule.register({

@@ -29,7 +29,8 @@ import { AuthViewsModule } from './modules/auth/views/auth-views.module';
 
 // Import common modules
 import { DatabaseModule } from './database/database.module';
-import { HealthModule } from './health/health.module';
+// import { HealthModule } from './health/health.module';
+import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
 import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
 import { TracingModule } from './monitoring/tracing/tracing.module';
