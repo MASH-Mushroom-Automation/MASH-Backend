@@ -10,9 +10,16 @@ export class RedisHealthIndicator extends HealthIndicator {
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     try {
-      const ping = await this.redisService.getClient().ping();
-      const isHealthy = ping === 'PONG';
-      return this.getStatus(key, isHealthy);
+      // Check if Redis is available and connected
+      const isAvailable = this.redisService.isAvailable();
+      if (!isAvailable) {
+        throw new Error('Redis is not available or connected');
+      }
+      
+      // Try a simple get operation to verify connectivity
+      await this.redisService.get('health-check');
+      
+      return this.getStatus(key, true);
     } catch (e) {
       throw new HealthCheckError('Redis check failed', this.getStatus(key, false, { message: e.message }));
     }

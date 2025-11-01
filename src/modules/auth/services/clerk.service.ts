@@ -487,4 +487,41 @@ export class ClerkService {
       return false;
     }
   }
+
+  /**
+   * Verify email with code
+   */
+  async verifyEmail(email: string, code: string): Promise<void> {
+    // Placeholder implementation - integrate with Clerk when needed
+    this.logger.log(`Email verification requested for: ${email}`);
+    // TODO: Implement actual Clerk email verification
+  }
+
+  /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    // Placeholder implementation - integrate with Clerk when needed
+    this.logger.log(`Password reset email requested for: ${email}`);
+    // TODO: Implement actual Clerk password reset email
+  }
+
+  /**
+   * Reset password with code
+   */
+  async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+    // Placeholder implementation - integrate with Clerk when needed
+    this.logger.log(`Password reset requested for: ${email}`);
+    // TODO: Implement actual Clerk password reset
+  }
+
+  /**
+   * Initiate OAuth flow
+   */
+  async initiateOAuth(provider: string, redirectUrl?: string): Promise<string> {
+    // Placeholder implementation - integrate with Clerk when needed
+    this.logger.log(`OAuth initiation requested for provider: ${provider}`);
+    // TODO: Implement actual Clerk OAuth initiation
+    return `https://accounts.clerk.dev/oauth/${provider}`;
+  }
 }

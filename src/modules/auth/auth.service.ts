@@ -3,6 +3,8 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
   Logger,
   UseInterceptors,
 } from '@nestjs/common';
@@ -500,3 +502,72 @@ export class AuthService {
         verificationSent: true,
       };
     } catch (error) {
+      this.logger.error(`Registration failed for ${registerDto.email}: ${error.message}`);
+      if (error.message?.includes('already exists')) {
+        throw new ConflictException('User with this email already exists');
+      }
+      throw new InternalServerErrorException('Registration failed. Please try again.');
+    }
+  }
+
+  async verifyEmail(verifyEmailDto: VerifyEmailDto) {
+    try {
+      await this.clerkService.verifyEmail(verifyEmailDto.email, verifyEmailDto.code);
+      return { success: true, message: 'Email verified successfully' };
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+  }
+
+  async resendVerification(email: string) {
+    try {
+      await this.clerkService.sendEmailVerification(email);
+      return { success: true, message: 'Verification email sent' };
+    } catch (error) {
+      throw new BadRequestException('Failed to send verification email');
+    }
+  }
+
+  async forgotPassword(email: string) {
+    try {
+      await this.clerkService.sendPasswordResetEmail(email);
+      return { success: true, message: 'Password reset email sent' };
+    } catch (error) {
+      throw new BadRequestException('Failed to send password reset email');
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      await this.clerkService.resetPassword(
+        resetPasswordDto.email,
+        resetPasswordDto.code,
+        resetPasswordDto.newPassword,
+      );
+      return { success: true, message: 'Password reset successfully' };
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired reset code');
+    }
+  }
+
+  async initiateOAuth(provider: string, redirectUrl?: string) {
+    try {
+      const authUrl = await this.clerkService.initiateOAuth(provider, redirectUrl);
+      return { authUrl };
+    } catch (error) {
+      throw new BadRequestException(`Failed to initiate ${provider} OAuth`);
+    }
+  }
+
+  async handleOAuthCallback(callbackDto: OAuthCallbackDto) {
+    try {
+      const result = await this.clerkService.handleOAuthCallback(
+        callbackDto.provider,
+        callbackDto.code,
+      );
+      return result;
+    } catch (error) {
+      throw new UnauthorizedException('OAuth authentication failed');
+    }
+  }
+}
