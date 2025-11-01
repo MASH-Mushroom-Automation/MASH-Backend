@@ -20,7 +20,6 @@ import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
-
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 @Injectable()

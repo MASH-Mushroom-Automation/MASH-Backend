@@ -1,0 +1,259 @@
+groups:
+  - name: mash_backend_alerts
+    interval: 30s
+    rules:
+      # ============================================
+      # HIGH ERROR RATE ALERTS
+      # ============================================
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(mash_http_requests_total{status_code=~"5.."}[5m])) 
+            / 
+            sum(rate(mash_http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "High error rate detected"
+          description: "API is returning {{ $value | humanizePercentage }} 5xx errors over the last 5 minutes (threshold: 5%)"
+          
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            sum(rate(mash_http_requests_total{status_code=~"5.."}[5m])) 
+            / 
+            sum(rate(mash_http_requests_total[5m]))
+          ) > 0.10
+        for: 2m
+        labels:
+          severity: emergency
+          category: application
+        annotations:
+          summary: "Critical error rate detected"
+          description: "API is returning {{ $value | humanizePercentage }} 5xx errors over the last 5 minutes (threshold: 10%)"
+
+      # ============================================
+      # API LATENCY ALERTS
+      # ============================================
+      - alert: HighApiLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(mash_http_request_duration_seconds_bucket[5m])) by (le, route)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High API latency on {{ $labels.route }}"
+          description: "P95 latency is {{ $value }}s for route {{ $labels.route }} (threshold: 2s)"
+          
+      - alert: CriticalApiLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(mash_http_request_duration_seconds_bucket[5m])) by (le, route)
+          ) > 5
+        for: 2m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "Critical API latency on {{ $labels.route }}"
+          description: "P95 latency is {{ $value }}s for route {{ $labels.route }} (threshold: 5s)"
+
+      # ============================================
+      # SERVICE HEALTH ALERTS
+      # ============================================
+      - alert: ServiceDown
+        expr: up{job="mash-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "MASH Backend service is down"
+          description: "The MASH Backend service has been down for more than 1 minute"
+          
+      - alert: DatabaseConnectionFailed
+        expr: mash_db_connections_active == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Database connection lost"
+          description: "No active database connections detected for more than 2 minutes"
+          
+      - alert: RedisConnectionFailed
+        expr: mash_cache_hit_rate == 0 and rate(mash_cache_hits_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "Redis connection issue detected"
+          description: "No cache hits detected for 5 minutes, possible Redis connection failure"
+
+      # ============================================
+      # DATABASE PERFORMANCE ALERTS
+      # ============================================
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(mash_db_query_duration_seconds_bucket[5m])) by (le, operation)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Slow database queries detected for {{ $labels.operation }}"
+          description: "P95 query latency is {{ $value }}s for {{ $labels.operation }} (threshold: 1s)"
+          
+      - alert: HighDatabaseErrorRate
+        expr: |
+          (
+            sum(rate(mash_db_query_errors_total[5m])) 
+            / 
+            sum(rate(mash_db_queries_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "High database error rate"
+          description: "{{ $value | humanizePercentage }} of database queries are failing (threshold: 5%)"
+
+      # ============================================
+      # CACHE PERFORMANCE ALERTS
+      # ============================================
+      - alert: LowCacheHitRate
+        expr: mash_cache_hit_rate < 0.70
+        for: 10m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 70%)"
+          
+      - alert: HighCacheMemoryUsage
+        expr: mash_cache_memory_usage_bytes > 1073741824  # 1GB
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "High cache memory usage"
+          description: "Cache is using {{ $value | humanize }}B of memory (threshold: 1GB)"
+
+      # ============================================
+      # RATE LIMITING ALERTS
+      # ============================================
+      - alert: HighRateLimitViolations
+        expr: rate(mash_rate_limit_violations_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate limit violations"
+          description: "{{ $value }} rate limit violations per second detected"
+          
+      - alert: MassiveRateLimitViolations
+        expr: rate(mash_rate_limit_violations_total[1m]) > 50
+        for: 2m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Massive rate limit violations - possible attack"
+          description: "{{ $value }} rate limit violations per second detected (possible DDoS attack)"
+
+      # ============================================
+      # BUSINESS METRICS ALERTS
+      # ============================================
+      - alert: NoOrdersCreated
+        expr: rate(mash_orders_total[1h]) == 0
+        for: 2h
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "No orders created in the last 2 hours"
+          description: "Business activity may be impacted - no orders have been created"
+          
+      - alert: NoUserRegistrations
+        expr: rate(mash_users_registered_total[4h]) == 0
+        for: 4h
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: "No user registrations in the last 4 hours"
+          description: "User growth may be stalled - no new registrations detected"
+
+      # ============================================
+      # SYSTEM RESOURCE ALERTS
+      # ============================================
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+          
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes > 536870912  # 512MB
+        for: 10m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanize }}B (threshold: 512MB)"
+          
+      - alert: EventLoopLag
+        expr: nodejs_eventloop_lag_seconds > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High Node.js event loop lag"
+          description: "Event loop lag is {{ $value }}s (threshold: 0.1s) - application may be unresponsive"
+
+      # ============================================
+      # QUEUE ALERTS (Bull/BullMQ)
+      # ============================================
+      - alert: HighFailedJobRate
+        expr: |
+          (
+            rate(bull_queue_completed{status="failed"}[5m])
+            /
+            rate(bull_queue_completed[5m])
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          category: queue
+        annotations:
+          summary: "High job failure rate in {{ $labels.queue }}"
+          description: "{{ $value | humanizePercentage }} of jobs are failing in queue {{ $labels.queue }} (threshold: 10%)"
+          
+      - alert: QueueBacklog
+        expr: bull_queue_waiting > 1000
+        for: 10m
+        labels:
+          severity: warning
+          category: queue
+        annotations:
+          summary: "Large backlog in queue {{ $labels.queue }}"
+          description: "{{ $value }} jobs are waiting in queue {{ $labels.queue }} (threshold: 1000)"
