@@ -501,7 +501,7 @@ export class AuthService {
         avatarUrl: diceBearAvatarUrl, // DiceBear avatar URL
         verificationSent: true,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Registration failed for ${registerDto.email}: ${error.message}`);
       if (error.message?.includes('already exists')) {
         throw new ConflictException('User with this email already exists');
