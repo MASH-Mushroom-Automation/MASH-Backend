@@ -100,7 +100,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto.email);
+    return this.authService.login(loginDto.email, loginDto.password);
   }
 
   @Post('verify-email')

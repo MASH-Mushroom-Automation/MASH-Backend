@@ -1,19 +1,11 @@
 declare module '@nestjs/websockets' {
-  export function WebSocketGateway(options?: any): ClassDecorator;
-  export function WebSocketServer(): PropertyDecorator;
-  export function SubscribeMessage(message: string): MethodDecorator;
-  export function ConnectedSocket(): ParameterDecorator;
-  export function MessageBody(): ParameterDecorator;
-
-  export class WsException extends Error {
-    constructor(message: string, error?: string);
-  }
-
-  export class BaseWsExceptionFilter {
-    catch(exception: WsException, host: any): any;
-  }
-
-  export function OnGatewayConnection(): void;
-  export function OnGatewayDisconnect(): void;
-  export function OnGatewayInit(): void;
+  export const WebSocketGateway: any;
+  export const WebSocketServer: any;
+  export const SubscribeMessage: any;
+  export const ConnectedSocket: any;
+  export const MessageBody: any;
+  export const Ack: any;
+  export const WsException: any;
+  export const BaseWsExceptionFilter: any;
+  export const AbstractWsAdapter: any;
 }

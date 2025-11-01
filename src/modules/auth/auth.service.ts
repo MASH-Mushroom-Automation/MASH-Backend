@@ -18,6 +18,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/password-reset.dto';
 import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
+import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -223,7 +224,7 @@ export class AuthService {
    * - Uses Clerk to authenticate when available
    * - Falls back to local check (for development) if Clerk is not configured
    */
-  async login(email: string) {
+  async login(email: string, pass: string) {
     // If Clerk is configured, try Clerk sign-in flow
     try {
       if (this.clerkService && this.clerkService.getClient) {
@@ -236,6 +237,11 @@ export class AuthService {
         // For now assume user exists and password is valid when Clerk is enabled
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user) {
+          throw new UnauthorizedException('Invalid credentials');
+        }
+
+        const isPasswordMatching = await comparePassword(pass, user.password);
+        if (!isPasswordMatching) {
           throw new UnauthorizedException('Invalid credentials');
         }
 
@@ -274,6 +280,11 @@ export class AuthService {
     // Development fallback: validate user exists and password length only
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordMatching = await comparePassword(pass, user.password);
+    if (!isPasswordMatching) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -389,6 +400,7 @@ export class AuthService {
    */
   async register(registerDto: RegisterDto) {
     try {
+      const hashedPassword = await hashPassword(registerDto.password);
       // Register user in Clerk
       const clerkUser = await this.clerkService.registerUser({
         email: registerDto.email,
@@ -411,6 +423,7 @@ export class AuthService {
           username: registerDto.username || null,
           firstName: registerDto.firstName,
           lastName: registerDto.lastName,
+          password: hashedPassword,
           imageUrl: diceBearAvatarUrl, // Use DiceBear avatar instead of Clerk's
           role: 'USER', // Default role
         },
@@ -461,150 +474,4 @@ export class AuthService {
         verificationSent: true,
       };
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new BadRequestException('Registration failed. Please try again.');
-    }
-  }
-
-  /**
-   * Verify email with code
-   */
-  async verifyEmail(verifyEmailDto: VerifyEmailDto) {
-    try {
-      // Verify email in Clerk
-      const result = await this.clerkService.verifyEmailWithCode(
-        verifyEmailDto.email,
-        verifyEmailDto.code,
-      );
-
-      // Get user from database
-      const user = await this.prisma.user.findUnique({
-        where: { email: verifyEmailDto.email },
-      });
-
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      // Generate JWT tokens
-      const accessToken = this.jwtService.sign({
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-        clerkId: user.clerkId,
-      });
-
-      const refreshToken = this.jwtService.sign(
-        {
-          sub: user.id,
-          email: user.email,
-          role: user.role,
-        },
-        { expiresIn: '30d' },
-      );
-
-      return {
-        success: true,
-        message: 'Email verified successfully',
-        accessToken,
-        refreshToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-        },
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new BadRequestException('Email verification failed');
-    }
-  }
-
-  /**
-   * Resend verification email
-   */
-  async resendVerification(email: string) {
-    try {
-      const result = await this.clerkService.sendEmailVerification(email);
-      return result;
-    } catch (error) {
-      throw new BadRequestException('Failed to resend verification email');
-    }
-  }
-
-  /**
-   * Initiate password reset
-   */
-  async forgotPassword(email: string) {
-    try {
-      const result = await this.clerkService.initiatePasswordReset(email);
-      return result;
-    } catch (error) {
-      // Return success even on error to prevent email enumeration
-      return {
-        success: true,
-        message: 'If the email exists, a password reset link has been sent',
-      };
-    }
-  }
-
-  /**
-   * Reset password with code
-   */
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    try {
-      const result = await this.clerkService.resetPasswordWithCode(
-        resetPasswordDto.email,
-        resetPasswordDto.code,
-        resetPasswordDto.newPassword,
-      );
-      return result;
-    } catch (error) {
-      throw new BadRequestException('Password reset failed');
-    }
-  }
-
-  /**
-   * Initiate OAuth flow
-   */
-  async initiateOAuth(provider: 'google' | 'github' | 'facebook', redirectUrl?: string) {
-    try {
-      const oauthData = this.clerkService.getOAuthUrl(provider, redirectUrl);
-      return oauthData;
-    } catch (error) {
-      throw new BadRequestException('Failed to initiate OAuth flow');
-    }
-  }
-
-  /**
-   * Handle OAuth callback
-   */
-  async handleOAuthCallback(callbackDto: OAuthCallbackDto) {
-    try {
-      // Handle OAuth callback through Clerk
-      const result = await this.clerkService.handleOAuthCallback(
-        callbackDto.code,
-        callbackDto.state,
-      );
-
-      // In production, you would:
-      // 1. Exchange the code for user info from Clerk
-      // 2. Create or update user in local database
-      // 3. Generate JWT tokens
-
-      return {
-        success: true,
-        message: 'OAuth authentication successful',
-        // Add tokens and user info here
-      };
-    } catch (error) {
-      throw new UnauthorizedException('OAuth authentication failed');
-    }
-  }
-}
+      if
