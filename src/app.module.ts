@@ -47,9 +47,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
-// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
-// import { AlertsModule } from './modules/alerts/alerts.module';
-// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing hang
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
 // import { WebsocketModule } from './modules/websocket/websocket.module';
@@ -126,10 +124,8 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     AdminModule,
 
-    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
-    // AlertsModule,
-
-    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing startup hang
+    // Advanced Monitoring & Observability (Issue #33)
+    AlertsModule,
     QueuesModule,
 
     InventoryModule,
