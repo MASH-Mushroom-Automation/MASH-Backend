@@ -76,7 +76,10 @@ export class MainGateway {
 
       this.logger.log(`Client connected: ${client.id}`);
     } catch (error) {
-      this.logger.error(`Connection error for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `Connection error for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       client.disconnect();
     }
   }
@@ -96,7 +99,9 @@ export class MainGateway {
         this.logger.log(`Unauthenticated client disconnected: ${client.id}`);
       }
     } catch (error) {
-      this.logger.error(`Disconnection error for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Disconnection error for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 

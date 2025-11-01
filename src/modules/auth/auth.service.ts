@@ -231,7 +231,7 @@ export class AuthService {
    * - Falls back to local check (for development) if Clerk is not configured
    */
   async login(email: string, pass: string) {
-    return this.tracer.startActiveSpan('AuthService.login', async (span) => {
+    return this.tracer.startActiveSpan('AuthService.login', async span => {
       try {
         span.setAttribute('user.email', email);
         // If Clerk is configured, try Clerk sign-in flow
@@ -288,7 +288,9 @@ export class AuthService {
           }
         } catch (error) {
           this.logger.warn('Clerk auth not available or failed - falling back to local auth');
-          span.addEvent('Clerk auth failed, falling back to local', { 'error.message': error.message });
+          span.addEvent('Clerk auth failed, falling back to local', {
+            'error.message': error.message,
+          });
         }
 
         // Development fallback: validate user exists and password length only

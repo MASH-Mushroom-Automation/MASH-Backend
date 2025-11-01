@@ -15,13 +15,16 @@ export class RedisHealthIndicator extends HealthIndicator {
       if (!isAvailable) {
         throw new Error('Redis is not available or connected');
       }
-      
+
       // Try a simple get operation to verify connectivity
       await this.redisService.get('health-check');
-      
+
       return this.getStatus(key, true);
     } catch (e) {
-      throw new HealthCheckError('Redis check failed', this.getStatus(key, false, { message: e.message }));
+      throw new HealthCheckError(
+        'Redis check failed',
+        this.getStatus(key, false, { message: e.message }),
+      );
     }
   }
 }

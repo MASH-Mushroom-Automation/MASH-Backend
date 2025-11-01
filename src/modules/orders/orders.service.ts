@@ -94,7 +94,7 @@ export class OrdersService {
 
   // 2. Create new order
   async create(createOrderDto: CreateOrderDto, currentUser: any) {
-    return this.tracer.startActiveSpan('OrdersService.create', async (span) => {
+    return this.tracer.startActiveSpan('OrdersService.create', async span => {
       try {
         span.setAttributes({
           'user.id': currentUser.id,
@@ -127,7 +127,9 @@ export class OrdersService {
             throw new BadRequestException(`Product ${item.productId} not found`);
           }
           if ((product as any).stock < item.quantity) {
-            throw new BadRequestException(`Insufficient stock for product ${(product as any).name}`);
+            throw new BadRequestException(
+              `Insufficient stock for product ${(product as any).name}`,
+            );
           }
         }
         span.addEvent('Validated product stock');
