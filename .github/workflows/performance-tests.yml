@@ -126,10 +126,14 @@ jobs:
           TWILIO_AUTH_TOKEN=test-token
           TWILIO_PHONE_NUMBER=+1234567890
           
-          # Elasticsearch (Local)
-          ELASTICSEARCH_NODE=http://localhost:9200
-          ELASTICSEARCH_USERNAME=elastic
-          ELASTICSEARCH_PASSWORD=changeme
+          # Elasticsearch (Disabled for CI - no Elasticsearch service)
+          ELASTICSEARCH_NODE=
+          ELASTICSEARCH_USERNAME=
+          ELASTICSEARCH_PASSWORD=
+          
+          # MQTT (Disabled for CI - no MQTT broker)
+          MQTT_ENABLED=false
+          MQTT_BROKER_URL=
           
           # Rate Limiting
           THROTTLE_TTL=60
@@ -202,9 +206,11 @@ jobs:
           export TWILIO_ACCOUNT_SID=ACtest
           export TWILIO_AUTH_TOKEN=test-token
           export TWILIO_PHONE_NUMBER="+1234567890"
-          export ELASTICSEARCH_NODE=http://localhost:9200
-          export ELASTICSEARCH_USERNAME=elastic
-          export ELASTICSEARCH_PASSWORD=changeme
+          export ELASTICSEARCH_NODE=""
+          export ELASTICSEARCH_USERNAME=""
+          export ELASTICSEARCH_PASSWORD=""
+          export MQTT_ENABLED=false
+          export MQTT_BROKER_URL=""
           export LOG_LEVEL=log
           export THROTTLE_TTL=60
           export THROTTLE_LIMIT=100
