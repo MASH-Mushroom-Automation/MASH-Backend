@@ -268,11 +268,12 @@ jobs:
           echo "=== Verifying Node environment ==="
           node -e "console.log('DATABASE_URL visible to Node:', process.env.DATABASE_URL ? 'YES' : 'NO')"
           
-          # Start application
-          nohup npm run start:prod > app.log 2>&1 &
+          # Start application with timeout wrapper
+          echo "=== Starting application with timeout protection ==="
+          nohup node start-with-timeout.js > app.log 2>&1 &
           echo $! > .pidfile
           echo "Application started with PID: $(cat .pidfile)"
-          sleep 5
+          sleep 10
           
           # Check if process is still running
           if ps -p $(cat .pidfile) > /dev/null; then
@@ -287,32 +288,36 @@ jobs:
       - name: Wait for application
         run: |
           echo "Waiting for application to be ready..."
-          for i in {1..30}; do
-            echo "Attempt $i/30..."
+          echo "Timeout wrapper will kill the app if it hangs > 60s"
+          for i in {1..40}; do
+            echo "Attempt $i/40... (elapsed: $((i * 2))s)"
             
             # Check if process is still running
             if ! ps -p $(cat .pidfile) > /dev/null; then
               echo "❌ Application process died!"
               echo ""
-              echo "=== Last 100 lines of app.log ==="
-              tail -100 app.log
+              echo "=== Full app.log ==="
+              cat app.log
               echo ""
-              echo "=== Checking for PostgreSQL connection errors ==="
-              grep -i "postgres\|database\|connection" app.log | tail -20
+              echo "=== Checking for errors ==="
+              grep -i "error\|fatal\|timeout\|stuck" app.log | tail -30
               exit 1
             fi
             
             # Try health endpoint
             if curl -f -s http://localhost:3000/health > /dev/null 2>&1; then
-              echo "✅ Application is ready!"
+              echo "✅ Application is ready at /health!"
               exit 0
             fi
             
             # Try alternative health endpoint
             if curl -f -s http://localhost:3000/api/v1/health > /dev/null 2>&1; then
-              echo "✅ Application is ready!"
+              echo "✅ Application is ready at /api/v1/health!"
               exit 0
             fi
+            
+            # Show last log line to see progress
+            tail -1 app.log 2>/dev/null | grep -v "^$" || echo "(no new logs)"
             
             sleep 2
           done
