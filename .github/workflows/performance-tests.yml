@@ -91,17 +91,17 @@ jobs:
       - name: Create minimal .env for build
         run: |
           cat > .env << 'EOF'
-          # Database - PostgreSQL connection
-          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
-          DIRECT_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
+          # Database - PostgreSQL connection (use 127.0.0.1 to force TCP)
+          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/mash_test?schema=public&connect_timeout=10
+          DIRECT_URL=postgresql://postgres:postgres@127.0.0.1:5432/mash_test?schema=public&connect_timeout=10
           
           # Server Configuration
           NODE_ENV=production
           PORT=3000
           
           # Redis Configuration
-          REDIS_URL=redis://localhost:6379
-          REDIS_HOST=localhost
+          REDIS_URL=redis://127.0.0.1:6379
+          REDIS_HOST=127.0.0.1
           REDIS_PORT=6379
           
           # JWT Authentication
@@ -150,8 +150,16 @@ jobs:
       - name: Run database migrations
         run: npx prisma migrate deploy
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
-          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
+          # Force TCP by using 127.0.0.1 and export explicit PG envs so clients do not fall back to socket/user
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/mash_test?schema=public&connect_timeout=10
+          DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/mash_test?schema=public&connect_timeout=10
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: mash_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
 
       - name: Build application
         run: npm run build
@@ -160,7 +168,7 @@ jobs:
         run: |
           echo "=== Environment Verification ==="
           echo "NODE_ENV: $NODE_ENV"
-          echo "DATABASE_URL (masked): postgresql://postgres:****@localhost:5432/mash_test?schema=public"
+          echo "DATABASE_URL (masked): postgresql://postgres:****@127.0.0.1:5432/mash_test?schema=public"
           echo "REDIS_URL: $REDIS_URL"
           echo ""
           echo "=== Checking .env file ==="
@@ -181,43 +189,84 @@ jobs:
           fi
         env:
           NODE_ENV: production
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mash_test?schema=public
-          REDIS_URL: redis://localhost:6379
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/mash_test?schema=public&connect_timeout=10
+          REDIS_URL: redis://127.0.0.1:6379
 
       - name: Start application in background
         run: |
           # Export all environment variables explicitly before starting
           export NODE_ENV=production
           export PORT=3000
-          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
-          export DIRECT_URL="postgresql://postgres:postgres@localhost:5432/mash_test?schema=public"
-          export REDIS_HOST=localhost
+          
+          # PostgreSQL connection (force TCP with 127.0.0.1)
+          export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/mash_test?schema=public&connect_timeout=10"
+          export DIRECT_URL="postgresql://postgres:postgres@127.0.0.1:5432/mash_test?schema=public&connect_timeout=10"
+          
+          # Explicit libpq env vars (prevents fallback to OS user)
+          export PGHOST=127.0.0.1
+          export PGPORT=5432
+          export PGUSER=postgres
+          export PGPASSWORD=postgres
+          export PGDATABASE=mash_test
+          # Also export common DB env vars that some libraries/configs may read
+          export DB_HOST=127.0.0.1
+          export DB_PORT=5432
+          export DB_USER=postgres
+          export DB_PASSWORD=postgres
+          export DB_NAME=mash_test
+          
+          # Redis
+          export REDIS_HOST=127.0.0.1
           export REDIS_PORT=6379
-          export REDIS_URL="redis://localhost:6379"
+          export REDIS_URL="redis://127.0.0.1:6379"
+          
+          # Auth
           export JWT_SECRET="test-jwt-secret-for-performance-tests-min-32-chars-long"
           export JWT_EXPIRATION=1d
           export CLERK_SECRET_KEY=sk_test_placeholder
           export CLERK_PUBLISHABLE_KEY=pk_test_placeholder
           export CLERK_WEBHOOK_SECRET=whsec_placeholder
+          
+          # Firebase (disabled)
           export FIREBASE_PROJECT_ID=""
           export FIREBASE_CLIENT_EMAIL=""
           export FIREBASE_PRIVATE_KEY=""
-          export SENDGRID_API_KEY=SG.test-key
-          export TWILIO_ACCOUNT_SID=ACtest
-          export TWILIO_AUTH_TOKEN=test-token
-          export TWILIO_PHONE_NUMBER="+1234567890"
+          
+          # Email/SMS (disabled)
+          export SENDGRID_API_KEY=""
+          export TWILIO_ACCOUNT_SID=""
+          export TWILIO_AUTH_TOKEN=""
+          export TWILIO_PHONE_NUMBER=""
+          
+          # Search (disabled)
           export ELASTICSEARCH_NODE=""
           export ELASTICSEARCH_USERNAME=""
           export ELASTICSEARCH_PASSWORD=""
+          
+          # MQTT (disabled)
           export MQTT_ENABLED=false
           export MQTT_BROKER_URL=""
+          
+          # Logging
           export LOG_LEVEL=log
           export THROTTLE_TTL=60
           export THROTTLE_LIMIT=100
           
-          # Verify DATABASE_URL is set correctly
-          echo "=== Verifying DATABASE_URL ==="
+          # Verify environment
+          echo "=== Verifying DATABASE_URL and PG envs ==="
           echo "DATABASE_URL: $DATABASE_URL"
+          echo "PGHOST: $PGHOST PGPORT: $PGPORT PGUSER: $PGUSER"
+          
+          # Test PostgreSQL connectivity over TCP
+          echo "=== Testing PostgreSQL connection over TCP ==="
+          PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -c "\conninfo" || {
+            echo "❌ Cannot connect to PostgreSQL over TCP"
+            exit 1
+          }
+          
+          # Verify Node sees DATABASE_URL
+          echo "=== Verifying Node environment ==="
+          node -e "console.log('DATABASE_URL visible to Node:', process.env.DATABASE_URL ? 'YES' : 'NO')"
           
           # Start application
           nohup npm run start:prod > app.log 2>&1 &
@@ -276,8 +325,8 @@ jobs:
           echo "=== Process list ==="
           ps aux | grep node
           echo ""
-          echo "=== PostgreSQL connection check ==="
-          PGPASSWORD=postgres psql -h localhost -U postgres -d mash_test -c "SELECT version();" || echo "Cannot connect to PostgreSQL"
+          echo "=== PostgreSQL connection check (TCP) ==="
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d mash_test -c "SELECT version();" || echo "❌ Cannot connect to PostgreSQL over TCP (verify PGHOST/PGUSER/PGPASSWORD)"
           exit 1
 
       - name: Check app logs if startup failed
