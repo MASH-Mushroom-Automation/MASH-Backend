@@ -20,13 +20,13 @@
 ### Tech Stack
 - **Framework**: NestJS 10.x (TypeScript-first Node.js framework)
 - **Database**: PostgreSQL 15+ via Prisma ORM 5.x
-- **Cache**: Redis 7.x (Upstash/local)
+- **Cache**: Redis 7.x (Upstash/local) via `ioredis`
 - **Authentication**: Clerk + JWT + Passport
 - **Real-time**: Socket.IO WebSockets
 - **Monitoring**: Prometheus + Grafana + Jaeger + OpenTelemetry
 - **Task Queue**: Bull (Redis-backed)
 - **Email**: SendGrid/Nodemailer
-- **Storage**: Firebase Storage
+- **Storage**: AWS S3 (via `@aws-sdk/client-s3`)
 - **Notifications**: Firebase Cloud Messaging, Twilio SMS
 
 ### Project Structure
@@ -171,7 +171,7 @@ cp .env.example .env
 
 # 3. Edit .env with your configuration
 # Required: DATABASE_URL, REDIS_URL, JWT_SECRET
-# Optional: CLERK_*, SENDGRID_*, TWILIO_*, FIREBASE_*
+# Optional: CLERK_*, SENDGRID_*, TWILIO_*, FIREBASE_*, AWS_*
 
 # 4. Generate Prisma client
 npx prisma generate
@@ -196,6 +196,9 @@ npm run build
 
 # Start production server
 npm run start:prod
+
+# Run all tests (unit, integration, e2e)
+npm run test:all
 
 # Run unit tests
 npm run test
@@ -225,7 +228,7 @@ npm run type-check
 npx prisma generate
 
 # Create migration (development)
-npx prisma migrate dev --name migration_name
+npx prisma migrate dev --name <migration_name>
 
 # Apply migrations (production)
 npx prisma migrate deploy
@@ -246,22 +249,22 @@ npx prisma migrate reset
 ### Docker Commands
 ```bash
 # Start all services (backend + monitoring stack)
-docker compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # Start specific service
-docker compose -f docker-compose.dev.yml up -d postgres
+docker-compose -f docker-compose.dev.yml up -d postgres
 
 # View logs
-docker compose -f docker-compose.dev.yml logs -f
+docker-compose -f docker-compose.dev.yml logs -f
 
 # Stop all services
-docker compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.dev.yml down
 
 # Stop and remove volumes (fresh start)
-docker compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.dev.yml down -v
 
 # Rebuild and start
-docker compose -f docker-compose.dev.yml up --build
+docker-compose -f docker-compose.dev.yml up --build
 ```
 
 ### Monitoring Access
@@ -706,6 +709,9 @@ export class PaymentService {
 
 ### Running Tests
 ```bash
+# Run all tests (unit, integration, e2e)
+npm run test:all
+
 # Run all unit tests
 npm run test
 
@@ -746,14 +752,14 @@ npm run test -- --testNamePattern="should create user"
 - `CLERK_SECRET_KEY`: Clerk authentication
 - `SENDGRID_API_KEY`: Email notifications
 - `TWILIO_*`: SMS notifications
-- `FIREBASE_*`: Push notifications & storage
+- `FIREBASE_*`: Push notifications
+- `AWS_*`: AWS S3 for file storage
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry collector (default: `http://jaeger:4318/v1/traces`)
 
 ### Production Deployment Checklist
 ```bash
 # 1. Ensure all tests pass
-npm run test
-npm run test:e2e
+npm run test:all
 
 # 2. Build the application
 npm run build
@@ -777,10 +783,10 @@ curl http://localhost:3000/metrics
 docker build -t mash-backend:latest .
 
 # Run with docker-compose (includes monitoring stack)
-docker compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # Production deployment
-docker compose -f docker-compose.yml up -d
+docker-compose -f docker-compose.yml up -d
 ```
 
 ### CI/CD Pipeline
@@ -963,7 +969,7 @@ npx prisma migrate dev
 # Solution: Check DATABASE_URL in .env
 # Format: postgresql://user:password@localhost:5432/database
 # Verify database is running
-docker compose -f docker-compose.dev.yml up postgres
+docker-compose -f docker-compose.dev.yml up postgres
 ```
 
 ### Redis Issues
@@ -971,7 +977,7 @@ docker compose -f docker-compose.dev.yml up postgres
 **Problem**: Redis connection refused
 ```bash
 # Solution: Start Redis
-docker compose -f docker-compose.dev.yml up redis
+docker-compose -f docker-compose.dev.yml up redis
 
 # Or check REDIS_URL in .env
 # App will run without Redis (degraded functionality)
@@ -1000,7 +1006,7 @@ taskkill /PID <PID> /F
 # Check .env file has required vars
 
 # 3. Database not accessible
-# Start database: docker compose up postgres
+# Start database: docker-compose up postgres
 ```
 
 **Problem**: Health endpoint returns unhealthy
@@ -1025,7 +1031,7 @@ curl http://localhost:3000/metrics
 open http://localhost:9090/targets
 
 # 3. Restart Prometheus
-docker compose -f docker-compose.dev.yml restart prometheus
+docker-compose -f docker-compose.dev.yml restart prometheus
 ```
 
 **Problem**: No traces in Jaeger
@@ -1034,7 +1040,7 @@ docker compose -f docker-compose.dev.yml restart prometheus
 # Should be: http://jaeger:4318/v1/traces
 
 # 2. Verify Jaeger is running
-docker compose -f docker-compose.dev.yml ps jaeger
+docker-compose -f docker-compose.dev.yml ps jaeger
 
 # 3. Generate test traffic
 curl -X POST http://localhost:3000/api/v1/auth/login
@@ -1069,7 +1075,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login
 - ❌ Don't skip documentation
 
 ### Code Review Checklist
-- [ ] All tests pass (`npm run test`)
+- [ ] All tests pass (`npm run test:all`)
 - [ ] Build succeeds (`npm run build`)
 - [ ] Linting passes (`npm run lint`)
 - [ ] Type checking passes (`npm run type-check`)
@@ -1107,8 +1113,8 @@ curl -X POST http://localhost:3000/api/v1/auth/login
 
 ---
 
-**Last Updated**: November 1, 2025  
-**Status**: Production Ready ✅  
+**Last Updated**: November 4, 2025
+**Status**: Production Ready ✅
 **Coverage**: 100% of core features documented
 
 ---
@@ -1119,7 +1125,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login
 
 - Build & run locally (recommended): build with Docker and run with the provided compose file for local infra:
   - Build image: `docker build -t mash-backend/api:local .`
-  - Run with compose (Postgres + Redis + Prometheus): `docker compose -f docker-compose.dev.yml up --build`
+  - Run with compose (Postgres + Redis + Prometheus): `docker-compose -f docker-compose.dev.yml up --build`
 
 - CI/CD: `.github/workflows/ci.yml` runs lint, tests, Prisma generate/migrate, Newman Postman collections and a Docker build/push step. CI expects the app to be reachable at `http://localhost:3000/api/v1/health` while running Postman tests.
 
