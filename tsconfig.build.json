@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "declaration": false,
+    "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2021",
+    "lib": ["ES2021"],
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
@@ -14,6 +15,8 @@
     "incremental": true,
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
+    "noEmit": false,
+    "emitDeclarationOnly": false,
     "types": ["node", "multer"],
     "noImplicitAny": false,
     "strictNullChecks": false,
@@ -31,8 +34,9 @@
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"
-    ]
+    ],
+    "strict": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "**/*.spec.ts", "**/__tests__/**", "**/*.e2e-spec.ts", "**/*.int-spec.ts"]
 }

@@ -1,4 +1,7 @@
 {
+  "$schema": "https://modelcontextprotocol.io/schema/mcp-config.json",
+  "version": "1.0.0",
+  "description": "MCP server configuration for MASH Backend - NestJS application with PostgreSQL, Redis, and comprehensive monitoring",
   "mcpServers": {
     "github": {
       "type": "stdio",
@@ -7,7 +10,8 @@
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "{{ GITHUB_TOKEN }}"
       },
-      "tools": ["*"]
+      "tools": ["*"],
+      "description": "GitHub integration for repository management, issues, PRs, and code review"
     },
     "postgres": {
       "type": "stdio",
@@ -16,16 +20,267 @@
       "env": {
         "POSTGRES_CONNECTION_STRING": "postgresql://postgres:postgres@localhost:5432/mash_dev"
       },
-      "tools": ["*"]
+      "tools": ["*"],
+      "description": "PostgreSQL database access for schema inspection, query execution, and data management",
+      "notes": [
+        "Default connection for local development",
+        "Update POSTGRES_CONNECTION_STRING for different environments",
+        "Prisma schema is the source of truth - use 'npx prisma db pull' to sync",
+        "Never modify migrations manually - use 'npx prisma migrate dev'"
+      ]
+    },
+    "redis": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis"],
+      "env": {
+        "REDIS_URL": "redis://localhost:6379"
+      },
+      "tools": ["*"],
+      "description": "Redis cache inspection and management for debugging cache issues",
+      "notes": [
+        "Used for caching, rate limiting, and session storage",
+        "Check RedisService wrapper in src/database/redis.service.ts for application usage patterns",
+        "Key patterns: 'permissions:*', 'cache:*', 'throttle:*', 'session:*'"
+      ]
     },
     "filesystem": {
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem"],
       "env": {
-        "ALLOWED_DIRECTORIES": "src,prisma,test,docs"
+        "ALLOWED_DIRECTORIES": "src,prisma,test,docs,postman,.github"
       },
-      "tools": ["*"]
+      "tools": ["*"],
+      "description": "File system access for code navigation, search, and modifications",
+      "notes": [
+        "src/ - Application source code (NestJS modules)",
+        "prisma/ - Database schema and migrations",
+        "test/ - Unit, integration, and E2E tests",
+        "docs/ - Project documentation and guides",
+        "postman/ - API collection for testing",
+        ".github/ - CI/CD workflows and automation"
+      ]
+    },
+    "docker": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-docker"],
+      "env": {},
+      "tools": ["*"],
+      "description": "Docker container management for local infrastructure (PostgreSQL, Redis, Prometheus, Grafana, Jaeger)",
+      "notes": [
+        "Use docker-compose.dev.yml for local development stack",
+        "Includes: postgres, redis, prometheus, grafana, jaeger, alertmanager",
+        "Health checks: PostgreSQL (5432), Redis (6379), App (3000)",
+        "Monitoring: Grafana (4000), Prometheus (9090), Jaeger (16686)"
+      ]
+    },
+    "prometheus": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-prometheus"],
+      "env": {
+        "PROMETHEUS_URL": "http://localhost:9090"
+      },
+      "tools": ["*"],
+      "description": "Prometheus metrics query and analysis for monitoring application performance",
+      "notes": [
+        "60+ custom metrics exposed at /metrics endpoint",
+        "Categories: HTTP, Database, Cache, Business, Security, System",
+        "Key queries in docs/MONITORING_GUIDE.md",
+        "Alert rules in prometheus/alert.rules.yml"
+      ]
+    },
+    "openapi": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-openapi"],
+      "env": {
+        "OPENAPI_SPEC_URL": "http://localhost:3000/api/docs-json"
+      },
+      "tools": ["*"],
+      "description": "OpenAPI/Swagger documentation for API endpoint discovery and testing",
+      "notes": [
+        "Swagger UI available at http://localhost:3000/api/docs",
+        "Auto-generated from controller decorators",
+        "Use @ApiOperation, @ApiResponse for documentation",
+        "DTOs use @ApiProperty for request/response schemas"
+      ]
+    },
+    "npm": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-npm"],
+      "env": {},
+      "tools": ["*"],
+      "description": "NPM package management for dependency updates and audits",
+      "notes": [
+        "Use --legacy-peer-deps for installation",
+        "Run 'npm audit' regularly for security vulnerabilities",
+        "Dependabot configured for automated updates (see .github/dependabot.yml)",
+        "Major version updates require manual review"
+      ]
+    },
+    "jest": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-jest"],
+      "env": {},
+      "tools": ["*"],
+      "description": "Jest test execution and coverage analysis",
+      "notes": [
+        "Unit tests: *.spec.ts (co-located with source)",
+        "E2E tests: test/**/*.e2e-spec.ts",
+        "Target coverage: 80% overall, 90% for critical paths",
+        "Run 'npm run test:cov' for coverage reports"
+      ]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "env": {},
+      "tools": ["*"],
+      "description": "Git version control operations and repository management",
+      "notes": [
+        "Main branches: main (production), develop (staging)",
+        "Feature branches: feature/*, bugfix/*, hotfix/*",
+        "Commit convention: Conventional Commits (feat, fix, chore, docs, etc.)",
+        "CI runs on all branches, deploys from main/develop only"
+      ]
     }
+  },
+  "capabilities": {
+    "monitoring": {
+      "enabled": true,
+      "services": ["prometheus", "grafana", "jaeger", "alertmanager"],
+      "endpoints": {
+        "metrics": "http://localhost:3000/metrics",
+        "health": "http://localhost:3000/api/v1/health",
+        "prometheus": "http://localhost:9090",
+        "grafana": "http://localhost:4000",
+        "jaeger": "http://localhost:16686",
+        "alertmanager": "http://localhost:9093"
+      }
+    },
+    "database": {
+      "enabled": true,
+      "type": "postgresql",
+      "orm": "prisma",
+      "migrations": {
+        "directory": "prisma/migrations",
+        "strategy": "versioned",
+        "command": "npx prisma migrate dev"
+      },
+      "seeding": {
+        "script": "prisma/seed.ts",
+        "command": "npm run db:seed"
+      }
+    },
+    "caching": {
+      "enabled": true,
+      "provider": "redis",
+      "fallback": "in-memory",
+      "patterns": {
+        "permissions": "permissions:*",
+        "cache": "cache:*",
+        "throttle": "throttle:*",
+        "session": "session:*"
+      }
+    },
+    "testing": {
+      "enabled": true,
+      "frameworks": ["jest", "supertest", "newman"],
+      "coverage": {
+        "minimum": 80,
+        "critical_paths": 90
+      },
+      "e2e": {
+        "enabled": true,
+        "config": "test/jest-e2e.json"
+      },
+      "load": {
+        "enabled": true,
+        "tool": "k6",
+        "scripts": "test/k6/"
+      }
+    },
+    "api_testing": {
+      "enabled": true,
+      "tool": "postman",
+      "collections": "postman/",
+      "runner": "newman",
+      "command": "npm run postman:test"
+    },
+    "documentation": {
+      "api": {
+        "type": "openapi",
+        "version": "3.0",
+        "url": "http://localhost:3000/api/docs"
+      },
+      "code": {
+        "location": "docs/",
+        "guides": [
+          "docs/monitoring/README.md",
+          "docs/WINDOWS_QUICK_START.md",
+          "docs/BUILD_FIXES_SUMMARY.md",
+          "documents/MONITORING_CHECKLIST.md"
+        ]
+      }
+    }
+  },
+  "development": {
+    "requirements": {
+      "node": ">=18.0.0",
+      "npm": ">=9.0.0",
+      "docker": ">=20.0.0",
+      "docker-compose": ">=2.0.0"
+    },
+    "recommended_tools": [
+      "Docker Desktop",
+      "PostgreSQL client (pgAdmin, DBeaver)",
+      "Redis client (RedisInsight, Another Redis Desktop Manager)",
+      "API client (Postman, Insomnia)",
+      "Git GUI (GitKraken, SourceTree)"
+    ],
+    "quick_start": {
+      "install": "npm install --legacy-peer-deps",
+      "setup_env": "cp .env.example .env",
+      "generate_prisma": "npx prisma generate",
+      "run_migrations": "npx prisma migrate dev",
+      "start_dev": "npm run start:dev",
+      "start_infra": "docker compose -f docker-compose.dev.yml up -d"
+    }
+  },
+  "troubleshooting": {
+    "common_issues": {
+      "build_fails": {
+        "solution": "npm run build checks for TypeScript errors. See docs/BUILD_FIXES_SUMMARY.md",
+        "commands": ["npm run type-check", "npm run lint", "npm run build"]
+      },
+      "prisma_sync": {
+        "solution": "Regenerate Prisma client after schema changes",
+        "commands": ["npx prisma generate", "npx prisma migrate dev"]
+      },
+      "redis_connection": {
+        "solution": "Start Redis or check REDIS_URL. App runs without Redis (degraded mode)",
+        "commands": ["docker compose -f docker-compose.dev.yml up redis"]
+      },
+      "port_in_use": {
+        "solution": "Another process is using port 3000",
+        "commands": ["netstat -ano | findstr :3000", "taskkill /PID <PID> /F"]
+      },
+      "no_metrics": {
+        "solution": "Check Prometheus scraping configuration and app metrics endpoint",
+        "commands": ["curl http://localhost:3000/metrics", "open http://localhost:9090/targets"]
+      }
+    }
+  },
+  "references": {
+    "repository": "https://github.com/MASH-Mushroom-Automation/MASH-Backend",
+    "documentation": ".github/copilot-instructions.md",
+    "issue_tracker": "https://github.com/MASH-Mushroom-Automation/MASH-Backend/issues",
+    "ci_pipeline": ".github/workflows/ci.yml"
   }
 }

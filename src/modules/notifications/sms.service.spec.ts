@@ -48,7 +48,7 @@ describe('SmsService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn((key: string) => mockConfig[key]),
+            get: jest.fn((key: string) => mockConfig[key as keyof typeof mockConfig]),
           },
         },
       ],
@@ -230,7 +230,7 @@ describe('SmsService', () => {
       };
 
       const serviceWithoutPhone = new SmsService({
-        get: jest.fn((key: string) => configWithoutPhone[key]),
+        get: jest.fn((key: string) => configWithoutPhone[key as keyof typeof configWithoutPhone]),
       } as any);
 
       const message: SMSMessage = {

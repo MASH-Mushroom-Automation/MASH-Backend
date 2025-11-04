@@ -1,8 +1,4 @@
-import {
-  WebSocketGateway,
-  WebSocketServer,
-  SubscribeMessage,
-} from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, SubscribeMessage } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
 import { RealtimeAnalyticsService } from '../services/realtime-analytics.service';

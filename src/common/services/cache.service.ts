@@ -362,4 +362,12 @@ export class CacheService {
     this.stats.hitRate =
       this.stats.operations > 0 ? (this.stats.hits / this.stats.operations) * 100 : 0;
   }
+
+  /**
+   * Check if Redis is available
+   * @returns true if Redis is connected and available
+   */
+  isRedisAvailable(): boolean {
+    return this.redisService.isAvailable();
+  }
 }

@@ -61,6 +61,7 @@ export class PrometheusService implements OnModuleInit {
   // Business Metrics
   // ============================================================================
 
+  public usersRegisteredTotal!: Counter<string>;
   public ordersTotal!: Counter<string>;
   public orderValue!: Summary<string>;
   public productsViewed!: Counter<string>;
@@ -221,6 +222,12 @@ export class PrometheusService implements OnModuleInit {
     });
 
     // Business Metrics
+    this.usersRegisteredTotal = new Counter({
+      name: 'mash_users_registered_total',
+      help: 'Total number of registered users',
+      registers: [register],
+    });
+
     this.ordersTotal = new Counter({
       name: 'mash_orders_total',
       help: 'Total number of orders created',
@@ -369,6 +376,10 @@ export class PrometheusService implements OnModuleInit {
   /**
    * Record business metrics
    */
+  recordUserRegistration() {
+    this.usersRegisteredTotal.inc();
+  }
+
   recordOrder(status: string, paymentMethod: string, value: number) {
     this.ordersTotal.labels(status, paymentMethod).inc();
     this.orderValue.labels(status).observe(value);

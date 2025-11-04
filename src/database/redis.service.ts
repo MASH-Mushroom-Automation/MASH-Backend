@@ -29,6 +29,7 @@ export class RedisService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private readonly client: Redis | null;
   private isConnected = false;
+  private isShuttingDown = false; // Flag to prevent operations during shutdown
 
   constructor(private configService: ConfigService) {
     const redisUrl = this.configService.get<string>('REDIS_URL');
@@ -133,7 +134,7 @@ export class RedisService implements OnModuleDestroy {
    * Check if Redis is available and connected
    */
   isAvailable(): boolean {
-    return this.client !== null && this.isConnected;
+    return this.client !== null && this.isConnected && !this.isShuttingDown;
   }
 
   /**
@@ -376,9 +377,21 @@ export class RedisService implements OnModuleDestroy {
    * Graceful shutdown - close Redis connection
    */
   async onModuleDestroy() {
-    if (this.client) {
+    if (this.client && !this.isShuttingDown) {
       this.logger.log('Closing Redis connection...');
-      await this.client.quit();
+      this.isShuttingDown = true; // Set flag to prevent new operations
+      
+      // Wait a short time for in-flight operations to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      try {
+        await this.client.quit();
+        this.logger.log('✅ Redis connection closed gracefully');
+      } catch (error) {
+        this.logger.warn('⚠️ Error closing Redis connection:', error);
+        // Force disconnect if quit fails
+        this.client.disconnect(false);
+      }
     }
   }
 }

@@ -14,11 +14,18 @@ import { OrderQueryDto, OrderStatus } from './dto/order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { Prisma } from '@prisma/client';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
+
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  private tracer = trace.getTracer('orders-service');
+  constructor(
+    private prisma: PrismaService,
+    private prometheusService: PrometheusService,
+  ) {}
 
   // 1. List all orders with filtering
   async findAll(query: OrderQueryDto) {
@@ -87,108 +94,136 @@ export class OrdersService {
 
   // 2. Create new order
   async create(createOrderDto: CreateOrderDto, currentUser: any) {
-    if (
-      createOrderDto.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
-      throw new ForbiddenException('You can only create orders for yourself');
-    }
+    return this.tracer.startActiveSpan('OrdersService.create', async span => {
+      try {
+        span.setAttributes({
+          'user.id': currentUser.id,
+          'user.role': currentUser.role,
+          'order.item_count': createOrderDto.items.length,
+        });
 
-    // ✅ FIX: Batch fetch all products (eliminates N+1 query)
-    const productIds = createOrderDto.items.map(item => item.productId);
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, name: true, stock: true },
-    });
+        if (
+          createOrderDto.userId !== currentUser.id &&
+          !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
+        ) {
+          throw new ForbiddenException('You can only create orders for yourself');
+        }
 
-    // Create lookup map for O(1) access
-    const productMap = new Map(products.map(p => [p.id, p]));
+        // ✅ FIX: Batch fetch all products (eliminates N+1 query)
+        const productIds = createOrderDto.items.map(item => item.productId);
+        const products = await this.prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, name: true, stock: true },
+        });
+        span.addEvent('Fetched products from DB');
 
-    // Validate all products
-    for (const item of createOrderDto.items) {
-      const product = productMap.get(item.productId);
-      if (!product) {
-        throw new BadRequestException(`Product ${item.productId} not found`);
-      }
-      if ((product as any).stock < item.quantity) {
-        throw new BadRequestException(`Insufficient stock for product ${(product as any).name}`);
-      }
-    }
+        // Create lookup map for O(1) access
+        const productMap = new Map(products.map(p => [p.id, p]));
 
-    const subtotal = createOrderDto.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
-    const shipping = createOrderDto.shipping || 0;
-    const tax = createOrderDto.tax || 0;
-    const discount = createOrderDto.discount || 0;
-    const total = subtotal + shipping + tax - discount;
-    const orderNumber = this.generateOrderNumber();
+        // Validate all products
+        for (const item of createOrderDto.items) {
+          const product = productMap.get(item.productId);
+          if (!product) {
+            throw new BadRequestException(`Product ${item.productId} not found`);
+          }
+          if ((product as any).stock < item.quantity) {
+            throw new BadRequestException(
+              `Insufficient stock for product ${(product as any).name}`,
+            );
+          }
+        }
+        span.addEvent('Validated product stock');
 
-    const order = await this.prisma.order.create({
-      data: {
-        orderNumber,
-        userId: createOrderDto.userId,
-        status: OrderStatus.PENDING,
-        subtotal: new Prisma.Decimal(subtotal),
-        shipping: new Prisma.Decimal(shipping),
-        tax: new Prisma.Decimal(tax),
-        discount: new Prisma.Decimal(discount),
-        total: new Prisma.Decimal(total),
-        shippingAddress: createOrderDto.shippingAddress as unknown as Prisma.InputJsonValue,
-        billingAddress: (createOrderDto.billingAddress ||
-          createOrderDto.shippingAddress) as unknown as Prisma.InputJsonValue,
-        notes: createOrderDto.notes,
-        orderItems: {
-          create: createOrderDto.items.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: new Prisma.Decimal(item.price),
-            total: new Prisma.Decimal(item.price * item.quantity),
-          })),
-        },
-        payments: {
-          create: {
-            userId: createOrderDto.userId,
-            amount: new Prisma.Decimal(total),
-            method: createOrderDto.paymentMethod,
-            status: 'PENDING',
-          },
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        orderItems: {
-          include: {
-            product: true,
-          },
-        },
-        payments: true,
-      },
-    });
+        const subtotal = createOrderDto.items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        );
+        const shipping = createOrderDto.shipping || 0;
+        const tax = createOrderDto.tax || 0;
+        const discount = createOrderDto.discount || 0;
+        const total = subtotal + shipping + tax - discount;
+        const orderNumber = this.generateOrderNumber();
 
-    // ✅ FIX: Batch stock updates in transaction (eliminates N+1 query)
-    await this.prisma.$transaction(
-      createOrderDto.items.map(item =>
-        this.prisma.product.update({
-          where: { id: item.productId },
+        span.setAttribute('order.total_amount', total);
+
+        const order = await this.prisma.order.create({
           data: {
-            stock: {
-              decrement: item.quantity,
+            orderNumber,
+            userId: createOrderDto.userId,
+            status: OrderStatus.PENDING,
+            subtotal: new Prisma.Decimal(subtotal),
+            shipping: new Prisma.Decimal(shipping),
+            tax: new Prisma.Decimal(tax),
+            discount: new Prisma.Decimal(discount),
+            total: new Prisma.Decimal(total),
+            shippingAddress: createOrderDto.shippingAddress as unknown as Prisma.InputJsonValue,
+            billingAddress: (createOrderDto.billingAddress ||
+              createOrderDto.shippingAddress) as unknown as Prisma.InputJsonValue,
+            notes: createOrderDto.notes,
+            orderItems: {
+              create: createOrderDto.items.map(item => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: new Prisma.Decimal(item.price),
+                total: new Prisma.Decimal(item.price * item.quantity),
+              })),
+            },
+            payments: {
+              create: {
+                userId: createOrderDto.userId,
+                amount: new Prisma.Decimal(total),
+                method: createOrderDto.paymentMethod,
+                status: 'PENDING',
+              },
             },
           },
-        }),
-      ),
-    );
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            orderItems: {
+              include: {
+                product: true,
+              },
+            },
+            payments: true,
+          },
+        });
+        span.addEvent('Created order in DB');
+        span.setAttribute('order.id', order.id);
 
-    return order;
+        // ✅ FIX: Batch stock updates in transaction (eliminates N+1 query)
+        await this.prisma.$transaction(
+          createOrderDto.items.map(item =>
+            this.prisma.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            }),
+          ),
+        );
+        span.addEvent('Updated product stock in transaction');
+
+        this.prometheusService.recordOrder(order.status, order.payments[0]?.method, total);
+
+        span.setStatus({ code: SpanStatusCode.OK });
+        return order;
+      } catch (error) {
+        span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+        span.recordException(error);
+        throw error;
+      } finally {
+        span.end();
+      }
+    });
   }
 
   // 3. Get user's orders

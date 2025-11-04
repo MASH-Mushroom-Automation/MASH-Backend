@@ -1,0 +1,332 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "mash-alerts-dashboard",
+    "title": "MASH Backend - Alerts Dashboard",
+    "tags": ["mash", "backend", "alerts"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Active Alerts Count",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(mash_alerts_active)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                },
+                {
+                  "value": 50,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Critical Alerts",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(mash_alerts_active{priority=\"CRITICAL\"})",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Average Resolution Time",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "avg(mash_alert_resolution_time_seconds)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 3600,
+                  "color": "yellow"
+                },
+                {
+                  "value": 7200,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Alerts Triggered Today",
+        "type": "stat",
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "increase(mash_alerts_triggered_total[24h])",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Alerts by Priority (Last 24h)",
+        "type": "piechart",
+        "gridPos": {
+          "x": 0,
+          "y": 4,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (priority) (increase(mash_alerts_triggered_total[24h]))",
+            "legendFormat": "{{priority}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Alerts by Category (Last 24h)",
+        "type": "piechart",
+        "gridPos": {
+          "x": 8,
+          "y": 4,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (category) (increase(mash_alerts_triggered_total[24h]))",
+            "legendFormat": "{{category}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Alerts by Status (Last 24h)",
+        "type": "piechart",
+        "gridPos": {
+          "x": 16,
+          "y": 4,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (status) (mash_alerts_by_status)",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Alert Trigger Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 12,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(mash_alerts_triggered_total[5m])",
+            "legendFormat": "{{priority}} - {{category}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Alert Resolution Time Trend",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 12,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "avg_over_time(mash_alert_resolution_time_seconds[1h])",
+            "legendFormat": "Avg Resolution Time",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Top 10 Alert Types",
+        "type": "table",
+        "gridPos": {
+          "x": 0,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "topk(10, sum by (event_type) (increase(mash_alerts_triggered_total[24h])))",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Alert Escalations",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 12,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(mash_alerts_active{status=\"ESCALATED\"})",
+            "legendFormat": "Escalated Alerts",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "System Health Alerts",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 28,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (event_type) (mash_alerts_active{category=\"SYSTEM\"})",
+            "legendFormat": "{{event_type}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Security Alerts",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 8,
+          "y": 28,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (event_type) (mash_alerts_active{category=\"SECURITY\"})",
+            "legendFormat": "{{event_type}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Performance Alerts",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 16,
+          "y": 28,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (event_type) (mash_alerts_active{category=\"PERFORMANCE\"})",
+            "legendFormat": "{{event_type}}",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

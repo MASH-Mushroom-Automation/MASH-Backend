@@ -1,0 +1,447 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "mash-health-dashboard",
+    "title": "MASH Backend - Health Dashboard",
+    "tags": ["mash", "backend", "health"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Overall System Health",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "mash_health_status{service=\"overall\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "HEALTHY",
+                    "color": "green"
+                  }
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 1,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Database Health",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "mash_health_status{service=\"database\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "UP",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Cache Health",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "mash_health_status{service=\"cache\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "UP",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Dependencies Health",
+        "type": "stat",
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "mash_health_status{service=\"dependencies\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "UP",
+                    "color": "green"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Memory Usage (%)",
+        "type": "gauge",
+        "gridPos": {
+          "x": 0,
+          "y": 4,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "mash_health_memory_heap_percent",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Disk Usage (%)",
+        "type": "gauge",
+        "gridPos": {
+          "x": 8,
+          "y": 4,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "mash_health_disk_used_percent",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 80,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Database Connection Pool",
+        "type": "gauge",
+        "gridPos": {
+          "x": 16,
+          "y": 4,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "mash_db_pool_active_connections / mash_db_pool_max_connections * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Memory Usage Over Time",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 12,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "mash_health_memory_heap_used_bytes / 1024 / 1024",
+            "legendFormat": "Heap Used",
+            "refId": "A"
+          },
+          {
+            "expr": "mash_health_memory_heap_total_bytes / 1024 / 1024",
+            "legendFormat": "Heap Total",
+            "refId": "B"
+          },
+          {
+            "expr": "mash_health_memory_rss_bytes / 1024 / 1024",
+            "legendFormat": "RSS",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "mbytes"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Disk Space Over Time",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 12,
+          "y": 12,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "mash_health_disk_used_bytes / 1024 / 1024 / 1024",
+            "legendFormat": "Used",
+            "refId": "A"
+          },
+          {
+            "expr": "mash_health_disk_free_bytes / 1024 / 1024 / 1024",
+            "legendFormat": "Free",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "gbytes"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Health Check Response Time",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(mash_http_response_time_ms_bucket{route=\"/health\"}[5m]))",
+            "legendFormat": "95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(mash_http_response_time_ms_bucket{route=\"/health\"}[5m]))",
+            "legendFormat": "50th percentile",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms"
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Dependency Status History",
+        "type": "state-timeline",
+        "gridPos": {
+          "x": 12,
+          "y": 20,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "mash_health_dependency_status",
+            "legendFormat": "{{dependency}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "UP",
+                    "color": "green"
+                  },
+                  "2": {
+                    "text": "UNKNOWN",
+                    "color": "yellow"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Health Check Failures",
+        "type": "table",
+        "gridPos": {
+          "x": 0,
+          "y": 28,
+          "w": 24,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum by (service, error) (increase(mash_health_check_failures_total[1h]))",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

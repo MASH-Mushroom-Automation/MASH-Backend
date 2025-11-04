@@ -15,6 +15,7 @@ model User {
   clerkId              String               @unique
   email                String               @unique
   username             String?              @unique
+  password             String?
   firstName            String?
   lastName             String?
   imageUrl             String?
