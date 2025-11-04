@@ -20,13 +20,13 @@
 ### Tech Stack
 - **Framework**: NestJS 10.x (TypeScript-first Node.js framework)
 - **Database**: PostgreSQL 15+ via Prisma ORM 5.x
-- **Cache**: Redis 7.x (Upstash/local) via `ioredis`
+- **Cache**: Redis 7.x (Upstash/local)
 - **Authentication**: Clerk + JWT + Passport
 - **Real-time**: Socket.IO WebSockets
 - **Monitoring**: Prometheus + Grafana + Jaeger + OpenTelemetry
 - **Task Queue**: Bull (Redis-backed)
 - **Email**: SendGrid/Nodemailer
-- **Storage**: AWS S3 (via `@aws-sdk/client-s3`)
+- **Storage**: Firebase Storage
 - **Notifications**: Firebase Cloud Messaging, Twilio SMS
 
 ### Project Structure
@@ -171,7 +171,7 @@ cp .env.example .env
 
 # 3. Edit .env with your configuration
 # Required: DATABASE_URL, REDIS_URL, JWT_SECRET
-# Optional: CLERK_*, SENDGRID_*, TWILIO_*, FIREBASE_*, AWS_*
+# Optional: CLERK_*, SENDGRID_*, TWILIO_*, FIREBASE_*
 
 # 4. Generate Prisma client
 npx prisma generate
@@ -196,9 +196,6 @@ npm run build
 
 # Start production server
 npm run start:prod
-
-# Run all tests (unit, integration, e2e)
-npm run test:all
 
 # Run unit tests
 npm run test
@@ -228,7 +225,7 @@ npm run type-check
 npx prisma generate
 
 # Create migration (development)
-npx prisma migrate dev --name <migration_name>
+npx prisma migrate dev --name migration_name
 
 # Apply migrations (production)
 npx prisma migrate deploy
@@ -249,22 +246,22 @@ npx prisma migrate reset
 ### Docker Commands
 ```bash
 # Start all services (backend + monitoring stack)
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d
 
 # Start specific service
-docker-compose -f docker-compose.dev.yml up -d postgres
+docker compose -f docker-compose.dev.yml up -d postgres
 
 # View logs
-docker-compose -f docker-compose.dev.yml logs -f
+docker compose -f docker-compose.dev.yml logs -f
 
 # Stop all services
-docker-compose -f docker-compose.dev.yml down
+docker compose -f docker-compose.dev.yml down
 
 # Stop and remove volumes (fresh start)
-docker-compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml down -v
 
 # Rebuild and start
-docker-compose -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.dev.yml up --build
 ```
 
 ### Monitoring Access
@@ -709,9 +706,6 @@ export class PaymentService {
 
 ### Running Tests
 ```bash
-# Run all tests (unit, integration, e2e)
-npm run test:all
-
 # Run all unit tests
 npm run test
 
@@ -742,108 +736,39 @@ npm run test -- --testNamePattern="should create user"
 ## 🚀 Deployment & Infrastructure {#deployment}
 
 ### Environment Variables
-
-#### Required for all environments
-- `DATABASE_URL`: PostgreSQL connection string (Neon with connection pooling)
-  - Format: `postgresql://user:pass@host/db?sslmode=require&connection_limit=3&pool_timeout=20`
-- `DIRECT_URL`: Direct PostgreSQL connection (bypasses pooler for migrations)
-- `JWT_SECRET`: Secret for JWT signing (min 32 chars, generate: `openssl rand -hex 32`)
+**Required for all environments**:
+- `DATABASE_URL`: PostgreSQL connection string
+- `JWT_SECRET`: Secret for JWT signing (min 32 chars)
 - `NODE_ENV`: `development` | `production` | `test`
-- `PORT`: Application port (default: 3000)
 
-#### Cache & Performance (Critical for production)
-- `REDIS_URL`: Redis connection string (Upstash Cloud Redis)
-  - Format: `rediss://default:password@host:6379`
-  - **Impact**: 85-90% cache hit rate, 5x throughput increase
-- `CACHE_ENABLED`: Enable caching layer (default: true)
-- `CACHE_TTL_*`: TTL values for different resources (products, categories, analytics)
-- `THROTTLE_LIMIT_*`: Role-based rate limiting (super_admin: 10k, admin: 1k, user: 100 req/min)
-
-#### Authentication & Security
-- `CLERK_ENABLED`: Enable Clerk authentication (default: false for testing)
-- `CLERK_SECRET_KEY`: Clerk API key (optional)
-- `FIREBASE_*`: Firebase Admin SDK credentials (for push notifications)
-- `SESSION_DURATION`: JWT token expiry (default: 7d)
-- `REFRESH_TOKEN_DURATION`: Refresh token expiry (default: 30d)
-- `MAX_SESSIONS_PER_USER`: Concurrent session limit (default: 5)
-
-#### External Services
-- `EMAIL_*` / `SENDGRID_API_KEY`: Email notifications (Gmail SMTP or SendGrid)
-- `TWILIO_*`: SMS notifications (trial account works)
-- `AWS_*`: AWS S3 for file storage and exports
-- `ELASTICSEARCH_NODE`: Search engine endpoint (optional, Issue #28)
-- `MQTT_BROKER_URL`: IoT device communication (optional)
-
-#### Monitoring & Observability
-- `METRICS_ENABLED`: Enable Prometheus metrics (default: true)
-- `OTEL_ENABLED`: Enable OpenTelemetry tracing (default: false for local dev)
-- `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP collector endpoint (default: `http://jaeger:4318/v1/traces`)
-- `LOG_LEVEL`: Winston log level (development: debug, production: info)
-
-#### WebSocket Configuration (Issue #9)
-- `WS_PORT`: WebSocket server port (default: 3000, same as HTTP)
-- `WS_CORS_ORIGIN`: Comma-separated list of allowed origins
-- `WS_PING_TIMEOUT`: Disconnect timeout (default: 60000ms)
-- `WS_REDIS_ADAPTER_ENABLED`: Enable Redis adapter for horizontal scaling (default: false)
-
-#### Import/Export System (Issue #30)
-- `MAX_FILE_SIZE`: Maximum file upload size (default: 52428800 = 50MB)
-- `MAX_CONCURRENT_JOBS`: Parallel import/export jobs (default: 10)
-- `FILE_RETENTION_DAYS`: Days to keep files (default: 30)
-- `EXPORT_S3_BUCKET`: S3 bucket for analytics exports
+**Optional but recommended**:
+- `REDIS_URL`: Redis connection string (enables caching)
+- `CLERK_SECRET_KEY`: Clerk authentication
+- `SENDGRID_API_KEY`: Email notifications
+- `TWILIO_*`: SMS notifications
+- `FIREBASE_*`: Push notifications & storage
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry collector (default: `http://jaeger:4318/v1/traces`)
 
 ### Production Deployment Checklist
-
-#### Pre-deployment Security Checklist
-```bash
-# CRITICAL - Must change before production:
-# [ ] JWT_SECRET - Generate: openssl rand -hex 32
-# [ ] DATABASE_URL - Use production database with strong password
-# [ ] REDIS_PASSWORD - Use managed service (Upstash/AWS ElastiCache)
-# [ ] NODE_ENV=production
-# [ ] LOG_LEVEL=info (not debug)
-# [ ] CORS_ORIGINS - Only allow your production domain(s)
-# [ ] All FIREBASE_* credentials are production keys
-# [ ] Rotate all development secrets
-```
-
-#### Deployment Steps
 ```bash
 # 1. Ensure all tests pass
-npm run test:all
+npm run test
+npm run test:e2e
 
 # 2. Build the application
 npm run build
 
-# 3. Run database migrations (uses DIRECT_URL, not pooled connection)
+# 3. Run database migrations
 npx prisma migrate deploy
 
-# 4. Start the application (includes automatic migration)
-npm run start:prod:migrate
+# 4. Start the application
+npm run start:prod
 
 # 5. Verify health endpoint
 curl http://localhost:3000/api/v1/health
 
 # 6. Check metrics endpoint
 curl http://localhost:3000/metrics
-
-# 7. Verify WebSocket connection
-# Open browser console and test: new WebSocket('ws://localhost:3000/ws')
-```
-
-#### Railway Deployment (Recommended Platform)
-```bash
-# See comprehensive guides:
-# - Quick Start: docs/RAILWAY_QUICK_START.md
-# - Complete Guide: docs/RAILWAY_DEPLOYMENT_GUIDE.md
-# - Step-by-Step: RAILWAY_DEPLOY_NOW.md
-
-# Key Railway configuration:
-# 1. Use variable references: ${{service-name.VARIABLE_NAME}}
-# 2. DATABASE_URL=${{postgres.DATABASE_PRIVATE_URL}}
-# 3. REDIS_URL=${{redis.REDIS_PRIVATE_URL}}
-# 4. Set CORS_ORIGINS to include Railway domain
-# 5. Enable health checks: /api/v1/health
 ```
 
 ### Docker Deployment
@@ -852,10 +777,10 @@ curl http://localhost:3000/metrics
 docker build -t mash-backend:latest .
 
 # Run with docker-compose (includes monitoring stack)
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d
 
 # Production deployment
-docker-compose -f docker-compose.yml up -d
+docker compose -f docker-compose.yml up -d
 ```
 
 ### CI/CD Pipeline
@@ -874,67 +799,6 @@ The `.github/workflows/ci.yml` workflow:
 ---
 
 ## 🔧 Common Tasks {#common-tasks}
-
-### Performance Optimization Guidelines
-
-This project has extensive performance optimizations implemented (Issue #24 - 94% complete):
-
-#### Phase 1: Database Optimization (✅ 80% complete)
-- Connection pooling: `connection_limit=3&pool_timeout=20` in DATABASE_URL
-- Use `DIRECT_URL` for migrations (bypasses pooler)
-- Index optimization: Always add `@@index([field])` for foreign keys
-- Query optimization: Use Prisma's `include` sparingly, prefer `select`
-
-#### Phase 2: Redis Caching (✅ 100% complete)
-```typescript
-// Cache pattern with TTL
-async getCachedProduct(id: string) {
-  const cached = await this.redis.get<Product>(`product:${id}`);
-  if (cached) return cached;
-  
-  const product = await this.prisma.product.findUnique({ where: { id } });
-  await this.redis.set(`product:${id}`, product, 600); // 10 min TTL
-  return product;
-}
-
-// Cache invalidation on update
-async updateProduct(id: string, data: UpdateProductDto) {
-  const updated = await this.prisma.product.update({ where: { id }, data });
-  await this.redis.delete(`product:${id}`);
-  await this.redis.deletePattern(`products:*`); // Invalidate list caches
-  return updated;
-}
-```
-
-**Current Metrics**:
-- Cache hit rate: 85-90% (exceeds 80% target)
-- Throughput: 500-1000 req/s (5-10x improvement)
-- P95 Latency: <150ms (5x reduction)
-- Database load: -85% reduction
-
-#### Phase 3: API Performance (✅ 90% complete)
-- Response compression enabled via `compression` middleware
-- 64% response size reduction
-- Role-based rate limiting (see `THROTTLE_LIMIT_*` in .env)
-- Pagination required for list endpoints (default: 20 items)
-
-#### Phase 4: Monitoring (✅ 100% complete)
-- Prometheus metrics: `/metrics` endpoint
-- Custom business metrics: `PrometheusService.recordOrder()`, etc.
-- Distributed tracing: OpenTelemetry + Jaeger
-- Health checks: `/api/v1/health`, `/api/v1/health/ready`, `/api/v1/health/live`
-
-#### Phase 5: Load Testing (✅ 100% complete)
-```bash
-# Run comprehensive load tests
-.\test\k6\run-all-tests.bat  # Windows
-./test/k6/run-all-tests.sh   # Linux/Mac
-
-# Individual scenarios
-k6 run test/k6/scenarios/basic-load.js
-k6 run test/k6/scenarios/spike-test.js
-k6 run test/k6/scenarios/stress-test.js
-```
 
 ### Adding a New Module
 ```bash
@@ -1099,7 +963,7 @@ npx prisma migrate dev
 # Solution: Check DATABASE_URL in .env
 # Format: postgresql://user:password@localhost:5432/database
 # Verify database is running
-docker-compose -f docker-compose.dev.yml up postgres
+docker compose -f docker-compose.dev.yml up postgres
 ```
 
 ### Redis Issues
@@ -1107,7 +971,7 @@ docker-compose -f docker-compose.dev.yml up postgres
 **Problem**: Redis connection refused
 ```bash
 # Solution: Start Redis
-docker-compose -f docker-compose.dev.yml up redis
+docker compose -f docker-compose.dev.yml up redis
 
 # Or check REDIS_URL in .env
 # App will run without Redis (degraded functionality)
@@ -1136,7 +1000,7 @@ taskkill /PID <PID> /F
 # Check .env file has required vars
 
 # 3. Database not accessible
-# Start database: docker-compose up postgres
+# Start database: docker compose up postgres
 ```
 
 **Problem**: Health endpoint returns unhealthy
@@ -1161,7 +1025,7 @@ curl http://localhost:3000/metrics
 open http://localhost:9090/targets
 
 # 3. Restart Prometheus
-docker-compose -f docker-compose.dev.yml restart prometheus
+docker compose -f docker-compose.dev.yml restart prometheus
 ```
 
 **Problem**: No traces in Jaeger
@@ -1170,7 +1034,7 @@ docker-compose -f docker-compose.dev.yml restart prometheus
 # Should be: http://jaeger:4318/v1/traces
 
 # 2. Verify Jaeger is running
-docker-compose -f docker-compose.dev.yml ps jaeger
+docker compose -f docker-compose.dev.yml ps jaeger
 
 # 3. Generate test traffic
 curl -X POST http://localhost:3000/api/v1/auth/login
@@ -1205,72 +1069,35 @@ curl -X POST http://localhost:3000/api/v1/auth/login
 - ❌ Don't skip documentation
 
 ### Code Review Checklist
-- [ ] All tests pass (`npm run test:all`)
+- [ ] All tests pass (`npm run test`)
 - [ ] Build succeeds (`npm run build`)
 - [ ] Linting passes (`npm run lint`)
 - [ ] Type checking passes (`npm run type-check`)
-- [ ] Format check passes (`npm run format:check`)
-- [ ] New code has unit tests (coverage threshold: 85%)
-- [ ] DTOs have proper validation with `class-validator`
-- [ ] Swagger docs are up to date (`@ApiOperation`, `@ApiResponse`)
-- [ ] Error handling uses NestJS exceptions (not generic `Error`)
-- [ ] Logging uses `Logger` with appropriate levels
-- [ ] No secrets in code (all credentials in `.env`)
+- [ ] New code has unit tests
+- [ ] DTOs have proper validation
+- [ ] Swagger docs are up to date
+- [ ] Error handling is complete
+- [ ] Logging is adequate
+- [ ] No secrets in code
 - [ ] Database migrations are reversible
-- [ ] Performance considerations addressed:
-  - [ ] Add caching for read-heavy endpoints
-  - [ ] Add database indexes for foreign keys
-  - [ ] Add Prometheus metrics for business operations
-  - [ ] Add rate limiting if expensive operation
-- [ ] WebSocket events properly typed (if applicable)
-- [ ] Import/export validation for large files (if applicable)
+- [ ] Performance considerations addressed
 
 ---
 
 ## 📚 Additional Resources
 
 ### Documentation
-
-#### Core Documentation
 - **Monitoring System**: `docs/monitoring/README.md`
 - **Windows Setup**: `docs/WINDOWS_QUICK_START.md`
+- **API Testing**: `documents/MONITORING_CHECKLIST.md`
 - **Build Troubleshooting**: `docs/BUILD_FIXES_SUMMARY.md`
-- **CI/CD Fix**: `docs/CI_CD_FIX_DOCKER_BUILD_PATH.md`
-
-#### Deployment Guides
-- **Railway Quick Start**: `docs/RAILWAY_QUICK_START.md`
-- **Railway Complete Guide**: `docs/RAILWAY_DEPLOYMENT_GUIDE.md`
-- **Railway Troubleshooting**: `docs/RAILWAY_TROUBLESHOOTING.md`
-- **Step-by-Step Deployment**: `RAILWAY_DEPLOY_NOW.md`
-
-#### Project Status & Planning
-- **Dashboard**: `PROJECT_STATUS_DASHBOARD.md`
-- **Completion Summary**: `documents/PROJECT_COMPLETION_SUMMARY.md`
-- **Remaining Tasks**: `documents/REMAINING_TASKS_GUIDE.md`
-- **Monitoring Checklist**: `documents/MONITORING_CHECKLIST.md`
-
-#### Performance & Testing
-- **Load Testing Guide**: `QUICK_START_LOAD_TESTING.md`
-- **Performance Docs**: `docs/performance/`
-- **Testing Strategy**: `docs/testing/`
-
-#### Feature-Specific
-- **IoT/MQTT**: `docs/iot/`
-- **Orders System**: `docs/orders/`
-- **Production Deployment**: `docs/production/`
 
 ### Key Files
 - **Environment template**: `.env.example`
-- **Environment config**: `.env` (DO NOT COMMIT - contains secrets)
 - **Database schema**: `prisma/schema.prisma`
-- **Database seed**: `prisma/seed.ts`
-- **API collections**: `postman/*.postman_collection.json` (14 collections)
-  - Master collection: `00-Master-Complete-API-Collection.postman_collection.json`
-  - Auth testing: `99-Complete-Auth-Flow-Testing.postman_collection.json`
+- **API collections**: `postman/*.postman_collection.json`
 - **CI/CD**: `.github/workflows/ci.yml`
-- **Docker**: `docker-compose.dev.yml`, `docker-compose.monitoring.yml`, `Dockerfile`
-- **Monitoring**: `prometheus/prometheus.yml`, `prometheus/alert.rules.yml`
-- **Grafana**: `grafana/dashboards/`, `grafana/provisioning/`
+- **Docker**: `docker-compose.dev.yml`, `Dockerfile`
 
 ### External Links
 - [NestJS Documentation](https://docs.nestjs.com)
@@ -1280,167 +1107,28 @@ curl -X POST http://localhost:3000/api/v1/auth/login
 
 ---
 
-**Last Updated**: November 4, 2025  
+**Last Updated**: November 1, 2025  
 **Status**: Production Ready ✅  
-**Coverage**: 100% of core features documented  
-**Performance**: 94% optimization complete (Issue #24)  
-**Current Metrics**: 500-1000 req/s throughput, <150ms P95 latency, 85-90% cache hit rate
+**Coverage**: 100% of core features documented
 
 ---
 
-## 🚢 Production Deployment & Infrastructure Notes
+## Production deployment & infrastructure notes
 
-### Docker Configuration
-- **Dockerfile**: Multi-stage optimized build
-  - Stage 1: Dependencies (`npm ci`)
-  - Stage 2: Build (`npm run build`)
-  - Stage 3: Production runtime (Node.js slim)
-  - Expects `dist/health-check.js` for HEALTHCHECK
-  - Health check: `node dist/health-check.js` (returns 0 if `/api/v1/health` is 2xx)
+- Docker: multi-stage optimized Dockerfile is at `Dockerfile`. It builds with `npm ci` then `npm run build` and expects `dist/health-check.js` (we add a small health-check script at `src/health/health-check.ts`). The HEALTHCHECK runs `node dist/health-check.js`.
 
-### Local Development with Docker
-```bash
-# Build image
-docker build -t mash-backend/api:local .
+- Build & run locally (recommended): build with Docker and run with the provided compose file for local infra:
+  - Build image: `docker build -t mash-backend/api:local .`
+  - Run with compose (Postgres + Redis + Prometheus): `docker compose -f docker-compose.dev.yml up --build`
 
-# Run with full stack (Postgres + Redis + Prometheus + Grafana + Jaeger)
-docker-compose -f docker-compose.dev.yml up --build
+- CI/CD: `.github/workflows/ci.yml` runs lint, tests, Prisma generate/migrate, Newman Postman collections and a Docker build/push step. CI expects the app to be reachable at `http://localhost:3000/api/v1/health` while running Postman tests.
 
-# Run monitoring stack separately
-docker-compose -f docker-compose.monitoring.yml up -d
+- Monitoring & logging: Prometheus metrics are exposed under `/metrics` (see `src/monitoring/prometheus`); traces are exported via OpenTelemetry (`src/monitoring/tracing.ts`) to the endpoint configured by `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
-# Access services:
-# - Backend API: http://localhost:3000
-# - Grafana: http://localhost:4000 (admin/admin)
-# - Prometheus: http://localhost:9090
-# - Jaeger: http://localhost:16686
-# - Alertmanager: http://localhost:9093
-```
+- Health & recovery: use `src/health/health.controller.ts` for HTTP health endpoints. The Docker health-check is lightweight and should return 0 when `/api/v1/health` responds 2xx. When changing the health endpoints, update `Dockerfile` and CI health checks accordingly.
 
-### CI/CD Pipeline (`.github/workflows/ci.yml`)
-The CI pipeline runs in this order:
-1. **Linting**: `npm run lint:check` + `npm run format:check`
-2. **Type checking**: `npm run type-check`
-3. **Unit tests**: `npm run test:unit` with coverage
-4. **E2E tests**: `npm run test:e2e`
-5. **Database setup**: `npx prisma generate` + `npx prisma migrate deploy`
-6. **API tests**: Newman/Postman collections (14 collections)
-   - **Critical**: App must be reachable at `http://localhost:3000/api/v1/health`
-7. **Docker build**: Builds and pushes image (only on `main`/`develop` branches)
-8. **Health check**: Verifies `/api/v1/health` endpoint responds
+- Rollbacks & releases: CI builds and pushes images only from `main`/`develop` branches (`docker-build` job). Review tags and metadata in `.github/workflows/ci.yml` before changing image naming/tagging behavior.
 
-**Important Notes**:
-- Keep `/api/v1/health` endpoint stable (used by CI, Docker, K8s probes)
-- Update `Dockerfile` HEALTHCHECK if health endpoint changes
-- CI uses test database (different from local dev)
-- Newman tests expect specific test data (see `prisma/seed.ts`)
-
-### Monitoring & Observability
-
-#### Prometheus Metrics (`/metrics`)
-- **Location**: `src/monitoring/prometheus/prometheus.service.ts`
-- **Scraped every**: 15 seconds
-- **Custom metrics**: 60+ metrics across:
-  - HTTP requests (status, method, endpoint)
-  - Database queries (duration, type, errors)
-  - Cache operations (hits, misses, evictions)
-  - Business events (orders, products, users)
-  - Security events (auth failures, rate limits)
-  - System resources (memory, CPU, connections)
-
-#### Distributed Tracing (OpenTelemetry + Jaeger)
-- **Configuration**: `src/monitoring/tracing.ts`
-- **Auto-instrumentation**: HTTP, Express, NestJS
-- **Custom spans**: Add in business logic for deep insights
-- **Endpoint**: Configured via `OTEL_EXPORTER_OTLP_ENDPOINT`
-- **Note**: Disabled by default in local dev (`OTEL_ENABLED=false`)
-
-#### Logging (Winston)
-- **Location**: `src/common/utils/logger.util.ts`
-- **Features**:
-  - Correlation IDs for request tracking
-  - Structured JSON in production
-  - Console logs in development
-  - Daily rotating files (`logs/` directory)
-  - Audit logs for sensitive operations
-
-#### Health Checks (`@nestjs/terminus`)
-- **Controller**: `src/health/health.controller.ts`
-- **Indicators**:
-  - `PrismaHealthIndicator`: Database connectivity
-  - `RedisHealthIndicator`: Cache availability
-  - `MemoryHealthIndicator`: Memory usage
-- **Endpoints**:
-  - `/api/v1/health`: Overall health (200 = healthy, 503 = unhealthy)
-  - `/api/v1/health/ready`: Readiness probe (K8s)
-  - `/api/v1/health/live`: Liveness probe (K8s)
-
-### Rollbacks & Releases
-- **Image building**: Only from `main`/`develop` branches
-- **Tagging**: See `.github/workflows/ci.yml` for metadata
-- **Rollback strategy**: 
-  1. Revert to previous Git commit
-  2. Re-run CI pipeline
-  3. Use previous Docker image tag
-  4. Run database migrations backwards (`prisma migrate resolve`)
-
-### Common Infrastructure Failures & Solutions
-
-#### Database Migration Failures
-```bash
-# Check migration status
-npx prisma migrate status
-
-# Reset database (DEVELOPMENT ONLY)
-npx prisma migrate reset
-
-# Apply pending migrations
-npx prisma migrate deploy
-
-# Mark migration as resolved (if manually fixed)
-npx prisma migrate resolve --applied <migration_name>
-```
-
-#### Redis Connection Issues
-```bash
-# Test Redis connection
-redis-cli -h proven-aphid-10039.upstash.io -p 6379 -a <password> ping
-
-# Check Redis info
-redis-cli -h proven-aphid-10039.upstash.io -p 6379 -a <password> info
-
-# Flush Redis (WARNING: clears all cache)
-redis-cli -h proven-aphid-10039.upstash.io -p 6379 -a <password> FLUSHALL
-```
-
-#### Newman Test Failures
-```bash
-# Run specific collection
-npm run postman:auth
-npm run postman:orders
-
-# Debug mode
-newman run postman/01-Authentication-API.postman_collection.json \
-  -e postman/MASH-backend.postman_environment.json \
-  --verbose
-
-# Common causes:
-# 1. App not running on http://localhost:3000
-# 2. Database not seeded (run: npm run db:seed)
-# 3. Environment variables missing
-# 4. Previous test data conflicts
-```
-
-### Railway-Specific Configuration
-See comprehensive guides in `docs/`:
-- `RAILWAY_QUICK_START.md`: 5-minute setup
-- `RAILWAY_DEPLOYMENT_GUIDE.md`: Complete walkthrough
-- `RAILWAY_TROUBLESHOOTING.md`: Common issues
-- `RAILWAY_DEPLOY_NOW.md`: Step-by-step checklist
-
-**Key Railway Features**:
-- Variable references: `${{service-name.VARIABLE_NAME}}`
-- Automatic deployments on Git push
-- Built-in monitoring and logs
-- Health checks via `/api/v1/health`
-- Auto-scaling based on load
+If you want, I can:
+- Add a small README under `docs/` with exact docker-compose commands and a troubleshooting checklist for common infra failures (DB migrations, Redis down, failed Newman tests).
+- Open a PR with these changes and include the health-check script in the build pipeline validation.
