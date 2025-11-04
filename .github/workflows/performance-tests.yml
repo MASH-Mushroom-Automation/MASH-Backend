@@ -268,12 +268,12 @@ jobs:
           echo "=== Verifying Node environment ==="
           node -e "console.log('DATABASE_URL visible to Node:', process.env.DATABASE_URL ? 'YES' : 'NO')"
           
-          # Start application with timeout wrapper
-          echo "=== Starting application with timeout protection ==="
-          nohup node start-with-timeout.js > app.log 2>&1 &
+          # Start application (use built application from dist/main.js)
+          echo "=== Starting application ==="
+          nohup node dist/main.js > app.log 2>&1 &
           echo $! > .pidfile
           echo "Application started with PID: $(cat .pidfile)"
-          sleep 10
+          sleep 15
           
           # Check if process is still running
           if ps -p $(cat .pidfile) > /dev/null; then
@@ -288,7 +288,7 @@ jobs:
       - name: Wait for application
         run: |
           echo "Waiting for application to be ready..."
-          echo "Timeout wrapper will kill the app if it hangs > 60s"
+          echo "Will check for up to 80 seconds..."
           for i in {1..40}; do
             echo "Attempt $i/40... (elapsed: $((i * 2))s)"
             
