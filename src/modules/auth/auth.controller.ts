@@ -14,7 +14,6 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { FirebaseAuthGuard } from './guards/firebase-auth.guard';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -27,6 +26,19 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuditLog } from '../../common/decorators/audit-log.decorator';
 import { AuditAction } from '../../common/services/audit-log.service';
 import { Public } from './decorators/public.decorator';
+
+// Interface for authenticated request
+interface AuthenticatedRequest {
+  user: {
+    id: string;
+    userId: string;
+    clerkId: string;
+    email: string;
+    role: string;
+    sessionId: string;
+    expiresAt: Date;
+  };
+}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -42,7 +54,7 @@ export class AuthController {
   @AuditLog({
     action: AuditAction.USER_CREATE,
     entity: 'User',
-    getEntityId: args => args[0]?.email,
+    getEntityId: args => (args[0] as RegisterDto | undefined)?.email ?? 'unknown',
   })
   @ApiOperation({
     summary: 'Register new user',
@@ -323,7 +335,7 @@ export class AuthController {
   @AuditLog({
     action: AuditAction.USER_CREATE,
     entity: 'User',
-    getEntityId: args => args[0]?.data?.id,
+    getEntityId: args => (args[0] as ClerkWebhookDto | undefined)?.data?.id as string ?? 'unknown',
   })
   @ApiOperation({
     summary: 'Clerk webhook handler',
@@ -344,7 +356,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Current user information' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getCurrentUser(@Request() req: any) {
+  async getCurrentUser(@Request() req: AuthenticatedRequest) {
     return this.authService.getCurrentUser(req.user.userId);
   }
 
@@ -357,7 +369,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Session information' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getSession(@Request() req: any) {
+  getSession(@Request() req: AuthenticatedRequest) {
     return this.authService.getSessionInfo(req.user);
   }
 
@@ -368,7 +380,7 @@ export class AuthController {
   @AuditLog({
     action: AuditAction.LOGOUT,
     entity: 'User',
-    getEntityId: args => args[0]?.user?.userId as string,
+    getEntityId: args => ((args[0] as AuthenticatedRequest | undefined)?.user?.userId ?? 'unknown'),
   })
   @ApiOperation({
     summary: 'Logout user',
@@ -376,8 +388,8 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Logout successful' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async logout(@Request() req: any) {
-    return this.authService.logout(req.user.userId);
+  logout() {
+    return this.authService.logout();
   }
 
   // 3. Refresh Token
@@ -474,7 +486,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getUserPermissions(@Request() req: any) {
+  async getUserPermissions(@Request() req: AuthenticatedRequest) {
     return this.authService.getUserPermissions(req.user.id);
   }
 
@@ -522,7 +534,7 @@ export class AuthController {
     description: 'Forbidden - Insufficient permissions',
   })
   @ApiResponse({ status: 404, description: 'Target user not found' })
-  async impersonateUser(@Request() req: any, @Body() body: { targetUserId: string }) {
+  async impersonateUser(@Request() req: AuthenticatedRequest, @Body() body: { targetUserId: string }) {
     if (!body.targetUserId) {
       throw new BadRequestException('targetUserId is required');
     }

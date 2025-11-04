@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
-import { Cacheable, CacheEvict } from '../../common/decorators/cache.decorator';
+import { Cacheable } from '../../common/decorators/cache.decorator';
 import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
@@ -23,6 +23,31 @@ import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
+
+// Interfaces for type safety
+interface ClerkUserData {
+  id: string;
+  email_addresses: Array<{ email_address: string }>;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  image_url?: string;
+}
+
+interface SessionUser {
+  userId: string;
+  clerkId: string;
+  role: string;
+  sessionId: string;
+  expiresAt: Date;
+}
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  exp: number;
+}
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -43,11 +68,11 @@ export class AuthService {
 
     switch (type) {
       case 'user.created':
-        return this.createUser(data);
+        return this.createUser(data as ClerkUserData);
       case 'user.updated':
-        return this.updateUser(data);
+        return this.updateUser(data as ClerkUserData);
       case 'user.deleted':
-        return this.deleteUser(data);
+        return this.deleteUser(data as ClerkUserData);
       default:
         return { message: 'Event type not handled' };
     }
@@ -90,7 +115,7 @@ export class AuthService {
    * Hot path - session info frequently accessed
    */
   @Cacheable({ key: 'auth:session', ttl: 900, tags: ['auth', 'sessions'] })
-  async getSessionInfo(user: any) {
+  getSessionInfo(user: SessionUser) {
     return {
       userId: user.userId,
       clerkId: user.clerkId,
@@ -101,43 +126,43 @@ export class AuthService {
     };
   }
 
-  async logout(userId: string) {
+  logout(/* userId: string */) {
     // In a real application, you might want to invalidate tokens
     // For now, we'll just return a success message
     return { message: 'Logout successful' };
   }
 
-  private async createUser(userData: any) {
+  private async createUser(userData: ClerkUserData) {
     const user = await this.prisma.user.create({
       data: {
         clerkId: userData.id,
-        email: userData.email_addresses[0]?.email_address,
-        username: userData.username,
-        firstName: userData.first_name,
-        lastName: userData.last_name,
-        imageUrl: userData.image_url,
+        email: userData.email_addresses[0]?.email_address ?? '',
+        username: userData.username ?? null,
+        firstName: userData.first_name ?? null,
+        lastName: userData.last_name ?? null,
+        imageUrl: userData.image_url ?? null,
       },
     });
 
     return { message: 'User created successfully', userId: user.id };
   }
 
-  private async updateUser(userData: any) {
+  private async updateUser(userData: ClerkUserData) {
     const user = await this.prisma.user.update({
       where: { clerkId: userData.id },
       data: {
-        email: userData.email_addresses[0]?.email_address,
-        username: userData.username,
-        firstName: userData.first_name,
-        lastName: userData.last_name,
-        imageUrl: userData.image_url,
+        email: userData.email_addresses[0]?.email_address ?? undefined,
+        username: userData.username ?? undefined,
+        firstName: userData.first_name ?? undefined,
+        lastName: userData.last_name ?? undefined,
+        imageUrl: userData.image_url ?? undefined,
       },
     });
 
     return { message: 'User updated successfully', userId: user.id };
   }
 
-  private async deleteUser(userData: any) {
+  private async deleteUser(userData: ClerkUserData) {
     await this.prisma.user.update({
       where: { clerkId: userData.id },
       data: { isActive: false },
@@ -188,7 +213,7 @@ export class AuthService {
   // 3. Refresh Token
   async refreshToken(refreshToken: string): Promise<TokenResponse> {
     try {
-      const payload = this.jwtService.verify(refreshToken);
+      const payload = this.jwtService.verify<JwtPayload>(refreshToken);
 
       // Verify user still exists
       const user = await this.prisma.user.findUnique({
@@ -220,7 +245,7 @@ export class AuthService {
         refreshToken: newRefreshToken,
         expiresIn: 86400, // 1 day in seconds
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
@@ -289,7 +314,7 @@ export class AuthService {
         } catch (error) {
           this.logger.warn('Clerk auth not available or failed - falling back to local auth');
           span.addEvent('Clerk auth failed, falling back to local', {
-            'error.message': error.message,
+            'error.message': error instanceof Error ? error.message : 'Unknown error',
           });
         }
 
@@ -337,8 +362,9 @@ export class AuthService {
           },
         };
       } catch (error) {
-        span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
-        span.recordException(error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
         throw error;
       } finally {
         span.end();
@@ -349,7 +375,7 @@ export class AuthService {
   // 6. Verify Token
   async verifyToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify<JwtPayload>(token);
 
       // Verify user still exists
       const user = await this.prisma.user.findUnique({
@@ -372,7 +398,7 @@ export class AuthService {
         role: user.role,
         expiresAt: new Date(payload.exp * 1000),
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
@@ -444,7 +470,7 @@ export class AuthService {
       const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
       // Create user in local database with generated avatar
-      const user = await this.prisma.user.create({
+      await this.prisma.user.create({
         data: {
           clerkId: clerkUser.id,
           email: registerDto.email,
@@ -477,15 +503,16 @@ export class AuthService {
           '24 hours',
         );
         this.logger.log(`✅ MASH verification email sent successfully to: ${registerDto.email}`);
-      } catch (emailError: any) {
+      } catch (emailError: unknown) {
         // Don't fail registration if custom email fails
         this.logger.error(
           `❌ CRITICAL: Failed to send MASH verification email to ${registerDto.email}`,
         );
-        this.logger.error(`Error details: ${emailError?.message || 'Unknown error'}`);
+        const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
+        this.logger.error(`Error details: ${errorMessage}`);
         if (
-          emailError?.message?.includes('Missing credentials') ||
-          emailError?.message?.includes('Invalid login')
+          errorMessage.includes('Missing credentials') ||
+          errorMessage.includes('Invalid login')
         ) {
           this.logger.error('🔧 FIX: Add EMAIL_* environment variables to Railway dashboard');
           this.logger.error(
@@ -503,9 +530,10 @@ export class AuthService {
         avatarUrl: diceBearAvatarUrl, // DiceBear avatar URL
         verificationSent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Registration failed for ${registerDto.email}: ${error.message}`);
-      if (error.message?.includes('already exists')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Registration failed for ${registerDto.email}: ${errorMessage}`);
+      if (errorMessage.includes('already exists')) {
         throw new ConflictException('User with this email already exists');
       }
       throw new InternalServerErrorException('Registration failed. Please try again.');
@@ -516,7 +544,7 @@ export class AuthService {
     try {
       await this.clerkService.verifyEmail(verifyEmailDto.email, verifyEmailDto.code);
       return { success: true, message: 'Email verified successfully' };
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Invalid or expired verification code');
     }
   }
@@ -525,7 +553,7 @@ export class AuthService {
     try {
       await this.clerkService.sendEmailVerification(email);
       return { success: true, message: 'Verification email sent' };
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Failed to send verification email');
     }
   }
@@ -534,7 +562,7 @@ export class AuthService {
     try {
       await this.clerkService.sendPasswordResetEmail(email);
       return { success: true, message: 'Password reset email sent' };
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Failed to send password reset email');
     }
   }
@@ -547,7 +575,7 @@ export class AuthService {
         resetPasswordDto.newPassword,
       );
       return { success: true, message: 'Password reset successfully' };
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Invalid or expired reset code');
     }
   }
@@ -556,7 +584,7 @@ export class AuthService {
     try {
       const authUrl = await this.clerkService.initiateOAuth(provider, redirectUrl);
       return { authUrl };
-    } catch (error) {
+    } catch {
       throw new BadRequestException(`Failed to initiate ${provider} OAuth`);
     }
   }
@@ -568,7 +596,7 @@ export class AuthService {
         callbackDto.code,
       );
       return result;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('OAuth authentication failed');
     }
   }

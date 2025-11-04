@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { SearchModule } from '../search.module';
 import { DatabaseModule } from '../../../database/database.module';
 import { CommonModule } from '../../../common/common.module';

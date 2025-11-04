@@ -5,13 +5,310 @@
 ---
 
 ## 📋 Table of Contents
-1. [Project Architecture](#architecture)
-2. [Development Workflow](#development)
-3. [Code Conventions](#conventions)
-4. [Testing Strategy](#testing)
-5. [Deployment & Infrastructure](#deployment)
-6. [Common Tasks](#common-tasks)
-7. [Troubleshooting](#troubleshooting)
+1. [Quick Start: Build & Run Backend](#quick-start)
+2. [Project Architecture](#architecture)
+3. [Development Workflow](#development)
+4. [Code Conventions](#conventions)
+5. [Testing Strategy](#testing)
+6. [Deployment & Infrastructure](#deployment)
+7. [Common Tasks](#common-tasks)
+8. [Troubleshooting](#troubleshooting)
+
+---
+
+## 🚀 Quick Start: Build & Run Backend {#quick-start}
+
+### Prerequisites Checklist
+
+Before building and running the MASH backend, ensure you have:
+
+- ✅ **Node.js 18.x or higher** installed ([Download](https://nodejs.org/))
+- ✅ **npm 9.x or higher** (comes with Node.js)
+- ✅ **PostgreSQL 15+** running (or access to Neon cloud database)
+- ✅ **Redis 7.x** running (or access to Upstash cloud)
+- ✅ **Git** installed for version control
+- ✅ **.env file** configured with all required variables (see below)
+
+### Step 1: Clone and Install Dependencies
+
+```bash
+# Clone the repository
+git clone https://github.com/MASH-Mushroom-Automation/MASH-Backend.git
+cd MASH-Backend
+
+# Install dependencies (use --legacy-peer-deps for compatibility)
+npm install --legacy-peer-deps
+
+# Verify installation
+npm list --depth=0
+```
+
+**Expected output**: Should show ~88 production dependencies without errors.
+
+### Step 2: Environment Configuration
+
+Create a `.env` file in the root directory. **Required variables** for basic operation:
+
+```bash
+# === CORE CONFIGURATION (REQUIRED) ===
+NODE_ENV=development
+PORT=3000
+
+# Database (PostgreSQL - Neon Cloud or Local)
+DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
+
+# Redis Cache (Upstash Cloud or Local)
+REDIS_URL="redis://default:password@host:port"
+
+# JWT Authentication
+JWT_SECRET="your-super-secret-jwt-key-min-32-chars-recommended"
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# === OPTIONAL BUT RECOMMENDED ===
+
+# Clerk Authentication (if using Clerk)
+CLERK_SECRET_KEY="sk_test_..."
+CLERK_PUBLISHABLE_KEY="pk_test_..."
+
+# Email Notifications (SendGrid or SMTP)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+EMAIL_FROM=noreply@mash.com
+
+# Firebase (for Storage & FCM)
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+
+# OpenTelemetry Tracing
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
+
+# Frontend URL (for CORS and email links)
+FRONTEND_URL=http://localhost:3001
+```
+
+**Quick tip**: Copy `.env.example` if available:
+```bash
+cp .env.example .env
+# Then edit .env with your actual credentials
+```
+
+### Step 3: Database Setup
+
+```bash
+# Generate Prisma Client (creates type-safe database client)
+npx prisma generate
+
+# Run database migrations (creates all tables)
+npx prisma migrate dev
+
+# Seed database with initial data (optional but recommended)
+npm run db:seed
+```
+
+**Troubleshooting**:
+- If migrations fail, check `DATABASE_URL` connection string
+- For "SSL required" errors, add `?sslmode=require` to DATABASE_URL
+- Use `npx prisma migrate reset` to reset database (WARNING: deletes all data)
+
+### Step 4: Build the Application
+
+```bash
+# Build TypeScript to JavaScript
+npm run build
+
+# Verify build output
+ls dist/main.js  # Linux/Mac
+dir dist\main.js  # Windows
+```
+
+**Expected output**: 
+- `dist/` folder created
+- `dist/main.js` exists (entry point)
+- Build completes without TypeScript errors
+
+**If build fails**:
+```bash
+# Check for TypeScript errors
+npm run type-check
+
+# Fix linting issues
+npm run lint -- --fix
+
+# Clean build (if needed)
+rm -rf dist node_modules package-lock.json  # Linux/Mac
+rmdir /s /q dist node_modules & del package-lock.json  # Windows
+npm install --legacy-peer-deps
+npm run build
+```
+
+### Step 5: Run the Backend
+
+#### **Development Mode** (Recommended for local development)
+
+```bash
+# Start with hot-reload (auto-restart on code changes)
+npm run start:dev
+```
+
+**What happens**:
+- ✅ Server starts on `http://localhost:3000`
+- ✅ Swagger API docs available at `http://localhost:3000/api/docs`
+- ✅ Health check at `http://localhost:3000/api/v1/health`
+- ✅ Prometheus metrics at `http://localhost:3000/metrics`
+- ✅ File watching enabled (changes auto-reload)
+
+#### **Production Mode** (For deployment or testing production build)
+
+```bash
+# Build first (if not already built)
+npm run build
+
+# Start production server
+npm run start:prod
+```
+
+**Production features**:
+- ✅ Optimized performance
+- ✅ JSON logging (structured logs)
+- ✅ No file watching (faster startup)
+- ✅ Process management ready (PM2, Docker, etc.)
+
+#### **Debug Mode** (For troubleshooting)
+
+```bash
+# Start with Node.js debugger attached
+npm run start:debug
+```
+
+**Debugger access**:
+- Debugger listening on `ws://127.0.0.1:9229`
+- Use Chrome DevTools: `chrome://inspect`
+- VSCode: Use "Attach to Node Process" debug configuration
+
+### Step 6: Verify Backend is Running
+
+Open a new terminal and test the endpoints:
+
+```bash
+# Test health endpoint
+curl http://localhost:3000/api/v1/health
+
+# Expected response:
+{
+  "status": "ok",
+  "info": {
+    "database": { "status": "up" },
+    "redis": { "status": "up" },
+    "memory_heap": { "status": "up" }
+  }
+}
+
+# Test Swagger documentation
+# Open in browser: http://localhost:3000/api/docs
+
+# Test Prometheus metrics
+curl http://localhost:3000/metrics
+```
+
+### Step 7: Start Monitoring Stack (Optional)
+
+```bash
+# Start Prometheus, Grafana, Jaeger with Docker
+docker compose -f docker-compose.dev.yml up -d
+
+# Access monitoring dashboards:
+# - Grafana: http://localhost:4000 (admin/admin)
+# - Prometheus: http://localhost:9090
+# - Jaeger: http://localhost:16686
+```
+
+### Complete Startup Command Reference
+
+| Command | Purpose | Use When |
+|---------|---------|----------|
+| `npm run start:dev` | Hot-reload development server | Active development, coding |
+| `npm run start:prod` | Production optimized server | Testing production build |
+| `npm run start:debug` | Development server with debugger | Debugging issues |
+| `npm run build` | Compile TypeScript to JavaScript | Before production deployment |
+| `npm test` | Run unit tests | Before committing code |
+| `npm run test:e2e` | Run end-to-end tests | Before releasing features |
+| `npx prisma studio` | Open database GUI | Inspecting/editing data |
+| `npm run lint` | Check code quality | Before committing code |
+
+### Quick Validation Checklist
+
+After starting the backend, verify these endpoints work:
+
+```bash
+# 1. Health check (should return "ok")
+curl http://localhost:3000/api/v1/health
+
+# 2. API documentation (should show Swagger UI)
+open http://localhost:3000/api/docs  # Mac
+start http://localhost:3000/api/docs  # Windows
+
+# 3. Metrics endpoint (should return Prometheus metrics)
+curl http://localhost:3000/metrics | head -20
+
+# 4. Database connection (should show query stats)
+curl http://localhost:3000/api/v1/health/ready
+```
+
+### Common Startup Issues & Solutions
+
+#### Issue: "Cannot find module" errors
+```bash
+# Solution: Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+npx prisma generate
+```
+
+#### Issue: "Port 3000 already in use"
+```bash
+# Solution: Kill process or change port
+
+# Find process using port 3000 (Windows)
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# Find process using port 3000 (Linux/Mac)
+lsof -ti:3000 | xargs kill -9
+
+# Or change PORT in .env file
+PORT=3001
+```
+
+#### Issue: "Database connection failed"
+```bash
+# Solution: Verify DATABASE_URL
+echo $DATABASE_URL  # Linux/Mac
+echo %DATABASE_URL%  # Windows
+
+# Test connection manually
+npx prisma db push
+```
+
+#### Issue: "Redis connection refused"
+```bash
+# Solution: Start Redis or use Upstash cloud
+docker run -d -p 6379:6379 redis:7-alpine
+
+# Or comment out Redis-dependent features temporarily
+# Backend will run with degraded functionality (no caching)
+```
+
+### Next Steps After Successful Startup
+
+1. **Import Postman Collections**: Load API collections from `postman/` folder
+2. **Run Tests**: Execute `npm test` to verify everything works
+3. **Check Logs**: Review `logs/` folder for any warnings
+4. **Configure IDE**: Set up debugging, linting, formatting in your editor
+5. **Read Documentation**: Review `docs/` folder for detailed guides
 
 ---
 
