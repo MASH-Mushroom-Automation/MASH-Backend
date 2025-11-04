@@ -160,9 +160,9 @@ export class GatewayService {
         // Handle multiple values for same key
         if (params[decodedKey]) {
           if (Array.isArray(params[decodedKey])) {
-            params[decodedKey].push(decodedValue);
+            (params[decodedKey] as string[]).push(decodedValue);
           } else {
-            params[decodedKey] = [params[decodedKey], decodedValue];
+            params[decodedKey] = [params[decodedKey] as string, decodedValue];
           }
         } else {
           params[decodedKey] = decodedValue;
