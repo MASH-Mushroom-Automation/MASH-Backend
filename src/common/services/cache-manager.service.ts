@@ -445,8 +445,18 @@ export class CacheManagerService implements OnModuleInit {
     const alerts: string[] = [];
     let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
 
-    // Check Redis connection
-    const redisConnected = this.cacheService['redis']?.status === 'ready';
+    // Check Redis connection using CacheService's test operation
+    let redisConnected = false;
+    try {
+      // Try a simple cache operation to test connectivity
+      await this.cacheService.set('health:check', { timestamp: Date.now() }, 10);
+      const result = await this.cacheService.get<any>('health:check');
+      redisConnected = result !== null;
+    } catch (error) {
+      this.logger.debug('Redis health check failed', error);
+      redisConnected = false;
+    }
+
     if (!redisConnected) {
       alerts.push('Redis connection is not available');
       status = 'unhealthy';
