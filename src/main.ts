@@ -180,18 +180,36 @@ async function bootstrap() {
 
   logger.log('🔧 Stage 8: Enabling graceful shutdown...');
   // Graceful shutdown
-  app.enableShutdownHooks();
-  logger.log('✅ Stage 8 complete: Shutdown hooks enabled');
+  try {
+    app.enableShutdownHooks();
+    logger.log('✅ Stage 8 complete: Shutdown hooks enabled');
+  } catch (error) {
+    logger.error('❌ Stage 8 failed:', error);
+    throw error;
+  }
 
   logger.log(`🔧 Stage 9: Binding to port ${port} on 0.0.0.0...`);
+  logger.log(`📊 Memory before listen: ${JSON.stringify(process.memoryUsage())}`);
+  
   // Bind to 0.0.0.0 to accept connections from any network interface
   // This is required for cloud platforms like Render, Railway, etc.
-  await app.listen(port, '0.0.0.0');
-  logger.log(`✅ Stage 9 complete: Server listening on port ${port}`);
+  try {
+    const startTime = Date.now();
+    await app.listen(port, '0.0.0.0');
+    const listenTime = Date.now() - startTime;
+    logger.log(`✅ Stage 9 complete: Server listening on port ${port} (took ${listenTime}ms)`);
+  } catch (error) {
+    logger.error('❌ Stage 9 failed - Could not bind to port:', error);
+    throw error;
+  }
 
-  logger.log(`Application is running on: http://localhost:${port}`);
-  logger.log(`Environment: ${nodeEnv}`);
-  logger.log(`API Prefix: api/v1`);
+  logger.log(`🎉 Application successfully started!`);
+  logger.log(`📍 Running on: http://localhost:${port}`);
+  logger.log(`🌍 Environment: ${nodeEnv}`);
+  logger.log(`🔗 API Prefix: api/v1`);
+  logger.log(`📖 API Docs: http://localhost:${port}/api/docs`);
+  logger.log(`💚 Health Check: http://localhost:${port}/api/v1/health`);
+  logger.log(`📊 Final Memory: ${JSON.stringify(process.memoryUsage())}`);
 }
 
 // 🔧 DEBUGGING: Add global error handlers to catch unhandled errors
@@ -220,14 +238,32 @@ process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) =>
   process.exit(1);
 });
 
-bootstrap().catch(error => {
-  const logger = new Logger('Bootstrap');
-  logger.error('❌ FATAL ERROR DURING BOOTSTRAP:');
-  logger.error(`Error type: ${typeof error}`);
-  logger.error('Error:', error);
-  if (error instanceof Error) {
-    logger.error(`Stack: ${error.stack}`);
-    logger.error(`Message: ${error.message}`);
-  }
+// 🔧 DEBUGGING: Add startup timeout to prevent infinite hanging
+const STARTUP_TIMEOUT = 120000; // 2 minutes
+const startupTimer = setTimeout(() => {
+  const logger = new Logger('StartupTimeout');
+  logger.error('❌ APPLICATION STARTUP TIMEOUT');
+  logger.error(`Application failed to start within ${STARTUP_TIMEOUT / 1000} seconds`);
+  logger.error('This usually indicates a hanging async operation during initialization');
+  logger.error(`Current memory: ${JSON.stringify(process.memoryUsage())}`);
   process.exit(1);
-});
+}, STARTUP_TIMEOUT);
+
+bootstrap()
+  .then(() => {
+    clearTimeout(startupTimer);
+    const logger = new Logger('Bootstrap');
+    logger.log('✅ Bootstrap completed successfully');
+  })
+  .catch(error => {
+    clearTimeout(startupTimer);
+    const logger = new Logger('Bootstrap');
+    logger.error('❌ FATAL ERROR DURING BOOTSTRAP:');
+    logger.error(`Error type: ${typeof error}`);
+    logger.error('Error:', error);
+    if (error instanceof Error) {
+      logger.error(`Stack: ${error.stack}`);
+      logger.error(`Message: ${error.message}`);
+    }
+    process.exit(1);
+  });
