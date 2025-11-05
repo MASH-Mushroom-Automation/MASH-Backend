@@ -8,8 +8,8 @@ import {
 
 @Injectable()
 export class MemoryHealthIndicator extends HealthIndicator {
-  private readonly heapUsedThreshold = 0.9; // 90% heap usage threshold
-  private readonly rssThreshold = 0.9; // 90% RSS threshold
+  private readonly heapUsedThreshold = 0.98; // 98% heap usage threshold (increased for Railway)
+  private readonly rssThreshold = 0.98; // 98% RSS threshold (increased for Railway)
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const memoryUsage = process.memoryUsage();
