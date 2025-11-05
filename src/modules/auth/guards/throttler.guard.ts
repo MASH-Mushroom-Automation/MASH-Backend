@@ -77,34 +77,6 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   /**
-   * CRITICAL FIX FOR RAILWAY DEPLOYMENT
-   * Override handleRequest to skip rate limiting on health endpoints
-   * Health checks must respond in <1s for Railway deployment to succeed
-   * 
-   * Problem: Rate limiting was executing 2-3 database queries (1-2s each) on /api/v1/health
-   * Solution: Skip ALL rate limiting checks for health endpoints
-   * Impact: Reduces health check time from 7.4s → <1s (87% improvement)
-   */
-  protected async handleRequest(requestProps: Record<string, any>): Promise<boolean> {
-    const { context } = requestProps;
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
-
-    // CRITICAL: Skip rate limiting for health check endpoints
-    // Health checks must be fast (<1s) for Railway deployment to succeed
-    // Prevents slow database queries (rate_limit_logs, rate_limit_overrides) on health endpoints
-    const url = request.url || '';
-    if (url.startsWith('/api/v1/health') || url.startsWith('/health')) {
-      this.logger.debug(`Skipping rate limiting for health endpoint: ${url}`);
-      response.setHeader('X-RateLimit-Skipped', 'health-endpoint');
-      return true; // Bypass all rate limiting for health checks
-    }
-
-    // Continue with normal rate limiting for all other endpoints
-    return super.handleRequest(requestProps);
-  }
-
-  /**
    * Override canActivate to add custom logging, rate limit headers, and violation tracking
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
