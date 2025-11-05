@@ -8,8 +8,8 @@ import {
 
 @Injectable()
 export class MemoryHealthIndicator extends HealthIndicator {
-  private readonly heapUsedThreshold = 0.98; // 98% heap usage threshold (increased for Railway)
-  private readonly rssThreshold = 0.98; // 98% RSS threshold (increased for Railway)
+  private readonly heapUsedThreshold = 0.95; // 95% heap usage threshold (Railway optimized)
+  private readonly rssThreshold = 0.95; // 95% RSS threshold
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const memoryUsage = process.memoryUsage();
@@ -27,6 +27,11 @@ export class MemoryHealthIndicator extends HealthIndicator {
     });
 
     if (!isHealthy) {
+      // Trigger garbage collection if available
+      if (global.gc) {
+        global.gc();
+      }
+      
       throw new HealthCheckError(
         'Memory usage exceeded threshold',
         result,
