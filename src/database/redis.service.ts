@@ -29,6 +29,7 @@ export class RedisService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private readonly client: Redis | null;
   private isConnected = false;
+  private reconnectHandle?: NodeJS.Timeout; // Handle for background reconnect interval
 
   constructor(private configService: ConfigService) {
     const redisUrl = this.configService.get<string>('REDIS_URL');
@@ -96,26 +97,25 @@ export class RedisService implements OnModuleDestroy {
 
       // Background reconnect loop: try reconnecting every 30s if disconnected
       const reconnectIntervalMs = 30000;
-      const reconnectHandle = setInterval(async () => {
-        try {
-          if (this.client && !this.isConnected) {
-            this.logger.debug('Redis: background reconnect attempt...');
-            try {
-              await this.client.connect();
-              this.logger.log('✅ Redis reconnected by background loop');
-              this.isConnected = true;
-            } catch (err) {
-              // Suppress noisy errors; handler will log details
-              this.logger.debug('Redis background reconnect failed');
+      this.reconnectHandle = setInterval(() => {
+        void (async () => {
+          try {
+            if (this.client && !this.isConnected) {
+              this.logger.debug('Redis: background reconnect attempt...');
+              try {
+                await this.client.connect();
+                this.logger.log('✅ Redis reconnected by background loop');
+                this.isConnected = true;
+              } catch {
+                // Suppress noisy errors; handler will log details
+                this.logger.debug('Redis background reconnect failed');
+              }
             }
+          } catch {
+            this.logger.debug('Redis background reconnect unexpected error');
           }
-        } catch (err) {
-          this.logger.debug('Redis background reconnect unexpected error');
-        }
+        })();
       }, reconnectIntervalMs);
-
-      // Clear interval on process exit
-      process.on('exit', () => clearInterval(reconnectHandle));
     } catch (error) {
       this.logger.error('❌ Failed to initialize Redis client:', error);
       this.client = null;
@@ -403,9 +403,16 @@ export class RedisService implements OnModuleDestroy {
   }
 
   /**
-   * Graceful shutdown - close Redis connection
+   * Graceful shutdown - close Redis connection and clear reconnect interval
    */
   async onModuleDestroy() {
+    // Clear background reconnect interval to prevent memory leak
+    if (this.reconnectHandle) {
+      clearInterval(this.reconnectHandle);
+      this.reconnectHandle = undefined;
+    }
+
+    // Close Redis client connection
     if (this.client) {
       this.logger.log('Closing Redis connection...');
       await this.client.quit();
