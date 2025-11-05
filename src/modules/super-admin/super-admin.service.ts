@@ -102,12 +102,12 @@ export class SuperAdminService {
     ] = await Promise.all([
       this.prisma.device.count({ where: { isActive: true } }),
       this.prisma.device.count({ where: { isActive: false } }),
-      this.prisma.order.count({ where: { status: OrderStatus.CONFIRMED } }), // ← Fixed
-      this.prisma.order.count({ where: { status: OrderStatus.PENDING } }), // ← Fixed
+      this.prisma.order.count({ where: { status: OrderStatus.CONFIRMED } }),
+      this.prisma.order.count({ where: { status: OrderStatus.PENDING } }),
       this.prisma.product.count({ where: { isActive: true } }),
       this.prisma.product.count({ where: { isActive: false } }),
-      this.prisma.user.count({ where: { role: 'SELLER', isActive: true } }),
-      this.prisma.user.count({ where: { role: 'SELLER', isActive: false } }),
+      this.prisma.user.count({ where: { role: 'GROWER', isActive: true } }),
+      this.prisma.user.count({ where: { role: 'GROWER', isActive: false } }),
     ]);
 
     return {
