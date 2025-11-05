@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { RedisService } from '../../database/redis.service';
+import { OrderStatus } from '@prisma/client'; // ← ADD THIS
 
 @Injectable()
 export class SuperAdminService {
@@ -20,7 +21,7 @@ export class SuperAdminService {
     return this.prisma.order
       .findMany({
         where: {
-          status: 'COMPLETED' as any,
+          status: OrderStatus.CONFIRMED, // ← Fixed
           createdAt: { gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) },
         },
         select: { createdAt: true, total: true },
@@ -35,7 +36,7 @@ export class SuperAdminService {
         }
         for (const o of orders) {
           const key = new Date(o.createdAt).toISOString().slice(0, 10);
-          buckets[key] = (buckets[key] || 0) + Number((o as any).total || 0);
+          buckets[key] = (buckets[key] || 0) + Number(o.total || 0);
         }
         const labels = Object.keys(buckets).sort();
         const values = labels.map((k) => buckets[k]);
@@ -101,8 +102,8 @@ export class SuperAdminService {
     ] = await Promise.all([
       this.prisma.device.count({ where: { isActive: true } }),
       this.prisma.device.count({ where: { isActive: false } }),
-      this.prisma.order.count({ where: { status: 'COMPLETED' as any } }),
-      this.prisma.order.count({ where: { status: 'PENDING' as any } }),
+      this.prisma.order.count({ where: { status: OrderStatus.CONFIRMED } }), // ← Fixed
+      this.prisma.order.count({ where: { status: OrderStatus.PENDING } }), // ← Fixed
       this.prisma.product.count({ where: { isActive: true } }),
       this.prisma.product.count({ where: { isActive: false } }),
       this.prisma.user.count({ where: { role: 'SELLER', isActive: true } }),
