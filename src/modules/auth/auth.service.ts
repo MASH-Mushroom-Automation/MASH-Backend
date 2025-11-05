@@ -456,9 +456,15 @@ export class AuthService {
    * Register a new user
    */
   async register(registerDto: RegisterDto) {
+    this.logger.log(`📝 New registration request for email: ${registerDto.email}`);
+    
     try {
       const hashedPassword = await hashPassword(registerDto.password);
+      
+      this.logger.log(`🔐 Password hashed successfully for ${registerDto.email}`);
+      
       // Register user in Clerk
+      this.logger.log(`🔄 Registering user with Clerk...`);
       const clerkUser = await this.clerkService.registerUser({
         email: registerDto.email,
         password: registerDto.password,
@@ -466,13 +472,18 @@ export class AuthService {
         lastName: registerDto.lastName,
         username: registerDto.username,
       });
+      
+      this.logger.log(`✅ Clerk user created: ${clerkUser.id}`);
 
       // Generate DiceBear avatar URL based on username or email
       // Uses bottts-neutral style for consistent, professional avatars
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
       const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
+      this.logger.log(`🎨 Generated avatar URL: ${diceBearAvatarUrl}`);
+
       // Create user in local database with generated avatar
+      this.logger.log(`💾 Creating user in local database...`);
       await this.prisma.user.create({
         data: {
           clerkId: clerkUser.id,
@@ -486,25 +497,31 @@ export class AuthService {
         },
       });
 
+      this.logger.log(`✅ User created in database for ${registerDto.email}`);
+
       this.prometheusService.recordUserRegistration();
 
-      this.logger.log(
-        `✅ Generated DiceBear avatar for ${registerDto.email}: ${diceBearAvatarUrl}`,
-      );
-
       // Send Clerk verification email (primary verification)
+      this.logger.log(`📧 Sending Clerk verification email...`);
       await this.clerkService.sendEmailVerification(registerDto.email);
+      this.logger.log(`✅ Clerk verification email sent`);
 
       // Send MASH-branded verification email (non-blocking)
       // This provides a better user experience with our custom branding
       try {
-        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(registerDto.email)}`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+        const verificationLink = `${frontendUrl}/verify-email?email=${encodeURIComponent(registerDto.email)}`;
+        
+        this.logger.log(`📤 Sending MASH-branded verification email to: ${registerDto.email}`);
+        this.logger.log(`🔗 Verification link: ${verificationLink}`);
+        
         await this.emailService.sendVerificationEmail(
           registerDto.email,
           registerDto.firstName,
           verificationLink,
           '24 hours',
         );
+        
         this.logger.log(`✅ MASH verification email sent successfully to: ${registerDto.email}`);
       } catch (emailError: unknown) {
         // Don't fail registration if custom email fails
@@ -513,6 +530,9 @@ export class AuthService {
         );
         const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
         this.logger.error(`Error details: ${errorMessage}`);
+        if (emailError instanceof Error && emailError.stack) {
+          this.logger.error(`Error stack: ${emailError.stack}`);
+        }
         if (
           errorMessage.includes('Missing credentials') ||
           errorMessage.includes('Invalid login')
@@ -523,6 +543,8 @@ export class AuthService {
           );
         }
       }
+
+      this.logger.log(`🎉 Registration completed successfully for: ${registerDto.email}`);
 
       return {
         success: true,
@@ -535,7 +557,10 @@ export class AuthService {
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Registration failed for ${registerDto.email}: ${errorMessage}`);
+      this.logger.error(`❌ Registration failed for ${registerDto.email}: ${errorMessage}`);
+      if (error instanceof Error && error.stack) {
+        this.logger.error(`Error stack: ${error.stack}`);
+      }
       if (errorMessage.includes('already exists')) {
         throw new ConflictException('User with this email already exists');
       }
@@ -562,24 +587,31 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
+    this.logger.log(`🔐 Password reset requested for email: ${email}`);
+    
     try {
       // First, check if user exists in database
+      this.logger.log(`🔍 Looking up user in database...`);
       const user = await this.prisma.user.findUnique({
         where: { email },
       });
 
       // Always return success for security (don't reveal if email exists)
       if (!user) {
-        this.logger.log(`Password reset requested for non-existent email: ${email}`);
+        this.logger.warn(`⚠️ Password reset requested for non-existent email: ${email}`);
         return {
           success: true,
           message: 'If the email exists, a password reset link has been sent',
         };
       }
 
+      this.logger.log(`✅ User found: ${user.id} (${user.firstName} ${user.lastName})`);
+
       // Generate reset token (valid for 1 hour)
       const resetToken = crypto.randomBytes(32).toString('hex');
       const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      this.logger.log(`🎫 Generated reset token: ${resetToken.substring(0, 10)}...`);
 
       // Store reset token in database
       await this.prisma.user.update({
@@ -590,11 +622,16 @@ export class AuthService {
         },
       });
 
+      this.logger.log(`💾 Reset token stored in database`);
+
       // Get backend URL from config
       const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
       
       // Generate reset link
       const resetLink = `${backendUrl}/reset-password?token=${resetToken}`;
+
+      this.logger.log(`🔗 Reset link: ${resetLink}`);
+      this.logger.log(`📧 Attempting to send password reset email to: ${user.email}`);
 
       // Send password reset email
       await this.emailService.sendForgotPasswordEmail(
@@ -604,14 +641,16 @@ export class AuthService {
         '1 hour',
       );
 
-      this.logger.log(`✅ Password reset email sent to: ${email}`);
+      this.logger.log(`✅ Password reset email sent successfully to: ${email}`);
       
       return {
         success: true,
         message: 'If the email exists, a password reset link has been sent',
       };
     } catch (error) {
-      this.logger.error(`Failed to send password reset email for ${email}:`, error);
+      this.logger.error(`❌ Failed to send password reset email for ${email}:`, error);
+      this.logger.error(`Error details: ${error.message}`);
+      this.logger.error(`Error stack: ${error.stack}`);
       // Still return success for security (don't reveal errors)
       return {
         success: true,

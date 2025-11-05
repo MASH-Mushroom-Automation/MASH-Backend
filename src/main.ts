@@ -88,6 +88,14 @@ async function bootstrap() {
     prefix: '/public/',
   });
 
+  // Serve email assets (logos, banners) from public/email-assets
+  // This allows emails to reference assets via: https://mash-backend-api-production.up.railway.app/email-assets/logo-circle.svg
+  const emailAssetsPath = join(__dirname, '..', 'public', 'email-assets');
+  app.useStaticAssets(emailAssetsPath, {
+    prefix: '/email-assets/',
+  });
+  logger.log(`📧 Email assets will be served from: ${emailAssetsPath}`);
+
   logger.log('🔧 Stage 3: Applying security middleware...');
   // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
