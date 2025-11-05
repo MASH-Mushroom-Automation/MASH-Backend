@@ -30,17 +30,17 @@ export class HealthController {
 
   @Get()
   @Public() // Allow public access (no auth required)
-  @HealthCheck()
-  @ApiOperation({ summary: 'Comprehensive health check of all services' })
-  @ApiResponse({ status: 200, description: 'All services are healthy' })
-  @ApiResponse({ status: 503, description: 'One or more services are unhealthy' })
+  @ApiOperation({ summary: 'Fast health check for Railway deployment' })
+  @ApiResponse({ status: 200, description: 'Application is healthy' })
   check() {
-    return this.health.check([
-      () => this.prisma.isHealthy('database'),
-      () => this.redis.isHealthy('cache'),
-      () => this.memory.isHealthy('memory'),
-      () => this.disk.isHealthy('disk'),
-    ]);
+    // Ultra-fast response for Railway health check
+    // Railway expects instant response, detailed checks in /ready and /detailed endpoints
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+    };
   }
 
   @Get('ready')
@@ -59,15 +59,16 @@ export class HealthController {
 
   @Get('live')
   @Public() // Allow public access (no auth required)
-  @HealthCheck()
-  @ApiOperation({ summary: 'Liveness probe - Check if app is alive' })
+  @ApiOperation({ summary: 'Ultra-fast liveness probe for Railway health check' })
   @ApiResponse({ status: 200, description: 'Application is alive' })
-  @ApiResponse({ status: 503, description: 'Application is not responding' })
   liveness() {
-    // Simple check to see if the app is alive
-    return this.health.check([
-      () => this.memory.isHealthy('memory'),
-    ]);
+    // Ultra-fast response - no health checks, just return OK
+    // This is specifically for Railway's health check which needs instant response
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    };
   }
 
   @Get('detailed')
