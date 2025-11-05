@@ -62,6 +62,7 @@ export function getCorsConfig(
         'http://localhost:8080', // Common dev server port
         'http://127.0.0.1:3000', // IPv4 localhost
         'http://127.0.0.1:5173', // IPv4 localhost (Vite)
+        '*',
       ];
     }
 
