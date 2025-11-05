@@ -5,7 +5,7 @@ import { PrismaService } from '../../../database/prisma.service';
 @Injectable()
 export class PrismaHealthIndicator extends HealthIndicator {
   private readonly logger = new Logger(PrismaHealthIndicator.name);
-  private readonly healthCheckTimeout = 500; // 500ms timeout for health checks
+  private readonly healthCheckTimeout = 2000; // 2000ms timeout for health checks (Railway optimized - increased from 500ms)
 
   constructor(private readonly prismaService: PrismaService) {
     super();

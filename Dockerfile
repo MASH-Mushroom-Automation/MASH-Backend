@@ -115,8 +115,9 @@ EXPOSE 3000
 
 # Health check - Use built-in Node health-check script
 # The script is compiled to dist/health/health-check.js during build
-# Increased start-period to 60s to allow for full initialization
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Increased start-period to 120s to allow for full initialization (Railway optimized)
+# Increased timeout to 30s to handle slow database connections
+HEALTHCHECK --interval=30s --timeout=30s --start-period=120s --retries=3 \
   CMD node dist/health/health-check.js || exit 1
 
 # Use dumb-init to handle signals properly

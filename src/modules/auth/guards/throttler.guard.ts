@@ -148,6 +148,16 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
 
+    // CRITICAL: Skip rate limiting for health check endpoints
+    // Health checks must be fast (<1s) for Railway deployment to succeed
+    // Prevents slow database queries (rate_limit_logs, rate_limit_overrides) on health endpoints
+    const url = request.url || '';
+    if (url.startsWith('/api/v1/health') || url.startsWith('/health')) {
+      this.logger.debug(`Skipping rate limiting for health endpoint: ${url}`);
+      response.setHeader('X-RateLimit-Skipped', 'health-endpoint');
+      return true; // Bypass all rate limiting for health checks
+    }
+
     // Get user role and ID
     const userRole = request.user?.role as UserRole | undefined;
     const userId = request.user?.id || request.user?.userId;
