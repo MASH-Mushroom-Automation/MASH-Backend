@@ -84,19 +84,9 @@ export function getCorsConfig(
     }
 
     // Default fallback for production: Allow all origins (permissive for development)
-    // WARNING: This allows any origin to access the API. 
-    // For production, set CORS_ORIGINS environment variable with specific domains.
-    return (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-      
-      // Allow all origins (permissive mode)
-      // This is useful during development when testing with multiple devices/ports
-      callback(null, true);
-    };
+    // WARNING: This allows ANY origin to access the API.
+    // For production security, set CORS_ORIGINS environment variable with specific domains.
+    return true; // Allow all origins
   };
 
   return {
