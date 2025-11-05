@@ -122,9 +122,9 @@ async function bootstrap() {
 
   // Note: Global validation pipes are registered in CommonModule
 
-  // API prefix - exclude auth HTML pages from the prefix
+  // API prefix - exclude auth HTML pages from the prefix and add api/v1 root
   app.setGlobalPrefix('api/v1', {
-    exclude: ['/', '/register', '/verify', '/forgot-password', '/reset-password', '/dashboard'],
+    exclude: ['/', 'api/v1', '/register', '/verify', '/forgot-password', '/reset-password', '/dashboard'],
   });
 
   // Swagger/OpenAPI Documentation - Clean and Simple Configuration
@@ -157,9 +157,13 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    // Servers
+    // Servers - Use environment-based backend URL
+    .addServer(
+      configService.get<string>('BACKEND_URL') || `http://localhost:${port}`,
+      nodeEnv === 'production' ? 'Production' : 'Development',
+    )
+    .addServer('https://mash-backend-api-production.up.railway.app', 'Production Railway')
     .addServer(`http://localhost:${port}`, 'Local Development')
-    .addServer('https://mash-backend-api.up.railway.app', 'Production')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
@@ -203,12 +207,17 @@ async function bootstrap() {
     throw error;
   }
 
+  // Get backend URL from environment or use default
+  const backendUrl = configService.get<string>('BACKEND_URL') || `http://localhost:${port}`;
+
   logger.log(`🎉 Application successfully started!`);
-  logger.log(`📍 Running on: http://localhost:${port}`);
+  logger.log(`📍 Running on: ${backendUrl}`);
   logger.log(`🌍 Environment: ${nodeEnv}`);
   logger.log(`🔗 API Prefix: api/v1`);
-  logger.log(`📖 API Docs: http://localhost:${port}/api/docs`);
-  logger.log(`💚 Health Check: http://localhost:${port}/api/v1/health`);
+  logger.log(`📖 API Docs: ${backendUrl}/api/docs`);
+  logger.log(`💚 Health Check: ${backendUrl}/api/v1/health`);
+  logger.log(`🔴 Live Check: ${backendUrl}/api/v1/health/live`);
+  logger.log(`🟢 Ready Check: ${backendUrl}/api/v1/health/ready`);
   logger.log(`📊 Final Memory: ${JSON.stringify(process.memoryUsage())}`);
 }
 
