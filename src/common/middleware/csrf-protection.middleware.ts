@@ -55,7 +55,7 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
   private readonly safeMethods = ['GET', 'HEAD', 'OPTIONS'];
 
   /**
-   * Paths excluded from CSRF protection (public endpoints)
+   * Paths excluded from CSRF protection (public endpoints or JWT-protected)
    */
   private readonly excludedPaths = [
     '/api/v1/health',
@@ -63,6 +63,7 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     '/api/v1/auth/login',
     '/api/v1/auth/register',
     '/api/v1/auth/forgot-password',
+    '/api/v1/auth/logout', // Logout is protected by JWT, CSRF not needed
     '/api/v1/webhook', // Webhook endpoints (use signature verification instead)
   ];
 

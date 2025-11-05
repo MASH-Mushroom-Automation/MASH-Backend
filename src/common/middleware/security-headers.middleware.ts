@@ -75,8 +75,17 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
 
     // Clear-Site-Data for logout endpoints
     // Clears browser storage when user logs out
+    // Only set for same-origin requests to avoid CORS credential issues
     if (req.path.includes('/logout') || req.path.includes('/signout')) {
-      res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
+      const origin = req.headers.origin;
+      const host = req.headers.host;
+      
+      // Only set Clear-Site-Data for same-origin requests
+      // For cross-origin requests (e.g., localhost:8080 -> Railway), skip this header
+      // as it conflicts with CORS credentials policy
+      if (!origin || origin.includes(host)) {
+        res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
+      }
     }
 
     // Server header obfuscation

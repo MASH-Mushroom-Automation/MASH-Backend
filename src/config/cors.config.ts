@@ -83,12 +83,20 @@ export function getCorsConfig(
       return origins;
     }
 
-    // Default fallback for production: Allow Railway backend and localhost
-    // This allows Swagger UI on Railway to work without requiring CORS_ORIGINS env var
-    return [
-      'https://mash-backend-api-production.up.railway.app', // Production backend (Railway)
-      'http://localhost:3000', // Allow localhost for testing/debugging
-    ];
+    // Default fallback for production: Allow all origins (permissive for development)
+    // WARNING: This allows any origin to access the API. 
+    // For production, set CORS_ORIGINS environment variable with specific domains.
+    return (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // Allow all origins (permissive mode)
+      // This is useful during development when testing with multiple devices/ports
+      callback(null, true);
+    };
   };
 
   return {
