@@ -127,6 +127,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     NotificationsModule,
 
     AdminModule,
+    // Super admin module (high-privilege dashboard)
+    // Registering here so DI can provide PrismaService/RedisService to the module
+    require('./modules/super-admin/super-admin.module').SuperAdminModule,
 
     // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
     // AlertsModule,

@@ -26,6 +26,9 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { PrismaService } from './database/prisma.service';
+import { RedisService } from './database/redis.service';
+import { CacheManagerService } from './common/services/cache-manager.service';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -391,6 +394,7 @@ See [API Changelog](/docs/API_CHANGELOG.md) for version history and breaking cha
     .addTag('Analytics', 'Business intelligence and reporting endpoints')
     .addTag('notifications', 'Notification management endpoints')
     .addTag('Admin', 'Administrative operations (Super Admin only)')
+    .addTag('Super Admin', 'Super-admin (high-privilege dashboard endpoints)')
     .addTag('Gateway', 'API Gateway configuration and management')
     .addTag('Rate Limiting', 'Rate limit configuration and monitoring')
     .addTag('metrics', 'Prometheus metrics endpoints')
@@ -499,6 +503,47 @@ See [API Changelog](/docs/API_CHANGELOG.md) for version history and breaking cha
   // Graceful shutdown
   app.enableShutdownHooks();
   logger.log('✅ Stage 8 complete: Shutdown hooks enabled');
+
+  // Verify external services (database, redis) before binding
+  logger.log('🔧 Stage 8.5: Verifying external services (DB, Redis)');
+  try {
+    const prisma = app.get(PrismaService);
+    try {
+      // Ensure Prisma establishes a connection (will retry internally)
+      await prisma.ensureConnected();
+      logger.log('✅ Database connection verified');
+    } catch (dbErr) {
+      logger.error('❌ Database connection verification failed:', dbErr);
+      // Don't exit here - allow app to start for read-only operations, but surface clear logs
+    }
+  } catch (getErr) {
+    logger.warn('⚠️ PrismaService not available from DI container');
+  }
+
+  try {
+    const redis = app.get(RedisService);
+    if (redis && redis.isAvailable()) {
+      logger.log('✅ Redis is available');
+      // Warm caches if cache manager present
+      try {
+        const cacheManager = app.get(CacheManagerService);
+        // Warm cache asynchronously but wait a short time to report status
+        await cacheManager.warmCache({ dashboardStats: false });
+        logger.log('✅ Cache warming triggered');
+      } catch (warmErr) {
+        logger.warn(
+          '⚠️ CacheManagerService warmCache skipped/failed:',
+          warmErr,
+        );
+      }
+    } else {
+      logger.warn(
+        '⚠️ Redis not available - cache and rate-limiting may be disabled',
+      );
+    }
+  } catch (getRedisErr) {
+    logger.warn('⚠️ RedisService not available from DI container');
+  }
 
   logger.log(`🔧 Stage 9: Binding to port ${port} on 0.0.0.0...`);
   // Bind to 0.0.0.0 to accept connections from any network interface

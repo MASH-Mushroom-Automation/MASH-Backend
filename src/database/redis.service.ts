@@ -43,38 +43,41 @@ export class RedisService implements OnModuleDestroy {
     }
 
     try {
+      // Make retry/backoff more forgiving for transient network blips
       this.client = new Redis(redisUrl, {
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: 10,
         enableReadyCheck: true,
         lazyConnect: true, // Don't connect immediately
+        // Exponential backoff: increase delay with attempts, but do not stop permanently
         retryStrategy: (times: number) => {
-          if (times > 3) {
-            // Reduce retries to fail fast
-            this.logger.error(
-              '❌ Redis: Max retries reached. Continuing without Redis.',
-            );
-            this.isConnected = false;
-            return null; // Stop retrying
-          }
-          const delay = Math.min(times * 50, 1000);
+          // Cap attempts to a reasonable number but keep trying
+          const capped = Math.min(times, 30);
+          const delay = Math.min(Math.pow(2, capped) * 50, 5000);
           this.logger.warn(`Redis: Retry attempt ${times} in ${delay}ms...`);
           return delay;
         },
+        // Slightly increase connect timeout so slow networks can establish
+        connectTimeout: 10000,
       });
 
-      // Try to connect but don't block app startup
-      this.client
-        .connect()
-        .then(() => {
+      // Attempt connect asynchronously but don't block startup
+      const tryConnect = async () => {
+        if (!this.client) return;
+        try {
+          await this.client.connect();
           this.logger.log('✅ Redis connected successfully');
           this.isConnected = true;
-        })
-        .catch((error) => {
+        } catch (error) {
+          // Log and let retryStrategy handle reconnection attempts
+          this.logger.warn('⚠️ Initial Redis connect attempt failed');
           this.handleConnectionError(error);
-        });
+        }
+      };
+
+      tryConnect();
 
       this.client.on('connect', () => {
-        this.logger.log('✅ Redis connected successfully');
+        this.logger.log('✅ Redis connected (event)');
         this.isConnected = true;
       });
 
@@ -90,6 +93,29 @@ export class RedisService implements OnModuleDestroy {
       this.client.on('reconnecting', () => {
         this.logger.log('🔄 Redis reconnecting...');
       });
+
+      // Background reconnect loop: try reconnecting every 30s if disconnected
+      const reconnectIntervalMs = 30000;
+      const reconnectHandle = setInterval(async () => {
+        try {
+          if (this.client && !this.isConnected) {
+            this.logger.debug('Redis: background reconnect attempt...');
+            try {
+              await this.client.connect();
+              this.logger.log('✅ Redis reconnected by background loop');
+              this.isConnected = true;
+            } catch (err) {
+              // Suppress noisy errors; handler will log details
+              this.logger.debug('Redis background reconnect failed');
+            }
+          }
+        } catch (err) {
+          this.logger.debug('Redis background reconnect unexpected error');
+        }
+      }, reconnectIntervalMs);
+
+      // Clear interval on process exit
+      process.on('exit', () => clearInterval(reconnectHandle));
     } catch (error) {
       this.logger.error('❌ Failed to initialize Redis client:', error);
       this.client = null;
