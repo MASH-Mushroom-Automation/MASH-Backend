@@ -15,10 +15,16 @@ COPY prisma ./prisma/
 # Use `npm install` instead of `npm ci` because CI can fail when
 # package.json and package-lock.json are out of sync (common in CI builds).
 # `npm install --legacy-peer-deps` is more tolerant and works in the builder.
+# CRITICAL FIX: Set Prisma binary targets BEFORE install to avoid download during postinstall
+ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl,linux-musl-openssl-3.0.x
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Generate Prisma Client (this downloads engines if not already cached)
+# Add retry logic for Prisma engine downloads
+RUN npx prisma generate || \
+    (echo "Prisma generate failed, retrying..." && sleep 5 && npx prisma generate) || \
+    (echo "Prisma generate failed again, final retry..." && sleep 10 && npx prisma generate)
 
 # Copy source code
 COPY . .
@@ -56,6 +62,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
+
+# Set Prisma environment variables for Alpine Linux (musl)
+ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl,linux-musl-openssl-3.0.x
 
 # Install production dependencies and force Sharp to rebuild for Alpine Linux
 # Step 1: Install without scripts to avoid husky
