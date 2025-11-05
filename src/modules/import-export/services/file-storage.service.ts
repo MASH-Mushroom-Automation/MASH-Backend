@@ -26,7 +26,8 @@ export class FileStorageService {
     // For now, use local filesystem storage
     // In production, this should be replaced with S3/MinIO
     this.uploadDir = this.configService.get('UPLOAD_DIR', './uploads/import-export');
-    this.baseUrl = this.configService.get('BASE_URL', 'http://localhost:3000');
+    // Use BACKEND_URL environment variable with fallback
+    this.baseUrl = this.configService.get('BACKEND_URL') || this.configService.get('BASE_URL', 'http://localhost:3000');
 
     // Ensure upload directory exists
     this.ensureUploadDir();

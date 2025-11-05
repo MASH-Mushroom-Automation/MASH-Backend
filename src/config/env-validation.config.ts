@@ -89,9 +89,15 @@ export const envValidationSchema = Joi.object({
 
   FIREBASE_PRIVATE_KEY: Joi.string().allow('').description('Firebase private key (optional)'),
 
+  // ==================== BACKEND URL ====================
+  BACKEND_URL: Joi.string()
+    .uri()
+    .default('http://localhost:3000')
+    .description('Backend URL for API (development: http://localhost:3000, production: https://mash-backend-api-production.up.railway.app)'),
+
   // ==================== CORS ====================
   CORS_ORIGINS: Joi.string()
-    .default('https://mash-backend-api.up.railway.app,http://localhost:3000,http://localhost:5173')
+    .default('https://mash-backend-api-production.up.railway.app,http://localhost:3000,http://localhost:5173')
     .description('Comma-separated list of allowed CORS origins'),
 
   CORS_CREDENTIALS: Joi.boolean().default(true).description('Enable CORS credentials'),
