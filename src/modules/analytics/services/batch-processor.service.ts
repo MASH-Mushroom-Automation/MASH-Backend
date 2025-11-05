@@ -33,11 +33,7 @@ export class BatchProcessorService {
 
     try {
       const yesterday = subDays(new Date(), 1);
-      const report = await this.generateReport(
-        startOfDay(yesterday),
-        endOfDay(yesterday),
-        'daily',
-      );
+      const report = await this.generateReport(startOfDay(yesterday), endOfDay(yesterday), 'daily');
 
       await this.saveReport(report, 'daily', yesterday);
 
@@ -91,9 +87,7 @@ export class BatchProcessorService {
 
       await this.saveReport(report, 'monthly', lastMonth);
 
-      this.logger.log(
-        `Monthly report completed in ${Date.now() - startTime}ms`,
-      );
+      this.logger.log(`Monthly report completed in ${Date.now() - startTime}ms`);
     } catch (error) {
       this.logger.error('Monthly report failed:', error);
     }
@@ -107,36 +101,35 @@ export class BatchProcessorService {
       },
     };
 
-    const [orders, revenue, newUsers, topProducts, deviceActivity] =
-      await Promise.all([
-        this.prisma.order.count({ where }),
-        this.prisma.order.aggregate({
-          where,
-          _sum: { total: true },
-        }),
-        this.prisma.user.count({ where }),
-        this.prisma.orderItem.groupBy({
-          by: ['productId'],
-          where: {
-            order: where,
+    const [orders, revenue, newUsers, topProducts, deviceActivity] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.aggregate({
+        where,
+        _sum: { total: true },
+      }),
+      this.prisma.user.count({ where }),
+      this.prisma.orderItem.groupBy({
+        by: ['productId'],
+        where: {
+          order: where,
+        },
+        _sum: { quantity: true },
+        _count: true,
+        orderBy: {
+          _sum: { quantity: 'desc' },
+        },
+        take: 10,
+      }),
+      // SensorData uses different where clause structure
+      this.prisma.sensorData.count({
+        where: {
+          timestamp: {
+            gte: startDate,
+            lte: endDate,
           },
-          _sum: { quantity: true },
-          _count: true,
-          orderBy: {
-            _sum: { quantity: 'desc' },
-          },
-          take: 10,
-        }),
-        // SensorData uses different where clause structure
-        this.prisma.sensorData.count({
-          where: {
-            timestamp: {
-              gte: startDate,
-              lte: endDate,
-            },
-          },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
     return {
       type,

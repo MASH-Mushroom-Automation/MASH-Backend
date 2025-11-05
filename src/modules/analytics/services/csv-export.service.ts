@@ -39,7 +39,7 @@ export class CsvExportService {
       // Create CSV writer
       const csvWriter = createObjectCsvWriter({
         path: filePath,
-        header: headers.map((col) => ({
+        header: headers.map(col => ({
           id: col,
           title: this.formatColumnName(col),
         })),
@@ -72,7 +72,7 @@ export class CsvExportService {
   private formatColumnName(columnName: string): string {
     return columnName
       .replace(/([A-Z])/g, ' $1') // Add space before capital letters
-      .replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
+      .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
       .trim();
   }
 

@@ -21,9 +21,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 export class CustomLogger implements LoggerService {
   private context?: string;
 
-  constructor(
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-  ) {}
+  constructor(@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger) {}
 
   /**
    * Set the logging context (e.g., class name)
@@ -104,8 +102,7 @@ export class CustomLogger implements LoggerService {
     correlationId?: string,
     userId?: string,
   ) {
-    const level =
-      statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+    const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
     const message = `${method} ${url} ${statusCode} ${duration}ms`;
 
     this.logger.log(level, message, {
@@ -122,11 +119,7 @@ export class CustomLogger implements LoggerService {
   /**
    * Log performance metrics
    */
-  logPerformance(
-    operation: string,
-    duration: number,
-    metadata?: Record<string, any>,
-  ) {
+  logPerformance(operation: string, duration: number, metadata?: Record<string, any>) {
     const message = `Performance: ${operation} took ${duration}ms`;
     this.logger.info(message, {
       context: 'Performance',

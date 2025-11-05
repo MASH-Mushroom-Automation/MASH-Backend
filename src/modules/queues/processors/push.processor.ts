@@ -75,9 +75,7 @@ export class PushProcessor {
         error.code === 'messaging/invalid-registration-token' ||
         error.code === 'messaging/registration-token-not-registered'
       ) {
-        this.logger.warn(
-          `Invalid or unregistered FCM token: ${token.substring(0, 20)}...`,
-        );
+        this.logger.warn(`Invalid or unregistered FCM token: ${token.substring(0, 20)}...`);
       }
 
       // Update notification status to FAILED
@@ -98,9 +96,7 @@ export class PushProcessor {
           },
         });
       } catch (dbError) {
-        this.logger.error(
-          `Failed to update notification status: ${dbError.message}`,
-        );
+        this.logger.error(`Failed to update notification status: ${dbError.message}`);
       }
 
       throw error; // Bull will retry
@@ -142,7 +138,7 @@ export class PushProcessor {
     try {
       // Send to each token individually
       const results = await Promise.allSettled(
-        tokens.map((token) =>
+        tokens.map(token =>
           admin.messaging().send({
             token,
             notification: { title, body },
@@ -151,16 +147,10 @@ export class PushProcessor {
         ),
       );
 
-      const successCount = results.filter(
-        (r) => r.status === 'fulfilled',
-      ).length;
-      const failureCount = results.filter(
-        (r) => r.status === 'rejected',
-      ).length;
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
+      const failureCount = results.filter(r => r.status === 'rejected').length;
 
-      this.logger.log(
-        `Sent to ${successCount} devices, failed: ${failureCount}`,
-      );
+      this.logger.log(`Sent to ${successCount} devices, failed: ${failureCount}`);
 
       return {
         successCount,

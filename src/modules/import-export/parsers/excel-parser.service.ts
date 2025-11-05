@@ -43,9 +43,7 @@ export class ExcelParserService {
 
       // Get sheet name
       const sheetName =
-        options.sheetName ||
-        workbook.SheetNames[options.sheetIndex || 0] ||
-        workbook.SheetNames[0];
+        options.sheetName || workbook.SheetNames[options.sheetIndex || 0] || workbook.SheetNames[0];
 
       if (!sheetName) {
         throw new Error('No sheets found in Excel file');
@@ -74,9 +72,7 @@ export class ExcelParserService {
       const rowCount = range.e.r - range.s.r + 1;
       const columnCount = range.e.c - range.s.c + 1;
 
-      this.logger.log(
-        `Excel parsing complete: ${data.length} rows from sheet "${sheetName}"`,
-      );
+      this.logger.log(`Excel parsing complete: ${data.length} rows from sheet "${sheetName}"`);
 
       return {
         data,
@@ -122,9 +118,7 @@ export class ExcelParserService {
 
       // Get sheet
       const sheetName =
-        options.sheetName ||
-        workbook.SheetNames[options.sheetIndex || 0] ||
-        workbook.SheetNames[0];
+        options.sheetName || workbook.SheetNames[options.sheetIndex || 0] || workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
 
       // Convert to JSON with streaming
@@ -151,9 +145,7 @@ export class ExcelParserService {
         }
       }
 
-      this.logger.log(
-        `Excel streaming complete: ${rowCount} rows, ${errors.length} errors`,
-      );
+      this.logger.log(`Excel streaming complete: ${rowCount} rows, ${errors.length} errors`);
 
       return { totalRows: rowCount, errors };
     } catch (error) {
@@ -189,11 +181,7 @@ export class ExcelParserService {
       });
 
       // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        options.sheetName || 'Sheet1',
-      );
+      XLSX.utils.book_append_sheet(workbook, worksheet, options.sheetName || 'Sheet1');
 
       // Write to buffer
       const buffer = XLSX.write(workbook, {
@@ -217,7 +205,7 @@ export class ExcelParserService {
     try {
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
 
-      return workbook.SheetNames.map((name) => {
+      return workbook.SheetNames.map(name => {
         const worksheet = workbook.Sheets[name];
         const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
         const rowCount = range.e.r - range.s.r + 1;
@@ -253,9 +241,7 @@ export class ExcelParserService {
       }
 
       const foundColumns = parsed.columns;
-      const missingColumns = requiredColumns.filter(
-        (col) => !foundColumns.includes(col),
-      );
+      const missingColumns = requiredColumns.filter(col => !foundColumns.includes(col));
 
       if (missingColumns.length > 0) {
         errors.push(

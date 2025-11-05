@@ -1,10 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import {
-  SmsService,
-  SMSMessage,
-  SMSDeliveryResult,
-} from './services/sms.service';
+import { SmsService, SMSMessage, SMSDeliveryResult } from './services/sms.service';
 
 // Mock Twilio
 jest.mock('twilio', () => {
@@ -52,7 +48,7 @@ describe('SmsService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn((key: string) => mockConfig[key]),
+            get: jest.fn((key: string) => mockConfig[key as keyof typeof mockConfig]),
           },
         },
       ],
@@ -87,8 +83,8 @@ describe('SmsService', () => {
     it('should initialize provider health status', () => {
       const health = service.getProviderHealth();
       expect(health).toHaveLength(2);
-      expect(health.find((h) => h.provider === 'twilio')).toBeDefined();
-      expect(health.find((h) => h.provider === 'vonage')).toBeDefined();
+      expect(health.find(h => h.provider === 'twilio')).toBeDefined();
+      expect(health.find(h => h.provider === 'vonage')).toBeDefined();
     });
   });
 
@@ -132,9 +128,7 @@ describe('SmsService', () => {
 
     it('should failover to Vonage when Twilio fails', async () => {
       // Twilio fails
-      mockTwilioClient.messages.create.mockRejectedValue(
-        new Error('Twilio error'),
-      );
+      mockTwilioClient.messages.create.mockRejectedValue(new Error('Twilio error'));
 
       // Vonage succeeds
       const mockVonageResponse = {
@@ -157,9 +151,7 @@ describe('SmsService', () => {
     });
 
     it('should return failure when all providers fail', async () => {
-      mockTwilioClient.messages.create.mockRejectedValue(
-        new Error('Twilio error'),
-      );
+      mockTwilioClient.messages.create.mockRejectedValue(new Error('Twilio error'));
       mockVonageClient.sms.send.mockRejectedValue(new Error('Vonage error'));
 
       const result = await service.sendSMS(validMessage);
@@ -178,27 +170,25 @@ describe('SmsService', () => {
 
       mockTwilioClient.messages.create.mockImplementation(async () => {
         // Simulate some delay
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
         return mockTwilioResponse;
       });
 
       await service.sendSMS(validMessage);
 
       const health = service.getProviderHealth();
-      const twilioHealth = health.find((h) => h.provider === 'twilio');
+      const twilioHealth = health.find(h => h.provider === 'twilio');
       expect(twilioHealth?.healthy).toBe(true);
       expect(twilioHealth?.responseTime).toBeGreaterThanOrEqual(0);
     });
 
     it('should update provider health on failure', async () => {
-      mockTwilioClient.messages.create.mockRejectedValue(
-        new Error('Twilio error'),
-      );
+      mockTwilioClient.messages.create.mockRejectedValue(new Error('Twilio error'));
 
       await service.sendSMS(validMessage);
 
       const health = service.getProviderHealth();
-      const twilioHealth = health.find((h) => h.provider === 'twilio');
+      const twilioHealth = health.find(h => h.provider === 'twilio');
       expect(twilioHealth?.healthy).toBe(false);
       expect(twilioHealth?.error).toBe('Twilio error: Twilio error');
     });
@@ -228,9 +218,9 @@ describe('SmsService', () => {
         body: 'Test',
       };
 
-      await expect(
-        (serviceWithoutTwilio as any).sendWithTwilio(message),
-      ).rejects.toThrow('Twilio client not initialized');
+      await expect((serviceWithoutTwilio as any).sendWithTwilio(message)).rejects.toThrow(
+        'Twilio client not initialized',
+      );
     });
 
     it('should throw error when phone number not configured', async () => {
@@ -240,7 +230,7 @@ describe('SmsService', () => {
       };
 
       const serviceWithoutPhone = new SmsService({
-        get: jest.fn((key: string) => configWithoutPhone[key]),
+        get: jest.fn((key: string) => configWithoutPhone[key as keyof typeof configWithoutPhone]),
       } as any);
 
       const message: SMSMessage = {
@@ -248,9 +238,9 @@ describe('SmsService', () => {
         body: 'Test',
       };
 
-      await expect(
-        (serviceWithoutPhone as any).sendWithTwilio(message),
-      ).rejects.toThrow('Twilio phone number not configured');
+      await expect((serviceWithoutPhone as any).sendWithTwilio(message)).rejects.toThrow(
+        'Twilio phone number not configured',
+      );
     });
 
     it('should send SMS successfully via Twilio', async () => {
@@ -302,9 +292,9 @@ describe('SmsService', () => {
         body: 'Test',
       };
 
-      await expect(
-        (serviceWithoutVonage as any).sendWithVonage(message),
-      ).rejects.toThrow('Vonage client not initialized');
+      await expect((serviceWithoutVonage as any).sendWithVonage(message)).rejects.toThrow(
+        'Vonage client not initialized',
+      );
     });
 
     it('should send SMS successfully via Vonage', async () => {
@@ -395,9 +385,9 @@ describe('SmsService', () => {
     });
 
     it('should throw error for unsupported provider', async () => {
-      await expect(
-        service.getDeliveryStatus('MSG123', 'unsupported' as any),
-      ).rejects.toThrow('Provider not specified or not supported');
+      await expect(service.getDeliveryStatus('MSG123', 'unsupported' as any)).rejects.toThrow(
+        'Provider not specified or not supported',
+      );
     });
   });
 
@@ -417,9 +407,7 @@ describe('SmsService', () => {
       expect(result.messageId).toBe('SM1234567890');
       expect(mockTwilioClient.messages.create).toHaveBeenCalled();
       const callArgs = mockTwilioClient.messages.create.mock.calls[0][0];
-      expect(callArgs.body).toContain(
-        'Test SMS from MASH Device Monitoring System',
-      );
+      expect(callArgs.body).toContain('Test SMS from MASH Device Monitoring System');
       expect(callArgs.to).toBe('+1234567890');
     });
 

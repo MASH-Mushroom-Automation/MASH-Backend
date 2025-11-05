@@ -1,12 +1,4 @@
-import {
-  IsString,
-  IsInt,
-  IsOptional,
-  IsEnum,
-  Min,
-  Max,
-  IsDateString,
-} from 'class-validator';
+import { IsString, IsInt, IsOptional, IsEnum, Min, Max, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RateLimitStrategy } from '@prisma/client';
 

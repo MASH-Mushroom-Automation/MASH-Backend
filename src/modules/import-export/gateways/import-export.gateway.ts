@@ -9,8 +9,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
@@ -60,9 +58,7 @@ interface JobFailedData {
   },
   namespace: process.env.WS_NAMESPACE || '/import-export',
 })
-export class ImportExportGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class ImportExportGateway {
   @WebSocketServer()
   server: Server;
 

@@ -25,9 +25,7 @@ export function ApiRateLimit(limit: number, windowMs: number) {
   const windowSeconds = windowMs / 1000;
   const windowMinutes = windowSeconds / 60;
   const windowDisplay =
-    windowMinutes >= 1
-      ? `${windowMinutes} minute(s)`
-      : `${windowSeconds} second(s)`;
+    windowMinutes >= 1 ? `${windowMinutes} minute(s)` : `${windowSeconds} second(s)`;
 
   return applyDecorators(
     ApiHeader({
@@ -50,8 +48,7 @@ export function ApiRateLimit(limit: number, windowMs: number) {
     }),
     ApiHeader({
       name: 'X-RateLimit-Reset',
-      description:
-        'Unix timestamp (seconds since epoch) when rate limit resets',
+      description: 'Unix timestamp (seconds since epoch) when rate limit resets',
       required: false,
       schema: {
         type: 'integer',

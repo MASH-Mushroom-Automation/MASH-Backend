@@ -32,10 +32,7 @@ export const envValidationSchema = Joi.object({
     .description('Logging level'),
 
   // ==================== DATABASE (PostgreSQL) ====================
-  DATABASE_URL: Joi.string()
-    .uri()
-    .required()
-    .description('PostgreSQL connection URL (required)'),
+  DATABASE_URL: Joi.string().uri().required().description('PostgreSQL connection URL (required)'),
 
   DATABASE_POOL_MIN: Joi.number()
     .min(0)
@@ -62,14 +59,9 @@ export const envValidationSchema = Joi.object({
     .uri()
     .optional()
     .allow('')
-    .description(
-      'Redis connection URL (optional - caching disabled if not provided)',
-    ),
+    .description('Redis connection URL (optional - caching disabled if not provided)'),
 
-  REDIS_CACHE_TTL: Joi.number()
-    .min(0)
-    .default(3600)
-    .description('Default cache TTL in seconds'),
+  REDIS_CACHE_TTL: Joi.number().min(0).default(3600).description('Default cache TTL in seconds'),
 
   CACHE_ENABLED: Joi.boolean().default(true).description('Enable caching'),
 
@@ -79,73 +71,48 @@ export const envValidationSchema = Joi.object({
     .required()
     .description('JWT secret key (min 32 characters, required)'),
 
-  JWT_ACCESS_TOKEN_EXPIRY: Joi.string()
-    .default('15m')
-    .description('JWT access token expiry'),
+  JWT_ACCESS_TOKEN_EXPIRY: Joi.string().default('15m').description('JWT access token expiry'),
 
-  JWT_REFRESH_TOKEN_EXPIRY: Joi.string()
-    .default('7d')
-    .description('JWT refresh token expiry'),
+  JWT_REFRESH_TOKEN_EXPIRY: Joi.string().default('7d').description('JWT refresh token expiry'),
 
   // Clerk Authentication
-  CLERK_PUBLISHABLE_KEY: Joi.string()
-    .allow('')
-    .description('Clerk publishable key (optional)'),
+  CLERK_PUBLISHABLE_KEY: Joi.string().allow('').description('Clerk publishable key (optional)'),
 
-  CLERK_SECRET_KEY: Joi.string()
-    .allow('')
-    .description('Clerk secret key (optional)'),
+  CLERK_SECRET_KEY: Joi.string().allow('').description('Clerk secret key (optional)'),
 
-  CLERK_WEBHOOK_SECRET: Joi.string()
-    .allow('')
-    .description('Clerk webhook secret (optional)'),
+  CLERK_WEBHOOK_SECRET: Joi.string().allow('').description('Clerk webhook secret (optional)'),
 
   // Firebase Authentication
-  FIREBASE_PROJECT_ID: Joi.string()
-    .allow('')
-    .description('Firebase project ID (optional)'),
+  FIREBASE_PROJECT_ID: Joi.string().allow('').description('Firebase project ID (optional)'),
 
-  FIREBASE_CLIENT_EMAIL: Joi.string()
-    .allow('')
-    .description('Firebase client email (optional)'),
+  FIREBASE_CLIENT_EMAIL: Joi.string().allow('').description('Firebase client email (optional)'),
 
-  FIREBASE_PRIVATE_KEY: Joi.string()
-    .allow('')
-    .description('Firebase private key (optional)'),
+  FIREBASE_PRIVATE_KEY: Joi.string().allow('').description('Firebase private key (optional)'),
+
+  // ==================== BACKEND URL ====================
+  BACKEND_URL: Joi.string()
+    .uri()
+    .default('http://localhost:3000')
+    .description('Backend URL for API (development: http://localhost:3000, production: https://mash-backend-api-production.up.railway.app)'),
 
   // ==================== CORS ====================
   CORS_ORIGINS: Joi.string()
-    .default(
-      'https://mash-backend-api.up.railway.app,http://localhost:3000,http://localhost:5173',
-    )
+    .default('https://mash-backend-api-production.up.railway.app,http://localhost:3000,http://localhost:5173')
     .description('Comma-separated list of allowed CORS origins'),
 
-  CORS_CREDENTIALS: Joi.boolean()
-    .default(true)
-    .description('Enable CORS credentials'),
+  CORS_CREDENTIALS: Joi.boolean().default(true).description('Enable CORS credentials'),
 
   // ==================== RATE LIMITING ====================
-  THROTTLE_ENABLED: Joi.boolean()
-    .default(true)
-    .description('Enable rate limiting'),
+  THROTTLE_ENABLED: Joi.boolean().default(true).description('Enable rate limiting'),
 
-  THROTTLE_TTL: Joi.number()
-    .min(1)
-    .default(60)
-    .description('Throttle TTL in seconds'),
+  THROTTLE_TTL: Joi.number().min(1).default(60).description('Throttle TTL in seconds'),
 
-  THROTTLE_LIMIT: Joi.number()
-    .min(1)
-    .default(100)
-    .description('Throttle request limit'),
+  THROTTLE_LIMIT: Joi.number().min(1).default(100).description('Throttle request limit'),
 
   // ==================== EMAIL (SendGrid) ====================
   SENDGRID_API_KEY: Joi.string().allow('').description('SendGrid API key'),
 
-  SENDGRID_FROM_EMAIL: Joi.string()
-    .allow('')
-    .email()
-    .description('SendGrid from email'),
+  SENDGRID_FROM_EMAIL: Joi.string().allow('').email().description('SendGrid from email'),
 
   SENDGRID_FROM_NAME: Joi.string().allow('').description('SendGrid from name'),
 
@@ -154,27 +121,17 @@ export const envValidationSchema = Joi.object({
 
   TWILIO_AUTH_TOKEN: Joi.string().allow('').description('Twilio auth token'),
 
-  TWILIO_PHONE_NUMBER: Joi.string()
-    .allow('')
-    .description('Twilio phone number'),
+  TWILIO_PHONE_NUMBER: Joi.string().allow('').description('Twilio phone number'),
 
   // ==================== PUSH NOTIFICATIONS (Firebase) ====================
-  FCM_SERVER_KEY: Joi.string()
-    .allow('')
-    .description('Firebase Cloud Messaging server key'),
+  FCM_SERVER_KEY: Joi.string().allow('').description('Firebase Cloud Messaging server key'),
 
   // ==================== PAYMENT GATEWAY ====================
-  PAYMENT_GATEWAY_API_KEY: Joi.string()
-    .allow('')
-    .description('Payment gateway API key'),
+  PAYMENT_GATEWAY_API_KEY: Joi.string().allow('').description('Payment gateway API key'),
 
-  PAYMENT_GATEWAY_SECRET_KEY: Joi.string()
-    .allow('')
-    .description('Payment gateway secret key'),
+  PAYMENT_GATEWAY_SECRET_KEY: Joi.string().allow('').description('Payment gateway secret key'),
 
-  PAYMENT_WEBHOOK_SECRET: Joi.string()
-    .allow('')
-    .description('Payment webhook secret'),
+  PAYMENT_WEBHOOK_SECRET: Joi.string().allow('').description('Payment webhook secret'),
 
   // ==================== MQTT (IoT Devices) ====================
   MQTT_BROKER_URL: Joi.string().uri().allow('').description('MQTT broker URL'),
@@ -184,9 +141,7 @@ export const envValidationSchema = Joi.object({
   MQTT_PASSWORD: Joi.string().allow('').description('MQTT password'),
 
   // ==================== WEBSOCKET ====================
-  WS_NAMESPACE: Joi.string()
-    .default('/events')
-    .description('WebSocket namespace'),
+  WS_NAMESPACE: Joi.string().default('/events').description('WebSocket namespace'),
 
   WS_PING_INTERVAL: Joi.number()
     .min(1000)
@@ -199,9 +154,7 @@ export const envValidationSchema = Joi.object({
     .description('WebSocket ping timeout in milliseconds'),
 
   // ==================== OPENTELEMETRY TRACING ====================
-  OTEL_ENABLED: Joi.boolean()
-    .default(false)
-    .description('Enable OpenTelemetry tracing'),
+  OTEL_ENABLED: Joi.boolean().default(false).description('Enable OpenTelemetry tracing'),
 
   OTEL_EXPORTER_OTLP_ENDPOINT: Joi.string()
     .uri()
@@ -209,9 +162,7 @@ export const envValidationSchema = Joi.object({
     .default('http://localhost:4318/v1/traces')
     .description('OTLP exporter endpoint'),
 
-  OTEL_SERVICE_NAME: Joi.string()
-    .default('mash-backend')
-    .description('Service name for tracing'),
+  OTEL_SERVICE_NAME: Joi.string().default('mash-backend').description('Service name for tracing'),
 
   // ==================== FILE UPLOADS ====================
   MAX_FILE_SIZE: Joi.number()
@@ -219,14 +170,10 @@ export const envValidationSchema = Joi.object({
     .default(5242880)
     .description('Maximum file size in bytes (default: 5MB)'),
 
-  UPLOAD_DIR: Joi.string()
-    .default('./uploads')
-    .description('Upload directory path'),
+  UPLOAD_DIR: Joi.string().default('./uploads').description('Upload directory path'),
 
   // ==================== SWAGGER/OPENAPI ====================
-  SWAGGER_ENABLED: Joi.boolean()
-    .default(true)
-    .description('Enable Swagger API documentation'),
+  SWAGGER_ENABLED: Joi.boolean().default(true).description('Enable Swagger API documentation'),
 
   // ==================== SESSION & SECURITY ====================
   SESSION_SECRET: Joi.string()
@@ -234,18 +181,12 @@ export const envValidationSchema = Joi.object({
     .allow('')
     .description('Session secret key (min 32 characters)'),
 
-  CSRF_ENABLED: Joi.boolean()
-    .default(true)
-    .description('Enable CSRF protection'),
+  CSRF_ENABLED: Joi.boolean().default(true).description('Enable CSRF protection'),
 
   // ==================== MONITORING ====================
-  PROMETHEUS_ENABLED: Joi.boolean()
-    .default(true)
-    .description('Enable Prometheus metrics'),
+  PROMETHEUS_ENABLED: Joi.boolean().default(true).description('Enable Prometheus metrics'),
 
-  PROMETHEUS_PORT: Joi.number()
-    .allow('')
-    .description('Prometheus metrics port (if separate)'),
+  PROMETHEUS_PORT: Joi.number().allow('').description('Prometheus metrics port (if separate)'),
 });
 
 /**

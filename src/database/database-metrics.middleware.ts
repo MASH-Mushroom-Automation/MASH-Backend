@@ -27,13 +27,9 @@ export class DatabaseMetricsMiddleware implements OnModuleInit {
       // Optional: PrometheusService for database metrics tracking
       // If not available, database will still work but without metrics
       this.prometheusService = null;
-      this.logger.log(
-        'Database metrics middleware initialized (Prometheus optional)',
-      );
+      this.logger.log('Database metrics middleware initialized (Prometheus optional)');
     } catch (error) {
-      this.logger.warn(
-        'PrometheusService not available - database metrics disabled',
-      );
+      this.logger.warn('PrometheusService not available - database metrics disabled');
     }
 
     // TODO: Update to Prisma 6's $extends API

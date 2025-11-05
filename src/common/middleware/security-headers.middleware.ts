@@ -68,21 +68,24 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     // Cache-Control for sensitive endpoints
     // Prevents caching of sensitive data (auth, user data, etc.)
     if (this.isSensitiveEndpoint(req.path)) {
-      res.setHeader(
-        'Cache-Control',
-        'no-store, no-cache, must-revalidate, proxy-revalidate',
-      );
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
 
     // Clear-Site-Data for logout endpoints
     // Clears browser storage when user logs out
+    // Only set for same-origin requests to avoid CORS credential issues
     if (req.path.includes('/logout') || req.path.includes('/signout')) {
-      res.setHeader(
-        'Clear-Site-Data',
-        '"cache", "cookies", "storage", "executionContexts"',
-      );
+      const origin = req.headers.origin;
+      const host = req.headers.host;
+      
+      // Only set Clear-Site-Data for same-origin requests
+      // For cross-origin requests (e.g., localhost:8080 -> Railway), skip this header
+      // as it conflicts with CORS credentials policy
+      if (!origin || origin.includes(host)) {
+        res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
+      }
     }
 
     // Server header obfuscation
@@ -110,9 +113,7 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
       '/api/v1/sessions',
     ];
 
-    return sensitivePaths.some((sensitivePath) =>
-      path.startsWith(sensitivePath),
-    );
+    return sensitivePaths.some(sensitivePath => path.startsWith(sensitivePath));
   }
 }
 

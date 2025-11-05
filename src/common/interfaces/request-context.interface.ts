@@ -81,8 +81,7 @@ export interface RequestContext {
  */
 export function createRequestContext(req: any): RequestContext {
   return {
-    correlationId:
-      req.correlationId || req.headers['x-correlation-id'] || 'unknown',
+    correlationId: req.correlationId || req.headers['x-correlation-id'] || 'unknown',
     userId: req.user?.id,
     userEmail: req.user?.email,
     timestamp: new Date(),

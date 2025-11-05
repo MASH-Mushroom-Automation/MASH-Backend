@@ -209,11 +209,11 @@ export function createEntityLoader<T extends { id: string }>(
 ): BatchLoader<string, T | null> {
   return new BatchLoader<string, T | null>(async (ids: readonly string[]) => {
     const entities = await findMany([...ids]);
-    const entityMap = new Map(entities.map((entity) => [entity.id, entity]));
+    const entityMap = new Map(entities.map(entity => [entity.id, entity]));
 
     // IMPORTANT: Return results in the same order as input keys
     // Return null for missing entities (don't throw)
-    return ids.map((id) => entityMap.get(id) || null);
+    return ids.map(id => entityMap.get(id) || null);
   }, options);
 }
 
@@ -246,10 +246,8 @@ export function createCustomKeyLoader<K extends string | number, T>(
 ): BatchLoader<K, T | null> {
   return new BatchLoader<K, T | null>(async (keys: readonly K[]) => {
     const entities = await findMany([...keys]);
-    const entityMap = new Map(
-      entities.map((entity) => [getKey(entity), entity]),
-    );
+    const entityMap = new Map(entities.map(entity => [getKey(entity), entity]));
 
-    return keys.map((key) => entityMap.get(key) || null);
+    return keys.map(key => entityMap.get(key) || null);
   }, options);
 }

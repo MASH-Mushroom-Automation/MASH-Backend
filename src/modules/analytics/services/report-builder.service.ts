@@ -3,17 +3,8 @@ import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { CreateReportDto, ReportConfiguration } from '../dto/create-report.dto';
 import { ExecuteReportDto } from '../dto/execute-report.dto';
-import {
-  ReportResponseDto,
-  ReportExecutionResponseDto,
-} from '../dto/report-response.dto';
-import {
-  Report,
-  ReportExecution,
-  ReportType,
-  ExecutionStatus,
-  Prisma,
-} from '@prisma/client';
+import { ReportResponseDto, ReportExecutionResponseDto } from '../dto/report-response.dto';
+import { Report, ReportExecution, ReportType, ExecutionStatus, Prisma } from '@prisma/client';
 
 interface ReportFilters {
   type?: ReportType;
@@ -32,13 +23,8 @@ export class ReportBuilderService {
   /**
    * Create a new custom report
    */
-  async createReport(
-    createReportDto: CreateReportDto,
-    userId: string,
-  ): Promise<ReportResponseDto> {
-    this.logger.log(
-      `Creating report: ${createReportDto.name} for user: ${userId}`,
-    );
+  async createReport(createReportDto: CreateReportDto, userId: string): Promise<ReportResponseDto> {
+    this.logger.log(`Creating report: ${createReportDto.name} for user: ${userId}`);
 
     const report = await this.prisma.report.create({
       data: {
@@ -61,10 +47,7 @@ export class ReportBuilderService {
   /**
    * Get all reports for a user with optional filters
    */
-  async getReports(
-    userId: string,
-    filters?: ReportFilters,
-  ): Promise<ReportResponseDto[]> {
+  async getReports(userId: string, filters?: ReportFilters): Promise<ReportResponseDto[]> {
     const cacheKey = `reports:user:${userId}:${JSON.stringify(filters || {})}`;
     const cached = await this.cacheService.get<ReportResponseDto[]>(cacheKey);
 
@@ -83,7 +66,7 @@ export class ReportBuilderService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const response = reports.map((report) => this.toReportResponseDto(report));
+    const response = reports.map(report => this.toReportResponseDto(report));
 
     // Cache for 5 minutes
     await this.cacheService.set(cacheKey, response, 300);
@@ -208,8 +191,7 @@ export class ReportBuilderService {
 
     try {
       // Execute report based on type
-      const configuration =
-        report.configuration as unknown as ReportConfiguration;
+      const configuration = report.configuration as unknown as ReportConfiguration;
       const filters = executeDto?.overrideFilters
         ? { ...configuration.filters, ...executeDto.overrideFilters }
         : configuration.filters;
@@ -248,8 +230,7 @@ export class ReportBuilderService {
         data: {
           status: ExecutionStatus.COMPLETED,
           completedAt: new Date(),
-          duration:
-            new Date().getTime() - new Date(execution.startedAt).getTime(),
+          duration: new Date().getTime() - new Date(execution.startedAt).getTime(),
           resultData: resultData,
         },
       });
@@ -262,8 +243,7 @@ export class ReportBuilderService {
         data: {
           status: ExecutionStatus.FAILED,
           completedAt: new Date(),
-          duration:
-            new Date().getTime() - new Date(execution.startedAt).getTime(),
+          duration: new Date().getTime() - new Date(execution.startedAt).getTime(),
           errorMessage: error.message,
         },
       });
@@ -287,7 +267,7 @@ export class ReportBuilderService {
       take: limit,
     });
 
-    return executions.map((exec) => this.toReportExecutionResponseDto(exec));
+    return executions.map(exec => this.toReportExecutionResponseDto(exec));
   }
 
   /**
@@ -301,16 +281,13 @@ export class ReportBuilderService {
       },
     });
 
-    return reports.map((report) => this.toReportResponseDto(report));
+    return reports.map(report => this.toReportResponseDto(report));
   }
 
   /**
    * Execute sales report
    */
-  private async executeSalesReport(
-    filters: any,
-    config: ReportConfiguration,
-  ): Promise<any> {
+  private async executeSalesReport(filters: any, config: ReportConfiguration): Promise<any> {
     const { start, end } = filters.dateRange;
 
     const sales = await this.prisma.order.findMany({
@@ -331,7 +308,7 @@ export class ReportBuilderService {
     return {
       totalSales: sales.length,
       totalRevenue: sales.reduce((sum, order) => sum + Number(order.total), 0),
-      sales: sales.map((order) => ({
+      sales: sales.map(order => ({
         orderId: order.id,
         date: order.createdAt,
         customer: order.user?.email || 'N/A',
@@ -344,10 +321,7 @@ export class ReportBuilderService {
   /**
    * Execute revenue report
    */
-  private async executeRevenueReport(
-    filters: any,
-    config: ReportConfiguration,
-  ): Promise<any> {
+  private async executeRevenueReport(filters: any, config: ReportConfiguration): Promise<any> {
     const { start, end } = filters.dateRange;
 
     const revenue = await this.prisma.order.aggregate({
@@ -371,10 +345,7 @@ export class ReportBuilderService {
   /**
    * Execute orders report
    */
-  private async executeOrdersReport(
-    filters: any,
-    config: ReportConfiguration,
-  ): Promise<any> {
+  private async executeOrdersReport(filters: any, config: ReportConfiguration): Promise<any> {
     const { start, end } = filters.dateRange;
 
     const orders = await this.prisma.order.groupBy({
@@ -387,7 +358,7 @@ export class ReportBuilderService {
     });
 
     return {
-      ordersByStatus: orders.map((group) => ({
+      ordersByStatus: orders.map(group => ({
         status: group.status,
         count: group._count,
         totalRevenue: Number(group._sum.total || 0),
@@ -398,10 +369,7 @@ export class ReportBuilderService {
   /**
    * Execute products report
    */
-  private async executeProductsReport(
-    filters: any,
-    config: ReportConfiguration,
-  ): Promise<any> {
+  private async executeProductsReport(filters: any, config: ReportConfiguration): Promise<any> {
     const { start, end } = filters.dateRange;
 
     const products = await this.prisma.orderItem.groupBy({
@@ -419,12 +387,12 @@ export class ReportBuilderService {
     });
 
     const productDetails = await this.prisma.product.findMany({
-      where: { id: { in: products.map((p) => p.productId) } },
+      where: { id: { in: products.map(p => p.productId) } },
     });
 
     return {
-      topProducts: products.map((item) => {
-        const product = productDetails.find((p) => p.id === item.productId);
+      topProducts: products.map(item => {
+        const product = productDetails.find(p => p.id === item.productId);
         return {
           productId: item.productId,
           productName: product?.name || 'Unknown',
@@ -439,10 +407,7 @@ export class ReportBuilderService {
   /**
    * Execute users report
    */
-  private async executeUsersReport(
-    filters: any,
-    config: ReportConfiguration,
-  ): Promise<any> {
+  private async executeUsersReport(filters: any, config: ReportConfiguration): Promise<any> {
     const { start, end } = filters.dateRange;
 
     const users = await this.prisma.user.count({
@@ -467,10 +432,7 @@ export class ReportBuilderService {
   /**
    * Execute devices report
    */
-  private async executeDevicesReport(
-    filters: any,
-    config: ReportConfiguration,
-  ): Promise<any> {
+  private async executeDevicesReport(filters: any, config: ReportConfiguration): Promise<any> {
     const { start, end } = filters.dateRange;
 
     const devices = await this.prisma.device.groupBy({
@@ -482,7 +444,7 @@ export class ReportBuilderService {
     });
 
     return {
-      devicesByStatus: devices.map((group) => ({
+      devicesByStatus: devices.map(group => ({
         status: group.status,
         count: group._count,
       })),
@@ -492,10 +454,7 @@ export class ReportBuilderService {
   /**
    * Execute custom report (placeholder)
    */
-  private async executeCustomReport(
-    filters: any,
-    config: ReportConfiguration,
-  ): Promise<any> {
+  private async executeCustomReport(filters: any, config: ReportConfiguration): Promise<any> {
     // Custom report logic would be implemented based on config
     return {
       message: 'Custom report execution not yet implemented',
@@ -525,9 +484,7 @@ export class ReportBuilderService {
   /**
    * Convert ReportExecution entity to ReportExecutionResponseDto
    */
-  private toReportExecutionResponseDto(
-    execution: ReportExecution,
-  ): ReportExecutionResponseDto {
+  private toReportExecutionResponseDto(execution: ReportExecution): ReportExecutionResponseDto {
     return {
       id: execution.id,
       reportId: execution.reportId,

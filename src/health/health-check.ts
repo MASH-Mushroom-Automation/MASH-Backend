@@ -16,10 +16,9 @@ const TIMEOUT_MS = 3000;
 function checkHealth(): Promise<number> {
   const url = `http://${HOST}:${PORT}${PATH}`;
 
-  return new Promise((resolve) => {
-    const req = http.get(url, (res) => {
-      const ok =
-        res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
+  return new Promise(resolve => {
+    const req = http.get(url, res => {
+      const ok = res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
       res.resume();
       resolve(ok ? 0 : 1);
     });

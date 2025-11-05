@@ -3,7 +3,6 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 /**
  * Base Service Class
@@ -26,7 +25,15 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
    * Prisma model delegate
    * Must be provided by child class
    */
-  protected abstract model: any;
+  protected abstract model: {
+    findMany: (args?: unknown) => Promise<T[]>;
+    findUnique: (args?: unknown) => Promise<T | null>;
+    findFirst: (args?: unknown) => Promise<T | null>;
+    create: (args?: unknown) => Promise<T>;
+    update: (args?: unknown) => Promise<T>;
+    delete: (args?: unknown) => Promise<T>;
+    count: (args?: unknown) => Promise<number>;
+  };
 
   /**
    * Entity name (for error messages)
@@ -54,13 +61,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
     limit: number;
     totalPages: number;
   }> {
-    const {
-      page = 1,
-      limit = 10,
-      where = {},
-      orderBy = { createdAt: 'desc' },
-      include,
-    } = options;
+    const { page = 1, limit = 10, where = {}, orderBy = { createdAt: 'desc' }, include } = options;
 
     const skip = (page - 1) * limit;
 
@@ -218,7 +219,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
    */
   async bulkCreate(dtos: CreateDto[]): Promise<T[]> {
     try {
-      const results = await Promise.all(dtos.map((dto) => this.create(dto)));
+      const results = await Promise.all(dtos.map(dto => this.create(dto)));
       return results;
     } catch (error) {
       this.handleError(error, 'bulkCreate');
@@ -231,13 +232,9 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
    * @param updates - Array of {id, data}
    * @returns Updated entities
    */
-  async bulkUpdate(
-    updates: Array<{ id: string; data: UpdateDto }>,
-  ): Promise<T[]> {
+  async bulkUpdate(updates: Array<{ id: string; data: UpdateDto }>): Promise<T[]> {
     try {
-      const results = await Promise.all(
-        updates.map(({ id, data }) => this.update(id, data)),
-      );
+      const results = await Promise.all(updates.map(({ id, data }) => this.update(id, data)));
       return results;
     } catch (error) {
       this.handleError(error, 'bulkUpdate');
@@ -308,9 +305,7 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
     if (error.code) {
       switch (error.code) {
         case 'P2002':
-          throw new BadRequestException(
-            `${this.entityName} with this unique field already exists`,
-          );
+          throw new BadRequestException(`${this.entityName} with this unique field already exists`);
         case 'P2025':
           throw new NotFoundException(`${this.entityName} not found`);
         case 'P2003':
@@ -321,16 +316,11 @@ export abstract class BaseService<T, CreateDto, UpdateDto> {
     }
 
     // Handle known exceptions
-    if (
-      error instanceof NotFoundException ||
-      error instanceof BadRequestException
-    ) {
+    if (error instanceof NotFoundException || error instanceof BadRequestException) {
       throw error;
     }
 
     // Generic error
-    throw new InternalServerErrorException(
-      `Failed to ${operation} ${this.entityName}`,
-    );
+    throw new InternalServerErrorException(`Failed to ${operation} ${this.entityName}`);
   }
 }

@@ -90,10 +90,7 @@ export class UsersService {
     };
 
     // Cache for 10 minutes
-    await this.cacheService.set(cacheKey, result, this.USER_TTL, [
-      'users',
-      'users:list',
-    ]);
+    await this.cacheService.set(cacheKey, result, this.USER_TTL, ['users', 'users:list']);
 
     return result;
   }
@@ -102,17 +99,12 @@ export class UsersService {
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { email: createUserDto.email },
-          { username: createUserDto.username },
-        ],
+        OR: [{ email: createUserDto.email }, { username: createUserDto.username }],
       },
     });
 
     if (existingUser) {
-      throw new BadRequestException(
-        'User with this email or username already exists',
-      );
+      throw new BadRequestException('User with this email or username already exists');
     }
 
     // Hash password
@@ -149,10 +141,7 @@ export class UsersService {
    */
   async findOne(id: string, currentUser: any) {
     // Check permissions - users can only see their own data unless admin
-    if (
-      currentUser.id !== id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (currentUser.id !== id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only view your own profile');
     }
 
@@ -184,10 +173,7 @@ export class UsersService {
     }
 
     // Cache for 10 minutes
-    await this.cacheService.set(cacheKey, user, this.USER_TTL, [
-      'users',
-      `user:${id}`,
-    ]);
+    await this.cacheService.set(cacheKey, user, this.USER_TTL, ['users', `user:${id}`]);
 
     return user;
   }
@@ -198,10 +184,7 @@ export class UsersService {
    */
   async update(id: string, updateUserDto: UpdateUserDto, currentUser: any) {
     // Check permissions
-    if (
-      currentUser.id !== id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (currentUser.id !== id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only update your own profile');
     }
 
@@ -226,11 +209,7 @@ export class UsersService {
     });
 
     // Invalidate user caches
-    await this.cacheService.invalidateByTags([
-      'users',
-      'users:list',
-      `user:${id}`,
-    ]);
+    await this.cacheService.invalidateByTags(['users', 'users:list', `user:${id}`]);
 
     return updated;
   }
@@ -253,11 +232,7 @@ export class UsersService {
     });
 
     // Invalidate user caches
-    await this.cacheService.invalidateByTags([
-      'users',
-      'users:list',
-      `user:${id}`,
-    ]);
+    await this.cacheService.invalidateByTags(['users', 'users:list', `user:${id}`]);
 
     return deleted;
   }
@@ -390,12 +365,11 @@ export class UsersService {
     const preferences = {}; // TODO: Add preferences field to User model
 
     // Cache preferences for 30 minutes
-    await this.cacheService.set(
-      cacheKey,
-      preferences,
-      this.USER_PREFERENCES_TTL,
-      ['users', `user:${id}`, 'user:preferences'],
-    );
+    await this.cacheService.set(cacheKey, preferences, this.USER_PREFERENCES_TTL, [
+      'users',
+      `user:${id}`,
+      'user:preferences',
+    ]);
 
     return preferences;
   }
@@ -423,10 +397,7 @@ export class UsersService {
     };
 
     // Invalidate preference caches
-    await this.cacheService.invalidateByTags([
-      `user:${id}`,
-      'user:preferences',
-    ]);
+    await this.cacheService.invalidateByTags([`user:${id}`, 'user:preferences']);
 
     return result;
   }
@@ -540,20 +511,14 @@ export class UsersService {
    * Update user address
    * Phase 2: Invalidate address caches on update
    */
-  async updateAddress(
-    id: string,
-    addressId: string,
-    updateAddressDto: UpdateAddressDto,
-  ) {
+  async updateAddress(id: string, addressId: string, updateAddressDto: UpdateAddressDto) {
     // Verify address belongs to user
     const address = await this.prisma.address.findFirst({
       where: { id: addressId, userId: id },
     });
 
     if (!address) {
-      throw new NotFoundException(
-        'Address not found or does not belong to user',
-      );
+      throw new NotFoundException('Address not found or does not belong to user');
     }
 
     // If setting as default, unset other defaults

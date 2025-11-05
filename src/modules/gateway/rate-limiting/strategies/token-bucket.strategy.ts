@@ -49,10 +49,7 @@ export class TokenBucketStrategy implements IRateLimitStrategy {
     return 'TOKEN_BUCKET';
   }
 
-  async checkLimit(
-    key: string,
-    config: IRateLimitConfig,
-  ): Promise<IRateLimitResult> {
+  async checkLimit(key: string, config: IRateLimitConfig): Promise<IRateLimitResult> {
     const storeKey = `${this.KEY_PREFIX}${key}`;
     const now = Date.now();
 

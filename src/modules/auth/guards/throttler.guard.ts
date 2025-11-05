@@ -1,9 +1,5 @@
 import { Injectable, ExecutionContext, Logger, Inject } from '@nestjs/common';
-import {
-  ThrottlerGuard,
-  ThrottlerException,
-  ThrottlerStorage,
-} from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerException, ThrottlerStorage } from '@nestjs/throttler';
 import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import type { UserRole } from '@prisma/client';
@@ -11,10 +7,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { QuotaService } from '../services/quota.service';
 import { ViolationTrackerService } from '../services/violation-tracker.service';
 import { RATE_LIMIT_HEADERS } from '../../../common/config/throttler.config';
-import {
-  getRoleLimits,
-  formatRateLimitForLog,
-} from '../../../common/config/role-limits.config';
+import { getRoleLimits, formatRateLimitForLog } from '../../../common/config/role-limits.config';
 import {
   THROTTLE_ENDPOINT_KEY,
   EndpointCategory,
@@ -118,18 +111,11 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
             userId,
             `${method} ${url}`,
           );
-          const backoffSeconds =
-            await this.violationTracker.getBackoffTime(userId);
+          const backoffSeconds = await this.violationTracker.getBackoffTime(userId);
 
           // Set dynamic Retry-After header based on violation count
-          response.setHeader(
-            RATE_LIMIT_HEADERS.RETRY_AFTER,
-            backoffSeconds.toString(),
-          );
-          response.setHeader(
-            'X-RateLimit-Backoff-Level',
-            violationCount.toString(),
-          );
+          response.setHeader(RATE_LIMIT_HEADERS.RETRY_AFTER, backoffSeconds.toString());
+          response.setHeader('X-RateLimit-Backoff-Level', violationCount.toString());
 
           this.logger.warn(
             `Rate limit exceeded: ${ip} - ${method} ${url} - User: ${userId} ` +
@@ -138,9 +124,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         } else {
           // Guest users get static 60s backoff
           response.setHeader(RATE_LIMIT_HEADERS.RETRY_AFTER, '60');
-          this.logger.warn(
-            `Rate limit exceeded: ${ip} - ${method} ${url} - User: anonymous`,
-          );
+          this.logger.warn(`Rate limit exceeded: ${ip} - ${method} ${url} - User: anonymous`);
         }
       }
 
@@ -159,12 +143,20 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
    * 6. Use minimum of both limits (most restrictive)
    * 7. Add rate limit headers, quota headers, and backoff headers
    */
-  protected async handleRequest(
-    requestProps: Record<string, any>,
-  ): Promise<boolean> {
+  protected async handleRequest(requestProps: Record<string, any>): Promise<boolean> {
     const { context } = requestProps;
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
+
+    // CRITICAL: Skip rate limiting for health check endpoints
+    // Health checks must be fast (<1s) for Railway deployment to succeed
+    // Prevents slow database queries (rate_limit_logs, rate_limit_overrides) on health endpoints
+    const url = request.url || '';
+    if (url.startsWith('/api/v1/health') || url.startsWith('/health')) {
+      this.logger.debug(`Skipping rate limiting for health endpoint: ${url}`);
+      response.setHeader('X-RateLimit-Skipped', 'health-endpoint');
+      return true; // Bypass all rate limiting for health checks
+    }
 
     // Get user role and ID
     const userRole = request.user?.role as UserRole | undefined;
@@ -176,9 +168,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const identifier = userId || ip;
     const isWhitelisted = await this.isWhitelisted(identifier);
     if (isWhitelisted) {
-      this.logger.debug(
-        `Whitelisted identifier ${identifier} bypassing rate limits`,
-      );
+      this.logger.debug(`Whitelisted identifier ${identifier} bypassing rate limits`);
       response.setHeader('X-RateLimit-Whitelisted', 'true');
       return true; // Bypass all rate limiting
     }
@@ -188,11 +178,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const endpoint = request.url;
     const method = request.method;
 
-    const rateLimitResult = await this.dynamicRateLimit.checkLimit(
-      userId,
-      endpoint,
-      method,
-    );
+    const rateLimitResult = await this.dynamicRateLimit.checkLimit(userId, endpoint, method);
 
     // Check if an override was applied (indicated by metadata.strategy presence)
     const hasOverride = !!rateLimitResult.metadata?.strategy;
@@ -217,14 +203,8 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         }
 
         // Set rate limit headers
-        response.setHeader(
-          RATE_LIMIT_HEADERS.LIMIT,
-          rateLimitResult.limit.toString(),
-        );
-        response.setHeader(
-          RATE_LIMIT_HEADERS.REMAINING,
-          rateLimitResult.remaining.toString(),
-        );
+        response.setHeader(RATE_LIMIT_HEADERS.LIMIT, rateLimitResult.limit.toString());
+        response.setHeader(RATE_LIMIT_HEADERS.REMAINING, rateLimitResult.remaining.toString());
         response.setHeader(
           RATE_LIMIT_HEADERS.RESET,
           new Date(Date.now() + rateLimitResult.resetMs).toISOString(),
@@ -233,10 +213,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
           RATE_LIMIT_HEADERS.RETRY_AFTER,
           Math.ceil(rateLimitResult.retryAfterMs / 1000).toString(),
         );
-        response.setHeader(
-          'X-RateLimit-Strategy',
-          rateLimitResult.metadata?.strategy || 'default',
-        );
+        response.setHeader('X-RateLimit-Strategy', rateLimitResult.metadata?.strategy || 'default');
 
         this.logger.warn(
           `Rate limit exceeded for ${identifier} on ${method} ${endpoint} ` +
@@ -250,22 +227,13 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       }
 
       // Request allowed - update headers and continue
-      response.setHeader(
-        RATE_LIMIT_HEADERS.LIMIT,
-        rateLimitResult.limit.toString(),
-      );
-      response.setHeader(
-        RATE_LIMIT_HEADERS.REMAINING,
-        rateLimitResult.remaining.toString(),
-      );
+      response.setHeader(RATE_LIMIT_HEADERS.LIMIT, rateLimitResult.limit.toString());
+      response.setHeader(RATE_LIMIT_HEADERS.REMAINING, rateLimitResult.remaining.toString());
       response.setHeader(
         RATE_LIMIT_HEADERS.RESET,
         new Date(Date.now() + rateLimitResult.resetMs).toISOString(),
       );
-      response.setHeader(
-        'X-RateLimit-Strategy',
-        rateLimitResult.metadata?.strategy || 'default',
-      );
+      response.setHeader('X-RateLimit-Strategy', rateLimitResult.metadata?.strategy || 'default');
 
       this.logger.debug(
         `Rate limit check passed for ${identifier} on ${method} ${endpoint} ` +
@@ -281,21 +249,12 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     if (userId) {
       const inBackoff = await this.violationTracker.isInBackoff(userId);
       if (inBackoff) {
-        const remainingBackoff =
-          await this.violationTracker.getRemainingBackoff(userId);
-        const violationCount = (
-          await this.violationTracker.getViolations(userId)
-        ).count;
+        const remainingBackoff = await this.violationTracker.getRemainingBackoff(userId);
+        const violationCount = (await this.violationTracker.getViolations(userId)).count;
 
         // Set backoff headers
-        response.setHeader(
-          RATE_LIMIT_HEADERS.RETRY_AFTER,
-          remainingBackoff.toString(),
-        );
-        response.setHeader(
-          'X-RateLimit-Backoff-Level',
-          violationCount.toString(),
-        );
+        response.setHeader(RATE_LIMIT_HEADERS.RETRY_AFTER, remainingBackoff.toString());
+        response.setHeader('X-RateLimit-Backoff-Level', violationCount.toString());
 
         this.logger.warn(
           `User ${userId} in backoff period (${remainingBackoff}s remaining, ` +
@@ -323,26 +282,14 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       const quotaInfo = await this.quotaService.getQuotaInfo(userId, role);
 
       // Add quota headers
-      response.setHeader(
-        'X-RateLimit-Quota-Daily-Limit',
-        quotaInfo.daily.limit.toString(),
-      );
-      response.setHeader(
-        'X-RateLimit-Quota-Daily-Remaining',
-        quotaInfo.daily.remaining.toString(),
-      );
-      response.setHeader(
-        'X-RateLimit-Quota-Daily-Reset',
-        quotaInfo.daily.resetAt.toString(),
-      );
+      response.setHeader('X-RateLimit-Quota-Daily-Limit', quotaInfo.daily.limit.toString());
+      response.setHeader('X-RateLimit-Quota-Daily-Remaining', quotaInfo.daily.remaining.toString());
+      response.setHeader('X-RateLimit-Quota-Daily-Reset', quotaInfo.daily.resetAt.toString());
       response.setHeader(
         'X-RateLimit-Quota-Monthly-Remaining',
         quotaInfo.monthly.remaining.toString(),
       );
-      response.setHeader(
-        'X-RateLimit-Quota-Monthly-Reset',
-        quotaInfo.monthly.resetAt.toString(),
-      );
+      response.setHeader('X-RateLimit-Quota-Monthly-Reset', quotaInfo.monthly.resetAt.toString());
     }
 
     // 3. Get role-based limit
@@ -377,9 +324,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
           `Effective: ${effectiveLimit} req/min (${limitSource})`,
       );
     } else {
-      this.logger.debug(
-        `Using role limit only - ${formatRateLimitForLog(role)}`,
-      );
+      this.logger.debug(`Using role limit only - ${formatRateLimitForLog(role)}`);
     }
 
     // Override request props with effective limit
@@ -430,9 +375,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     // Create tracking key with role prefix
     const tracker = `${role}:${identifier}:${endpoint}`;
 
-    this.logger.debug(
-      `Rate limit tracker: ${tracker} - ${formatRateLimitForLog(role)}`,
-    );
+    this.logger.debug(`Rate limit tracker: ${tracker} - ${formatRateLimitForLog(role)}`);
 
     return Promise.resolve(tracker);
   }
@@ -447,11 +390,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
    * - throttle-USER-STANDARD-192.168.1.2
    * - throttle-GUEST-CHEAP-192.168.1.3
    */
-  protected generateKey(
-    context: ExecutionContext,
-    suffix: string,
-    name: string,
-  ): string {
+  protected generateKey(context: ExecutionContext, suffix: string, name: string): string {
     const request = context.switchToHttp().getRequest();
 
     // Get user role
@@ -460,10 +399,10 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
     // Get endpoint category from decorator metadata
     const endpointCategory =
-      this.reflector.getAllAndOverride<EndpointCategory>(
-        THROTTLE_ENDPOINT_KEY,
-        [context.getHandler(), context.getClass()],
-      ) || 'NONE';
+      this.reflector.getAllAndOverride<EndpointCategory>(THROTTLE_ENDPOINT_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) || 'NONE';
 
     // Include both role and endpoint category in the key
     return `${name}-${role}-${endpointCategory}-${suffix}`;
@@ -520,9 +459,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       },
     });
 
-    this.logger.log(
-      `Added ${identifier} to whitelist${reason ? `: ${reason}` : ''}`,
-    );
+    this.logger.log(`Added ${identifier} to whitelist${reason ? `: ${reason}` : ''}`);
   }
 
   /**

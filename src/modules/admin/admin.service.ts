@@ -213,13 +213,12 @@ export class AdminService {
   }
 
   async getSystemMetrics() {
-    const [userCount, deviceCount, orderCount, sensorDataCount] =
-      await Promise.all([
-        this.prisma.user.count(),
-        this.prisma.device.count(),
-        this.prisma.order.count(),
-        this.prisma.sensorData.count(),
-      ]);
+    const [userCount, deviceCount, orderCount, sensorDataCount] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.device.count(),
+      this.prisma.order.count(),
+      this.prisma.sensorData.count(),
+    ]);
 
     const memoryUsage = process.memoryUsage();
     const cpuUsage = process.cpuUsage();
@@ -329,9 +328,7 @@ export class AdminService {
       };
 
       // Cache for 10 minutes
-      await this.cacheService.set(cacheKey, result, this.SYSTEM_CONFIG_TTL, [
-        'system:config',
-      ]);
+      await this.cacheService.set(cacheKey, result, this.SYSTEM_CONFIG_TTL, ['system:config']);
 
       return result;
     } catch (error) {
@@ -362,7 +359,7 @@ export class AdminService {
         orderBy: { key: 'asc' },
       });
 
-      const result = configs.map((config) => ({
+      const result = configs.map(config => ({
         key: config.key,
         value: config.value,
         description: config.description,
@@ -371,9 +368,7 @@ export class AdminService {
       }));
 
       // Cache for 10 minutes
-      await this.cacheService.set(cacheKey, result, this.SYSTEM_CONFIG_TTL, [
-        'system:config',
-      ]);
+      await this.cacheService.set(cacheKey, result, this.SYSTEM_CONFIG_TTL, ['system:config']);
 
       return result;
     } catch (error) {
@@ -388,26 +383,24 @@ export class AdminService {
     if (startDate) dateFilter.gte = new Date(startDate);
     if (endDate) dateFilter.lte = new Date(endDate);
 
-    const where =
-      dateFilter.gte || dateFilter.lte ? { createdAt: dateFilter } : {};
+    const where = dateFilter.gte || dateFilter.lte ? { createdAt: dateFilter } : {};
 
-    const [orderStats, revenueStats, userStats, deviceStats] =
-      await Promise.all([
-        this.prisma.order.groupBy({
-          by: ['status'],
-          _count: { id: true },
-          _sum: { total: true },
-          where,
-        }),
-        this.prisma.order.aggregate({
-          where: { ...where, status: 'COMPLETED' as any },
-          _sum: { total: true },
-          _avg: { total: true },
-          _count: { id: true },
-        }),
-        this.prisma.user.count({ where }),
-        this.prisma.device.count({ where }),
-      ]);
+    const [orderStats, revenueStats, userStats, deviceStats] = await Promise.all([
+      this.prisma.order.groupBy({
+        by: ['status'],
+        _count: { id: true },
+        _sum: { total: true },
+        where,
+      }),
+      this.prisma.order.aggregate({
+        where: { ...where, status: 'COMPLETED' as any },
+        _sum: { total: true },
+        _avg: { total: true },
+        _count: { id: true },
+      }),
+      this.prisma.user.count({ where }),
+      this.prisma.device.count({ where }),
+    ]);
 
     return {
       period: {
@@ -416,10 +409,7 @@ export class AdminService {
       },
       orders: {
         byStatus: orderStats,
-        total: orderStats.reduce(
-          (sum, stat) => sum + (stat._count?.id || 0),
-          0,
-        ),
+        total: orderStats.reduce((sum, stat) => sum + (stat._count?.id || 0), 0),
       },
       revenue: {
         total: revenueStats._sum?.total || 0,

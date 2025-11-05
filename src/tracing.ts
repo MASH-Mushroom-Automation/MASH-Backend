@@ -34,9 +34,7 @@ const OTEL_ENVIRONMENT = process.env.NODE_ENV || 'development';
 
 // Only initialize if explicitly enabled
 if (!OTEL_ENABLED) {
-  logger.warn(
-    '⚠️  OpenTelemetry tracing is DISABLED. Set OTEL_ENABLED=true to enable.',
-  );
+  logger.warn('⚠️  OpenTelemetry tracing is DISABLED. Set OTEL_ENABLED=true to enable.');
 } else {
   logger.log('🔍 Initializing OpenTelemetry tracing...');
 
@@ -96,7 +94,7 @@ if (!OTEL_ENABLED) {
       .shutdown()
       .then(
         () => logger.log('🔍 OpenTelemetry tracing shut down successfully'),
-        (err) => logger.error('❌ Error shutting down OpenTelemetry:', err),
+        err => logger.error('❌ Error shutting down OpenTelemetry:', err),
       )
       .finally(() => process.exit(0));
   });

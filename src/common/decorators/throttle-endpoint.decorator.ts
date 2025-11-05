@@ -197,9 +197,7 @@ export function formatEndpointLimitForLog(category: EndpointCategory): string {
  * }
  * ```
  */
-export const ThrottleEndpoint = (
-  category: EndpointCategory | keyof typeof EndpointCategory,
-) =>
+export const ThrottleEndpoint = (category: EndpointCategory | keyof typeof EndpointCategory) =>
   SetMetadata(
     THROTTLE_ENDPOINT_KEY,
     typeof category === 'string' ? EndpointCategory[category] : category,

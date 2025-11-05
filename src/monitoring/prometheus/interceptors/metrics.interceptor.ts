@@ -11,13 +11,7 @@
  * Applied globally to all HTTP endpoints
  */
 
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { PrometheusService } from '../prometheus.service';
@@ -37,19 +31,13 @@ export class MetricsInterceptor implements NestInterceptor {
     const route = this.getRoute(request);
 
     return next.handle().pipe(
-      tap((data) => {
+      tap(data => {
         const duration = Date.now() - startTime;
         const statusCode = response.statusCode;
         const responseSize = this.getResponseSize(data);
 
         // Record HTTP metrics
-        this.prometheusService.recordHttpRequest(
-          method,
-          route,
-          statusCode,
-          duration,
-          responseSize,
-        );
+        this.prometheusService.recordHttpRequest(method, route, statusCode, duration, responseSize);
 
         // Record API endpoint metrics
         const module = this.getModuleFromRoute(route);
@@ -60,29 +48,18 @@ export class MetricsInterceptor implements NestInterceptor {
           duration / 1000, // Convert to seconds
         );
       }),
-      catchError((error) => {
+      catchError(error => {
         const duration = Date.now() - startTime;
         const statusCode = error.status || 500;
 
         // Record error metrics
-        this.prometheusService.recordHttpRequest(
-          method,
-          route,
-          statusCode,
-          duration,
-        );
+        this.prometheusService.recordHttpRequest(method, route, statusCode, duration);
 
         // Record API endpoint error
         const module = this.getModuleFromRoute(route);
-        this.prometheusService.recordApiEndpoint(
-          module,
-          route,
-          method,
-          duration / 1000,
-          {
-            type: error.name || 'UnknownError',
-          },
-        );
+        this.prometheusService.recordApiEndpoint(module, route, method, duration / 1000, {
+          type: error.name || 'UnknownError',
+        });
 
         return throwError(() => error);
       }),
@@ -109,12 +86,10 @@ export class MetricsInterceptor implements NestInterceptor {
    * /api/v1/orders -> orders
    */
   private getModuleFromRoute(route: string): string {
-    const parts = route.split('/').filter((p) => p);
+    const parts = route.split('/').filter(p => p);
 
     // Skip 'api' and version (v1, v2, etc.)
-    const moduleIndex = parts.findIndex(
-      (p) => !['api', 'v1', 'v2', 'v3'].includes(p.toLowerCase()),
-    );
+    const moduleIndex = parts.findIndex(p => !['api', 'v1', 'v2', 'v3'].includes(p.toLowerCase()));
 
     return moduleIndex >= 0 ? parts[moduleIndex] : 'unknown';
   }

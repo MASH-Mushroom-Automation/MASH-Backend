@@ -1,8 +1,5 @@
 import { validate } from 'class-validator';
-import {
-  IsValidPhone,
-  IsValidPhoneConstraint,
-} from '../is-valid-phone.validator';
+import { IsValidPhone, IsValidPhoneConstraint } from '../is-valid-phone.validator';
 
 // Test DTO
 class TestPhoneDto {

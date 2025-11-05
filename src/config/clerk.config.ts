@@ -8,8 +8,7 @@ export default registerAs('clerk', () => ({
   jwtKey: process.env.CLERK_JWT_KEY || '',
 
   // Frontend URLs
-  frontendUrl:
-    process.env.FRONTEND_URL || 'https://mash-backend-api.up.railway.app',
+  frontendUrl: process.env.FRONTEND_URL || 'https://mash-backend-api.up.railway.app',
   afterSignInUrl: process.env.CLERK_AFTER_SIGN_IN_URL || '/dashboard',
   afterSignUpUrl: process.env.CLERK_AFTER_SIGN_UP_URL || '/onboarding',
 
@@ -20,16 +19,14 @@ export default registerAs('clerk', () => ({
       clientId: process.env.OAUTH_GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.OAUTH_GOOGLE_CLIENT_SECRET || '',
       redirectUrl:
-        process.env.OAUTH_GOOGLE_REDIRECT_URL ||
-        `${process.env.FRONTEND_URL}/auth/callback/google`,
+        process.env.OAUTH_GOOGLE_REDIRECT_URL || `${process.env.FRONTEND_URL}/auth/callback/google`,
     },
     github: {
       enabled: process.env.OAUTH_GITHUB_ENABLED === 'true',
       clientId: process.env.OAUTH_GITHUB_CLIENT_ID || '',
       clientSecret: process.env.OAUTH_GITHUB_CLIENT_SECRET || '',
       redirectUrl:
-        process.env.OAUTH_GITHUB_REDIRECT_URL ||
-        `${process.env.FRONTEND_URL}/auth/callback/github`,
+        process.env.OAUTH_GITHUB_REDIRECT_URL || `${process.env.FRONTEND_URL}/auth/callback/github`,
     },
     facebook: {
       enabled: process.env.OAUTH_FACEBOOK_ENABLED === 'true',

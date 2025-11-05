@@ -5,11 +5,7 @@ import { RedisService } from '../../../../database/redis.service';
 import { FileStorageService } from '../file-storage.service';
 import { Queue } from 'bull';
 import { getQueueToken } from '@nestjs/bull';
-import {
-  ForbiddenException,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('ExportService', () => {
   let service: ExportService;
@@ -244,25 +240,21 @@ describe('ExportService', () => {
         ...mockJob,
         progressPercent: 100,
       });
-      expect(mockPrismaService.importExportJob.findUnique).toHaveBeenCalledWith(
-        {
-          where: { id: jobId },
-          include: {
-            errors: {
-              take: 100,
-              orderBy: { createdAt: 'asc' },
-            },
+      expect(mockPrismaService.importExportJob.findUnique).toHaveBeenCalledWith({
+        where: { id: jobId },
+        include: {
+          errors: {
+            take: 100,
+            orderBy: { createdAt: 'asc' },
           },
         },
-      );
+      });
     });
 
     it('should throw NotFoundException if job not found', async () => {
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.getJob(jobId, userId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getJob(jobId, userId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if user does not own job', async () => {
@@ -273,9 +265,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.getJob(jobId, userId)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getJob(jobId, userId)).rejects.toThrow(ForbiddenException);
     });
 
     it('should calculate progress percentage correctly', async () => {
@@ -416,17 +406,13 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.cancelJob(jobId, userId)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.cancelJob(jobId, userId)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException if job not found', async () => {
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.cancelJob(jobId, userId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.cancelJob(jobId, userId)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -468,17 +454,13 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException if job not found', async () => {
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if user does not own job', async () => {
@@ -490,9 +472,7 @@ describe('ExportService', () => {
 
       mockPrismaService.importExportJob.findUnique.mockResolvedValue(mockJob);
 
-      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.downloadFile(jobId, userId)).rejects.toThrow(ForbiddenException);
     });
   });
 });

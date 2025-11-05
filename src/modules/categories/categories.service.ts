@@ -108,9 +108,7 @@ export class CategoriesService {
     });
 
     if (existingCategory) {
-      throw new BadRequestException(
-        `Category with slug '${slug}' already exists`,
-      );
+      throw new BadRequestException(`Category with slug '${slug}' already exists`);
     }
 
     // Validate parent category exists
@@ -120,9 +118,7 @@ export class CategoriesService {
       });
 
       if (!parentCategory) {
-        throw new NotFoundException(
-          `Parent category with ID '${parentId}' not found`,
-        );
+        throw new NotFoundException(`Parent category with ID '${parentId}' not found`);
       }
     }
 
@@ -165,8 +161,8 @@ export class CategoriesService {
     // Build tree structure
     const buildTree = (parentId: string | null = null): any[] => {
       return categories
-        .filter((cat) => cat.parentId === parentId)
-        .map((cat) => ({
+        .filter(cat => cat.parentId === parentId)
+        .map(cat => ({
           ...cat,
           children: buildTree(cat.id),
         }));
@@ -175,12 +171,10 @@ export class CategoriesService {
     const tree = buildTree();
 
     // Cache for 10 minutes
-    await this.cacheService.set(
-      this.CATEGORY_TREE_CACHE_KEY,
-      tree,
-      this.CATEGORY_TTL,
-      ['categories', 'categories:tree'],
-    );
+    await this.cacheService.set(this.CATEGORY_TREE_CACHE_KEY, tree, this.CATEGORY_TTL, [
+      'categories',
+      'categories:tree',
+    ]);
 
     return tree;
   }
@@ -410,7 +404,7 @@ export class CategoriesService {
     });
 
     // Filter products where categories array includes this category ID
-    const filteredProducts = products.filter((product) => {
+    const filteredProducts = products.filter(product => {
       const categories = product.categories;
       if (Array.isArray(categories)) {
         return categories.includes(id);

@@ -64,9 +64,7 @@ export class XmlParserService {
           data = rootData;
         } else if (typeof rootData === 'object') {
           // Look for arrays in root object
-          const arrayKeys = Object.keys(rootData).filter((key) =>
-            Array.isArray(rootData[key]),
-          );
+          const arrayKeys = Object.keys(rootData).filter(key => Array.isArray(rootData[key]));
 
           if (arrayKeys.length > 0) {
             // Use first array found
@@ -76,9 +74,7 @@ export class XmlParserService {
             data = [rootData];
           }
         } else {
-          throw new Error(
-            'Invalid XML structure: expected object or array in root element',
-          );
+          throw new Error('Invalid XML structure: expected object or array in root element');
         }
       }
 
@@ -139,9 +135,7 @@ export class XmlParserService {
         }
       }
 
-      this.logger.log(
-        `XML streaming complete: ${rowCount} rows, ${errors.length} errors`,
-      );
+      this.logger.log(`XML streaming complete: ${rowCount} rows, ${errors.length} errors`);
 
       return { totalRows: rowCount, errors };
     } catch (error) {
@@ -188,8 +182,7 @@ export class XmlParserService {
       };
 
       // Add XML declaration
-      const xml =
-        '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(xmlObject);
+      const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(xmlObject);
 
       return xml;
     } catch (error) {
@@ -223,9 +216,7 @@ export class XmlParserService {
       const foundFields = this.getObjectKeys(firstRecord);
 
       // Check for missing required fields
-      const missingFields = requiredFields.filter(
-        (field) => !foundFields.includes(field),
-      );
+      const missingFields = requiredFields.filter(field => !foundFields.includes(field));
 
       if (missingFields.length > 0) {
         errors.push(
@@ -264,8 +255,7 @@ export class XmlParserService {
   } {
     const parsed = this.parse(fileBuffer);
 
-    const fields =
-      parsed.data.length > 0 ? this.getObjectKeys(parsed.data[0]) : [];
+    const fields = parsed.data.length > 0 ? this.getObjectKeys(parsed.data[0]) : [];
 
     return {
       data: parsed.data.slice(0, recordCount),

@@ -45,9 +45,7 @@ export class JsonParserService {
         data = parsed;
       } else if (typeof parsed === 'object') {
         // Check if it's a nested structure with an array
-        const arrayKeys = Object.keys(parsed).filter((key) =>
-          Array.isArray(parsed[key]),
-        );
+        const arrayKeys = Object.keys(parsed).filter(key => Array.isArray(parsed[key]));
 
         if (arrayKeys.length === 1) {
           structure = 'nested';
@@ -62,14 +60,10 @@ export class JsonParserService {
 
       // Flatten nested objects if requested
       if (options.flatten) {
-        data = data.map((item) =>
-          this.flattenObject(item, options.maxDepth || 10),
-        );
+        data = data.map(item => this.flattenObject(item, options.maxDepth || 10));
       }
 
-      this.logger.log(
-        `JSON parsing complete: ${data.length} records, structure: ${structure}`,
-      );
+      this.logger.log(`JSON parsing complete: ${data.length} records, structure: ${structure}`);
 
       return {
         data,
@@ -119,9 +113,7 @@ export class JsonParserService {
         }
       }
 
-      this.logger.log(
-        `JSON streaming complete: ${rowCount} rows, ${errors.length} errors`,
-      );
+      this.logger.log(`JSON streaming complete: ${rowCount} rows, ${errors.length} errors`);
 
       return { totalRows: rowCount, errors };
     } catch (error) {
@@ -188,9 +180,7 @@ export class JsonParserService {
       const foundFields = Object.keys(firstRecord);
 
       // Check for missing required fields
-      const missingFields = requiredFields.filter(
-        (field) => !(field in firstRecord),
-      );
+      const missingFields = requiredFields.filter(field => !(field in firstRecord));
 
       if (missingFields.length > 0) {
         errors.push(
@@ -277,15 +267,8 @@ export class JsonParserService {
       const value = obj[key];
       const newKey = prefix ? `${prefix}.${key}` : key;
 
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
-        Object.assign(
-          flattened,
-          this.flattenObject(value, maxDepth, newKey, depth + 1),
-        );
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        Object.assign(flattened, this.flattenObject(value, maxDepth, newKey, depth + 1));
       } else {
         flattened[newKey] = value;
       }

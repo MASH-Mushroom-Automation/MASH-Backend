@@ -10,12 +10,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -104,14 +99,7 @@ export class OrdersController {
       'updatedAt',
     ],
     requiredFields: ['id', 'orderNumber'],
-    defaultFields: [
-      'id',
-      'orderNumber',
-      'status',
-      'total',
-      'shippingAddress',
-      'createdAt',
-    ],
+    defaultFields: ['id', 'orderNumber', 'status', 'total', 'shippingAddress', 'createdAt'],
     maxFields: 15,
   })
   @ApiOperation({ summary: 'Get order by ID' })
@@ -128,10 +116,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Update order information' })
   @ApiResponse({ status: 200, description: 'Order updated successfully' })
   @ApiResponse({ status: 404, description: 'Order not found' })
-  async update(
-    @Param('id') id: string,
-    @Body() updateOrderDto: UpdateOrderDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }
 
@@ -154,10 +139,7 @@ export class OrdersController {
     status: 200,
     description: 'Order status updated successfully',
   })
-  async updateStatus(
-    @Param('id') id: string,
-    @Body() updateStatusDto: UpdateOrderStatusDto,
-  ) {
+  async updateStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateOrderStatusDto) {
     return this.ordersService.updateStatus(id, updateStatusDto);
   }
 
@@ -166,11 +148,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Cancel order' })
   @ApiResponse({ status: 200, description: 'Order cancelled successfully' })
   @ApiResponse({ status: 400, description: 'Order cannot be cancelled' })
-  async cancel(
-    @Param('id') id: string,
-    @Body() cancelOrderDto: CancelOrderDto,
-    @Request() req,
-  ) {
+  async cancel(@Param('id') id: string, @Body() cancelOrderDto: CancelOrderDto, @Request() req) {
     return this.ordersService.cancel(id, cancelOrderDto, req.user);
   }
 

@@ -150,9 +150,7 @@ export class RateLimitController {
     status: 403,
     description: 'Forbidden - Admin access required',
   })
-  async getUserOverrides(
-    @Param('userId') userId: string,
-  ): Promise<RateLimitOverrideResponseDto[]> {
+  async getUserOverrides(@Param('userId') userId: string): Promise<RateLimitOverrideResponseDto[]> {
     return this.dynamicRateLimit.getUserOverrides(userId);
   }
 
@@ -211,8 +209,7 @@ export class RateLimitController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update rate limit override',
-    description:
-      'Updates an existing rate limit override. All fields are optional.',
+    description: 'Updates an existing rate limit override. All fields are optional.',
   })
   @ApiParam({
     name: 'id',
@@ -252,8 +249,7 @@ export class RateLimitController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete rate limit override',
-    description:
-      'Deletes a rate limit override. User reverts to default rate limits.',
+    description: 'Deletes a rate limit override. User reverts to default rate limits.',
   })
   @ApiParam({
     name: 'id',
@@ -274,9 +270,7 @@ export class RateLimitController {
     description: 'Forbidden - Admin access required',
   })
   @ApiResponse({ status: 404, description: 'Override not found' })
-  async deleteOverride(
-    @Param('id') id: string,
-  ): Promise<{ success: boolean; message: string }> {
+  async deleteOverride(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
     await this.dynamicRateLimit.deleteOverride(id);
     return {
       success: true,
@@ -324,11 +318,7 @@ export class RateLimitController {
     const targetEndpoint = endpoint || '/api/v1/*';
 
     // Check current limit configuration
-    const result = await this.dynamicRateLimit.checkLimit(
-      userId,
-      targetEndpoint,
-      'GET',
-    );
+    const result = await this.dynamicRateLimit.checkLimit(userId, targetEndpoint, 'GET');
 
     // Get violation statistics
     const stats = await this.analytics.getViolationStats(userId);
@@ -444,9 +434,7 @@ export class RateLimitController {
     status: 404,
     description: 'No violations found for identifier',
   })
-  async getViolationStats(
-    @Param('identifier') identifier: string,
-  ): Promise<any> {
+  async getViolationStats(@Param('identifier') identifier: string): Promise<any> {
     return this.analytics.getViolationStats(identifier);
   }
 
@@ -464,8 +452,7 @@ export class RateLimitController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get top rate limit violators',
-    description:
-      'Returns users with highest violation counts for abuse detection',
+    description: 'Returns users with highest violation counts for abuse detection',
   })
   @ApiQuery({
     name: 'limit',
@@ -527,9 +514,7 @@ export class RateLimitController {
     status: 403,
     description: 'Forbidden - Admin access required',
   })
-  async detectAbusePattern(
-    @Param('identifier') identifier: string,
-  ): Promise<any> {
+  async detectAbusePattern(@Param('identifier') identifier: string): Promise<any> {
     return this.analytics.detectAbusePattern(identifier);
   }
 
@@ -549,8 +534,7 @@ export class RateLimitController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test rate limit configuration',
-    description:
-      'Tests rate limit check without consuming request. For debugging and validation.',
+    description: 'Tests rate limit check without consuming request. For debugging and validation.',
   })
   @ApiResponse({
     status: 200,
@@ -568,11 +552,7 @@ export class RateLimitController {
     // Test multiple requests if specified
     const results = [];
     for (let i = 0; i < requestCount; i++) {
-      const result = await this.dynamicRateLimit.checkLimit(
-        body.identifier,
-        body.endpoint,
-        method,
-      );
+      const result = await this.dynamicRateLimit.checkLimit(body.identifier, body.endpoint, method);
       results.push({
         requestNumber: i + 1,
         allowed: result.allowed,
@@ -600,8 +580,8 @@ export class RateLimitController {
       results,
       summary: {
         totalRequests: results.length,
-        allowedRequests: results.filter((r) => r.allowed).length,
-        blockedRequests: results.filter((r) => !r.allowed).length,
+        allowedRequests: results.filter(r => r.allowed).length,
+        blockedRequests: results.filter(r => !r.allowed).length,
       },
     };
   }

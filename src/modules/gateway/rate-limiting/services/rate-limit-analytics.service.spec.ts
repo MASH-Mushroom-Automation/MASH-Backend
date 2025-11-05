@@ -105,14 +105,10 @@ describe('RateLimitAnalyticsService', () => {
       const endpoint = '/api/v1/users';
       const metadata = { count: 50 };
 
-      mockPrismaService.rateLimitLog.create.mockRejectedValue(
-        new Error('Database error'),
-      );
+      mockPrismaService.rateLimitLog.create.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert - Should not throw
-      await expect(
-        service.logViolation(identifier, endpoint, metadata),
-      ).resolves.not.toThrow();
+      await expect(service.logViolation(identifier, endpoint, metadata)).resolves.not.toThrow();
     });
   });
 

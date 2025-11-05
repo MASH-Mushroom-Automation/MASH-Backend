@@ -33,10 +33,7 @@ export class CsvParserService {
    * @param options Parsing options
    * @returns Parsed data with metadata and errors
    */
-  async parse(
-    fileBuffer: Buffer,
-    options: CsvParseOptions = {},
-  ): Promise<ParsedData> {
+  async parse(fileBuffer: Buffer, options: CsvParseOptions = {}): Promise<ParsedData> {
     this.logger.log('Parsing CSV file from buffer');
 
     return new Promise((resolve, reject) => {
@@ -45,8 +42,8 @@ export class CsvParserService {
         delimiter: options.delimiter || ',',
         skipEmptyLines: options.skipEmptyLines !== false, // Default: true
         dynamicTyping: options.dynamicTyping || false,
-        transformHeader: options.transformHeader || ((header) => header.trim()),
-        complete: (results) => {
+        transformHeader: options.transformHeader || (header => header.trim()),
+        complete: results => {
           this.logger.log(
             `CSV parsing complete: ${results.data.length} rows, ${results.errors.length} errors`,
           );
@@ -57,7 +54,7 @@ export class CsvParserService {
             meta: results.meta as any,
           });
         },
-        error: (error) => {
+        error: error => {
           this.logger.error('CSV parsing failed', error);
           reject(new Error(`CSV parsing failed: ${error.message}`));
         },
@@ -90,7 +87,7 @@ export class CsvParserService {
         delimiter: options.delimiter || ',',
         skipEmptyLines: options.skipEmptyLines !== false,
         dynamicTyping: options.dynamicTyping || false,
-        transformHeader: options.transformHeader || ((header) => header.trim()),
+        transformHeader: options.transformHeader || (header => header.trim()),
         step: async (results, parser) => {
           try {
             // Pause parsing while processing
@@ -111,14 +108,12 @@ export class CsvParserService {
             });
           }
         },
-        error: (error) => {
+        error: error => {
           this.logger.error('CSV streaming failed', error);
           reject(new Error(`CSV streaming failed: ${error.message}`));
         },
         complete: () => {
-          this.logger.log(
-            `CSV streaming complete: ${rowCount} rows, ${errors.length} errors`,
-          );
+          this.logger.log(`CSV streaming complete: ${rowCount} rows, ${errors.length} errors`);
           resolve({ totalRows: rowCount, errors });
         },
       });
@@ -171,9 +166,7 @@ export class CsvParserService {
       }
 
       const foundColumns = parsed.meta.fields;
-      const missingColumns = requiredColumns.filter(
-        (col) => !foundColumns.includes(col),
-      );
+      const missingColumns = requiredColumns.filter(col => !foundColumns.includes(col));
 
       if (missingColumns.length > 0) {
         errors.push(

@@ -8,10 +8,12 @@ export class AppService {
   getApiInfo(): object {
     const port = this.configService.get<number>('PORT', 3000);
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
+    // Use BACKEND_URL from environment, fallback to production URL or localhost
     const baseUrl =
-      nodeEnv === 'production'
-        ? 'https://mash-backend-api.up.railway.app'
-        : `http://localhost:${port}`;
+      this.configService.get<string>('BACKEND_URL') ||
+      (nodeEnv === 'production'
+        ? 'https://mash-backend-api-production.up.railway.app'
+        : `http://localhost:${port}`);
 
     return {
       name: 'MASH Backend API',
@@ -97,8 +99,7 @@ export class AppService {
       support: {
         email: 'pp.namias@gmail.com',
         repository: 'https://github.com/MASH-Mushroom-Automation/MASH-Backend',
-        issues:
-          'https://github.com/MASH-Mushroom-Automation/MASH-Backend/issues',
+        issues: 'https://github.com/MASH-Mushroom-Automation/MASH-Backend/issues',
       },
 
       uptime: {

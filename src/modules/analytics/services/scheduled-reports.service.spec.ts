@@ -53,8 +53,7 @@ describe('ScheduledReportsService', () => {
 
     service = module.get<ScheduledReportsService>(ScheduledReportsService);
     prismaService = module.get<PrismaService>(PrismaService);
-    reportBuilderService =
-      module.get<ReportBuilderService>(ReportBuilderService);
+    reportBuilderService = module.get<ReportBuilderService>(ReportBuilderService);
     exportService = module.get<ExportService>(ExportService);
 
     jest.clearAllMocks();
@@ -98,15 +97,9 @@ describe('ScheduledReportsService', () => {
 
     it('should create a new subscription', async () => {
       mockPrismaService.report.findUnique.mockResolvedValue(mockReport);
-      mockPrismaService.reportSubscription.create.mockResolvedValue(
-        mockSubscription,
-      );
+      mockPrismaService.reportSubscription.create.mockResolvedValue(mockSubscription);
 
-      const result = await service.createSubscription(
-        reportId,
-        userId,
-        subscriptionData,
-      );
+      const result = await service.createSubscription(reportId, userId, subscriptionData);
 
       expect(result).toEqual(mockSubscription);
       expect(mockPrismaService.report.findUnique).toHaveBeenCalledWith({
@@ -118,16 +111,14 @@ describe('ScheduledReportsService', () => {
     it('should throw error when report not found', async () => {
       mockPrismaService.report.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.createSubscription(reportId, userId, subscriptionData),
-      ).rejects.toThrow(`Report with ID ${reportId} not found`);
+      await expect(service.createSubscription(reportId, userId, subscriptionData)).rejects.toThrow(
+        `Report with ID ${reportId} not found`,
+      );
     });
 
     it('should use default format when not provided', async () => {
       mockPrismaService.report.findUnique.mockResolvedValue(mockReport);
-      mockPrismaService.reportSubscription.create.mockResolvedValue(
-        mockSubscription,
-      );
+      mockPrismaService.reportSubscription.create.mockResolvedValue(mockSubscription);
 
       await service.createSubscription(reportId, userId, {
         frequency: SubscriptionFrequency.WEEKLY,
@@ -172,16 +163,12 @@ describe('ScheduledReportsService', () => {
     ];
 
     it('should return user subscriptions', async () => {
-      mockPrismaService.reportSubscription.findMany.mockResolvedValue(
-        mockSubscriptions,
-      );
+      mockPrismaService.reportSubscription.findMany.mockResolvedValue(mockSubscriptions);
 
       const result = await service.getUserSubscriptions(userId);
 
       expect(result).toEqual(mockSubscriptions);
-      expect(
-        mockPrismaService.reportSubscription.findMany,
-      ).toHaveBeenCalledWith(
+      expect(mockPrismaService.reportSubscription.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId },
           orderBy: { createdAt: 'desc' },
@@ -220,18 +207,10 @@ describe('ScheduledReportsService', () => {
     };
 
     it('should update subscription', async () => {
-      mockPrismaService.reportSubscription.findFirst.mockResolvedValue(
-        mockSubscription,
-      );
-      mockPrismaService.reportSubscription.update.mockResolvedValue(
-        mockUpdatedSubscription,
-      );
+      mockPrismaService.reportSubscription.findFirst.mockResolvedValue(mockSubscription);
+      mockPrismaService.reportSubscription.update.mockResolvedValue(mockUpdatedSubscription);
 
-      const result = await service.updateSubscription(
-        subscriptionId,
-        userId,
-        updateData,
-      );
+      const result = await service.updateSubscription(subscriptionId, userId, updateData);
 
       expect(result).toEqual(mockUpdatedSubscription);
       expect(mockPrismaService.reportSubscription.update).toHaveBeenCalledWith({
@@ -244,9 +223,9 @@ describe('ScheduledReportsService', () => {
     it('should throw error when subscription not found', async () => {
       mockPrismaService.reportSubscription.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.updateSubscription(subscriptionId, userId, updateData),
-      ).rejects.toThrow(`Subscription with ID ${subscriptionId} not found`);
+      await expect(service.updateSubscription(subscriptionId, userId, updateData)).rejects.toThrow(
+        `Subscription with ID ${subscriptionId} not found`,
+      );
     });
 
     it('should verify ownership before update', async () => {
@@ -256,9 +235,7 @@ describe('ScheduledReportsService', () => {
         service.updateSubscription(subscriptionId, 'other-user', updateData),
       ).rejects.toThrow();
 
-      expect(
-        mockPrismaService.reportSubscription.findFirst,
-      ).toHaveBeenCalledWith(
+      expect(mockPrismaService.reportSubscription.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: subscriptionId, userId: 'other-user' },
         }),
@@ -276,12 +253,8 @@ describe('ScheduledReportsService', () => {
     };
 
     it('should delete subscription', async () => {
-      mockPrismaService.reportSubscription.findFirst.mockResolvedValue(
-        mockSubscription,
-      );
-      mockPrismaService.reportSubscription.delete.mockResolvedValue(
-        mockSubscription,
-      );
+      mockPrismaService.reportSubscription.findFirst.mockResolvedValue(mockSubscription);
+      mockPrismaService.reportSubscription.delete.mockResolvedValue(mockSubscription);
 
       const result = await service.deleteSubscription(subscriptionId, userId);
 
@@ -296,17 +269,15 @@ describe('ScheduledReportsService', () => {
     it('should throw error when subscription not found', async () => {
       mockPrismaService.reportSubscription.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.deleteSubscription(subscriptionId, userId),
-      ).rejects.toThrow(`Subscription with ID ${subscriptionId} not found`);
+      await expect(service.deleteSubscription(subscriptionId, userId)).rejects.toThrow(
+        `Subscription with ID ${subscriptionId} not found`,
+      );
     });
 
     it('should verify ownership before delete', async () => {
       mockPrismaService.reportSubscription.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.deleteSubscription(subscriptionId, 'other-user'),
-      ).rejects.toThrow();
+      await expect(service.deleteSubscription(subscriptionId, 'other-user')).rejects.toThrow();
     });
   });
 
@@ -333,9 +304,7 @@ describe('ScheduledReportsService', () => {
     };
 
     it('should trigger subscription manually', async () => {
-      mockPrismaService.reportSubscription.findFirst.mockResolvedValue(
-        mockSubscription,
-      );
+      mockPrismaService.reportSubscription.findFirst.mockResolvedValue(mockSubscription);
       mockReportBuilderService.executeReport.mockResolvedValue({
         id: 'exec-1',
         data: {},
@@ -357,9 +326,9 @@ describe('ScheduledReportsService', () => {
     it('should throw error when subscription not found', async () => {
       mockPrismaService.reportSubscription.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.triggerSubscription(subscriptionId, userId),
-      ).rejects.toThrow(`Subscription with ID ${subscriptionId} not found`);
+      await expect(service.triggerSubscription(subscriptionId, userId)).rejects.toThrow(
+        `Subscription with ID ${subscriptionId} not found`,
+      );
     });
   });
 
@@ -367,9 +336,7 @@ describe('ScheduledReportsService', () => {
     it('should skip when REPORTS_CRON_ENABLED is false', async () => {
       await service.generateDailyReports();
 
-      expect(
-        mockPrismaService.reportSubscription.findMany,
-      ).not.toHaveBeenCalled();
+      expect(mockPrismaService.reportSubscription.findMany).not.toHaveBeenCalled();
     });
   });
 
@@ -377,9 +344,7 @@ describe('ScheduledReportsService', () => {
     it('should skip when REPORTS_CRON_ENABLED is false', async () => {
       await service.generateWeeklyReports();
 
-      expect(
-        mockPrismaService.reportSubscription.findMany,
-      ).not.toHaveBeenCalled();
+      expect(mockPrismaService.reportSubscription.findMany).not.toHaveBeenCalled();
     });
   });
 
@@ -387,9 +352,7 @@ describe('ScheduledReportsService', () => {
     it('should skip when REPORTS_CRON_ENABLED is false', async () => {
       await service.generateMonthlyReports();
 
-      expect(
-        mockPrismaService.reportSubscription.findMany,
-      ).not.toHaveBeenCalled();
+      expect(mockPrismaService.reportSubscription.findMany).not.toHaveBeenCalled();
     });
   });
 });

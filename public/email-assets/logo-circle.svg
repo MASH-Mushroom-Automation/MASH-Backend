@@ -1,0 +1,22 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circle background -->
+  <circle cx="60" cy="60" r="60" fill="#4CAF50"/>
+  
+  <!-- White inner circle -->
+  <circle cx="60" cy="60" r="52" fill="white"/>
+  
+  <!-- Green MASH text -->
+  <text x="60" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#4CAF50" text-anchor="middle">MASH</text>
+  
+  <!-- Mushroom icon simplified -->
+  <g transform="translate(60, 70)">
+    <!-- Mushroom cap -->
+    <ellipse cx="0" cy="-5" rx="15" ry="8" fill="#E53935"/>
+    <ellipse cx="0" cy="-5" rx="12" ry="6" fill="#EF5350"/>
+    <!-- Mushroom stem -->
+    <rect x="-3" y="-5" width="6" height="12" rx="2" fill="#FFF8E1"/>
+  </g>
+  
+  <!-- Tagline -->
+  <text x="60" y="95" font-family="Arial, sans-serif" font-size="8" fill="#666" text-anchor="middle">Automation</text>
+</svg>

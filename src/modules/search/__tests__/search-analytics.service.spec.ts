@@ -103,14 +103,10 @@ describe('SearchAnalyticsService', () => {
         took: 50,
       };
 
-      mockPrismaService.searchLog.create.mockRejectedValue(
-        new Error('Database connection failed'),
-      );
+      mockPrismaService.searchLog.create.mockRejectedValue(new Error('Database connection failed'));
 
       // Should not throw - logging should be non-blocking
-      await expect(service.logSearch(searchParams)).rejects.toThrow(
-        'Database connection failed',
-      );
+      await expect(service.logSearch(searchParams)).rejects.toThrow('Database connection failed');
     });
 
     it('should log search with all optional parameters', async () => {
@@ -168,9 +164,7 @@ describe('SearchAnalyticsService', () => {
         },
       ];
 
-      mockPrismaService.searchLog.groupBy.mockResolvedValue(
-        mockPopularQueries as any,
-      );
+      mockPrismaService.searchLog.groupBy.mockResolvedValue(mockPopularQueries as any);
 
       const result = await service.getPopularQueries(10);
 
@@ -229,9 +223,7 @@ describe('SearchAnalyticsService', () => {
         },
       ];
 
-      mockPrismaService.searchLog.groupBy.mockResolvedValue(
-        mockZeroResultQueries as any,
-      );
+      mockPrismaService.searchLog.groupBy.mockResolvedValue(mockZeroResultQueries as any);
 
       const result = await service.getZeroResultQueries(20);
 
@@ -290,9 +282,7 @@ describe('SearchAnalyticsService', () => {
         },
       ];
 
-      mockPrismaService.searchLog.findMany.mockResolvedValue(
-        mockSlowQueries as any,
-      );
+      mockPrismaService.searchLog.findMany.mockResolvedValue(mockSlowQueries as any);
 
       const result = await service.getSlowQueries(20);
 
@@ -328,9 +318,7 @@ describe('SearchAnalyticsService', () => {
 
       const call = mockPrismaService.searchLog.findMany.mock.calls[0][0];
       const createdAtFilter = call.where.createdAt.gte;
-      const timeDiff = Math.abs(
-        createdAtFilter.getTime() - oneDayAgo.getTime(),
-      );
+      const timeDiff = Math.abs(createdAtFilter.getTime() - oneDayAgo.getTime());
 
       // Should be within 1 second of 24 hours ago
       expect(timeDiff).toBeLessThan(1000);

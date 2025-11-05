@@ -1,9 +1,6 @@
 import { Injectable, Scope } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import {
-  createEntityLoader,
-  BatchLoader,
-} from '../../../common/utils/dataloader.util';
+import { createEntityLoader, BatchLoader } from '../../../common/utils/dataloader.util';
 
 export interface DeviceData {
   id: string;

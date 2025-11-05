@@ -31,15 +31,10 @@ export class ExportService {
 
     try {
       // Get estimated record count
-      const totalRecords = await this.getRecordCount(
-        dto.entityType,
-        dto.filters,
-      );
+      const totalRecords = await this.getRecordCount(dto.entityType, dto.filters);
 
       if (totalRecords === 0) {
-        throw new BadRequestException(
-          'No records found matching the export criteria',
-        );
+        throw new BadRequestException('No records found matching the export criteria');
       }
 
       // Calculate estimated time (rough estimate: 100 records per second)
@@ -103,10 +98,7 @@ export class ExportService {
         createdAt: job.createdAt,
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to create export job: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to create export job: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -135,9 +127,7 @@ export class ExportService {
 
     // Calculate progress percentage
     const progressPercent =
-      job.totalRecords > 0
-        ? Math.round((job.processedRecords / job.totalRecords) * 100)
-        : 0;
+      job.totalRecords > 0 ? Math.round((job.processedRecords / job.totalRecords) * 100) : 0;
 
     return {
       ...job,
@@ -202,12 +192,10 @@ export class ExportService {
     ]);
 
     // Add progress percentage to each job
-    const jobsWithProgress = jobs.map((job) => ({
+    const jobsWithProgress = jobs.map(job => ({
       ...job,
       progressPercent:
-        job.totalRecords > 0
-          ? Math.round((job.processedRecords / job.totalRecords) * 100)
-          : 0,
+        job.totalRecords > 0 ? Math.round((job.processedRecords / job.totalRecords) * 100) : 0,
     }));
 
     return {
@@ -236,18 +224,12 @@ export class ExportService {
     }
 
     if (job.status === 'COMPLETED' || job.status === 'FAILED') {
-      throw new BadRequestException(
-        `Cannot cancel job with status: ${job.status}`,
-      );
+      throw new BadRequestException(`Cannot cancel job with status: ${job.status}`);
     }
 
     // Remove from Bull queue
-    const bullJobs = await this.exportQueue.getJobs([
-      'waiting',
-      'active',
-      'delayed',
-    ]);
-    const bullJob = bullJobs.find((j) => j.data.jobId === jobId);
+    const bullJobs = await this.exportQueue.getJobs(['waiting', 'active', 'delayed']);
+    const bullJob = bullJobs.find(j => j.data.jobId === jobId);
     if (bullJob) {
       await bullJob.remove();
     }
@@ -283,9 +265,7 @@ export class ExportService {
     }
 
     if (job.status !== 'FAILED') {
-      throw new BadRequestException(
-        `Can only retry failed jobs. Current status: ${job.status}`,
-      );
+      throw new BadRequestException(`Can only retry failed jobs. Current status: ${job.status}`);
     }
 
     // Reset job counters
@@ -373,10 +353,7 @@ export class ExportService {
   /**
    * Get record count for entity type with filters
    */
-  private async getRecordCount(
-    entityType: string,
-    filters?: Record<string, any>,
-  ): Promise<number> {
+  private async getRecordCount(entityType: string, filters?: Record<string, any>): Promise<number> {
     const where = this.buildWhereClause(filters);
 
     switch (entityType) {
@@ -424,7 +401,7 @@ export class ExportService {
     }
 
     // Add other custom filters directly
-    Object.keys(filters).forEach((key) => {
+    Object.keys(filters).forEach(key => {
       if (!['status', 'isActive', 'startDate', 'endDate'].includes(key)) {
         where[key] = filters[key];
       }

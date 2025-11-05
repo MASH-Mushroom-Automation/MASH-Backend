@@ -40,7 +40,7 @@ export class SessionManagementService {
     });
 
     // Mask session tokens (show last 8 characters only)
-    return sessions.map((session) => ({
+    return sessions.map(session => ({
       ...session,
       token: this.maskToken(session.token),
       isCurrent: false, // Will be set by controller based on current session
@@ -68,16 +68,12 @@ export class SessionManagementService {
 
     // Verify ownership
     if (session.userId !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to revoke this session',
-      );
+      throw new ForbiddenException('You do not have permission to revoke this session');
     }
 
     // Prevent revoking current session
     if (currentSessionId && sessionId === currentSessionId) {
-      throw new BadRequestException(
-        'Cannot revoke current session. Use logout endpoint instead',
-      );
+      throw new BadRequestException('Cannot revoke current session. Use logout endpoint instead');
     }
 
     // Check if already revoked
@@ -213,8 +209,7 @@ export class SessionManagementService {
     if (!deviceInfo) return {};
 
     try {
-      const info =
-        typeof deviceInfo === 'string' ? JSON.parse(deviceInfo) : deviceInfo;
+      const info = typeof deviceInfo === 'string' ? JSON.parse(deviceInfo) : deviceInfo;
       return {
         browser: info.browser || 'Unknown',
         os: info.os || 'Unknown',

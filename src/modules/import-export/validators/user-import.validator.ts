@@ -20,13 +20,7 @@ export class UserImportValidator extends BaseImportValidator {
   private readonly logger = new Logger(UserImportValidator.name);
 
   // Valid user roles from Prisma schema
-  private readonly USER_ROLES = [
-    'USER',
-    'ADMIN',
-    'SELLER',
-    'MODERATOR',
-    'SUPER_ADMIN',
-  ];
+  private readonly USER_ROLES = ['USER', 'ADMIN', 'SELLER', 'MODERATOR', 'SUPER_ADMIN'];
 
   constructor(prisma: PrismaService) {
     super(prisma);
@@ -174,9 +168,7 @@ export class UserImportValidator extends BaseImportValidator {
       try {
         transformed.preferences = JSON.parse(transformed.preferences);
       } catch {
-        this.logger.warn(
-          `Failed to parse preferences JSON for user: ${transformed.email}`,
-        );
+        this.logger.warn(`Failed to parse preferences JSON for user: ${transformed.email}`);
         transformed.preferences = null;
       }
     }
@@ -184,8 +176,7 @@ export class UserImportValidator extends BaseImportValidator {
     // Convert boolean strings
     if (typeof transformed.isActive === 'string') {
       transformed.isActive =
-        transformed.isActive.toLowerCase() === 'true' ||
-        transformed.isActive === '1';
+        transformed.isActive.toLowerCase() === 'true' || transformed.isActive === '1';
     }
 
     if (typeof transformed.twoFactorEnabled === 'string') {
@@ -195,10 +186,7 @@ export class UserImportValidator extends BaseImportValidator {
     }
 
     // Parse date
-    if (
-      transformed.lastLoginAt &&
-      typeof transformed.lastLoginAt === 'string'
-    ) {
+    if (transformed.lastLoginAt && typeof transformed.lastLoginAt === 'string') {
       transformed.lastLoginAt = new Date(transformed.lastLoginAt);
     }
 
@@ -208,9 +196,7 @@ export class UserImportValidator extends BaseImportValidator {
   /**
    * Transform for database
    */
-  async transformForDatabase(
-    data: Record<string, any>,
-  ): Promise<Record<string, any>> {
+  async transformForDatabase(data: Record<string, any>): Promise<Record<string, any>> {
     const transformed = { ...data };
 
     // Set defaults
@@ -222,10 +208,7 @@ export class UserImportValidator extends BaseImportValidator {
       transformed.isActive = true;
     }
 
-    if (
-      transformed.twoFactorEnabled === undefined ||
-      transformed.twoFactorEnabled === null
-    ) {
+    if (transformed.twoFactorEnabled === undefined || transformed.twoFactorEnabled === null) {
       transformed.twoFactorEnabled = false;
     }
 

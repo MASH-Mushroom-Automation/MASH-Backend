@@ -55,12 +55,7 @@ import { DatabaseModule } from '../../database/database.module';
       adapter: BullAdapter,
     }),
   ],
-  providers: [
-    NotificationQueueService,
-    EmailProcessor,
-    SmsProcessor,
-    PushProcessor,
-  ],
+  providers: [NotificationQueueService, EmailProcessor, SmsProcessor, PushProcessor],
   exports: [NotificationQueueService, BullModule],
 })
 export class QueuesModule {}

@@ -118,7 +118,7 @@ export class RateLimitAnalyticsService {
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
     const endpointCounts = new Map<string, number>();
-    violations.forEach((v) => {
+    violations.forEach(v => {
       const count = endpointCounts.get(v.endpoint) || 0;
       endpointCounts.set(v.endpoint, count + v.count);
     });
@@ -126,19 +126,14 @@ export class RateLimitAnalyticsService {
     return {
       identifier,
       totalViolations: violations.length,
-      violationsLast24h: violations.filter((v) => v.windowStart >= oneDayAgo)
-        .length,
-      violationsLastHour: violations.filter((v) => v.windowStart >= oneHourAgo)
-        .length,
+      violationsLast24h: violations.filter(v => v.windowStart >= oneDayAgo).length,
+      violationsLastHour: violations.filter(v => v.windowStart >= oneHourAgo).length,
       topEndpoints: Array.from(endpointCounts.entries())
         .map(([endpoint, count]) => ({ endpoint, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10),
       firstViolation: violations.length > 0 ? violations[0].windowStart : null,
-      lastViolation:
-        violations.length > 0
-          ? violations[violations.length - 1].windowStart
-          : null,
+      lastViolation: violations.length > 0 ? violations[violations.length - 1].windowStart : null,
     };
   }
 
@@ -160,11 +155,7 @@ export class RateLimitAnalyticsService {
   /**
    * Get top violators
    */
-  async getTopViolators(
-    limit = 20,
-    startDate?: Date,
-    endDate?: Date,
-  ): Promise<TopViolator[]> {
+  async getTopViolators(limit = 20, startDate?: Date, endDate?: Date): Promise<TopViolator[]> {
     const where: any = {};
     if (startDate || endDate) {
       where.windowStart = {};
@@ -180,7 +171,7 @@ export class RateLimitAnalyticsService {
       { count: number; lastDate: Date; endpoints: Map<string, number> }
     >();
 
-    violations.forEach((v) => {
+    violations.forEach(v => {
       if (!violatorMap.has(v.identifier)) {
         violatorMap.set(v.identifier, {
           count: 0,
@@ -200,9 +191,7 @@ export class RateLimitAnalyticsService {
     // Convert to array and sort
     const topViolators = Array.from(violatorMap.entries())
       .map(([identifier, data]) => {
-        const topEndpoint = Array.from(data.endpoints.entries()).sort(
-          (a, b) => b[1] - a[1],
-        )[0][0];
+        const topEndpoint = Array.from(data.endpoints.entries()).sort((a, b) => b[1] - a[1])[0][0];
         return {
           identifier,
           violationCount: data.count,
@@ -267,8 +256,7 @@ export class RateLimitAnalyticsService {
     });
 
     // Check for many different endpoints (scraping behavior)
-    const uniqueEndpoints = new Set(recentViolations.map((v) => v.endpoint))
-      .size;
+    const uniqueEndpoints = new Set(recentViolations.map(v => v.endpoint)).size;
     if (uniqueEndpoints > 20) {
       suspiciousPatterns.push('API_SCRAPING');
       riskScore += 20;
@@ -277,8 +265,7 @@ export class RateLimitAnalyticsService {
     // Check for consistent blocking (persistent attacker)
     const blockedRate =
       recentViolations.length > 0
-        ? recentViolations.filter((v) => v.blocked).length /
-          recentViolations.length
+        ? recentViolations.filter(v => v.blocked).length / recentViolations.length
         : 0;
     if (blockedRate > 0.8 && recentViolations.length > 10) {
       suspiciousPatterns.push('PERSISTENT_ATTACKER');

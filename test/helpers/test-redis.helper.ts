@@ -13,13 +13,10 @@ export class TestRedisHelper {
   private readonly keyPrefix = 'test:';
 
   private constructor() {
-    this.redis = new Redis(
-      process.env.TEST_REDIS_URL || 'redis://localhost:6379/1',
-      {
-        keyPrefix: this.keyPrefix,
-        lazyConnect: true,
-      },
-    );
+    this.redis = new Redis(process.env.TEST_REDIS_URL || 'redis://localhost:6379/1', {
+      keyPrefix: this.keyPrefix,
+      lazyConnect: true,
+    });
   }
 
   /**
@@ -55,9 +52,7 @@ export class TestRedisHelper {
 
       if (keys.length > 0) {
         // Remove prefix before deleting
-        const keysWithoutPrefix = keys.map((key) =>
-          key.replace(this.keyPrefix, ''),
-        );
+        const keysWithoutPrefix = keys.map(key => key.replace(this.keyPrefix, ''));
         await this.redis.del(...keysWithoutPrefix);
       }
 

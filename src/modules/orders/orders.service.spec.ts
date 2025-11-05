@@ -63,9 +63,7 @@ describe('OrdersService', () => {
 
   describe('findAll', () => {
     it('should return paginated orders', async () => {
-      const mockOrders = [
-        { id: '1', userId: 'user-1', total: 100, status: 'PENDING' },
-      ];
+      const mockOrders = [{ id: '1', userId: 'user-1', total: 100, status: 'PENDING' }];
 
       prisma.order.findMany.mockResolvedValue(mockOrders as any);
       prisma.order.count.mockResolvedValue(1);

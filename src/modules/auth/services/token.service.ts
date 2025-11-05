@@ -29,8 +29,9 @@ export class TokenService {
       },
       {
         secret: this.configService.get<string>('JWT_SECRET') ?? '',
-        expiresIn: (this.configService.get<string>('clerk.sessionDuration') ??
-          '24h') as number | `${number}${'s' | 'm' | 'h' | 'd'}`,
+        expiresIn: (this.configService.get<string>('clerk.sessionDuration') ?? '24h') as
+          | number
+          | `${number}${'s' | 'm' | 'h' | 'd'}`,
       },
     );
   }
@@ -46,9 +47,9 @@ export class TokenService {
       },
       {
         secret: this.configService.get<string>('JWT_SECRET') ?? '',
-        expiresIn: (this.configService.get<string>(
-          'clerk.refreshTokenDuration',
-        ) ?? '7d') as number | `${number}${'s' | 'm' | 'h' | 'd'}`,
+        expiresIn: (this.configService.get<string>('clerk.refreshTokenDuration') ?? '7d') as
+          | number
+          | `${number}${'s' | 'm' | 'h' | 'd'}`,
       },
     );
   }

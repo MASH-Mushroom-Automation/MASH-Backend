@@ -1,11 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
-import {
-  ExportConfigDto,
-  ExportFormat,
-  ExportResponseDto,
-} from '../dto/export-config.dto';
+import { ExportConfigDto, ExportFormat, ExportResponseDto } from '../dto/export-config.dto';
 import { CsvExportService } from './csv-export.service';
 import { ExcelExportService } from './excel-export.service';
 import { PdfExportService } from './pdf-export.service';
@@ -43,19 +39,14 @@ export class ExportService {
       }
 
       // Generate filename
-      const filename =
-        config.filename || `analytics-export-${config.reportType || 'general'}`;
+      const filename = config.filename || `analytics-export-${config.reportType || 'general'}`;
 
       // Export based on format
       let result: { filePath: string; fileSize: number };
 
       switch (config.format) {
         case ExportFormat.CSV:
-          result = await this.csvExportService.exportToCSV(
-            data,
-            filename,
-            config.columns,
-          );
+          result = await this.csvExportService.exportToCSV(data, filename, config.columns);
           break;
 
         case ExportFormat.EXCEL:
@@ -80,9 +71,7 @@ export class ExportService {
           break;
 
         default:
-          throw new BadRequestException(
-            `Unsupported export format: ${config.format}`,
-          );
+          throw new BadRequestException(`Unsupported export format: ${config.format}`);
       }
 
       // Create export response
@@ -128,10 +117,7 @@ export class ExportService {
     try {
       // If report type is specified, use custom fetch logic
       if (config.reportType) {
-        return await this.fetchReportTypeData(
-          config.reportType,
-          config.filters || {},
-        );
+        return await this.fetchReportTypeData(config.reportType, config.filters || {});
       }
 
       // Default: fetch recent orders for demo
@@ -148,7 +134,7 @@ export class ExportService {
         },
       });
 
-      return orders.map((order) => ({
+      return orders.map(order => ({
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
@@ -165,10 +151,7 @@ export class ExportService {
   /**
    * Fetch data by report type
    */
-  private async fetchReportTypeData(
-    reportType: string,
-    filters: any,
-  ): Promise<any[]> {
+  private async fetchReportTypeData(reportType: string, filters: any): Promise<any[]> {
     switch (reportType) {
       case 'SALES':
         return this.fetchSalesData(filters);
@@ -188,7 +171,7 @@ export class ExportService {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     });
-    return orders.map((o) => ({ ...o, total: Number(o.total) }));
+    return orders.map(o => ({ ...o, total: Number(o.total) }));
   }
 
   private async fetchRevenueData(filters: any): Promise<any[]> {
@@ -196,7 +179,7 @@ export class ExportService {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     });
-    return orders.map((o) => ({ ...o, total: Number(o.total) }));
+    return orders.map(o => ({ ...o, total: Number(o.total) }));
   }
 
   private async fetchUsersData(filters: any): Promise<any[]> {
@@ -212,7 +195,7 @@ export class ExportService {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     });
-    return products.map((p) => ({ ...p, price: Number(p.price) }));
+    return products.map(p => ({ ...p, price: Number(p.price) }));
   }
 
   /**
@@ -240,9 +223,7 @@ export class ExportService {
     const stats = fs.statSync(filePath);
     const fileSize = stats.size;
 
-    this.logger.log(
-      `JSON export completed: ${jsonFilename} (${fileSize} bytes)`,
-    );
+    this.logger.log(`JSON export completed: ${jsonFilename} (${fileSize} bytes)`);
 
     return {
       filePath: `/exports/${jsonFilename}`,

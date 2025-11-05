@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import {
-  EmailTemplateService,
-  EmailTemplateType,
-} from './email-template.service';
+import { EmailTemplateService, EmailTemplateType } from './email-template.service';
 
 export interface SendEmailOptions {
   to: string;
@@ -80,9 +77,7 @@ export class EmailService {
       this.logger.error(
         `❌ SMTP EMAIL SERVICE NOT CONFIGURED! Missing environment variables: ${missingVars.join(', ')}`,
       );
-      this.logger.error(
-        '📧 SMTP email sending will FAIL until you add these variables',
-      );
+      this.logger.error('📧 SMTP email sending will FAIL until you add these variables');
     }
 
     const transporter = nodemailer.createTransport({
@@ -96,12 +91,9 @@ export class EmailService {
     });
 
     // Verify transporter configuration
-    transporter.verify((error) => {
+    transporter.verify(error => {
       if (error) {
-        this.logger.error(
-          '❌ SMTP Email transporter configuration error:',
-          error.message,
-        );
+        this.logger.error('❌ SMTP Email transporter configuration error:', error.message);
         if (error.message.includes('Invalid login')) {
           this.logger.error(
             '🔑 Gmail App Password is invalid or expired. Generate new one at: https://myaccount.google.com/apppasswords',
@@ -170,21 +162,16 @@ export class EmailService {
     });
 
     // Verify transporter configuration
-    this.transporter.verify((error) => {
+    this.transporter.verify(error => {
       if (error) {
-        this.logger.error(
-          '❌ Email transporter configuration error:',
-          error.message,
-        );
+        this.logger.error('❌ Email transporter configuration error:', error.message);
         if (error.message.includes('Invalid login')) {
           this.logger.error(
             '🔑 Gmail App Password is invalid or expired. Generate new one at: https://myaccount.google.com/apppasswords',
           );
         }
       } else {
-        this.logger.log(
-          '✅ Email transporter is ready to send emails via Gmail SMTP',
-        );
+        this.logger.log('✅ Email transporter is ready to send emails via Gmail SMTP');
         this.logger.log(
           `📧 Sending emails from: ${process.env.EMAIL_FROM || process.env.EMAIL_USER}`,
         );
@@ -206,11 +193,10 @@ export class EmailService {
       this.logger.log(`Using email provider: ${provider.name}`);
 
       // Render the template with variables
-      const { html, text, subject } =
-        await this.emailTemplateService.renderTemplate(
-          options.templateType,
-          options.variables,
-        );
+      const { html, text, subject } = await this.emailTemplateService.renderTemplate(
+        options.templateType,
+        options.variables,
+      );
 
       // Use provided subject or template subject
       const emailSubject = options.subject || subject;
@@ -230,9 +216,7 @@ export class EmailService {
         );
       } else if (provider.name === EmailProvider.SENDGRID) {
         // TODO: Implement SendGrid sending
-        this.logger.log(
-          `SendGrid sending not yet implemented for ${options.to}`,
-        );
+        this.logger.log(`SendGrid sending not yet implemented for ${options.to}`);
         throw new Error('SendGrid provider not yet implemented');
       } else {
         throw new Error(`Unsupported provider: ${provider.name}`);
@@ -256,10 +240,7 @@ export class EmailService {
       to,
       templateType: EmailTemplateType.VERIFICATION,
       variables: {
-        ...this.emailTemplateService.getVerificationVariables(
-          firstName,
-          verificationLink,
-        ),
+        ...this.emailTemplateService.getVerificationVariables(firstName, verificationLink),
         expiresIn, // Override with custom expiration
         year: new Date().getFullYear().toString(),
       },
@@ -279,10 +260,7 @@ export class EmailService {
       to,
       templateType: EmailTemplateType.FORGOT_PASSWORD,
       variables: {
-        ...this.emailTemplateService.getForgotPasswordVariables(
-          firstName,
-          resetLink,
-        ),
+        ...this.emailTemplateService.getForgotPasswordVariables(firstName, resetLink),
         expiresIn, // Override with custom expiration
         year: new Date().getFullYear().toString(),
       },
@@ -302,10 +280,7 @@ export class EmailService {
       to,
       templateType: EmailTemplateType.PASSWORD_CHANGED,
       variables: {
-        ...this.emailTemplateService.getPasswordChangedVariables(
-          firstName,
-          new Date(changeDate),
-        ),
+        ...this.emailTemplateService.getPasswordChangedVariables(firstName, new Date(changeDate)),
         email: to,
         changeDate,
         ipAddress,
@@ -347,10 +322,7 @@ export class EmailService {
       to,
       templateType: EmailTemplateType.RESEND_VERIFICATION,
       variables: {
-        ...this.emailTemplateService.getVerificationVariables(
-          firstName,
-          verificationLink,
-        ),
+        ...this.emailTemplateService.getVerificationVariables(firstName, verificationLink),
         expiresIn, // Override with custom expiration
         year: new Date().getFullYear().toString(),
       },
@@ -360,11 +332,7 @@ export class EmailService {
   /**
    * Send welcome email
    */
-  async sendWelcomeEmail(
-    to: string,
-    firstName: string,
-    dashboardUrl: string,
-  ): Promise<void> {
+  async sendWelcomeEmail(to: string, firstName: string, dashboardUrl: string): Promise<void> {
     await this.sendTemplatedEmail({
       to,
       templateType: EmailTemplateType.WELCOME,
@@ -372,10 +340,8 @@ export class EmailService {
         firstName,
         dashboardUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl:
-          `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        privacyUrl:
-          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
         termsUrl: `${process.env.APP_URL}/terms` || 'https://mash.com/terms',
       },
     });
@@ -405,12 +371,9 @@ export class EmailService {
         ipAddress,
         unlockUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl:
-          `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        securityUrl:
-          `${process.env.APP_URL}/security` || 'https://mash.com/security',
-        privacyUrl:
-          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
+        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
       },
     });
   }
@@ -437,12 +400,9 @@ export class EmailService {
         device,
         signInUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl:
-          `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        securityUrl:
-          `${process.env.APP_URL}/security` || 'https://mash.com/security',
-        privacyUrl:
-          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
+        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
       },
     });
   }
@@ -471,12 +431,9 @@ export class EmailService {
       location,
       accountUrl,
       homeUrl: process.env.APP_URL || 'https://mash.com',
-      supportUrl:
-        `${process.env.APP_URL}/support` || 'https://mash.com/support',
-      securityUrl:
-        `${process.env.APP_URL}/security` || 'https://mash.com/security',
-      privacyUrl:
-        `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+      supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
+      securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
+      privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
     };
 
     // Send to old email
@@ -520,10 +477,8 @@ export class EmailService {
         downloadDataUrl,
         feedbackUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl:
-          `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        privacyUrl:
-          `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
+        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
         termsUrl: `${process.env.APP_URL}/terms` || 'https://mash.com/terms',
       },
     });
@@ -532,12 +487,7 @@ export class EmailService {
   /**
    * Send a raw email (for custom use cases)
    */
-  async sendRawEmail(
-    to: string,
-    subject: string,
-    html: string,
-    text?: string,
-  ): Promise<void> {
+  async sendRawEmail(to: string, subject: string, html: string, text?: string): Promise<void> {
     try {
       const info = await this.transporter.sendMail({
         from: process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>',
@@ -547,9 +497,7 @@ export class EmailService {
         html,
       });
 
-      this.logger.log(
-        `Raw email sent successfully to ${to}: ${info.messageId}`,
-      );
+      this.logger.log(`Raw email sent successfully to ${to}: ${info.messageId}`);
     } catch (error) {
       this.logger.error(`Failed to send raw email to ${to}:`, error);
       throw error;

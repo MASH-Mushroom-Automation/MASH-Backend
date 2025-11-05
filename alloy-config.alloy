@@ -1,0 +1,191 @@
+# Grafana Alloy Configuration for MASH Backend
+# Collects metrics, logs, and traces from your NestJS application
+# Sends data to Grafana Cloud for monitoring and alerting
+
+# ========================================
+# PROMETHEUS METRICS COLLECTION
+# ========================================
+prometheus.scrape "mash_backend" {
+  targets = [
+    {
+      "__address__" = "localhost:3000",
+      "job"         = "mash-backend-api",
+      "environment" = "production",
+      "service"     = "nestjs-api",
+      "region"      = "railway",
+    },
+  ]
+  
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  
+  # Scrape metrics every 15 seconds
+  scrape_interval = "15s"
+  scrape_timeout  = "10s"
+  
+  # Scrape from your /metrics endpoint
+  metrics_path = "/metrics"
+}
+
+# ========================================
+# PROMETHEUS REMOTE WRITE (to Grafana Cloud)
+# ========================================
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_PROMETHEUS_URL")
+    
+    basic_auth {
+      username = env("GRAFANA_PROMETHEUS_USERNAME")
+      password = env("GRAFANA_PROMETHEUS_PASSWORD")
+    }
+    
+    # Queue configuration for reliability
+    queue_config {
+      capacity             = 10000
+      max_shards           = 10
+      max_samples_per_send = 5000
+      batch_send_deadline  = "5s"
+      min_shards           = 1
+      max_retries          = 3
+      min_backoff          = "30ms"
+      max_backoff          = "100ms"
+    }
+    
+    # Metadata configuration
+    metadata_config {
+      send         = true
+      send_interval = "1m"
+    }
+  }
+}
+
+# ========================================
+# LOKI LOGS COLLECTION
+# ========================================
+loki.source.file "mash_logs" {
+  targets = [
+    {
+      "__path__"    = "/app/logs/*.log",
+      "job"         = "mash-backend-logs",
+      "environment" = "production",
+      "service"     = "nestjs-api",
+      "region"      = "railway",
+    },
+  ]
+  
+  forward_to = [loki.write.grafana_cloud.receiver]
+  
+  # Parse JSON logs
+  pipeline_stages = [
+    {
+      json {
+        expressions = {
+          level     = "level",
+          timestamp = "timestamp",
+          message   = "message",
+          context   = "context",
+          trace_id  = "trace_id",
+        }
+      }
+    },
+    {
+      labels {
+        values = {
+          level   = "level",
+          context = "context",
+        }
+      }
+    },
+    {
+      timestamp {
+        source = "timestamp"
+        format = "RFC3339"
+      }
+    },
+  ]
+}
+
+# ========================================
+# LOKI REMOTE WRITE (to Grafana Cloud)
+# ========================================
+loki.write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_LOKI_URL")
+    
+    basic_auth {
+      username = env("GRAFANA_LOKI_USERNAME")
+      password = env("GRAFANA_LOKI_PASSWORD")
+    }
+    
+    # Batching configuration
+    batch_wait = "1s"
+    batch_size = 1048576  # 1MB
+  }
+  
+  external_labels = {
+    environment = "production",
+    service     = "mash-backend-api",
+    region      = "railway",
+  }
+}
+
+# ========================================
+# OPENTELEMETRY TRACES COLLECTION
+# ========================================
+otelcol.receiver.otlp "mash_traces" {
+  # gRPC endpoint for OpenTelemetry traces
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  
+  # HTTP endpoint for OpenTelemetry traces
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+# ========================================
+# TRACE PROCESSING (Batching)
+# ========================================
+otelcol.processor.batch "default" {
+  timeout          = "5s"
+  send_batch_size  = 100
+  send_batch_max_size = 200
+  
+  output {
+    traces = [otelcol.exporter.otlp.grafana_cloud.input]
+  }
+}
+
+# ========================================
+# TEMPO REMOTE WRITE (to Grafana Cloud)
+# ========================================
+otelcol.exporter.otlp "grafana_cloud" {
+  client {
+    endpoint = env("GRAFANA_TEMPO_URL")
+    
+    auth = otelcol.auth.basic.grafana_cloud.handler
+    
+    # Compression
+    compression = "gzip"
+    
+    # Retry configuration
+    retry_on_failure {
+      enabled         = true
+      initial_interval = "5s"
+      max_interval     = "30s"
+      max_elapsed_time = "300s"
+    }
+  }
+}
+
+# ========================================
+# AUTHENTICATION
+# ========================================
+otelcol.auth.basic "grafana_cloud" {
+  username = env("GRAFANA_TEMPO_USERNAME")
+  password = env("GRAFANA_TEMPO_PASSWORD")
+}

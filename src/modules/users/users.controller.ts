@@ -12,13 +12,7 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiConsumes,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -213,15 +207,7 @@ export class UsersController {
       'updatedAt',
     ],
     requiredFields: ['id'],
-    defaultFields: [
-      'id',
-      'email',
-      'firstName',
-      'lastName',
-      'role',
-      'isActive',
-      'avatar',
-    ],
+    defaultFields: ['id', 'email', 'firstName', 'lastName', 'role', 'isActive', 'avatar'],
     maxFields: 15,
   })
   @ApiOperation({ summary: 'Get user by ID' })
@@ -247,11 +233,7 @@ export class UsersController {
     description: 'Forbidden - Can only update own profile',
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async update(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-    @Request() req,
-  ) {
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
     return this.usersService.update(id, updateUserDto, req.user);
   }
 
@@ -282,10 +264,7 @@ export class UsersController {
   @Put(':id/profile')
   @ApiOperation({ summary: 'Update user profile (Admin)' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
-  async updateProfile(
-    @Param('id') id: string,
-    @Body() updateProfileDto: UpdateUserProfileDto,
-  ) {
+  async updateProfile(@Param('id') id: string, @Body() updateProfileDto: UpdateUserProfileDto) {
     return this.usersService.updateProfile(id, updateProfileDto);
   }
 
@@ -303,15 +282,11 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Avatar uploaded successfully' })
   @ApiResponse({
     status: 400,
-    description:
-      'Invalid file (wrong format, size exceeded, dangerous type, MIME spoofing)',
+    description: 'Invalid file (wrong format, size exceeded, dangerous type, MIME spoofing)',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async uploadAvatar(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  async uploadAvatar(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
     // Validate file before processing (security layer)
     await this.fileValidationService.validateImage(file, {
       maxSize: 5 * 1024 * 1024, // 5MB limit for avatars
@@ -343,10 +318,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async updatePreferences(
-    @Param('id') id: string,
-    @Body() preferencesDto: UserPreferencesDto,
-  ) {
+  async updatePreferences(@Param('id') id: string, @Body() preferencesDto: UserPreferencesDto) {
     return this.usersService.updatePreferences(id, preferencesDto);
   }
 
@@ -366,10 +338,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async getUserOrders(
-    @Param('id') id: string,
-    @Query() query: PaginationQueryDto,
-  ) {
+  async getUserOrders(@Param('id') id: string, @Query() query: PaginationQueryDto) {
     return this.usersService.getUserOrders(id, query);
   }
 
@@ -393,10 +362,7 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async addAddress(
-    @Param('id') id: string,
-    @Body() createAddressDto: CreateAddressDto,
-  ) {
+  async addAddress(@Param('id') id: string, @Body() createAddressDto: CreateAddressDto) {
     return this.usersService.addAddress(id, createAddressDto);
   }
 

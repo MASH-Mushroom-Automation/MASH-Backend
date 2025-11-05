@@ -77,7 +77,7 @@ describe.skip('LoggingInterceptor', () => {
   });
 
   describe('intercept', () => {
-    it('should log incoming request', (done) => {
+    it('should log incoming request', done => {
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
@@ -95,7 +95,7 @@ describe.skip('LoggingInterceptor', () => {
       });
     });
 
-    it('should log outgoing response with duration', (done) => {
+    it('should log outgoing response with duration', done => {
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
@@ -113,12 +113,12 @@ describe.skip('LoggingInterceptor', () => {
       });
     });
 
-    it('should calculate request duration', (done) => {
+    it('should calculate request duration', done => {
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
         next: () => {
-          const logCall = mockLogger.log.mock.calls.find((call) =>
+          const logCall = mockLogger.log.mock.calls.find(call =>
             call[0].includes('Outgoing Response'),
           );
           expect(logCall[1].duration).toBeGreaterThanOrEqual(0);
@@ -127,7 +127,7 @@ describe.skip('LoggingInterceptor', () => {
       });
     });
 
-    it('should log request body for POST requests', (done) => {
+    it('should log request body for POST requests', done => {
       mockRequest.method = 'POST';
       mockRequest.body = { name: 'test product' };
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
@@ -145,7 +145,7 @@ describe.skip('LoggingInterceptor', () => {
       });
     });
 
-    it('should log query parameters', (done) => {
+    it('should log query parameters', done => {
       mockRequest.query = { page: '1', limit: '10' };
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
 
@@ -162,12 +162,12 @@ describe.skip('LoggingInterceptor', () => {
       });
     });
 
-    it('should log errors', (done) => {
+    it('should log errors', done => {
       const testError = new Error('Test error');
       mockCallHandler.handle.mockReturnValue(throwError(() => testError));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
-        error: (error) => {
+        error: error => {
           expect(mockLogger.error).toHaveBeenCalledWith(
             expect.stringContaining('Request Error'),
             expect.objectContaining({
@@ -182,7 +182,7 @@ describe.skip('LoggingInterceptor', () => {
       });
     });
 
-    it('should include controller and handler names in logs', (done) => {
+    it('should include controller and handler names in logs', done => {
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({

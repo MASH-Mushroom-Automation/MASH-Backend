@@ -1,8 +1,5 @@
 import { validate } from 'class-validator';
-import {
-  IsValidDeviceId,
-  IsValidDeviceIdConstraint,
-} from '../is-valid-device-id.validator';
+import { IsValidDeviceId, IsValidDeviceIdConstraint } from '../is-valid-device-id.validator';
 
 // Test DTO
 class TestDeviceDto {
@@ -399,16 +396,13 @@ describe('IsValidDeviceId Validator', () => {
     });
 
     it('should return true for valid UUID', () => {
-      const result = validator.validate(
-        '550e8400-e29b-41d4-a716-446655440000',
-        {
-          constraints: [],
-          object: {},
-          property: 'deviceId',
-          targetName: 'TestDto',
-          value: '550e8400-e29b-41d4-a716-446655440000',
-        },
-      );
+      const result = validator.validate('550e8400-e29b-41d4-a716-446655440000', {
+        constraints: [],
+        object: {},
+        property: 'deviceId',
+        targetName: 'TestDto',
+        value: '550e8400-e29b-41d4-a716-446655440000',
+      });
 
       expect(result).toBe(true);
     });

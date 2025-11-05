@@ -1,10 +1,4 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 
@@ -109,9 +103,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   /**
    * Handle Prisma known request errors with specific error codes
    */
-  private handleKnownRequestError(
-    exception: Prisma.PrismaClientKnownRequestError,
-  ): {
+  private handleKnownRequestError(exception: Prisma.PrismaClientKnownRequestError): {
     status: HttpStatus;
     message: string;
     code: string;

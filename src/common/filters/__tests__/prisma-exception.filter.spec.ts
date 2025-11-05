@@ -55,14 +55,11 @@ describe.skip('PrismaExceptionFilter', () => {
 
   describe('catch', () => {
     it('should handle P2002 - Unique constraint violation', () => {
-      const exception = new Prisma.PrismaClientKnownRequestError(
-        'Unique constraint failed',
-        {
-          code: 'P2002',
-          clientVersion: '5.0.0',
-          meta: { target: ['email'] },
-        },
-      );
+      const exception = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+        meta: { target: ['email'] },
+      });
 
       filter.catch(exception, mockArgumentsHost);
 
@@ -81,13 +78,10 @@ describe.skip('PrismaExceptionFilter', () => {
     });
 
     it('should handle P2025 - Record not found', () => {
-      const exception = new Prisma.PrismaClientKnownRequestError(
-        'Record not found',
-        {
-          code: 'P2025',
-          clientVersion: '5.0.0',
-        },
-      );
+      const exception = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '5.0.0',
+      });
 
       filter.catch(exception, mockArgumentsHost);
 
@@ -95,14 +89,11 @@ describe.skip('PrismaExceptionFilter', () => {
     });
 
     it('should handle P2003 - Foreign key constraint failed', () => {
-      const exception = new Prisma.PrismaClientKnownRequestError(
-        'Foreign key constraint failed',
-        {
-          code: 'P2003',
-          clientVersion: '5.0.0',
-          meta: { field_name: 'categoryId' },
-        },
-      );
+      const exception = new Prisma.PrismaClientKnownRequestError('Foreign key constraint failed', {
+        code: 'P2003',
+        clientVersion: '5.0.0',
+        meta: { field_name: 'categoryId' },
+      });
 
       filter.catch(exception, mockArgumentsHost);
 
@@ -117,28 +108,20 @@ describe.skip('PrismaExceptionFilter', () => {
     });
 
     it('should handle P2021 - Table does not exist', () => {
-      const exception = new Prisma.PrismaClientKnownRequestError(
-        'Table does not exist',
-        {
-          code: 'P2021',
-          clientVersion: '5.0.0',
-        },
-      );
+      const exception = new Prisma.PrismaClientKnownRequestError('Table does not exist', {
+        code: 'P2021',
+        clientVersion: '5.0.0',
+      });
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
 
     it('should handle validation errors', () => {
-      const exception = new Prisma.PrismaClientValidationError(
-        'Invalid field value',
-        {
-          clientVersion: '5.0.0',
-        },
-      );
+      const exception = new Prisma.PrismaClientValidationError('Invalid field value', {
+        clientVersion: '5.0.0',
+      });
 
       filter.catch(exception, mockArgumentsHost);
 
@@ -160,22 +143,17 @@ describe.skip('PrismaExceptionFilter', () => {
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
+      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
     });
 
     it('should handle unknown Prisma errors as 500', () => {
-      const exception = new Prisma.PrismaClientUnknownRequestError(
-        'Unknown error',
-        { clientVersion: '5.0.0' },
-      );
+      const exception = new Prisma.PrismaClientUnknownRequestError('Unknown error', {
+        clientVersion: '5.0.0',
+      });
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
 
     it('should include correlation ID in response', () => {

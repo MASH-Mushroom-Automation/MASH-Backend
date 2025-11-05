@@ -14,11 +14,18 @@ import { OrderQueryDto, OrderStatus } from './dto/order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { Prisma } from '@prisma/client';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
+
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  private tracer = trace.getTracer('orders-service');
+  constructor(
+    private prisma: PrismaService,
+    private prometheusService: PrometheusService,
+  ) {}
 
   // 1. List all orders with filtering
   async findAll(query: OrderQueryDto) {
@@ -87,111 +94,136 @@ export class OrdersService {
 
   // 2. Create new order
   async create(createOrderDto: CreateOrderDto, currentUser: any) {
-    if (
-      createOrderDto.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
-      throw new ForbiddenException('You can only create orders for yourself');
-    }
+    return this.tracer.startActiveSpan('OrdersService.create', async span => {
+      try {
+        span.setAttributes({
+          'user.id': currentUser.id,
+          'user.role': currentUser.role,
+          'order.item_count': createOrderDto.items.length,
+        });
 
-    // ✅ FIX: Batch fetch all products (eliminates N+1 query)
-    const productIds = createOrderDto.items.map((item) => item.productId);
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, name: true, stock: true },
-    });
+        if (
+          createOrderDto.userId !== currentUser.id &&
+          !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
+        ) {
+          throw new ForbiddenException('You can only create orders for yourself');
+        }
 
-    // Create lookup map for O(1) access
-    const productMap = new Map(products.map((p) => [p.id, p]));
+        // ✅ FIX: Batch fetch all products (eliminates N+1 query)
+        const productIds = createOrderDto.items.map(item => item.productId);
+        const products = await this.prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, name: true, stock: true },
+        });
+        span.addEvent('Fetched products from DB');
 
-    // Validate all products
-    for (const item of createOrderDto.items) {
-      const product = productMap.get(item.productId);
-      if (!product) {
-        throw new BadRequestException(`Product ${item.productId} not found`);
-      }
-      if ((product as any).stock < item.quantity) {
-        throw new BadRequestException(
-          `Insufficient stock for product ${(product as any).name}`,
+        // Create lookup map for O(1) access
+        const productMap = new Map(products.map(p => [p.id, p]));
+
+        // Validate all products
+        for (const item of createOrderDto.items) {
+          const product = productMap.get(item.productId);
+          if (!product) {
+            throw new BadRequestException(`Product ${item.productId} not found`);
+          }
+          if ((product as any).stock < item.quantity) {
+            throw new BadRequestException(
+              `Insufficient stock for product ${(product as any).name}`,
+            );
+          }
+        }
+        span.addEvent('Validated product stock');
+
+        const subtotal = createOrderDto.items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
         );
-      }
-    }
+        const shipping = createOrderDto.shipping || 0;
+        const tax = createOrderDto.tax || 0;
+        const discount = createOrderDto.discount || 0;
+        const total = subtotal + shipping + tax - discount;
+        const orderNumber = this.generateOrderNumber();
 
-    const subtotal = createOrderDto.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
-    const shipping = createOrderDto.shipping || 0;
-    const tax = createOrderDto.tax || 0;
-    const discount = createOrderDto.discount || 0;
-    const total = subtotal + shipping + tax - discount;
-    const orderNumber = this.generateOrderNumber();
+        span.setAttribute('order.total_amount', total);
 
-    const order = await this.prisma.order.create({
-      data: {
-        orderNumber,
-        userId: createOrderDto.userId,
-        status: OrderStatus.PENDING,
-        subtotal: new Prisma.Decimal(subtotal),
-        shipping: new Prisma.Decimal(shipping),
-        tax: new Prisma.Decimal(tax),
-        discount: new Prisma.Decimal(discount),
-        total: new Prisma.Decimal(total),
-        shippingAddress:
-          createOrderDto.shippingAddress as unknown as Prisma.InputJsonValue,
-        billingAddress: (createOrderDto.billingAddress ||
-          createOrderDto.shippingAddress) as unknown as Prisma.InputJsonValue,
-        notes: createOrderDto.notes,
-        orderItems: {
-          create: createOrderDto.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: new Prisma.Decimal(item.price),
-            total: new Prisma.Decimal(item.price * item.quantity),
-          })),
-        },
-        payments: {
-          create: {
-            userId: createOrderDto.userId,
-            amount: new Prisma.Decimal(total),
-            method: createOrderDto.paymentMethod,
-            status: 'PENDING',
-          },
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        orderItems: {
-          include: {
-            product: true,
-          },
-        },
-        payments: true,
-      },
-    });
-
-    // ✅ FIX: Batch stock updates in transaction (eliminates N+1 query)
-    await this.prisma.$transaction(
-      createOrderDto.items.map((item) =>
-        this.prisma.product.update({
-          where: { id: item.productId },
+        const order = await this.prisma.order.create({
           data: {
-            stock: {
-              decrement: item.quantity,
+            orderNumber,
+            userId: createOrderDto.userId,
+            status: OrderStatus.PENDING,
+            subtotal: new Prisma.Decimal(subtotal),
+            shipping: new Prisma.Decimal(shipping),
+            tax: new Prisma.Decimal(tax),
+            discount: new Prisma.Decimal(discount),
+            total: new Prisma.Decimal(total),
+            shippingAddress: createOrderDto.shippingAddress as unknown as Prisma.InputJsonValue,
+            billingAddress: (createOrderDto.billingAddress ||
+              createOrderDto.shippingAddress) as unknown as Prisma.InputJsonValue,
+            notes: createOrderDto.notes,
+            orderItems: {
+              create: createOrderDto.items.map(item => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: new Prisma.Decimal(item.price),
+                total: new Prisma.Decimal(item.price * item.quantity),
+              })),
+            },
+            payments: {
+              create: {
+                userId: createOrderDto.userId,
+                amount: new Prisma.Decimal(total),
+                method: createOrderDto.paymentMethod,
+                status: 'PENDING',
+              },
             },
           },
-        }),
-      ),
-    );
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            orderItems: {
+              include: {
+                product: true,
+              },
+            },
+            payments: true,
+          },
+        });
+        span.addEvent('Created order in DB');
+        span.setAttribute('order.id', order.id);
 
-    return order;
+        // ✅ FIX: Batch stock updates in transaction (eliminates N+1 query)
+        await this.prisma.$transaction(
+          createOrderDto.items.map(item =>
+            this.prisma.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            }),
+          ),
+        );
+        span.addEvent('Updated product stock in transaction');
+
+        this.prometheusService.recordOrder(order.status, order.payments[0]?.method, total);
+
+        span.setStatus({ code: SpanStatusCode.OK });
+        return order;
+      } catch (error) {
+        span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+        span.recordException(error);
+        throw error;
+      } finally {
+        span.end();
+      }
+    });
   }
 
   // 3. Get user's orders
@@ -201,20 +233,11 @@ export class OrdersService {
    */
   @Cacheable({ key: 'orders:user', ttl: 600, tags: ['orders', 'orders:user'] })
   async getUserOrders(userId: string, query: OrderQueryDto, currentUser: any) {
-    if (
-      userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only view your own orders');
     }
 
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = query;
+    const { page = 1, limit = 10, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.OrderWhereInput = { userId };
     if (status) where.status = status;
@@ -281,10 +304,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (order.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only view your own orders');
     }
 
@@ -300,11 +320,9 @@ export class OrdersService {
 
     const { userId, ...updateData } = updateOrderDto;
     const data: any = { ...updateData };
-    if (data.shipping !== undefined)
-      data.shipping = new Prisma.Decimal(data.shipping);
+    if (data.shipping !== undefined) data.shipping = new Prisma.Decimal(data.shipping);
     if (data.tax !== undefined) data.tax = new Prisma.Decimal(data.tax);
-    if (data.discount !== undefined)
-      data.discount = new Prisma.Decimal(data.discount);
+    if (data.discount !== undefined) data.discount = new Prisma.Decimal(data.discount);
 
     return this.prisma.order.update({
       where: { id },
@@ -385,19 +403,14 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (order.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only cancel your own orders');
     }
 
     if (
-      [
-        OrderStatus.SHIPPED,
-        OrderStatus.DELIVERED,
-        OrderStatus.CANCELLED,
-      ].includes(order.status as OrderStatus)
+      [OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELLED].includes(
+        order.status as OrderStatus,
+      )
     ) {
       throw new BadRequestException('Order cannot be cancelled at this stage');
     }
@@ -440,10 +453,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (order.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only view your own order items');
     }
 
@@ -460,10 +470,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (order.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only view your own order tracking');
     }
 
@@ -511,10 +518,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (order.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You can only view your own invoices');
     }
 
@@ -530,7 +534,7 @@ export class OrdersService {
       },
       billingAddress: order.billingAddress,
       shippingAddress: order.shippingAddress,
-      items: order.orderItems.map((item) => ({
+      items: order.orderItems.map(item => ({
         product: item.product.name,
         quantity: item.quantity,
         price: item.price.toNumber(),
@@ -552,31 +556,26 @@ export class OrdersService {
     const where: Prisma.OrderWhereInput = {};
     if (status) where.status = status;
 
-    const [
-      totalOrders,
-      totalRevenue,
-      pendingOrders,
-      processingOrders,
-      completedOrders,
-    ] = await Promise.all([
-      this.prisma.order.count({ where }),
-      this.prisma.order.aggregate({
-        where: {
-          ...where,
-          payments: { some: { status: 'PAID' } },
-        },
-        _sum: { total: true },
-      }),
-      this.prisma.order.count({
-        where: { ...where, status: OrderStatus.PENDING },
-      }),
-      this.prisma.order.count({
-        where: { ...where, status: OrderStatus.PROCESSING },
-      }),
-      this.prisma.order.count({
-        where: { ...where, status: OrderStatus.DELIVERED },
-      }),
-    ]);
+    const [totalOrders, totalRevenue, pendingOrders, processingOrders, completedOrders] =
+      await Promise.all([
+        this.prisma.order.count({ where }),
+        this.prisma.order.aggregate({
+          where: {
+            ...where,
+            payments: { some: { status: 'PAID' } },
+          },
+          _sum: { total: true },
+        }),
+        this.prisma.order.count({
+          where: { ...where, status: OrderStatus.PENDING },
+        }),
+        this.prisma.order.count({
+          where: { ...where, status: OrderStatus.PROCESSING },
+        }),
+        this.prisma.order.count({
+          where: { ...where, status: OrderStatus.DELIVERED },
+        }),
+      ]);
 
     const revenueTotal = totalRevenue._sum.total?.toNumber() || 0;
 
@@ -601,13 +600,8 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (
-      order.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
-      throw new ForbiddenException(
-        'You can only process payment for your own orders',
-      );
+    if (order.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
+      throw new ForbiddenException('You can only process payment for your own orders');
     }
 
     const payment = order.payments[0];
@@ -655,8 +649,7 @@ export class OrdersService {
     }
 
     if (shippingData.shippingAddress) {
-      updateData.shippingAddress =
-        shippingData.shippingAddress as unknown as Prisma.InputJsonValue;
+      updateData.shippingAddress = shippingData.shippingAddress as unknown as Prisma.InputJsonValue;
     }
 
     return this.prisma.order.update({
@@ -673,10 +666,7 @@ export class OrdersService {
   }
 
   // Helper: Validate status transitions
-  private isValidStatusTransition(
-    currentStatus: string,
-    newStatus: string,
-  ): boolean {
+  private isValidStatusTransition(currentStatus: string, newStatus: string): boolean {
     const validTransitions: Record<string, string[]> = {
       [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
       [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],

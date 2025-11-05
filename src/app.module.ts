@@ -11,10 +11,7 @@ import { AppService } from './app.service';
 import { createAppConfig } from './config/app.config';
 import { createDatabaseConfig } from './config/database.config';
 import { createJwtConfig } from './config/jwt.config';
-import {
-  envValidationSchema,
-  envValidationOptions,
-} from './config/env-validation.config';
+import { envValidationSchema, envValidationOptions } from './config/env-validation.config';
 import { getThrottlerConfig } from './common/config/throttler.config';
 
 // Import modules (will be created)
@@ -26,13 +23,14 @@ import { AuthViewsModule } from './modules/auth/views/auth-views.module';
 // import { OrdersModule } from './modules/orders/orders.module';
 // import { ProductsModule } from './modules/products/products.module';
 // import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+// import { NotificationsModule } from './modules/notifications/notifications.module';
 // import { PaymentsModule } from './modules/payments/payments.module';
 // import { AdminModule } from './modules/admin/admin.module';
 
 // Import common modules
 import { DatabaseModule } from './database/database.module';
-import { HealthModule } from './health/health.module';
+// import { HealthModule } from './health/health.module';
+import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
 import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
 import { TracingModule } from './monitoring/tracing/tracing.module';
@@ -49,9 +47,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CustomThrottlerGuard } from './modules/auth/guards/throttler.guard';
-// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
-// import { AlertsModule } from './modules/alerts/alerts.module';
-// 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing hang
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { QueuesModule } from './modules/queues/queues.module';
 // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
 // import { WebsocketModule } from './modules/websocket/websocket.module';
@@ -124,17 +120,15 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
     // AnalyticsModule,
 
-    NotificationsModule,
+    // NotificationsModule,
 
     AdminModule,
     // Super admin module (high-privilege dashboard)
     // Registering here so DI can provide PrismaService/RedisService to the module
     require('./modules/super-admin/super-admin.module').SuperAdminModule,
 
-    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - May use Bull queues
-    // AlertsModule,
-
-    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING - Bull queues causing startup hang
+    // Advanced Monitoring & Observability (Issue #33)
+    AlertsModule,
     QueuesModule,
 
     InventoryModule,

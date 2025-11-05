@@ -74,11 +74,11 @@ export abstract class BaseEntity {
    * Convert entity to plain object (for JSON serialization)
    * Override this method in child classes to customize serialization
    */
-  toJSON(): Record<string, any> {
-    const obj: Record<string, any> = {};
+  toJSON(): Record<string, unknown> {
+    const obj: Record<string, unknown> = {};
 
-    Object.keys(this).forEach((key) => {
-      const value = (this as any)[key];
+    Object.keys(this).forEach(key => {
+      const value = (this as Record<string, unknown>)[key];
 
       // Skip null/undefined values
       if (value === null || value === undefined) {

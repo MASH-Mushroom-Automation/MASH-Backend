@@ -31,9 +31,7 @@ export class DatabaseTestHelper {
    */
   static getPrisma(): PrismaClient {
     if (!this.prisma) {
-      throw new Error(
-        'Prisma client not initialized. Call initialize() first.',
-      );
+      throw new Error('Prisma client not initialized. Call initialize() first.');
     }
     return this.prisma;
   }
@@ -55,9 +53,7 @@ export class DatabaseTestHelper {
     // Truncate all tables
     for (const { tablename } of tables) {
       if (tablename !== '_prisma_migrations') {
-        await prisma.$executeRawUnsafe(
-          `TRUNCATE TABLE "${tablename}" CASCADE;`,
-        );
+        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tablename}" CASCADE;`);
       }
     }
 
@@ -68,9 +64,8 @@ export class DatabaseTestHelper {
   /**
    * Seed test data
    */
-  static async seedTestData(): Promise<void> {
-    const prisma = this.getPrisma();
-
+  static seedTestData(): void {
+    // const prisma = this.getPrisma();
     // Add your seed data logic here
     // Example:
     // await prisma.user.createMany({
@@ -84,13 +79,12 @@ export class DatabaseTestHelper {
   /**
    * Run migrations
    */
-  static async runMigrations(): Promise<void> {
+  static runMigrations(): void {
     try {
       execSync('npx prisma migrate deploy', {
         env: {
           ...process.env,
-          DATABASE_URL:
-            process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
+          DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
         },
         stdio: 'inherit',
       });
@@ -105,8 +99,8 @@ export class DatabaseTestHelper {
    */
   static async resetDatabase(): Promise<void> {
     await this.cleanDatabase();
-    await this.runMigrations();
-    await this.seedTestData();
+    this.runMigrations();
+    this.seedTestData();
   }
 
   /**
@@ -121,11 +115,9 @@ export class DatabaseTestHelper {
   /**
    * Create a transaction for testing
    */
-  static async withTransaction<T>(
-    callback: (prisma: PrismaClient) => Promise<T>,
-  ): Promise<T> {
+  static async withTransaction<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
     const prisma = this.getPrisma();
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       return await callback(tx as PrismaClient);
     });
   }
@@ -144,10 +136,7 @@ export class DatabaseTestHelper {
   /**
    * Check if a record exists
    */
-  static async recordExists(
-    tableName: string,
-    conditions: Record<string, any>,
-  ): Promise<boolean> {
+  static async recordExists(tableName: string, conditions: Record<string, any>): Promise<boolean> {
     const prisma = this.getPrisma();
     const whereClause = Object.entries(conditions)
       .map(([key, value]) => `"${key}" = '${value}'`)
@@ -171,10 +160,10 @@ export class DatabaseTestHelper {
   }
 
   /**
-   * Create a test user with specific role
+   * Create a test user
    */
-  static async createTestUser(overrides?: Partial<any>): Promise<any> {
-    const prisma = this.getPrisma();
+  static createTestUser(overrides?: Partial<unknown>): unknown {
+    // const prisma = this.getPrisma();
 
     // Example implementation - adjust based on your User model
     // return await prisma.user.create({
@@ -199,19 +188,16 @@ export class DatabaseTestHelper {
    */
   static async createTestData<T>(modelName: string, data: T): Promise<T> {
     const prisma = this.getPrisma();
-    // @ts-ignore - Dynamic model access
+    // @ts-expect-error - Dynamic model access
     return await prisma[modelName].create({ data });
   }
 
   /**
    * Find test data by ID
    */
-  static async findTestData<T>(
-    modelName: string,
-    id: string,
-  ): Promise<T | null> {
+  static async findTestData<T>(modelName: string, id: string): Promise<T | null> {
     const prisma = this.getPrisma();
-    // @ts-ignore - Dynamic model access
+    // @ts-expect-error - Dynamic model access
     return await prisma[modelName].findUnique({ where: { id } });
   }
 
@@ -220,7 +206,7 @@ export class DatabaseTestHelper {
    */
   static async deleteTestData(modelName: string, id: string): Promise<void> {
     const prisma = this.getPrisma();
-    // @ts-ignore - Dynamic model access
+    // @ts-expect-error - Dynamic model access
     await prisma[modelName].delete({ where: { id } });
   }
 
@@ -229,7 +215,7 @@ export class DatabaseTestHelper {
    */
   static async setupBeforeAll(): Promise<void> {
     await this.initialize();
-    await this.runMigrations();
+    this.runMigrations();
   }
 
   /**

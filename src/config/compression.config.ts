@@ -26,9 +26,7 @@ import { CompressionOptions } from 'compression';
  * @param nodeEnv - Current environment (development, production, test)
  * @returns Compression configuration object
  */
-export function getCompressionConfig(
-  nodeEnv: string = 'production',
-): CompressionOptions {
+export function getCompressionConfig(nodeEnv: string = 'production'): CompressionOptions {
   const isDevelopment = nodeEnv === 'development';
 
   return {
@@ -78,8 +76,7 @@ export function getCompressionConfig(
 
       // Get content type
       const contentType = res.getHeader('Content-Type');
-      const contentTypeStr =
-        typeof contentType === 'string' ? contentType : String(contentType);
+      const contentTypeStr = typeof contentType === 'string' ? contentType : String(contentType);
 
       // Compress text-based content types
       const compressibleTypes = [
@@ -101,7 +98,7 @@ export function getCompressionConfig(
       ];
 
       // Check if content type is compressible
-      const isCompressible = compressibleTypes.some((type) =>
+      const isCompressible = compressibleTypes.some(type =>
         contentTypeStr.toLowerCase().startsWith(type.toLowerCase()),
       );
 
@@ -121,7 +118,7 @@ export function getCompressionConfig(
         'application/x-compressed',
       ];
 
-      const isUncompressible = uncompressibleTypes.some((type) =>
+      const isUncompressible = uncompressibleTypes.some(type =>
         contentTypeStr.toLowerCase().startsWith(type.toLowerCase()),
       );
 

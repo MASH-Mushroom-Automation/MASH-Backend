@@ -18,13 +18,7 @@
  * - Lower memory usage
  */
 
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -44,10 +38,7 @@ export class FieldSelectionInterceptor implements NestInterceptor {
     const handler = context.getHandler();
 
     // Get field selection configuration from decorator
-    const config = this.reflector.get<FieldSelectionConfig>(
-      SELECTABLE_FIELDS_KEY,
-      handler,
-    );
+    const config = this.reflector.get<FieldSelectionConfig>(SELECTABLE_FIELDS_KEY, handler);
 
     // If no @SelectableFields() decorator, skip field selection
     if (!config) {
@@ -63,25 +54,21 @@ export class FieldSelectionInterceptor implements NestInterceptor {
       if (config.defaultFields && config.defaultFields.length > 0) {
         return next
           .handle()
-          .pipe(
-            map((data) =>
-              this.selectFields(data, config.defaultFields, config),
-            ),
-          );
+          .pipe(map(data => this.selectFields(data, config.defaultFields, config)));
       }
       // Otherwise return all fields
       return next.handle();
     }
 
     // Parse requested fields
-    const requestedFields = fieldsParam.split(',').map((f) => f.trim());
+    const requestedFields = fieldsParam.split(',').map(f => f.trim());
 
     // Validate and filter fields
     const selectedFields = this.validateFields(requestedFields, config);
 
     // Add required fields if specified
     if (config.requiredFields && config.requiredFields.length > 0) {
-      config.requiredFields.forEach((field) => {
+      config.requiredFields.forEach(field => {
         if (!selectedFields.includes(field)) {
           selectedFields.push(field);
         }
@@ -94,36 +81,25 @@ export class FieldSelectionInterceptor implements NestInterceptor {
     );
 
     // Apply field selection to response
-    return next
-      .handle()
-      .pipe(map((data) => this.selectFields(data, selectedFields, config)));
+    return next.handle().pipe(map(data => this.selectFields(data, selectedFields, config)));
   }
 
   /**
    * Validate requested fields against configuration
    */
-  private validateFields(
-    requestedFields: string[],
-    config: FieldSelectionConfig,
-  ): string[] {
+  private validateFields(requestedFields: string[], config: FieldSelectionConfig): string[] {
     const { allowedFields, maxFields } = config;
 
     let validFields = requestedFields;
 
     // Filter by allowed fields if specified
     if (allowedFields && allowedFields.length > 0) {
-      validFields = validFields.filter((field) =>
-        allowedFields.includes(field),
-      );
+      validFields = validFields.filter(field => allowedFields.includes(field));
 
       // Log rejected fields
-      const rejectedFields = requestedFields.filter(
-        (f) => !validFields.includes(f),
-      );
+      const rejectedFields = requestedFields.filter(f => !validFields.includes(f));
       if (rejectedFields.length > 0) {
-        this.logger.warn(
-          `Rejected fields not in allowedFields: ${rejectedFields.join(',')}`,
-        );
+        this.logger.warn(`Rejected fields not in allowedFields: ${rejectedFields.join(',')}`);
       }
     }
 
@@ -141,11 +117,7 @@ export class FieldSelectionInterceptor implements NestInterceptor {
   /**
    * Select fields from data (handles objects, arrays, and pagination responses)
    */
-  private selectFields(
-    data: any,
-    fields: string[],
-    config: FieldSelectionConfig,
-  ): any {
+  private selectFields(data: any, fields: string[], config: FieldSelectionConfig): any {
     if (!data) {
       return data;
     }
@@ -192,19 +164,13 @@ export class FieldSelectionInterceptor implements NestInterceptor {
     fields: string[],
     config: FieldSelectionConfig,
   ): any[] {
-    return data.map((item) =>
-      this.selectFieldsFromObject(item, fields, config),
-    );
+    return data.map(item => this.selectFieldsFromObject(item, fields, config));
   }
 
   /**
    * Select fields from a single object
    */
-  private selectFieldsFromObject(
-    obj: any,
-    fields: string[],
-    config: FieldSelectionConfig,
-  ): any {
+  private selectFieldsFromObject(obj: any, fields: string[], config: FieldSelectionConfig): any {
     if (!obj || typeof obj !== 'object') {
       return obj;
     }
@@ -217,7 +183,7 @@ export class FieldSelectionInterceptor implements NestInterceptor {
     }
 
     // Simple field selection (top-level only)
-    fields.forEach((field) => {
+    fields.forEach(field => {
       if (field in obj) {
         result[field] = obj[field];
       }
@@ -232,7 +198,7 @@ export class FieldSelectionInterceptor implements NestInterceptor {
   private selectNestedFields(obj: any, fields: string[]): any {
     const result: any = {};
 
-    fields.forEach((field) => {
+    fields.forEach(field => {
       // Handle nested paths (e.g., 'user.name')
       if (field.includes('.')) {
         const parts = field.split('.');

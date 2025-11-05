@@ -7,35 +7,35 @@ export class CreateAddressDto {
     description: 'Street address',
   })
   @IsString()
-  street: string;
+  street!: string;
 
   @ApiProperty({
     example: 'New York',
     description: 'City',
   })
   @IsString()
-  city: string;
+  city!: string;
 
   @ApiProperty({
     example: 'NY',
     description: 'State or province',
   })
   @IsString()
-  state: string;
+  state!: string;
 
   @ApiProperty({
     example: '10001',
     description: 'Postal/ZIP code',
   })
   @IsString()
-  zipCode: string;
+  zipCode!: string;
 
   @ApiProperty({
     example: 'USA',
     description: 'Country',
   })
   @IsString()
-  country: string;
+  country!: string;
 
   @ApiProperty({
     example: true,

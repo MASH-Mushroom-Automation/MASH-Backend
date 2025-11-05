@@ -43,7 +43,7 @@ export class InventoryService {
   search(query?: string): InventoryItem[] {
     if (!query || !query.trim()) return this.findAll();
     const q = query.trim().toLowerCase();
-    return this.inventory.filter((item) => {
+    return this.inventory.filter(item => {
       return (
         item.itemName.toLowerCase().includes(q) ||
         (item.sku || '').toLowerCase().includes(q) ||
@@ -54,7 +54,7 @@ export class InventoryService {
   }
 
   findOne(id: number): InventoryItem {
-    const item = this.inventory.find((inv) => inv.id === id);
+    const item = this.inventory.find(inv => inv.id === id);
     if (!item) {
       throw new NotFoundException(`Inventory item with ID ${id} not found`);
     }
@@ -62,7 +62,7 @@ export class InventoryService {
   }
 
   update(id: number, dto: UpdateInventoryDto): InventoryItem {
-    const index = this.inventory.findIndex((inv) => inv.id === id);
+    const index = this.inventory.findIndex(inv => inv.id === id);
     if (index === -1) {
       throw new NotFoundException(`Inventory item with ID ${id} not found`);
     }
@@ -77,7 +77,7 @@ export class InventoryService {
   }
 
   remove(id: number): InventoryItem {
-    const index = this.inventory.findIndex((inv) => inv.id === id);
+    const index = this.inventory.findIndex(inv => inv.id === id);
     if (index === -1) {
       throw new NotFoundException(`Inventory item with ID ${id} not found`);
     }
@@ -95,13 +95,11 @@ export class InventoryService {
   restore(id: number): InventoryItem {
     const deletedItem = this.deleted.get(id);
     if (!deletedItem) {
-      throw new NotFoundException(
-        `Deleted inventory item with ID ${id} not found`,
-      );
+      throw new NotFoundException(`Deleted inventory item with ID ${id} not found`);
     }
 
     // Ensure no active item already has the same id (shouldn't normally happen)
-    const exists = this.inventory.find((inv) => inv.id === id);
+    const exists = this.inventory.find(inv => inv.id === id);
     if (exists) {
       // remove from deleted cache if a conflict exists, but keep active item unchanged
       this.deleted.delete(id);

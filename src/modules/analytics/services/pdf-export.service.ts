@@ -62,7 +62,7 @@ export class PdfExportService {
       let currentX = 50;
 
       doc.fontSize(10).font('Helvetica-Bold');
-      headers.forEach((header) => {
+      headers.forEach(header => {
         doc.text(this.formatColumnName(header), currentX, tableTop, {
           width: columnWidth,
           align: 'left',
@@ -85,7 +85,7 @@ export class PdfExportService {
         currentX = 50;
         const rowY = doc.y;
 
-        headers.forEach((header) => {
+        headers.forEach(header => {
           let value = row[header];
 
           // Format value
@@ -159,7 +159,7 @@ export class PdfExportService {
   private formatColumnName(columnName: string): string {
     return columnName
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase())
+      .replace(/^./, str => str.toUpperCase())
       .trim();
   }
 

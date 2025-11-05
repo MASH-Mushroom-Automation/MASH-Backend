@@ -48,10 +48,7 @@ export class SlidingWindowStrategy implements IRateLimitStrategy {
     return 'SLIDING_WINDOW';
   }
 
-  async checkLimit(
-    key: string,
-    config: IRateLimitConfig,
-  ): Promise<IRateLimitResult> {
+  async checkLimit(key: string, config: IRateLimitConfig): Promise<IRateLimitResult> {
     const storeKey = `${this.KEY_PREFIX}${key}`;
     const now = Date.now();
     const windowStart = now - config.windowMs;
@@ -65,7 +62,7 @@ export class SlidingWindowStrategy implements IRateLimitStrategy {
     }
 
     // Remove expired timestamps (outside window)
-    timestamps = timestamps.filter((ts) => ts > windowStart);
+    timestamps = timestamps.filter(ts => ts > windowStart);
 
     // Check if we're within limit
     const allowed = timestamps.length < config.limit;

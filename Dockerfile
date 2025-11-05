@@ -15,19 +15,25 @@ COPY prisma ./prisma/
 # Use `npm install` instead of `npm ci` because CI can fail when
 # package.json and package-lock.json are out of sync (common in CI builds).
 # `npm install --legacy-peer-deps` is more tolerant and works in the builder.
+# CRITICAL FIX: Set Prisma binary targets BEFORE install to avoid download during postinstall
+ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl,linux-musl-openssl-3.0.x
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Generate Prisma Client (this downloads engines if not already cached)
+# Add retry logic for Prisma engine downloads
+RUN npx prisma generate || \
+    (echo "Prisma generate failed, retrying..." && sleep 5 && npx prisma generate) || \
+    (echo "Prisma generate failed again, final retry..." && sleep 10 && npx prisma generate)
 
 # Copy source code
 COPY . .
 
 # Build the application and verify it succeeded
+# Note: Build outputs to dist/main.js (not dist/src/main.js) because rootDir strips src/ prefix
 RUN npm run build && \
     ls -la dist/ && \
-    ls -la dist/src/ && \
-    test -f dist/src/main.js || (echo "ERROR: dist/src/main.js not found after build!" && exit 1)
+    test -f dist/main.js || (echo "ERROR: dist/main.js not found after build!" && exit 1)
 
 # Stage 2: Production stage
 FROM node:25-alpine AS production
@@ -56,6 +62,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
+
+# Set Prisma environment variables for Alpine Linux (musl)
+ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl,linux-musl-openssl-3.0.x
 
 # Install production dependencies and force Sharp to rebuild for Alpine Linux
 # Step 1: Install without scripts to avoid husky
@@ -105,12 +115,13 @@ EXPOSE 3000
 
 # Health check - Use built-in Node health-check script
 # The script is compiled to dist/health/health-check.js during build
-# Increased start-period to 60s to allow for full initialization
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Increased start-period to 120s to allow for full initialization (Railway optimized)
+# Increased timeout to 30s to handle slow database connections
+HEALTHCHECK --interval=30s --timeout=30s --start-period=120s --retries=3 \
   CMD node dist/health/health-check.js || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application
-CMD ["node", "dist/src/main.js"]
+# Start the application (main.js is at dist/main.js, not dist/src/main.js)
+CMD ["node", "dist/main.js"]

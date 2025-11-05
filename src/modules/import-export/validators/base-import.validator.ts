@@ -34,8 +34,8 @@ export abstract class BaseImportValidator {
    */
   protected getRequiredFields(): string[] {
     return this.getRules()
-      .filter((r) => r.type === ValidationRuleType.REQUIRED)
-      .map((r) => r.field);
+      .filter(r => r.type === ValidationRuleType.REQUIRED)
+      .map(r => r.field);
   }
 
   /**
@@ -50,9 +50,7 @@ export abstract class BaseImportValidator {
    * Transform validated data before database insertion (optional)
    * Override in entity validators for custom transformations
    */
-  async transformForDatabase(
-    data: Record<string, any>,
-  ): Promise<Record<string, any>> {
+  async transformForDatabase(data: Record<string, any>): Promise<Record<string, any>> {
     return data;
   }
 
@@ -74,13 +72,8 @@ export abstract class BaseImportValidator {
   /**
    * Helper: Create optional string field rule
    */
-  protected optionalString(
-    field: string,
-    maxLength?: number,
-  ): AnyValidationRule[] {
-    const rules: AnyValidationRule[] = [
-      Rules.type(field, DataType.STRING, true),
-    ];
+  protected optionalString(field: string, maxLength?: number): AnyValidationRule[] {
+    const rules: AnyValidationRule[] = [Rules.type(field, DataType.STRING, true)];
     if (maxLength) {
       rules.push(Rules.stringLength(field, undefined, maxLength));
     }
@@ -105,14 +98,8 @@ export abstract class BaseImportValidator {
   /**
    * Helper: Create optional number field rule
    */
-  protected optionalNumber(
-    field: string,
-    min?: number,
-    max?: number,
-  ): AnyValidationRule[] {
-    const rules: AnyValidationRule[] = [
-      Rules.type(field, DataType.NUMBER, true),
-    ];
+  protected optionalNumber(field: string, min?: number, max?: number): AnyValidationRule[] {
+    const rules: AnyValidationRule[] = [Rules.type(field, DataType.NUMBER, true)];
     if (min !== undefined || max !== undefined) {
       rules.push(Rules.range(field, min, max));
     }
@@ -122,15 +109,8 @@ export abstract class BaseImportValidator {
   /**
    * Helper: Create required number field rule
    */
-  protected requiredNumber(
-    field: string,
-    min?: number,
-    max?: number,
-  ): AnyValidationRule[] {
-    const rules: AnyValidationRule[] = [
-      Rules.required(field),
-      Rules.type(field, DataType.NUMBER),
-    ];
+  protected requiredNumber(field: string, min?: number, max?: number): AnyValidationRule[] {
+    const rules: AnyValidationRule[] = [Rules.required(field), Rules.type(field, DataType.NUMBER)];
     if (min !== undefined || max !== undefined) {
       rules.push(Rules.range(field, min, max));
     }
@@ -140,14 +120,8 @@ export abstract class BaseImportValidator {
   /**
    * Helper: Create optional decimal field rule
    */
-  protected optionalDecimal(
-    field: string,
-    min?: number,
-    max?: number,
-  ): AnyValidationRule[] {
-    const rules: AnyValidationRule[] = [
-      Rules.type(field, DataType.DECIMAL, true),
-    ];
+  protected optionalDecimal(field: string, min?: number, max?: number): AnyValidationRule[] {
+    const rules: AnyValidationRule[] = [Rules.type(field, DataType.DECIMAL, true)];
     if (min !== undefined || max !== undefined) {
       rules.push(Rules.range(field, min, max));
     }
@@ -157,15 +131,8 @@ export abstract class BaseImportValidator {
   /**
    * Helper: Create required decimal field rule
    */
-  protected requiredDecimal(
-    field: string,
-    min?: number,
-    max?: number,
-  ): AnyValidationRule[] {
-    const rules: AnyValidationRule[] = [
-      Rules.required(field),
-      Rules.type(field, DataType.DECIMAL),
-    ];
+  protected requiredDecimal(field: string, min?: number, max?: number): AnyValidationRule[] {
+    const rules: AnyValidationRule[] = [Rules.required(field), Rules.type(field, DataType.DECIMAL)];
     if (min !== undefined || max !== undefined) {
       rules.push(Rules.range(field, min, max));
     }
@@ -175,14 +142,8 @@ export abstract class BaseImportValidator {
   /**
    * Helper: Create optional integer field rule
    */
-  protected optionalInteger(
-    field: string,
-    min?: number,
-    max?: number,
-  ): AnyValidationRule[] {
-    const rules: AnyValidationRule[] = [
-      Rules.type(field, DataType.INTEGER, true),
-    ];
+  protected optionalInteger(field: string, min?: number, max?: number): AnyValidationRule[] {
+    const rules: AnyValidationRule[] = [Rules.type(field, DataType.INTEGER, true)];
     if (min !== undefined || max !== undefined) {
       rules.push(Rules.range(field, min, max));
     }
@@ -192,15 +153,8 @@ export abstract class BaseImportValidator {
   /**
    * Helper: Create required integer field rule
    */
-  protected requiredInteger(
-    field: string,
-    min?: number,
-    max?: number,
-  ): AnyValidationRule[] {
-    const rules: AnyValidationRule[] = [
-      Rules.required(field),
-      Rules.type(field, DataType.INTEGER),
-    ];
+  protected requiredInteger(field: string, min?: number, max?: number): AnyValidationRule[] {
+    const rules: AnyValidationRule[] = [Rules.required(field), Rules.type(field, DataType.INTEGER)];
     if (min !== undefined || max !== undefined) {
       rules.push(Rules.range(field, min, max));
     }

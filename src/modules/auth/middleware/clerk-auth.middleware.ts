@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestMiddleware,
-  UnauthorizedException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestMiddleware, UnauthorizedException, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { ClerkService } from '../services/clerk.service';
 import { PrismaService } from '../../../database/prisma.service';

@@ -12,18 +12,14 @@ import supertest from 'supertest';
 /**
  * Create a testing module with common providers mocked
  */
-export async function createTestingModule(
-  moduleMetadata: any,
-): Promise<TestingModule> {
+export async function createTestingModule(moduleMetadata: any): Promise<TestingModule> {
   return Test.createTestingModule(moduleMetadata).compile();
 }
 
 /**
  * Bootstrap a NestJS application for E2E testing
  */
-export async function bootstrapTestApp(
-  module: TestingModule,
-): Promise<INestApplication> {
+export async function bootstrapTestApp(module: TestingModule): Promise<INestApplication> {
   const app = module.createNestApplication();
 
   // Apply the same global configurations as main.ts
@@ -53,9 +49,7 @@ export function authenticatedRequest(
   url: string,
   token: string,
 ) {
-  return supertest(app.getHttpServer())
-    [method](url)
-    .set('Authorization', `Bearer ${token}`);
+  return supertest(app.getHttpServer())[method](url).set('Authorization', `Bearer ${token}`);
 }
 
 /**
@@ -72,7 +66,7 @@ export async function waitFor(
     if (await condition()) {
       return;
     }
-    await new Promise((resolve) => setTimeout(resolve, interval));
+    await new Promise(resolve => setTimeout(resolve, interval));
   }
 
   throw new Error('Timeout waiting for condition');
@@ -163,10 +157,7 @@ export function expectErrorResponse(
 /**
  * Assert that a success response matches the expected format
  */
-export function expectSuccessResponse(
-  response: any,
-  expectedStatus: number = 200,
-) {
+export function expectSuccessResponse(response: any, expectedStatus: number = 200) {
   expect(response.status).toBe(expectedStatus);
   expect(response.body).toHaveProperty('success', true);
   expect(response.body).toHaveProperty('statusCode', expectedStatus);
@@ -195,5 +186,4 @@ export function generateTestData(type: 'email' | 'uuid' | 'string' | 'number') {
 /**
  * Sleep utility for testing async operations
  */
-export const sleep = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

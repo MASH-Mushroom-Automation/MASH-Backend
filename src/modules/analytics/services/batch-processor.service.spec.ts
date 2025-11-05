@@ -113,9 +113,7 @@ describe('BatchProcessorService', () => {
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockPrismaService.order.count.mockRejectedValue(
-        new Error('Database error'),
-      );
+      mockPrismaService.order.count.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert - should not throw
       await expect(service.generateDailyReport()).resolves.not.toThrow();
@@ -203,9 +201,7 @@ describe('BatchProcessorService', () => {
             totalOrders: 1000,
             totalRevenue: 100000,
             newUsers: 200,
-            topProducts: expect.arrayContaining([
-              expect.objectContaining({ productId: '1' }),
-            ]),
+            topProducts: expect.arrayContaining([expect.objectContaining({ productId: '1' })]),
           }),
         }),
         86400 * 7,

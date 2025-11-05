@@ -11,12 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -83,16 +78,7 @@ export class ProductsController {
   // 3. GET /products/featured - Get featured products
   @Get('featured')
   @SelectableFields({
-    allowedFields: [
-      'id',
-      'name',
-      'slug',
-      'description',
-      'price',
-      'stock',
-      'images',
-      'categoryId',
-    ],
+    allowedFields: ['id', 'name', 'slug', 'description', 'price', 'stock', 'images', 'categoryId'],
     requiredFields: ['id', 'name', 'price'],
     defaultFields: ['id', 'name', 'slug', 'price', 'images'],
   })
@@ -127,10 +113,7 @@ export class ProductsController {
     status: 200,
     description: 'Category products retrieved successfully',
   })
-  async getByCategory(
-    @Param('categoryId') categoryId: string,
-    @Query() query: ProductQueryDto,
-  ) {
+  async getByCategory(@Param('categoryId') categoryId: string, @Query() query: ProductQueryDto) {
     return this.productsService.getByCategory(categoryId, query);
   }
 
@@ -154,16 +137,7 @@ export class ProductsController {
       'updatedAt',
     ],
     requiredFields: ['id'],
-    defaultFields: [
-      'id',
-      'name',
-      'slug',
-      'description',
-      'price',
-      'stock',
-      'images',
-      'categoryId',
-    ],
+    defaultFields: ['id', 'name', 'slug', 'description', 'price', 'stock', 'images', 'categoryId'],
   })
   @ApiOperation({ summary: 'Get product details by ID' })
   @ApiResponse({
@@ -188,10 +162,7 @@ export class ProductsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  async update(
-    @Param('id') id: string,
-    @Body() updateProductDto: UpdateProductDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productsService.update(id, updateProductDto);
   }
 
@@ -236,10 +207,7 @@ export class ProductsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
-  async updateStock(
-    @Param('id') id: string,
-    @Body() updateStockDto: UpdateStockDto,
-  ) {
+  async updateStock(@Param('id') id: string, @Body() updateStockDto: UpdateStockDto) {
     return this.productsService.updateStock(id, updateStockDto);
   }
 
@@ -255,10 +223,7 @@ export class ProductsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
-  async updatePrice(
-    @Param('id') id: string,
-    @Body() updatePriceDto: UpdatePriceDto,
-  ) {
+  async updatePrice(@Param('id') id: string, @Body() updatePriceDto: UpdatePriceDto) {
     return this.productsService.updatePrice(id, updatePriceDto);
   }
 

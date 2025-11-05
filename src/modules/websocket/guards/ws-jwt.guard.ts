@@ -1,16 +1,8 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import {
-  AuthenticatedSocket,
-  SocketUser,
-} from '../interfaces/authenticated-socket.interface';
+import { AuthenticatedSocket, SocketUser } from '../interfaces/authenticated-socket.interface';
 
 /**
  * WebSocket JWT Authentication Guard
@@ -39,8 +31,7 @@ export class WsJwtGuard implements CanActivate {
       const payload = await this.validateToken(token);
 
       // Attach user information to socket
-      (client as AuthenticatedSocket).user =
-        this.extractUserFromPayload(payload);
+      (client as AuthenticatedSocket).user = this.extractUserFromPayload(payload);
       (client as AuthenticatedSocket).lastActivity = Date.now();
       (client as AuthenticatedSocket).subscriptions = new Set();
 

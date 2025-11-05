@@ -3,6 +3,13 @@ import { IsString, IsOptional, IsUrl } from 'class-validator';
 
 export class OAuthCallbackDto {
   @ApiProperty({
+    example: 'google',
+    description: 'OAuth provider (google, github, facebook)',
+  })
+  @IsString()
+  provider: string;
+
+  @ApiProperty({
     example: 'authorization_code_value',
     description: 'OAuth authorization code',
   })

@@ -24,9 +24,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     req['startTime'] = Date.now();
 
     // Log incoming request
-    this.logger.log(
-      `${method} ${originalUrl} - ${ip} - ${userAgent} [${correlationId}]`,
-    );
+    this.logger.log(`${method} ${originalUrl} - ${ip} - ${userAgent} [${correlationId}]`);
 
     // Log request completion
     res.on('finish', () => {

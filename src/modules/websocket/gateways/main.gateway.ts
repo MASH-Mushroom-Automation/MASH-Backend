@@ -2,9 +2,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
   ConnectedSocket,
   MessageBody,
   WsException,
@@ -26,20 +23,16 @@ import type { AuthenticatedSocket } from '../interfaces/authenticated-socket.int
 @WebSocketGateway({
   namespace: process.env.WS_NAMESPACE || '/ws',
   cors: {
-    origin: process.env.WS_CORS_ORIGIN?.split(',') || [
-      'https://mash-backend-api.up.railway.app',
-    ],
+    origin: process.env.WS_CORS_ORIGIN?.split(',') || ['https://mash-backend-api.up.railway.app'],
     credentials: true,
   },
   transports: ['websocket', 'polling'],
   pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '60000'),
   pingInterval: parseInt(process.env.WS_PING_INTERVAL || '25000'),
 })
-export class MainGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class MainGateway {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(MainGateway.name);
 
@@ -48,20 +41,18 @@ export class MainGateway
   /**
    * Gateway initialization lifecycle hook
    */
-  afterInit(server: Server) {
+  afterInit() {
     this.logger.log('WebSocket Gateway initialized');
     this.logger.log(`Namespace: ${process.env.WS_NAMESPACE || '/ws'}`);
     this.logger.log(`CORS Origins: ${process.env.WS_CORS_ORIGIN}`);
-    this.logger.log(
-      `Max Connections: ${process.env.WS_MAX_CONNECTIONS || 10000}`,
-    );
+    this.logger.log(`Max Connections: ${process.env.WS_MAX_CONNECTIONS || 10000}`);
   }
 
   /**
    * Handle new client connections
    * Note: Authentication happens via WsJwtGuard on message handlers
    */
-  async handleConnection(client: AuthenticatedSocket) {
+  handleConnection(client: AuthenticatedSocket) {
     try {
       // Log connection attempt
       this.logger.log(`Client connecting: ${client.id}`);
@@ -86,8 +77,8 @@ export class MainGateway
       this.logger.log(`Client connected: ${client.id}`);
     } catch (error) {
       this.logger.error(
-        `Connection error for client ${client.id}: ${error.message}`,
-        error.stack,
+        `Connection error for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
       client.disconnect();
     }
@@ -109,7 +100,7 @@ export class MainGateway
       }
     } catch (error) {
       this.logger.error(
-        `Disconnection error for client ${client.id}: ${error.message}`,
+        `Disconnection error for client ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -122,9 +113,7 @@ export class MainGateway
     this.connectionManager.trackMessage(true);
 
     const handshakeTime =
-      typeof client.handshake.time === 'number'
-        ? client.handshake.time
-        : Date.now();
+      typeof client.handshake.time === 'number' ? client.handshake.time : Date.now();
 
     return {
       event: 'pong',
@@ -186,9 +175,7 @@ export class MainGateway
       };
     } catch (error) {
       this.connectionManager.trackMessage(false);
-      this.logger.error(
-        `Subscribe error for client ${client.id}: ${error.message}`,
-      );
+      this.logger.error(`Subscribe error for client ${client.id}: ${error.message}`);
 
       return {
         event: 'error',
@@ -238,9 +225,7 @@ export class MainGateway
       };
     } catch (error) {
       this.connectionManager.trackMessage(false);
-      this.logger.error(
-        `Unsubscribe error for client ${client.id}: ${error.message}`,
-      );
+      this.logger.error(`Unsubscribe error for client ${client.id}: ${error.message}`);
 
       return {
         event: 'error',
@@ -273,9 +258,7 @@ export class MainGateway
       };
     } catch (error) {
       this.connectionManager.trackMessage(false);
-      this.logger.error(
-        `Connection info error for client ${client.id}: ${error.message}`,
-      );
+      this.logger.error(`Connection info error for client ${client.id}: ${error.message}`);
 
       return {
         event: 'error',
@@ -300,10 +283,7 @@ export class MainGateway
 
       this.logger.debug(`Broadcasted ${event} to room: ${room}`);
     } catch (error) {
-      this.logger.error(
-        `Broadcast to room error: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Broadcast to room error: ${error.message}`, error.stack);
     }
   }
 
@@ -326,10 +306,7 @@ export class MainGateway
         `Broadcasted ${event} to user ${userId} (${userConnections.length} connections)`,
       );
     } catch (error) {
-      this.logger.error(
-        `Broadcast to user error: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Broadcast to user error: ${error.message}`, error.stack);
     }
   }
 
@@ -346,10 +323,7 @@ export class MainGateway
 
       this.logger.debug(`Global broadcast: ${event}`);
     } catch (error) {
-      this.logger.error(
-        `Global broadcast error: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Global broadcast error: ${error.message}`, error.stack);
     }
   }
 

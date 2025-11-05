@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
@@ -123,10 +119,7 @@ export class NotificationsService {
     };
   }
 
-  async updatePreferences(
-    userId: string,
-    preferencesDto: NotificationPreferencesDto,
-  ) {
+  async updatePreferences(userId: string, preferencesDto: NotificationPreferencesDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -140,8 +133,7 @@ export class NotificationsService {
     return {
       id: userId,
       preferences: preferencesDto,
-      message:
-        'Preferences stored in memory (consider adding UserPreferences table)',
+      message: 'Preferences stored in memory (consider adding UserPreferences table)',
     };
   }
 }

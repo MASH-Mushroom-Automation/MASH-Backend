@@ -89,9 +89,7 @@ describe('GatewayService', () => {
 
     it('should fetch routes from database if not in cache', async () => {
       jest.spyOn(redis, 'get').mockResolvedValue(null);
-      jest
-        .spyOn(prisma.apiGatewayConfig, 'findMany')
-        .mockResolvedValue([mockRoute]);
+      jest.spyOn(prisma.apiGatewayConfig, 'findMany').mockResolvedValue([mockRoute]);
 
       const result = await service.getRoutes();
 
@@ -107,9 +105,7 @@ describe('GatewayService', () => {
 
     it('should cache routes after fetching from database', async () => {
       jest.spyOn(redis, 'get').mockResolvedValue(null);
-      jest
-        .spyOn(prisma.apiGatewayConfig, 'findMany')
-        .mockResolvedValue([mockRoute]);
+      jest.spyOn(prisma.apiGatewayConfig, 'findMany').mockResolvedValue([mockRoute]);
 
       await service.getRoutes();
 
@@ -137,9 +133,7 @@ describe('GatewayService', () => {
         ...mockRoute,
         basePath: '/api/v1/orders/:id',
       };
-      jest
-        .spyOn(redis, 'get')
-        .mockResolvedValue(JSON.stringify([routeWithParam]));
+      jest.spyOn(redis, 'get').mockResolvedValue(JSON.stringify([routeWithParam]));
 
       const result = await service.matchRoute('GET', '/api/v1/orders/123');
 
@@ -150,11 +144,7 @@ describe('GatewayService', () => {
     it('should parse query parameters', async () => {
       jest.spyOn(redis, 'get').mockResolvedValue(JSON.stringify([mockRoute]));
 
-      const result = await service.matchRoute(
-        'GET',
-        '/api/v1/orders',
-        'status=pending&limit=10',
-      );
+      const result = await service.matchRoute('GET', '/api/v1/orders', 'status=pending&limit=10');
 
       expect(result).not.toBeNull();
       expect(result?.queryParams).toEqual({
@@ -166,11 +156,7 @@ describe('GatewayService', () => {
     it('should handle multiple values for same query parameter', async () => {
       jest.spyOn(redis, 'get').mockResolvedValue(JSON.stringify([mockRoute]));
 
-      const result = await service.matchRoute(
-        'GET',
-        '/api/v1/orders',
-        'tag=electronics&tag=sale',
-      );
+      const result = await service.matchRoute('GET', '/api/v1/orders', 'tag=electronics&tag=sale');
 
       expect(result?.queryParams.tag).toEqual(['electronics', 'sale']);
     });

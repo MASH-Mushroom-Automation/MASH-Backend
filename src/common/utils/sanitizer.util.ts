@@ -45,9 +45,7 @@ export function sanitizeSql(input: string): string {
  * @param obj - Object to sanitize
  * @returns Sanitized object
  */
-export function sanitizeObject<T extends Record<string, any>>(
-  obj: T,
-): Partial<T> {
+export function sanitizeObject<T extends Record<string, any>>(obj: T): Partial<T> {
   const sanitized: Partial<T> = {};
 
   for (const key in obj) {
@@ -137,11 +135,7 @@ export function trimObject<T extends Record<string, any>>(obj: T): T {
 
       if (typeof value === 'string') {
         trimmed[key] = value.trim();
-      } else if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         trimmed[key] = trimObject(value);
       } else {
         trimmed[key] = value;

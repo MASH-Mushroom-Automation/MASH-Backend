@@ -34,8 +34,7 @@ export class UpdateProfileDto {
   lastName?: string;
 
   @ApiPropertyOptional({
-    description:
-      'User phone number (Philippine mobile format: 09XXXXXXXXX or +639XXXXXXXXX)',
+    description: 'User phone number (Philippine mobile format: 09XXXXXXXXX or +639XXXXXXXXX)',
     example: '+639123456789',
   })
   @IsOptional()

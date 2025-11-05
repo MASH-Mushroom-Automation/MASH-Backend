@@ -1,11 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import {
-  AlertRule,
-  AlertCategory,
-  AlertPriority,
-  Prisma,
-} from '@prisma/client';
+import { AlertRule, AlertCategory, AlertPriority, Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 import { NotificationQueueService } from '../../queues/services/notification-queue.service';
 
@@ -57,9 +52,7 @@ export class AlertEngineService {
       },
     });
 
-    this.logger.log(
-      `Found ${rules.length} active rules for ${event.eventType}`,
-    );
+    this.logger.log(`Found ${rules.length} active rules for ${event.eventType}`);
 
     // Evaluate each rule
     const triggeredRules: AlertRule[] = [];
@@ -75,10 +68,7 @@ export class AlertEngineService {
           await this.createAlert(rule, event);
         }
       } catch (error) {
-        this.logger.error(
-          `Error evaluating rule ${rule.id}: ${error.message}`,
-          error.stack,
-        );
+        this.logger.error(`Error evaluating rule ${rule.id}: ${error.message}`, error.stack);
       }
     }
 
@@ -160,9 +150,7 @@ export class AlertEngineService {
         return condition.values?.includes(fieldValue) ?? false;
 
       case 'CONTAINS': // String contains
-        return String(fieldValue)
-          .toLowerCase()
-          .includes(String(condition.value).toLowerCase());
+        return String(fieldValue).toLowerCase().includes(String(condition.value).toLowerCase());
 
       case 'REGEX': // Regular expression match
         const regex = new RegExp(condition.value);
@@ -235,9 +223,7 @@ export class AlertEngineService {
     }
 
     // Calculate cooldown end time
-    const cooldownEnd = new Date(
-      lastAlert.createdAt.getTime() + rule.cooldownMinutes * 60 * 1000,
-    );
+    const cooldownEnd = new Date(lastAlert.createdAt.getTime() + rule.cooldownMinutes * 60 * 1000);
 
     return new Date() < cooldownEnd;
   }
@@ -266,8 +252,7 @@ export class AlertEngineService {
           fingerprint,
           status: 'PENDING',
           metadata: {
-            eventTimestamp:
-              event.timestamp?.toISOString() || new Date().toISOString(),
+            eventTimestamp: event.timestamp?.toISOString() || new Date().toISOString(),
             evaluatedAt: new Date().toISOString(),
           } as Prisma.JsonObject,
           triggeredAt: event.timestamp || new Date(),
@@ -289,10 +274,7 @@ export class AlertEngineService {
 
       return alert;
     } catch (error) {
-      this.logger.error(
-        `Failed to create alert: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to create alert: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -309,7 +291,7 @@ export class AlertEngineService {
       }
 
       const emailRecipients = rule.recipients
-        .map((r) => r.user?.email)
+        .map(r => r.user?.email)
         .filter((email): email is string => !!email);
 
       if (emailRecipients.length === 0) {
@@ -549,10 +531,7 @@ export class AlertEngineService {
   /**
    * Manually trigger an alert (for testing)
    */
-  async triggerManualAlert(
-    ruleId: string,
-    data: Record<string, any>,
-  ): Promise<any> {
+  async triggerManualAlert(ruleId: string, data: Record<string, any>): Promise<any> {
     const rule = await this.prisma.alertRule.findUnique({
       where: { id: ruleId },
     });

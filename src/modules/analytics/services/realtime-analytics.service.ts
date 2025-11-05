@@ -20,25 +20,24 @@ export class RealtimeAnalyticsService {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [todayOrders, todayRevenue, activeUsers, onlineDevices] =
-      await Promise.all([
-        this.prisma.order.count({
-          where: { createdAt: { gte: today } },
-        }),
-        this.prisma.order.aggregate({
-          where: { createdAt: { gte: today } },
-          _sum: { total: true },
-        }),
-        this.prisma.session.count({
-          where: { expiresAt: { gt: now } },
-        }),
-        this.prisma.device.count({
-          where: {
-            status: 'ONLINE',
-            lastSeen: { gte: new Date(now.getTime() - 5 * 60 * 1000) }, // Last 5 min
-          },
-        }),
-      ]);
+    const [todayOrders, todayRevenue, activeUsers, onlineDevices] = await Promise.all([
+      this.prisma.order.count({
+        where: { createdAt: { gte: today } },
+      }),
+      this.prisma.order.aggregate({
+        where: { createdAt: { gte: today } },
+        _sum: { total: true },
+      }),
+      this.prisma.session.count({
+        where: { expiresAt: { gt: now } },
+      }),
+      this.prisma.device.count({
+        where: {
+          status: 'ONLINE',
+          lastSeen: { gte: new Date(now.getTime() - 5 * 60 * 1000) }, // Last 5 min
+        },
+      }),
+    ]);
 
     const metrics = {
       todayOrders,
@@ -75,10 +74,7 @@ export class RealtimeAnalyticsService {
     const data = {
       recentOrders,
       count: recentOrders.length,
-      totalValue: recentOrders.reduce(
-        (sum, order) => sum + Number(order.total),
-        0,
-      ),
+      totalValue: recentOrders.reduce((sum, order) => sum + Number(order.total), 0),
       timestamp: now.toISOString(),
     };
 

@@ -1,16 +1,22 @@
 import { PrismaClient, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 /**
  * Seed Users
  * Creates 20 test users with different roles
+ * Test Password: PP@Namias99 (for all users)
  */
 export async function seedUsers(prisma: PrismaClient) {
+  // Hash the test password once to use for all users
+  const testPasswordHash = await bcrypt.hash('PP@Namias99', 10);
+  
   const users = [
     // Super Admins (3)
     {
       clerkId: 'clerk_superadmin_1',
       email: 'superadmin@mash.com',
       username: 'superadmin',
+      password: testPasswordHash,
       firstName: 'Super',
       lastName: 'Admin',
       imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=superadmin',
@@ -23,6 +29,7 @@ export async function seedUsers(prisma: PrismaClient) {
       clerkId: 'clerk_superadmin_2',
       email: 'kenneth.admin@mash.com',
       username: 'kenneth_admin',
+      password: testPasswordHash,
       firstName: 'Kenneth',
       lastName: 'Namias',
       imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=kenneth',
@@ -35,6 +42,7 @@ export async function seedUsers(prisma: PrismaClient) {
       clerkId: 'clerk_superadmin_3',
       email: 'system.admin@mash.com',
       username: 'system_admin',
+      password: testPasswordHash,
       firstName: 'System',
       lastName: 'Administrator',
       imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=system',
@@ -48,6 +56,7 @@ export async function seedUsers(prisma: PrismaClient) {
       clerkId: 'clerk_admin_1',
       email: 'admin@mash.com',
       username: 'admin1',
+      password: testPasswordHash,
       firstName: 'Maria',
       lastName: 'Santos',
       imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=maria',
@@ -60,6 +69,7 @@ export async function seedUsers(prisma: PrismaClient) {
       clerkId: 'clerk_admin_2',
       email: 'support@mash.com',
       username: 'support_admin',
+      password: testPasswordHash,
       firstName: 'Juan',
       lastName: 'Dela Cruz',
       imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=juan',
@@ -72,6 +82,7 @@ export async function seedUsers(prisma: PrismaClient) {
     // Growers (10)
     ...Array.from({ length: 10 }, (_, i) => ({
       clerkId: `clerk_grower_${i + 1}`,
+      password: testPasswordHash,
       email: `grower${i + 1}@mash.com`,
       username: `grower_${i + 1}`,
       firstName: ['Pedro', 'Jose', 'Miguel', 'Carlos', 'Luis', 'Antonio', 'Roberto', 'Fernando', 'Manuel', 'Ricardo'][i],
@@ -83,10 +94,24 @@ export async function seedUsers(prisma: PrismaClient) {
       lastLoginAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random within last 7 days
     })),
 
-    // Buyers (5)
+    // Buyers (5 + test user)
+    {
+      clerkId: 'clerk_test_user',
+      email: 'mash.mushroom.automation@gmail.com',
+      username: 'mash_automation',
+      password: testPasswordHash,
+      firstName: 'MASH',
+      lastName: 'Automation',
+      imageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mash',
+      phoneNumber: '+63 917 999 8888',
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
+      lastLoginAt: new Date(),
+    },
     ...Array.from({ length: 5 }, (_, i) => ({
       clerkId: `clerk_buyer_${i + 1}`,
       email: `buyer${i + 1}@example.com`,
+      password: testPasswordHash,
       username: `buyer_${i + 1}`,
       firstName: ['Ana', 'Sofia', 'Isabella', 'Camila', 'Valentina'][i],
       lastName: ['Cruz', 'Reyes', 'Flores', 'Rivera', 'Morales'][i],

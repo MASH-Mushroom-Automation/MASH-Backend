@@ -73,9 +73,7 @@ describe('AuthController', () => {
       const result = await controller.handleClerkWebhook(webhookPayload as any);
 
       expect(result).toEqual(mockResult);
-      expect(authService.handleClerkWebhook).toHaveBeenCalledWith(
-        webhookPayload,
-      );
+      expect(authService.handleClerkWebhook).toHaveBeenCalledWith(webhookPayload);
     });
 
     it('should handle Clerk webhook for user.updated', async () => {
@@ -97,9 +95,7 @@ describe('AuthController', () => {
       const result = await controller.handleClerkWebhook(webhookPayload as any);
 
       expect(result).toEqual(mockResult);
-      expect(authService.handleClerkWebhook).toHaveBeenCalledWith(
-        webhookPayload,
-      );
+      expect(authService.handleClerkWebhook).toHaveBeenCalledWith(webhookPayload);
     });
 
     it('should handle Clerk webhook for user.deleted', async () => {
@@ -117,9 +113,7 @@ describe('AuthController', () => {
       const result = await controller.handleClerkWebhook(webhookPayload as any);
 
       expect(result).toEqual(mockResult);
-      expect(authService.handleClerkWebhook).toHaveBeenCalledWith(
-        webhookPayload,
-      );
+      expect(authService.handleClerkWebhook).toHaveBeenCalledWith(webhookPayload);
     });
 
     it('should handle unknown webhook events', async () => {
@@ -263,7 +257,7 @@ describe('AuthController', () => {
       // In real scenario, missing/invalid JWT would be rejected
       const protectedEndpoints = ['getCurrentUser', 'getSession'];
 
-      protectedEndpoints.forEach((endpoint) => {
+      protectedEndpoints.forEach(endpoint => {
         expect(controller[endpoint]).toBeDefined();
       });
     });
@@ -278,9 +272,7 @@ describe('AuthController', () => {
       authService.handleClerkWebhook.mockResolvedValue({} as any);
 
       // Should not throw authentication error
-      await expect(
-        controller.handleClerkWebhook(webhookPayload as any),
-      ).resolves.toBeDefined();
+      await expect(controller.handleClerkWebhook(webhookPayload as any)).resolves.toBeDefined();
     });
   });
 
@@ -295,9 +287,7 @@ describe('AuthController', () => {
 
       authService.getCurrentUser.mockRejectedValue(new Error('User not found'));
 
-      await expect(controller.getCurrentUser(mockRequest)).rejects.toThrow(
-        'User not found',
-      );
+      await expect(controller.getCurrentUser(mockRequest)).rejects.toThrow('User not found');
     });
 
     it('should handle webhook processing errors', async () => {
@@ -306,13 +296,11 @@ describe('AuthController', () => {
         data: { id: 'invalid' },
       };
 
-      authService.handleClerkWebhook.mockRejectedValue(
-        new Error('Webhook processing failed'),
-      );
+      authService.handleClerkWebhook.mockRejectedValue(new Error('Webhook processing failed'));
 
-      await expect(
-        controller.handleClerkWebhook(webhookPayload as any),
-      ).rejects.toThrow('Webhook processing failed');
+      await expect(controller.handleClerkWebhook(webhookPayload as any)).rejects.toThrow(
+        'Webhook processing failed',
+      );
     });
   });
 

@@ -1,13 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsObject,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsObject, Min, Max } from 'class-validator';
 
 export class CreateSensorDto {
   @ApiProperty({
@@ -16,24 +8,16 @@ export class CreateSensorDto {
   })
   @IsString()
   @IsNotEmpty()
-  deviceId: string;
+  deviceId!: string;
 
   @ApiProperty({
     description: 'Sensor type',
     example: 'TEMPERATURE',
-    enum: [
-      'TEMPERATURE',
-      'HUMIDITY',
-      'CO2',
-      'LIGHT',
-      'PH',
-      'MOISTURE',
-      'PRESSURE',
-    ],
+    enum: ['TEMPERATURE', 'HUMIDITY', 'CO2', 'LIGHT', 'PH', 'MOISTURE', 'PRESSURE'],
   })
   @IsString()
   @IsNotEmpty()
-  type: string;
+  type!: string;
 
   @ApiProperty({
     description: 'Sensor name',
@@ -41,7 +25,7 @@ export class CreateSensorDto {
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Unit of measurement',
@@ -49,7 +33,7 @@ export class CreateSensorDto {
   })
   @IsString()
   @IsNotEmpty()
-  unit: string;
+  unit!: string;
 
   @ApiProperty({
     description: 'Minimum valid value',
@@ -78,7 +62,7 @@ export class CreateSensorDto {
   @IsNumber()
   @Min(5)
   @Max(3600)
-  readingInterval: number;
+  readingInterval!: number;
 
   @ApiProperty({
     description: 'Sensor calibration data',

@@ -6,13 +6,7 @@
  * progress tracking, and error handling.
  */
 
-import {
-  Processor,
-  Process,
-  OnQueueActive,
-  OnQueueCompleted,
-  OnQueueFailed,
-} from '@nestjs/bull';
+import { Processor, Process, OnQueueActive, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { PrismaService } from '../../../database/prisma.service';
@@ -84,14 +78,7 @@ export class ImportProcessor {
 
   @Process('process-import')
   async processImport(job: Job<ImportJobData>): Promise<void> {
-    const {
-      jobId,
-      entityType,
-      fileKey,
-      fileFormat,
-      validRecordsCount,
-      options,
-    } = job.data;
+    const { jobId, entityType, fileKey, fileFormat, validRecordsCount, options } = job.data;
     const startTime = Date.now();
 
     this.logger.log(`Starting import job: ${jobId}`);
@@ -110,11 +97,7 @@ export class ImportProcessor {
       const parser = this.fileParserFactory.getParser(fileFormat as any);
       const parseResult = await parser.parse(fileBuffer, options || {});
 
-      if (
-        !parseResult.success ||
-        !parseResult.data ||
-        parseResult.data.length === 0
-      ) {
+      if (!parseResult.success || !parseResult.data || parseResult.data.length === 0) {
         throw new Error('File parsing failed or file is empty');
       }
 
@@ -124,7 +107,7 @@ export class ImportProcessor {
       // 4. Get validator and transform data
       const validator = this.getValidator(entityType);
       const transformedRecords = await Promise.all(
-        records.map(async (record) => {
+        records.map(async record => {
           const transformed = validator.transformData(record);
           return validator.transformForDatabase(transformed);
         }),
@@ -138,21 +121,14 @@ export class ImportProcessor {
       let failureCount = 0;
       const errors: Array<{ row: number; message: string }> = [];
 
-      this.logger.log(
-        `Processing ${totalBatches} batches of ${batchSize} records each`,
-      );
+      this.logger.log(`Processing ${totalBatches} batches of ${batchSize} records each`);
 
       for (let i = 0; i < totalBatches; i++) {
         const batchStart = i * batchSize;
-        const batchEnd = Math.min(
-          batchStart + batchSize,
-          transformedRecords.length,
-        );
+        const batchEnd = Math.min(batchStart + batchSize, transformedRecords.length);
         const batch = transformedRecords.slice(batchStart, batchEnd);
 
-        this.logger.log(
-          `Processing batch ${i + 1}/${totalBatches} (${batch.length} records)`,
-        );
+        this.logger.log(`Processing batch ${i + 1}/${totalBatches} (${batch.length} records)`);
 
         try {
           // 6. Insert batch into database
@@ -164,16 +140,10 @@ export class ImportProcessor {
           processedCount += batch.length;
 
           // 7. Update progress
-          const progressPercent = Math.round(
-            (processedCount / transformedRecords.length) * 100,
-          );
+          const progressPercent = Math.round((processedCount / transformedRecords.length) * 100);
           const elapsedTime = Date.now() - startTime;
-          const estimatedTotalTime =
-            (elapsedTime / processedCount) * transformedRecords.length;
-          const estimatedTimeRemaining = Math.max(
-            0,
-            estimatedTotalTime - elapsedTime,
-          );
+          const estimatedTotalTime = (elapsedTime / processedCount) * transformedRecords.length;
+          const estimatedTimeRemaining = Math.max(0, estimatedTotalTime - elapsedTime);
 
           await this.updateProgress(jobId, {
             processedRecords: processedCount,
@@ -243,10 +213,7 @@ export class ImportProcessor {
         `Import job ${jobId} completed: ${successCount} success, ${failureCount} failed in ${duration}ms`,
       );
     } catch (error) {
-      this.logger.error(
-        `Import job ${jobId} failed: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Import job ${jobId} failed: ${error.message}`, error.stack);
 
       // Mark job as failed
       await this.updateJobStatus(jobId, JobStatus.FAILED, {
@@ -352,10 +319,7 @@ export class ImportProcessor {
   /**
    * Update job progress in Redis and database
    */
-  private async updateProgress(
-    jobId: string,
-    progress: ProcessingProgress,
-  ): Promise<void> {
+  private async updateProgress(jobId: string, progress: ProcessingProgress): Promise<void> {
     // Store in Redis for real-time access
     await this.redis.set(
       `import:progress:${jobId}`,
@@ -404,7 +368,7 @@ export class ImportProcessor {
     jobId: string,
     errors: Array<{ row: number; message: string }>,
   ): Promise<void> {
-    const errorRecords = errors.map((error) => ({
+    const errorRecords = errors.map(error => ({
       jobId,
       rowNumber: error.row,
       columnName: null,
@@ -423,9 +387,7 @@ export class ImportProcessor {
       skipDuplicates: true,
     });
 
-    this.logger.log(
-      `Stored ${errorRecords.length} processing errors for job ${jobId}`,
-    );
+    this.logger.log(`Stored ${errorRecords.length} processing errors for job ${jobId}`);
   }
 
   /**
@@ -440,9 +402,7 @@ export class ImportProcessor {
       case EntityType.ORDER:
         return this.orderValidator;
       default:
-        throw new Error(
-          `Validator not implemented for entity type: ${entityType}`,
-        );
+        throw new Error(`Validator not implemented for entity type: ${entityType}`);
     }
   }
 
@@ -466,6 +426,6 @@ export class ImportProcessor {
    * Delay helper
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

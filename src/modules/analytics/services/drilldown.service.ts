@@ -17,11 +17,7 @@ export class DrillDownService {
    * Drill down from category to products
    * Shows products within a category with their performance metrics
    */
-  async categoryToProducts(
-    categoryId: string,
-    startDate: Date,
-    endDate: Date,
-  ): Promise<any> {
+  async categoryToProducts(categoryId: string, startDate: Date, endDate: Date): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:category-products:${categoryId}:${startDate.toISOString()}:${endDate.toISOString()}`;
     const cached = await this.cache.get(cacheKey);
     if (cached) return cached;
@@ -53,15 +49,13 @@ export class DrillDownService {
     });
 
     // Filter products by category in memory (since categories is Json[])
-    const filteredProducts = products.filter((p) => {
+    const filteredProducts = products.filter(p => {
       const cats = p.categories as any[];
-      return (
-        cats && cats.some((c: any) => c?.id === categoryId || c === categoryId)
-      );
+      return cats && cats.some((c: any) => c?.id === categoryId || c === categoryId);
     });
 
     // Get order items for these products
-    const productIds = filteredProducts.map((p) => p.id);
+    const productIds = filteredProducts.map(p => p.id);
     const orderItems = await this.prisma.orderItem.findMany({
       where: {
         productId: { in: productIds },
@@ -79,16 +73,10 @@ export class DrillDownService {
     });
 
     // Calculate metrics for each product
-    const productMetrics = filteredProducts.map((product) => {
-      const items = orderItems.filter((item) => item.productId === product.id);
-      const totalQuantitySold = items.reduce(
-        (sum, item) => sum + item.quantity,
-        0,
-      );
-      const totalRevenue = items.reduce(
-        (sum, item) => sum + Number(item.total),
-        0,
-      );
+    const productMetrics = filteredProducts.map(product => {
+      const items = orderItems.filter(item => item.productId === product.id);
+      const totalQuantitySold = items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalRevenue = items.reduce((sum, item) => sum + Number(item.total), 0);
       const orderCount = items.length;
       const avgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
 
@@ -107,34 +95,21 @@ export class DrillDownService {
           orderCount,
           avgOrderValue: Math.round(avgOrderValue * 100) / 100,
           conversionRate:
-            totalQuantitySold > 0
-              ? ((orderCount / totalQuantitySold) * 100).toFixed(2)
-              : '0.00',
+            totalQuantitySold > 0 ? ((orderCount / totalQuantitySold) * 100).toFixed(2) : '0.00',
         },
       };
     });
 
     // Sort by revenue descending
-    productMetrics.sort(
-      (a, b) => b.metrics.totalRevenue - a.metrics.totalRevenue,
-    );
+    productMetrics.sort((a, b) => b.metrics.totalRevenue - a.metrics.totalRevenue);
 
     const result = {
       category: category,
       summary: {
         totalProducts: productMetrics.length,
-        totalRevenue: productMetrics.reduce(
-          (sum, p) => sum + p.metrics.totalRevenue,
-          0,
-        ),
-        totalQuantitySold: productMetrics.reduce(
-          (sum, p) => sum + p.metrics.totalQuantitySold,
-          0,
-        ),
-        totalOrders: productMetrics.reduce(
-          (sum, p) => sum + p.metrics.orderCount,
-          0,
-        ),
+        totalRevenue: productMetrics.reduce((sum, p) => sum + p.metrics.totalRevenue, 0),
+        totalQuantitySold: productMetrics.reduce((sum, p) => sum + p.metrics.totalQuantitySold, 0),
+        totalOrders: productMetrics.reduce((sum, p) => sum + p.metrics.orderCount, 0),
       },
       products: productMetrics,
       dateRange: {
@@ -156,11 +131,7 @@ export class DrillDownService {
    * Drill down from product to orders
    * Shows orders that include a specific product
    */
-  async productToOrders(
-    productId: string,
-    startDate: Date,
-    endDate: Date,
-  ): Promise<any> {
+  async productToOrders(productId: string, startDate: Date, endDate: Date): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:product-orders:${productId}:${startDate.toISOString()}:${endDate.toISOString()}`;
     const cached = await this.cache.get(cacheKey);
     if (cached) return cached;
@@ -224,16 +195,10 @@ export class DrillDownService {
     });
 
     // Calculate order details
-    const orderDetails = orders.map((order) => {
+    const orderDetails = orders.map(order => {
       const productItems = order.orderItems;
-      const productQuantity = productItems.reduce(
-        (sum, item) => sum + item.quantity,
-        0,
-      );
-      const productRevenue = productItems.reduce(
-        (sum, item) => sum + Number(item.total),
-        0,
-      );
+      const productQuantity = productItems.reduce((sum, item) => sum + item.quantity, 0);
+      const productRevenue = productItems.reduce((sum, item) => sum + Number(item.total), 0);
 
       return {
         order: {
@@ -263,21 +228,13 @@ export class DrillDownService {
       },
       summary: {
         totalOrders: orderDetails.length,
-        totalQuantitySold: orderDetails.reduce(
-          (sum, o) => sum + o.productDetails.quantity,
-          0,
-        ),
-        totalRevenue: orderDetails.reduce(
-          (sum, o) => sum + o.productDetails.revenue,
-          0,
-        ),
+        totalQuantitySold: orderDetails.reduce((sum, o) => sum + o.productDetails.quantity, 0),
+        totalRevenue: orderDetails.reduce((sum, o) => sum + o.productDetails.revenue, 0),
         avgQuantityPerOrder:
           orderDetails.length > 0
             ? (
-                orderDetails.reduce(
-                  (sum, o) => sum + o.productDetails.quantity,
-                  0,
-                ) / orderDetails.length
+                orderDetails.reduce((sum, o) => sum + o.productDetails.quantity, 0) /
+                orderDetails.length
               ).toFixed(2)
             : '0.00',
       },
@@ -301,11 +258,7 @@ export class DrillDownService {
    * Drill down from user to orders
    * Shows all orders for a specific user
    */
-  async userToOrders(
-    userId: string,
-    startDate: Date,
-    endDate: Date,
-  ): Promise<any> {
+  async userToOrders(userId: string, startDate: Date, endDate: Date): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:user-orders:${userId}:${startDate.toISOString()}:${endDate.toISOString()}`;
     const cached = await this.cache.get(cacheKey);
     if (cached) return cached;
@@ -360,12 +313,9 @@ export class DrillDownService {
     });
 
     // Calculate order details
-    const orderDetails = orders.map((order) => {
+    const orderDetails = orders.map(order => {
       const itemCount = order.orderItems.length;
-      const totalQuantity = order.orderItems.reduce(
-        (sum, item) => sum + item.quantity,
-        0,
-      );
+      const totalQuantity = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
 
       return {
         order: {
@@ -378,7 +328,7 @@ export class DrillDownService {
         items: {
           count: itemCount,
           totalQuantity: totalQuantity,
-          products: order.orderItems.map((item) => ({
+          products: order.orderItems.map(item => ({
             id: item.product.id,
             name: item.product.name,
             quantity: item.quantity,
@@ -391,12 +341,8 @@ export class DrillDownService {
 
     // Calculate user metrics
     const totalSpent = orderDetails.reduce((sum, o) => sum + o.order.total, 0);
-    const avgOrderValue =
-      orderDetails.length > 0 ? totalSpent / orderDetails.length : 0;
-    const totalItems = orderDetails.reduce(
-      (sum, o) => sum + o.items.totalQuantity,
-      0,
-    );
+    const avgOrderValue = orderDetails.length > 0 ? totalSpent / orderDetails.length : 0;
+    const totalItems = orderDetails.reduce((sum, o) => sum + o.items.totalQuantity, 0);
 
     const result = {
       user: {
@@ -434,7 +380,7 @@ export class DrillDownService {
    */
   private groupOrdersByStatus(orders: any[]): Record<string, number> {
     const grouped: Record<string, number> = {};
-    orders.forEach((order) => {
+    orders.forEach(order => {
       grouped[order.status] = (grouped[order.status] || 0) + 1;
     });
     return grouped;
@@ -444,12 +390,7 @@ export class DrillDownService {
    * Build hierarchical drill-down path
    * Example: Categories -> Category -> Products -> Product -> Orders
    */
-  async buildHierarchy(
-    level: string,
-    id: string,
-    startDate: Date,
-    endDate: Date,
-  ): Promise<any> {
+  async buildHierarchy(level: string, id: string, startDate: Date, endDate: Date): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:hierarchy:${level}:${id}:${startDate.toISOString()}:${endDate.toISOString()}`;
     const cached = await this.cache.get(cacheKey);
     if (cached) return cached;

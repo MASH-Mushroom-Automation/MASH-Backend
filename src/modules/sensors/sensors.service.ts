@@ -11,10 +11,7 @@ import { UpdateSensorDto } from './dto/update-sensor.dto';
 import { IngestSensorDataDto } from './dto/ingest-sensor-data.dto';
 import { BatchIngestDto } from './dto/batch-ingest.dto';
 import { SensorDataQueryDto } from './dto/sensor-data-query.dto';
-import {
-  SensorAggregationDto,
-  AggregationType,
-} from './dto/sensor-aggregation.dto';
+import { SensorAggregationDto, AggregationType } from './dto/sensor-aggregation.dto';
 import { SensorFilterQueryDto } from './dto/sensor-filter-query.dto';
 
 @Injectable()
@@ -85,10 +82,7 @@ export class SensorsService {
     };
 
     // Cache the result with 5-minute TTL
-    await this.cacheService.set(cacheKey, result, this.SENSOR_TTL, [
-      'sensors',
-      'sensors:list',
-    ]);
+    await this.cacheService.set(cacheKey, result, this.SENSOR_TTL, ['sensors', 'sensors:list']);
 
     return result;
   }
@@ -107,10 +101,7 @@ export class SensorsService {
     }
 
     // Check ownership
-    if (
-      device.userId !== currentUser.id &&
-      !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)
-    ) {
+    if (device.userId !== currentUser.id && !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenException('You do not own this device');
     }
 
@@ -162,10 +153,7 @@ export class SensorsService {
     }
 
     // Cache the result with 5-minute TTL
-    await this.cacheService.set(cacheKey, sensor, this.SENSOR_TTL, [
-      'sensors',
-      `sensor:${id}`,
-    ]);
+    await this.cacheService.set(cacheKey, sensor, this.SENSOR_TTL, ['sensors', `sensor:${id}`]);
 
     return sensor;
   }
@@ -187,11 +175,7 @@ export class SensorsService {
     });
 
     // Invalidate sensor caches
-    await this.cacheService.invalidateByTags([
-      'sensors',
-      'sensors:list',
-      `sensor:${id}`,
-    ]);
+    await this.cacheService.invalidateByTags(['sensors', 'sensors:list', `sensor:${id}`]);
 
     return updated;
   }
@@ -210,21 +194,13 @@ export class SensorsService {
     });
 
     // Invalidate sensor caches
-    await this.cacheService.invalidateByTags([
-      'sensors',
-      'sensors:list',
-      `sensor:${id}`,
-    ]);
+    await this.cacheService.invalidateByTags(['sensors', 'sensors:list', `sensor:${id}`]);
 
     return deleted;
   }
 
   // 6. Ingest sensor data point
-  async ingestData(
-    id: string,
-    ingestDto: IngestSensorDataDto,
-    currentUser: any,
-  ) {
+  async ingestData(id: string, ingestDto: IngestSensorDataDto, currentUser: any) {
     const sensor = await this.prisma.sensor.findUnique({
       where: { id },
       include: { device: true },
@@ -236,14 +212,10 @@ export class SensorsService {
 
     // Validate value against min/max
     if (sensor.minValue !== null && ingestDto.value < sensor.minValue) {
-      throw new BadRequestException(
-        `Value below minimum threshold (${sensor.minValue})`,
-      );
+      throw new BadRequestException(`Value below minimum threshold (${sensor.minValue})`);
     }
     if (sensor.maxValue !== null && ingestDto.value > sensor.maxValue) {
-      throw new BadRequestException(
-        `Value above maximum threshold (${sensor.maxValue})`,
-      );
+      throw new BadRequestException(`Value above maximum threshold (${sensor.maxValue})`);
     }
 
     const sensorData = await this.prisma.sensorData.create({
@@ -255,9 +227,7 @@ export class SensorsService {
         value: ingestDto.value,
         unit: sensor.unit,
         quality: ingestDto.metadata?.quality || 'good',
-        timestamp: ingestDto.timestamp
-          ? new Date(ingestDto.timestamp)
-          : new Date(),
+        timestamp: ingestDto.timestamp ? new Date(ingestDto.timestamp) : new Date(),
       },
     });
 
@@ -278,7 +248,7 @@ export class SensorsService {
       throw new NotFoundException('Sensor not found');
     }
 
-    const dataPoints = batchDto.data.map((point) => ({
+    const dataPoints = batchDto.data.map(point => ({
       deviceId: sensor.deviceId,
       sensorId: id,
       userId: currentUser.id,
@@ -365,18 +335,10 @@ export class SensorsService {
 
     const aggregateResult = await this.prisma.sensorData.aggregate({
       where,
-      _avg: aggregations.includes(AggregationType.AVG)
-        ? { value: true }
-        : undefined,
-      _min: aggregations.includes(AggregationType.MIN)
-        ? { value: true }
-        : undefined,
-      _max: aggregations.includes(AggregationType.MAX)
-        ? { value: true }
-        : undefined,
-      _sum: aggregations.includes(AggregationType.SUM)
-        ? { value: true }
-        : undefined,
+      _avg: aggregations.includes(AggregationType.AVG) ? { value: true } : undefined,
+      _min: aggregations.includes(AggregationType.MIN) ? { value: true } : undefined,
+      _max: aggregations.includes(AggregationType.MAX) ? { value: true } : undefined,
+      _sum: aggregations.includes(AggregationType.SUM) ? { value: true } : undefined,
       _count: aggregations.includes(AggregationType.COUNT) ? true : undefined,
     });
 
@@ -543,7 +505,7 @@ export class SensorsService {
     });
 
     // Simple trend calculation
-    const values = data.map((d) => d.value);
+    const values = data.map(d => d.value);
     const average = values.reduce((a, b) => a + b, 0) / values.length;
     const trend = values.length > 1 ? values[values.length - 1] - values[0] : 0;
 
@@ -572,11 +534,7 @@ export class SensorsService {
   }
 
   // 18. Export sensor data (CSV/JSON)
-  async exportData(
-    id: string,
-    query: SensorDataQueryDto,
-    format: 'csv' | 'json',
-  ) {
+  async exportData(id: string, query: SensorDataQueryDto, format: 'csv' | 'json') {
     const sensor = await this.prisma.sensor.findUnique({ where: { id } });
     if (!sensor) {
       throw new NotFoundException('Sensor not found');
@@ -600,9 +558,7 @@ export class SensorsService {
     if (format === 'csv') {
       // Convert to CSV format
       const csvHeader = 'timestamp,value,unit,quality\n';
-      const csvRows = data
-        .map((d) => `${d.timestamp},${d.value},${d.unit},${d.quality}`)
-        .join('\n');
+      const csvRows = data.map(d => `${d.timestamp},${d.value},${d.unit},${d.quality}`).join('\n');
       return { format: 'csv', content: csvHeader + csvRows };
     }
 

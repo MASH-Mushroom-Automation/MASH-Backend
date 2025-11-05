@@ -48,10 +48,10 @@ export class PermissionsGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get required permissions from decorator metadata
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     // If no permissions required, allow access
     if (!requiredPermissions || requiredPermissions.length === 0) {
@@ -69,9 +69,7 @@ export class PermissionsGuard implements CanActivate {
 
     // SUPER_ADMIN has all permissions
     if (user.role === UserRole.SUPER_ADMIN) {
-      this.logger.debug(
-        `PermissionsGuard: SUPER_ADMIN bypass for user ${user.id}`,
-      );
+      this.logger.debug(`PermissionsGuard: SUPER_ADMIN bypass for user ${user.id}`);
       return true;
     }
 
@@ -80,14 +78,12 @@ export class PermissionsGuard implements CanActivate {
       const userPermissions = await this.getUserPermissions(user.id);
 
       // Check if user has ALL required permissions
-      const hasAllPermissions = requiredPermissions.every((permission) =>
+      const hasAllPermissions = requiredPermissions.every(permission =>
         userPermissions.includes(permission),
       );
 
       if (!hasAllPermissions) {
-        const missingPermissions = requiredPermissions.filter(
-          (p) => !userPermissions.includes(p),
-        );
+        const missingPermissions = requiredPermissions.filter(p => !userPermissions.includes(p));
 
         this.logger.warn(
           `PermissionsGuard: User ${user.id} missing permissions: ${missingPermissions.join(', ')}`,
@@ -135,9 +131,7 @@ export class PermissionsGuard implements CanActivate {
       return cachedPermissions;
     }
 
-    this.logger.debug(
-      `Cache MISS for user ${userId} permissions - querying DB`,
-    );
+    this.logger.debug(`Cache MISS for user ${userId} permissions - querying DB`);
 
     // Query user's role assignments with permissions
     const userRoleAssignments = await this.prisma.userRoleAssignment.findMany({

@@ -10,19 +10,11 @@ import {
   HttpCode,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { GatewayService } from '../services/gateway.service';
 import { LoadBalancerService } from '../services/load-balancer.service';
 import { CircuitBreakerService } from '../services/circuit-breaker.service';
-import {
-  CreateGatewayConfigDto,
-  UpdateGatewayConfigDto,
-} from '../dto/gateway-config.dto';
+import { CreateGatewayConfigDto, UpdateGatewayConfigDto } from '../dto/gateway-config.dto';
 import { PrismaService } from '../../../database/prisma.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -80,10 +72,7 @@ export class GatewayController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update gateway route configuration' })
   @ApiResponse({ status: 200, description: 'Route updated successfully' })
-  async updateConfig(
-    @Param('id') id: string,
-    @Body() dto: UpdateGatewayConfigDto,
-  ) {
+  async updateConfig(@Param('id') id: string, @Body() dto: UpdateGatewayConfigDto) {
     const config = await this.prisma.apiGatewayConfig.update({
       where: { id },
       data: dto,
@@ -145,7 +134,7 @@ export class GatewayController {
   @ApiResponse({ status: 200, description: 'Services retrieved successfully' })
   async getServices() {
     const routes = await this.gatewayService.getRoutes();
-    const services = routes.map((route) => ({
+    const services = routes.map(route => ({
       serviceName: route.serviceName,
       basePath: route.basePath,
       targetUrl: route.targetUrl,
@@ -168,7 +157,7 @@ export class GatewayController {
   async getServiceHealth(@Param('serviceName') serviceName: string) {
     const lbStats = this.loadBalancerService.getStatistics(serviceName);
     const cbStates = await this.circuitBreakerService.getAllStates();
-    const cbState = cbStates.find((s) => s.serviceName === serviceName);
+    const cbState = cbStates.find(s => s.serviceName === serviceName);
 
     return {
       statusCode: HttpStatus.OK,

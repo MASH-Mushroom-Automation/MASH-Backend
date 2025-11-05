@@ -70,16 +70,12 @@ describe('RedisThrottlerStorage', () => {
         'short',
       );
 
-      expect(redisService.increment).toHaveBeenCalledWith(
-        'throttle:192.168.1.1:/api/auth/login',
-      );
+      expect(redisService.increment).toHaveBeenCalledWith('throttle:192.168.1.1:/api/auth/login');
       expect(redisService.setExpiration).toHaveBeenCalledWith(
         'throttle:192.168.1.1:/api/auth/login',
         60,
       );
-      expect(redisService.getTTL).toHaveBeenCalledWith(
-        'throttle:192.168.1.1:/api/auth/login',
-      );
+      expect(redisService.getTTL).toHaveBeenCalledWith('throttle:192.168.1.1:/api/auth/login');
       expect(result).toEqual({
         totalHits: 1,
         timeToExpire: 60,
@@ -92,13 +88,7 @@ describe('RedisThrottlerStorage', () => {
       redisService.increment.mockResolvedValue(3);
       redisService.getTTL.mockResolvedValue(45);
 
-      const result = await storage.increment(
-        '192.168.1.1:/api/auth/login',
-        60000,
-        5,
-        0,
-        'short',
-      );
+      const result = await storage.increment('192.168.1.1:/api/auth/login', 60000, 5, 0, 'short');
 
       expect(redisService.increment).toHaveBeenCalled();
       expect(redisService.setExpiration).not.toHaveBeenCalled(); // Only set on first request
@@ -110,13 +100,7 @@ describe('RedisThrottlerStorage', () => {
       redisService.increment.mockResolvedValue(2);
       redisService.getTTL.mockResolvedValue(-1);
 
-      const result = await storage.increment(
-        '192.168.1.1:/api/test',
-        60000,
-        10,
-        0,
-        'default',
-      );
+      const result = await storage.increment('192.168.1.1:/api/test', 60000, 10, 0, 'default');
 
       expect(result.timeToExpire).toBe(0); // Negative TTL converted to 0
     });
@@ -129,10 +113,7 @@ describe('RedisThrottlerStorage', () => {
       await storage.increment('test-key', 60000, 10, 0, 'default');
 
       expect(redisService.increment).toHaveBeenCalledWith('throttle:test-key');
-      expect(redisService.setExpiration).toHaveBeenCalledWith(
-        'throttle:test-key',
-        60,
-      );
+      expect(redisService.setExpiration).toHaveBeenCalledWith('throttle:test-key', 60);
     });
 
     it('should convert milliseconds to seconds for TTL', async () => {
@@ -142,10 +123,7 @@ describe('RedisThrottlerStorage', () => {
 
       await storage.increment('test-key', 900000, 5, 0, 'short'); // 15 minutes
 
-      expect(redisService.setExpiration).toHaveBeenCalledWith(
-        'throttle:test-key',
-        900,
-      ); // 900 seconds
+      expect(redisService.setExpiration).toHaveBeenCalledWith('throttle:test-key', 900); // 900 seconds
     });
 
     it('should round up fractional seconds', async () => {
@@ -155,24 +133,13 @@ describe('RedisThrottlerStorage', () => {
 
       await storage.increment('test-key', 60500, 10, 0, 'default'); // 60.5 seconds
 
-      expect(redisService.setExpiration).toHaveBeenCalledWith(
-        'throttle:test-key',
-        61,
-      ); // Rounded up
+      expect(redisService.setExpiration).toHaveBeenCalledWith('throttle:test-key', 61); // Rounded up
     });
 
     it('should fallback to memory on Redis error', async () => {
-      redisService.increment.mockRejectedValue(
-        new Error('Redis connection error'),
-      );
+      redisService.increment.mockRejectedValue(new Error('Redis connection error'));
 
-      const result = await storage.increment(
-        'test-key',
-        60000,
-        10,
-        0,
-        'default',
-      );
+      const result = await storage.increment('test-key', 60000, 10, 0, 'default');
 
       expect(result.totalHits).toBe(1); // Fallback to memory, first request
       expect(result.timeToExpire).toBeGreaterThan(0);
@@ -185,13 +152,7 @@ describe('RedisThrottlerStorage', () => {
     });
 
     it('should increment counter in memory for first request', async () => {
-      const result = await storage.increment(
-        '192.168.1.1:/api/test',
-        60000,
-        10,
-        0,
-        'default',
-      );
+      const result = await storage.increment('192.168.1.1:/api/test', 60000, 10, 0, 'default');
 
       expect(result.totalHits).toBe(1);
       expect(result.timeToExpire).toBeCloseTo(60, 0);
@@ -201,13 +162,7 @@ describe('RedisThrottlerStorage', () => {
 
     it('should increment counter in memory for subsequent requests', async () => {
       await storage.increment('test-key', 60000, 10, 0, 'default');
-      const result = await storage.increment(
-        'test-key',
-        60000,
-        10,
-        0,
-        'default',
-      );
+      const result = await storage.increment('test-key', 60000, 10, 0, 'default');
 
       expect(result.totalHits).toBe(2);
     });
@@ -217,7 +172,7 @@ describe('RedisThrottlerStorage', () => {
       await storage.increment('test-key', 100, 10, 0, 'default'); // 100ms TTL
 
       // Wait for TTL to expire
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Next request should reset counter
       const result = await storage.increment('test-key', 100, 10, 0, 'default');
@@ -236,25 +191,13 @@ describe('RedisThrottlerStorage', () => {
     });
 
     it('should calculate remaining TTL correctly', async () => {
-      const result1 = await storage.increment(
-        'test-key',
-        60000,
-        10,
-        0,
-        'default',
-      );
+      const result1 = await storage.increment('test-key', 60000, 10, 0, 'default');
       expect(result1.timeToExpire).toBeCloseTo(60, 0);
 
       // Wait 1 second
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const result2 = await storage.increment(
-        'test-key',
-        60000,
-        10,
-        0,
-        'default',
-      );
+      const result2 = await storage.increment('test-key', 60000, 10, 0, 'default');
       expect(result2.timeToExpire).toBeCloseTo(59, 1); // ~59 seconds remaining
     });
   });
@@ -327,7 +270,7 @@ describe('RedisThrottlerStorage', () => {
       await storage.increment('test-key', 100, 10, 0, 'default');
 
       // Wait for expiration
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       const result = await storage.get('test-key');
 
@@ -347,7 +290,7 @@ describe('RedisThrottlerStorage', () => {
       await storage.increment('key3', 60000, 10, 0, 'default'); // Long TTL
 
       // Wait for short TTL to expire
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Cleanup
       storage.cleanupExpiredRecords();
@@ -383,7 +326,7 @@ describe('RedisThrottlerStorage', () => {
       const result1 = await storage.get('key1');
       expect(result1).not.toBeNull();
 
-      await new Promise((resolve) => setTimeout(resolve, 150)); // Wait for expiration
+      await new Promise(resolve => setTimeout(resolve, 150)); // Wait for expiration
 
       storage.cleanupExpiredRecords(); // Second cleanup (should remove)
       storage.cleanupExpiredRecords(); // Third cleanup (no-op)
@@ -411,7 +354,7 @@ describe('RedisThrottlerStorage', () => {
 
       const results = await Promise.all(promises);
 
-      expect(results.map((r) => r.totalHits)).toEqual([1, 2, 3, 4, 5]);
+      expect(results.map(r => r.totalHits)).toEqual([1, 2, 3, 4, 5]);
       expect(redisService.increment).toHaveBeenCalledTimes(5);
     });
 
@@ -460,10 +403,7 @@ describe('RedisThrottlerStorage', () => {
         'default',
       );
 
-      expect(redisService.setExpiration).toHaveBeenCalledWith(
-        'throttle:test-key',
-        86400,
-      );
+      expect(redisService.setExpiration).toHaveBeenCalledWith('throttle:test-key', 86400);
       expect(result.timeToExpire).toBe(86400);
     });
 
@@ -476,9 +416,7 @@ describe('RedisThrottlerStorage', () => {
       const specialKey = '192.168.1.1:/api/test?param=value&foo=bar';
       await storage.increment(specialKey, 60000, 10, 0, 'default');
 
-      expect(redisService.increment).toHaveBeenCalledWith(
-        'throttle:' + specialKey,
-      );
+      expect(redisService.increment).toHaveBeenCalledWith('throttle:' + specialKey);
     });
 
     it('should handle empty string key', async () => {

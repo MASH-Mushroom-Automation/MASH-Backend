@@ -93,12 +93,7 @@ export class CacheService {
    * @param ttl - Time to live in seconds (default: 300)
    * @param tags - Tags for invalidation (default: [])
    */
-  async set<T>(
-    key: string,
-    value: T,
-    ttl?: number,
-    tags?: string[],
-  ): Promise<boolean> {
+  async set<T>(key: string, value: T, ttl?: number, tags?: string[]): Promise<boolean> {
     if (!this.redisService.isAvailable()) {
       this.logger.warn('Redis unavailable, skipping cache set');
       return false;
@@ -204,16 +199,11 @@ export class CacheService {
       const fullPattern = this.buildKey(pattern);
       const deleted = await this.redisService.deletePattern(fullPattern);
 
-      this.logger.log(
-        `Cache invalidated by pattern "${pattern}": ${deleted} keys deleted`,
-      );
+      this.logger.log(`Cache invalidated by pattern "${pattern}": ${deleted} keys deleted`);
 
       return deleted;
     } catch (error) {
-      this.logger.error(
-        `Cache invalidation error for pattern ${pattern}:`,
-        error,
-      );
+      this.logger.error(`Cache invalidation error for pattern ${pattern}:`, error);
       return 0;
     }
   }
@@ -261,10 +251,7 @@ export class CacheService {
   getStats(): CacheStats {
     return {
       ...this.stats,
-      hitRate:
-        this.stats.operations > 0
-          ? (this.stats.hits / this.stats.operations) * 100
-          : 0,
+      hitRate: this.stats.operations > 0 ? (this.stats.hits / this.stats.operations) * 100 : 0,
     };
   }
 
@@ -307,12 +294,7 @@ export class CacheService {
    * @param ttl - Time to live in seconds
    * @param tags - Tags for invalidation
    */
-  async wrap<T>(
-    key: string,
-    fn: () => Promise<T>,
-    ttl?: number,
-    tags?: string[],
-  ): Promise<T> {
+  async wrap<T>(key: string, fn: () => Promise<T>, ttl?: number, tags?: string[]): Promise<T> {
     // Try to get from cache
     const cached = await this.get<T>(key);
     if (cached !== null) {
@@ -350,11 +332,7 @@ export class CacheService {
   /**
    * Associate cache key with tags
    */
-  private async associateTags(
-    key: string,
-    tags: string[],
-    ttl: number,
-  ): Promise<void> {
+  private async associateTags(key: string, tags: string[], ttl: number): Promise<void> {
     for (const tag of tags) {
       const tagKey = this.buildTagKey(tag);
 
@@ -382,8 +360,14 @@ export class CacheService {
       this.stats.misses++;
     }
     this.stats.hitRate =
-      this.stats.operations > 0
-        ? (this.stats.hits / this.stats.operations) * 100
-        : 0;
+      this.stats.operations > 0 ? (this.stats.hits / this.stats.operations) * 100 : 0;
+  }
+
+  /**
+   * Check if Redis is available
+   * @returns true if Redis is connected and available
+   */
+  isRedisAvailable(): boolean {
+    return this.redisService.isAvailable();
   }
 }

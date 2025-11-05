@@ -28,9 +28,7 @@ export class EmailProcessor {
     // Verify transporter configuration
     this.transporter.verify((error, success) => {
       if (error) {
-        this.logger.error(
-          `Email transporter verification failed: ${error.message}`,
-        );
+        this.logger.error(`Email transporter verification failed: ${error.message}`);
       } else {
         this.logger.log('Email transporter is ready to send messages');
       }
@@ -98,9 +96,7 @@ export class EmailProcessor {
           },
         });
       } catch (dbError) {
-        this.logger.error(
-          `Failed to update notification status: ${dbError.message}`,
-        );
+        this.logger.error(`Failed to update notification status: ${dbError.message}`);
       }
 
       throw error; // Bull will retry based on job configuration
@@ -177,7 +173,7 @@ export class EmailProcessor {
           <div class="content">
             ${text
               .split('\n')
-              .map((line) => `<p>${line}</p>`)
+              .map(line => `<p>${line}</p>`)
               .join('')}
           </div>
           <div class="footer">

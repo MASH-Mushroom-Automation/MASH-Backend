@@ -15,9 +15,7 @@ export class AuthViewsController {
     // In dist: __dirname = dist/modules/auth/views
     // We need: dist/public or src/public
     const isDev = process.env.NODE_ENV !== 'production';
-    return isDev
-      ? join(__dirname, '../../../../src/public')
-      : join(__dirname, '../../../public');
+    return isDev ? join(__dirname, '../../../../src/public') : join(__dirname, '../../../public');
   }
 
   /**
@@ -49,9 +47,7 @@ export class AuthViewsController {
    */
   @Get('/forgot-password')
   serveForgotPassword(@Res() res: Response) {
-    return res.sendFile(
-      join(this.getPublicPath(), 'auth/forgot-password.html'),
-    );
+    return res.sendFile(join(this.getPublicPath(), 'auth/forgot-password.html'));
   }
 
   /**

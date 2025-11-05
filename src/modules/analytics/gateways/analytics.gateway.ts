@@ -1,10 +1,4 @@
-import {
-  WebSocketGateway,
-  WebSocketServer,
-  SubscribeMessage,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-} from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, SubscribeMessage } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
 import { RealtimeAnalyticsService } from '../services/realtime-analytics.service';
@@ -17,9 +11,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
     credentials: true,
   },
 })
-export class AnalyticsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class AnalyticsGateway {
   @WebSocketServer()
   server: Server;
 
@@ -64,9 +56,7 @@ export class AnalyticsGateway
     this.metricsInterval = setInterval(() => {
       // Prevent overlapping runs
       if (isRunning) {
-        this.logger.warn(
-          'Skipping metrics emission - previous cycle still running',
-        );
+        this.logger.warn('Skipping metrics emission - previous cycle still running');
         return;
       }
 

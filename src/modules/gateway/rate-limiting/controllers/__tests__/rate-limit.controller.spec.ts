@@ -138,9 +138,7 @@ describe('RateLimitController', () => {
       const result = await controller.getUserOverrides('user-123');
 
       expect(result).toEqual([mockOverride]);
-      expect(dynamicRateLimit.getUserOverrides).toHaveBeenCalledWith(
-        'user-123',
-      );
+      expect(dynamicRateLimit.getUserOverrides).toHaveBeenCalledWith('user-123');
     });
   });
 
@@ -206,18 +204,15 @@ describe('RateLimitController', () => {
 
       expect(result.requestLimit).toBe(200);
       expect(result.reason).toBe('Updated limit for premium user');
-      expect(dynamicRateLimit.updateOverride).toHaveBeenCalledWith(
-        'override-1',
-        updateDto,
-      );
+      expect(dynamicRateLimit.updateOverride).toHaveBeenCalledWith('override-1', updateDto);
     });
 
     it('should throw NotFoundException if override not found', async () => {
       dynamicRateLimit.updateOverride.mockResolvedValue(null);
 
-      await expect(
-        controller.updateOverride('nonexistent', updateDto),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.updateOverride('nonexistent', updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -230,17 +225,13 @@ describe('RateLimitController', () => {
       expect(result).toEqual({
         message: 'Rate limit override deleted successfully',
       });
-      expect(dynamicRateLimit.deleteOverride).toHaveBeenCalledWith(
-        'override-1',
-      );
+      expect(dynamicRateLimit.deleteOverride).toHaveBeenCalledWith('override-1');
     });
 
     it('should throw NotFoundException if override not found', async () => {
       dynamicRateLimit.deleteOverride.mockResolvedValue(false);
 
-      await expect(controller.deleteOverride('nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(controller.deleteOverride('nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 

@@ -1,10 +1,4 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 /**
@@ -68,10 +62,7 @@ export class ValidationExceptionFilter implements ExceptionFilter {
     // If response has a 'message' array (class-validator format)
     if (response.message && Array.isArray(response.message)) {
       // Check if messages are validation error objects
-      if (
-        response.message.length > 0 &&
-        typeof response.message[0] === 'object'
-      ) {
+      if (response.message.length > 0 && typeof response.message[0] === 'object') {
         return this.transformValidationErrors(response.message);
       }
 
@@ -98,7 +89,7 @@ export class ValidationExceptionFilter implements ExceptionFilter {
   private transformValidationErrors(errors: any[]): Record<string, any> {
     const formattedErrors: Record<string, any> = {};
 
-    errors.forEach((error) => {
+    errors.forEach(error => {
       if (error.property) {
         formattedErrors[error.property] = {
           value: error.value,
@@ -108,8 +99,7 @@ export class ValidationExceptionFilter implements ExceptionFilter {
 
         // Handle nested validation errors
         if (error.children && error.children.length > 0) {
-          formattedErrors[error.property].children =
-            this.transformValidationErrors(error.children);
+          formattedErrors[error.property].children = this.transformValidationErrors(error.children);
         }
       }
     });

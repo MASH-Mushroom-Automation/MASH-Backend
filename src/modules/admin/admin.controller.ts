@@ -1,20 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -50,20 +35,14 @@ export class AdminController {
   @Put('users/:id/role')
   @ApiOperation({ summary: 'Update user role' })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
-  async updateUserRole(
-    @Param('id') id: string,
-    @Body() updateRoleDto: UpdateUserRoleDto,
-  ) {
+  async updateUserRole(@Param('id') id: string, @Body() updateRoleDto: UpdateUserRoleDto) {
     return this.adminService.updateUserRole(id, updateRoleDto.role);
   }
 
   @Put('users/:id/status')
   @ApiOperation({ summary: 'Update user active status' })
   @ApiResponse({ status: 200, description: 'User status updated successfully' })
-  async updateUserStatus(
-    @Param('id') id: string,
-    @Body() updateStatusDto: UpdateUserStatusDto,
-  ) {
+  async updateUserStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateUserStatusDto) {
     return this.adminService.updateUserStatus(id, updateStatusDto.isActive);
   }
 

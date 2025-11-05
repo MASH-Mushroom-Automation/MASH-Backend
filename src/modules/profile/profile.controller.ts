@@ -133,8 +133,7 @@ export class ProfileController {
         avatar: {
           type: 'string',
           format: 'binary',
-          description:
-            'Avatar image file (JPEG, PNG, GIF, WebP, BMP, ICO) - Max 5MB',
+          description: 'Avatar image file (JPEG, PNG, GIF, WebP, BMP, ICO) - Max 5MB',
         },
       },
       required: ['avatar'],
@@ -171,10 +170,7 @@ export class ProfileController {
       },
     }),
   )
-  async uploadAvatar(
-    @CurrentUser('id') userId: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  async uploadAvatar(@CurrentUser('id') userId: string, @UploadedFile() file: Express.Multer.File) {
     // Validate file before processing (security layer)
     // This validates: MIME type, file extension, file size, magic numbers, filename safety
     await this.fileValidationService.validateImage(file, {
@@ -296,10 +292,7 @@ export class ProfileController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized',
   })
-  async revokeSession(
-    @CurrentUser('id') userId: string,
-    @Param('id') sessionId: string,
-  ) {
+  async revokeSession(@CurrentUser('id') userId: string, @Param('id') sessionId: string) {
     return this.sessionService.revokeSession(userId, sessionId);
   }
 
@@ -360,8 +353,7 @@ export class ProfileController {
   @Post('api-keys')
   @ApiOperation({
     summary: 'Generate a new API key',
-    description:
-      '⚠️ The full API key will ONLY be shown once. Save it securely!',
+    description: '⚠️ The full API key will ONLY be shown once. Save it securely!',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -378,8 +370,7 @@ export class ProfileController {
         createdAt: { type: 'string', format: 'date-time' },
         warning: {
           type: 'string',
-          example:
-            'This is the only time you will see the full API key. Please save it securely.',
+          example: 'This is the only time you will see the full API key. Please save it securely.',
         },
       },
     },
@@ -392,10 +383,7 @@ export class ProfileController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized',
   })
-  async createApiKey(
-    @CurrentUser('id') userId: string,
-    @Body() createApiKeyDto: CreateApiKeyDto,
-  ) {
+  async createApiKey(@CurrentUser('id') userId: string, @Body() createApiKeyDto: CreateApiKeyDto) {
     const { name, scopes, expiresAt } = createApiKeyDto;
     return this.apiKeyService.generateApiKey(
       userId,
@@ -435,15 +423,8 @@ export class ProfileController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized',
   })
-  async revokeApiKey(
-    @CurrentUser('id') userId: string,
-    @Param('id') keyId: string,
-  ) {
-    return this.apiKeyService.revokeApiKey(
-      userId,
-      keyId,
-      'User revoked API key',
-    );
+  async revokeApiKey(@CurrentUser('id') userId: string, @Param('id') keyId: string) {
+    return this.apiKeyService.revokeApiKey(userId, keyId, 'User revoked API key');
   }
 
   // ==================== Security Audit Trail ====================
@@ -451,8 +432,7 @@ export class ProfileController {
   @Get('security-log')
   @ApiOperation({
     summary: 'Get security audit trail',
-    description:
-      'View security events and login history with filtering options',
+    description: 'View security events and login history with filtering options',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -512,9 +492,7 @@ export class ProfileController {
   async getSecurityLog(@CurrentUser('id') userId: string, @Req() req: any) {
     // Extract query params
     const action = req.query?.action;
-    const dateFrom = req.query?.dateFrom
-      ? new Date(req.query.dateFrom)
-      : undefined;
+    const dateFrom = req.query?.dateFrom ? new Date(req.query.dateFrom) : undefined;
     const dateTo = req.query?.dateTo ? new Date(req.query.dateTo) : undefined;
     const severity = req.query?.severity;
     const page = req.query?.page ? parseInt(req.query.page, 10) : 1;
@@ -578,8 +556,7 @@ export class ProfileController {
   @Post('2fa/verify')
   @ApiOperation({
     summary: 'Enable 2FA - Step 2: Verify TOTP code',
-    description:
-      'Verify 6-digit TOTP code and enable 2FA. Returns backup codes (shown only once).',
+    description: 'Verify 6-digit TOTP code and enable 2FA. Returns backup codes (shown only once).',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -606,18 +583,14 @@ export class ProfileController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized',
   })
-  async verify2FA(
-    @CurrentUser('id') userId: string,
-    @Body() verifyDto: Verify2FADto,
-  ) {
+  async verify2FA(@CurrentUser('id') userId: string, @Body() verifyDto: Verify2FADto) {
     return this.twoFactorService.verify2FA(userId, verifyDto.token);
   }
 
   @Delete('2fa/disable')
   @ApiOperation({
     summary: 'Disable 2FA',
-    description:
-      'Disable two-factor authentication (clears secret and backup codes)',
+    description: 'Disable two-factor authentication (clears secret and backup codes)',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -648,8 +621,7 @@ export class ProfileController {
   @Post('2fa/backup-codes')
   @ApiOperation({
     summary: 'Regenerate backup codes',
-    description:
-      'Generate new backup codes (invalidates old ones). Shown only once.',
+    description: 'Generate new backup codes (invalidates old ones). Shown only once.',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,

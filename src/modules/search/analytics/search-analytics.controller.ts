@@ -15,8 +15,7 @@ export class SearchAnalyticsController {
   @Get()
   @ApiOperation({
     summary: 'Get search analytics',
-    description:
-      'Comprehensive analytics including popular queries, performance metrics, and more',
+    description: 'Comprehensive analytics including popular queries, performance metrics, and more',
   })
   @ApiResponse({ status: 200, description: 'Analytics data returned' })
   async getAnalytics() {

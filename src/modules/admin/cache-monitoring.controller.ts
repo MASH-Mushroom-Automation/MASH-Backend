@@ -11,15 +11,7 @@
  * Access: Admin only
  */
 
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CacheManagerService } from '../../common/services/cache-manager.service';
 import type { WarmCacheConfig } from '../../common/services/cache-manager.service';
@@ -54,8 +46,7 @@ export class CacheMonitoringController {
   @Permissions('system:read')
   @ApiOperation({
     summary: 'Get cache health status',
-    description:
-      'Returns cache health status with alerts and performance metrics',
+    description: 'Returns cache health status with alerts and performance metrics',
   })
   async getCacheHealth() {
     const health = await this.cacheManagerService.getCacheHealth();
@@ -71,8 +62,7 @@ export class CacheMonitoringController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Trigger cache warming',
-    description:
-      'Manually trigger cache warming to preload frequently accessed data',
+    description: 'Manually trigger cache warming to preload frequently accessed data',
   })
   async warmCache(@Body() warmCacheDto: WarmCacheConfig) {
     await this.cacheManagerService.warmCache(warmCacheDto);

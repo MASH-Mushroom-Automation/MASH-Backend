@@ -1,10 +1,4 @@
-import {
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsObject,
-  IsBoolean,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsObject, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum ExportFormat {

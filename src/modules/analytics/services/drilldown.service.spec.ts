@@ -117,11 +117,7 @@ describe('DrillDownService', () => {
       mockPrismaService.product.findMany.mockResolvedValue(mockProducts);
       mockPrismaService.orderItem.findMany.mockResolvedValue(mockOrderItems);
 
-      const result = await service.categoryToProducts(
-        categoryId,
-        startDate,
-        endDate,
-      );
+      const result = await service.categoryToProducts(categoryId, startDate, endDate);
 
       expect(result).toHaveProperty('category');
       expect(result).toHaveProperty('summary');
@@ -140,11 +136,7 @@ describe('DrillDownService', () => {
       };
       mockCacheService.get.mockResolvedValue(cachedData);
 
-      const result = await service.categoryToProducts(
-        categoryId,
-        startDate,
-        endDate,
-      );
+      const result = await service.categoryToProducts(categoryId, startDate, endDate);
 
       expect(result).toEqual(cachedData);
       expect(mockPrismaService.category.findUnique).not.toHaveBeenCalled();
@@ -154,9 +146,9 @@ describe('DrillDownService', () => {
       mockCacheService.get.mockResolvedValue(null);
       mockPrismaService.category.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.categoryToProducts(categoryId, startDate, endDate),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.categoryToProducts(categoryId, startDate, endDate)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should handle empty product list', async () => {
@@ -164,11 +156,7 @@ describe('DrillDownService', () => {
       mockPrismaService.category.findUnique.mockResolvedValue(mockCategory);
       mockPrismaService.product.findMany.mockResolvedValue([]);
 
-      const result = await service.categoryToProducts(
-        categoryId,
-        startDate,
-        endDate,
-      );
+      const result = await service.categoryToProducts(categoryId, startDate, endDate);
 
       expect(result.summary.totalProducts).toBe(0);
       expect(result.products).toHaveLength(0);
@@ -221,11 +209,7 @@ describe('DrillDownService', () => {
         },
       ]);
 
-      const result = await service.productToOrders(
-        productId,
-        startDate,
-        endDate,
-      );
+      const result = await service.productToOrders(productId, startDate, endDate);
 
       expect(result).toHaveProperty('product');
       expect(result).toHaveProperty('summary');
@@ -239,9 +223,9 @@ describe('DrillDownService', () => {
       mockCacheService.get.mockResolvedValue(null);
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.productToOrders(productId, startDate, endDate),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.productToOrders(productId, startDate, endDate)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should calculate metrics correctly', async () => {
@@ -264,11 +248,7 @@ describe('DrillDownService', () => {
         },
       ]);
 
-      const result = await service.productToOrders(
-        productId,
-        startDate,
-        endDate,
-      );
+      const result = await service.productToOrders(productId, startDate, endDate);
 
       expect(result.summary.totalQuantitySold).toBe(2);
       expect(result.summary.totalRevenue).toBe(2000);
@@ -344,9 +324,9 @@ describe('DrillDownService', () => {
       mockCacheService.get.mockResolvedValue(null);
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.userToOrders(userId, startDate, endDate),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.userToOrders(userId, startDate, endDate)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should group orders by status', async () => {
@@ -378,9 +358,7 @@ describe('DrillDownService', () => {
   describe('buildHierarchy', () => {
     it('should route to categoryToProducts for category level', async () => {
       mockCacheService.get.mockResolvedValue(null);
-      const spy = jest
-        .spyOn(service, 'categoryToProducts')
-        .mockResolvedValue({} as any);
+      const spy = jest.spyOn(service, 'categoryToProducts').mockResolvedValue({} as any);
 
       await service.buildHierarchy('category', 'cat-1', new Date(), new Date());
 
@@ -389,9 +367,7 @@ describe('DrillDownService', () => {
 
     it('should route to productToOrders for product level', async () => {
       mockCacheService.get.mockResolvedValue(null);
-      const spy = jest
-        .spyOn(service, 'productToOrders')
-        .mockResolvedValue({} as any);
+      const spy = jest.spyOn(service, 'productToOrders').mockResolvedValue({} as any);
 
       await service.buildHierarchy('product', 'prod-1', new Date(), new Date());
 
@@ -400,9 +376,7 @@ describe('DrillDownService', () => {
 
     it('should route to userToOrders for user level', async () => {
       mockCacheService.get.mockResolvedValue(null);
-      const spy = jest
-        .spyOn(service, 'userToOrders')
-        .mockResolvedValue({} as any);
+      const spy = jest.spyOn(service, 'userToOrders').mockResolvedValue({} as any);
 
       await service.buildHierarchy('user', 'user-1', new Date(), new Date());
 
@@ -413,12 +387,7 @@ describe('DrillDownService', () => {
       mockCacheService.get.mockResolvedValue(null);
 
       await expect(
-        service.buildHierarchy(
-          'invalid' as any,
-          'id-1',
-          new Date(),
-          new Date(),
-        ),
+        service.buildHierarchy('invalid' as any, 'id-1', new Date(), new Date()),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -430,12 +399,7 @@ describe('DrillDownService', () => {
       });
       mockPrismaService.product.findMany.mockResolvedValue([]);
 
-      const result = await service.buildHierarchy(
-        'category',
-        'cat-1',
-        new Date(),
-        new Date(),
-      );
+      const result = await service.buildHierarchy('category', 'cat-1', new Date(), new Date());
 
       expect(result).toHaveProperty('nextLevel');
       expect(result).toHaveProperty('availableActions');

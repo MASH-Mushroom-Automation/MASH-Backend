@@ -53,15 +53,17 @@ export function getCorsConfig(
 
     if (isDevelopment) {
       return [
-        'https://mash-backend-api.up.railway.app', // Production backend
+        'https://mash-backend-api-production.up.railway.app', // Production backend
         'http://localhost:3000', // Main backend
         'http://localhost:3001', // Secondary backend instance
         'http://localhost:5173', // Vite dev server (common React/Vue port)
         'http://localhost:5174', // Vite dev server (alternate port)
         'http://localhost:4200', // Angular dev server
         'http://localhost:8080', // Common dev server port
+        'http://localhost:51133', // Custom frontend port (added per request)
         'http://127.0.0.1:3000', // IPv4 localhost
         'http://127.0.0.1:5173', // IPv4 localhost (Vite)
+        '*',
       ];
     }
 
@@ -69,8 +71,8 @@ export function getCorsConfig(
     if (corsOrigins && corsOrigins.trim() !== '') {
       const origins = corsOrigins
         .split(',')
-        .map((origin) => origin.trim())
-        .filter((origin) => origin.length > 0);
+        .map(origin => origin.trim())
+        .filter(origin => origin.length > 0);
 
       if (origins.length === 0) {
         throw new Error(
@@ -197,7 +199,7 @@ export function validateCorsOrigin(
   }
 
   // Check against allowed patterns
-  const isAllowed = allowedPatterns.some((pattern) => {
+  const isAllowed = allowedPatterns.some(pattern => {
     if (typeof pattern === 'string') {
       return origin === pattern;
     } else if (pattern instanceof RegExp) {
@@ -210,9 +212,7 @@ export function validateCorsOrigin(
     callback(null, true);
   } else {
     callback(
-      new Error(
-        `CORS policy: Origin '${origin}' is not allowed by Access-Control-Allow-Origin`,
-      ),
+      new Error(`CORS policy: Origin '${origin}' is not allowed by Access-Control-Allow-Origin`),
       false,
     );
   }
@@ -255,10 +255,7 @@ export const CORS_PRESETS = {
       if (!origin) {
         callback(null, true);
       } else {
-        callback(
-          new Error('CORS: Only mobile apps without origin are allowed'),
-          false,
-        );
+        callback(new Error('CORS: Only mobile apps without origin are allowed'), false);
       }
     },
   },
@@ -284,8 +281,7 @@ export const CORS_HEADERS = {
 export const CORS_ERRORS = {
   ORIGIN_NOT_ALLOWED:
     'The CORS policy for this site does not allow access from the specified origin',
-  METHOD_NOT_ALLOWED:
-    'Method not allowed by Access-Control-Allow-Methods in preflight response',
+  METHOD_NOT_ALLOWED: 'Method not allowed by Access-Control-Allow-Methods in preflight response',
   HEADER_NOT_ALLOWED:
     'Request header field not allowed by Access-Control-Allow-Headers in preflight response',
   CREDENTIALS_WITHOUT_ORIGIN:

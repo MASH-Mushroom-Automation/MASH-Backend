@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { ImageProcessorService } from './image-processor.service';
 import * as fs from 'fs/promises';
@@ -35,10 +31,7 @@ export class AvatarService {
   /**
    * Upload avatar for user
    */
-  async uploadAvatar(
-    userId: string,
-    file: Express.Multer.File,
-  ): Promise<string> {
+  async uploadAvatar(userId: string, file: Express.Multer.File): Promise<string> {
     // Validate image
     await this.imageProcessor.validateImage(file);
 
@@ -57,9 +50,7 @@ export class AvatarService {
     }
 
     // Process image (resize, convert to WebP, compress)
-    const processedBuffer = await this.imageProcessor.processAvatar(
-      file.buffer,
-    );
+    const processedBuffer = await this.imageProcessor.processAvatar(file.buffer);
 
     // Generate unique filename
     const filename = this.generateFilename(userId);

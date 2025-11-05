@@ -136,10 +136,7 @@ export class DynamicRateLimitService {
 
       return result;
     } catch (error) {
-      this.logger.error(
-        `Rate limit check failed for ${userId}:${endpoint}`,
-        error,
-      );
+      this.logger.error(`Rate limit check failed for ${userId}:${endpoint}`, error);
       // Fail open (allow request) if rate limiting fails
       return {
         allowed: true,
@@ -159,10 +156,7 @@ export class DynamicRateLimitService {
    * 2. Endpoint only
    * 3. User only
    */
-  private async findApplicableOverride(
-    userId: string | null,
-    endpoint: string,
-  ) {
+  private async findApplicableOverride(userId: string | null, endpoint: string) {
     const now = new Date();
 
     // Build where clauses

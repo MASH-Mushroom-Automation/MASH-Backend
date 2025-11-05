@@ -5,10 +5,7 @@ export const createJwtConfig = (configService: ConfigService) => ({
   signOptions: {
     expiresIn: configService.get<string>('JWT_EXPIRATION', '1d'),
   },
-  refreshSecret: configService.get<string>(
-    'JWT_REFRESH_SECRET',
-    'fallback-refresh-secret',
-  ),
+  refreshSecret: configService.get<string>('JWT_REFRESH_SECRET', 'fallback-refresh-secret'),
   refreshExpiresIn: configService.get<string>('JWT_REFRESH_EXPIRATION', '7d'),
 });
 

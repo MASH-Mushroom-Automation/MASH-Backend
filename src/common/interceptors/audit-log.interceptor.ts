@@ -1,17 +1,9 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditLogService } from '../services/audit-log.service';
-import {
-  AUDIT_LOG_METADATA,
-  AuditLogOptions,
-} from '../decorators/audit-log.decorator';
+import { AUDIT_LOG_METADATA, AuditLogOptions } from '../decorators/audit-log.decorator';
 
 /**
  * Audit Log Interceptor
@@ -76,7 +68,7 @@ export class AuditLogInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: (result) => {
+        next: result => {
           // Log audit event after successful execution
           this.auditLogService
             .log({
@@ -89,12 +81,12 @@ export class AuditLogInterceptor implements NestInterceptor {
               userAgent,
               metadata: auditOptions.metadata,
             })
-            .catch((error) => {
+            .catch(error => {
               // Silently fail - audit logging should never break the app
               console.error('Audit log failed:', error);
             });
         },
-        error: (error) => {
+        error: error => {
           // Log failed attempts as well (for security monitoring)
           this.auditLogService
             .log({
@@ -110,7 +102,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                 errorStack: error.stack,
               },
             })
-            .catch((logError) => {
+            .catch(logError => {
               console.error('Audit log failed:', logError);
             });
         },

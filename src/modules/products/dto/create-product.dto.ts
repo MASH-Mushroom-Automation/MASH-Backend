@@ -94,10 +94,7 @@ export class CreateProductDto {
   weight?: number;
 
   @ApiProperty({
-    example: [
-      'https://example.com/image1.jpg',
-      'https://example.com/image2.jpg',
-    ],
+    example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],
     description: 'Product images array',
     required: false,
     type: [String],

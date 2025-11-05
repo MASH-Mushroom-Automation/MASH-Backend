@@ -61,10 +61,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error: {
         type: errorType,
         code: 'INTERNAL_SERVER_ERROR',
-        message:
-          process.env.NODE_ENV === 'production'
-            ? 'An unexpected error occurred'
-            : message,
+        message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : message,
       },
       // Include stack trace in development only
       ...(process.env.NODE_ENV === 'development' &&

@@ -57,6 +57,42 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## 🔍 Monitoring & Observability
+
+MASH Backend includes enterprise-grade monitoring and observability:
+
+- **Distributed Tracing** (Jaeger + OpenTelemetry) - Full request-to-response visibility
+- **Health Checks** (@nestjs/terminus) - Database, Redis, Memory monitoring
+- **Custom Metrics** (Prometheus) - 60+ metrics covering HTTP, DB, Cache, Business, Security
+- **Intelligent Alerting** (Alertmanager) - 20+ proactive alert rules with Email/Slack/PagerDuty
+- **Real-time Dashboards** (Grafana) - 13-panel dashboard with auto-refresh
+
+### Quick Start
+
+```bash
+# Start monitoring stack
+docker compose -f docker-compose.dev.yml up -d
+
+# Access monitoring interfaces
+# Grafana:       http://localhost:4000 (admin/admin)
+# Prometheus:    http://localhost:9090
+# Jaeger:        http://localhost:16686
+# Alertmanager:  http://localhost:9093
+
+# View metrics and health
+curl http://localhost:3000/metrics
+curl http://localhost:3000/api/v1/health
+```
+
+### Documentation
+
+- [Monitoring Guide](./docs/MONITORING_GUIDE.md) - Quick reference for developers
+- [Architecture](./docs/MONITORING_ARCHITECTURE.md) - System design and data flow
+- [Alertmanager Setup](./docs/ALERTMANAGER_SETUP.md) - Configure notifications
+- [Implementation Summary](./documents/MONITORING_IMPLEMENTATION_SUMMARY.md) - Executive overview
+
+See [docs/monitoring/README.md](./docs/monitoring/README.md) for complete details.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
@@ -63,10 +59,7 @@ export class ProfileService {
   /**
    * Update user profile
    */
-  async updateProfile(
-    userId: string,
-    updateData: UpdateProfileDto,
-  ): Promise<User> {
+  async updateProfile(userId: string, updateData: UpdateProfileDto): Promise<User> {
     // Check if username is being updated and if it's already taken
     if (updateData.username) {
       const existingUser = await this.prisma.user.findUnique({
@@ -119,10 +112,7 @@ export class ProfileService {
   /**
    * Update user preferences
    */
-  async updatePreferences(
-    userId: string,
-    preferencesData: UpdatePreferencesDto,
-  ): Promise<any> {
+  async updatePreferences(userId: string, preferencesData: UpdatePreferencesDto): Promise<any> {
     // Get current preferences
     const currentPreferences = await this.getPreferences(userId);
 

@@ -68,12 +68,7 @@ export function success<T>(data: T, message?: string): SuccessResponse<T> {
  * @param path - Request path
  * @returns Error response
  */
-export function error(
-  code: string,
-  message: string,
-  details?: any,
-  path?: string,
-): ErrorResponse {
+export function error(code: string, message: string, details?: any, path?: string): ErrorResponse {
   return {
     success: false,
     error: {

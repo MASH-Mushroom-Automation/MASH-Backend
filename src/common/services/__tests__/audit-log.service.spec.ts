@@ -71,15 +71,10 @@ describe('AuditLogService', () => {
         }),
       });
 
-      const calledData =
-        mockPrismaService.auditLog.create.mock.calls[0]?.[0]?.data;
+      const calledData = mockPrismaService.auditLog.create.mock.calls[0]?.[0]?.data;
 
-      expect([Prisma.JsonNull, null, undefined]).toContain(
-        calledData.oldValues,
-      );
-      expect([Prisma.JsonNull, null, undefined]).toContain(
-        calledData.newValues,
-      );
+      expect([Prisma.JsonNull, null, undefined]).toContain(calledData.oldValues);
+      expect([Prisma.JsonNull, null, undefined]).toContain(calledData.newValues);
     });
 
     it('should log event with old and new values', async () => {
@@ -103,9 +98,7 @@ describe('AuditLogService', () => {
     });
 
     it('should not throw error if logging fails', async () => {
-      mockPrismaService.auditLog.create.mockRejectedValue(
-        new Error('Database error'),
-      );
+      mockPrismaService.auditLog.create.mockRejectedValue(new Error('Database error'));
 
       await expect(
         service.log({

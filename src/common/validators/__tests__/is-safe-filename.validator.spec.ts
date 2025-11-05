@@ -1,8 +1,5 @@
 import { validate } from 'class-validator';
-import {
-  IsSafeFilename,
-  IsSafeFilenameConstraint,
-} from '../is-safe-filename.validator';
+import { IsSafeFilename, IsSafeFilenameConstraint } from '../is-safe-filename.validator';
 
 // Test DTO
 class TestFilenameDto {

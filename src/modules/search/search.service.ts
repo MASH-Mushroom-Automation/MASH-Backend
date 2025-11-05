@@ -47,7 +47,7 @@ export class SearchService {
     } catch (error) {
       this.logger.error(
         '❌ Elasticsearch connection test failed:',
-        error.message,
+        error instanceof Error ? error.message : String(error),
       );
       throw error;
     }
@@ -65,9 +65,7 @@ export class SearchService {
     const { query, page = 1, limit = 20, includeFacets } = dto;
     const from = (page - 1) * limit;
 
-    this.logger.log(
-      `🔍 Searching products: "${query || 'all'}" (page ${page}, limit ${limit})`,
-    );
+    this.logger.log(`🔍 Searching products: "${query || 'all'}" (page ${page}, limit ${limit})`);
 
     // Generate cache key
     const cacheKey = `search:products:${this.generateCacheKey(dto)}`;
@@ -100,13 +98,9 @@ export class SearchService {
 
       const took = Date.now() - startTime;
       const total =
-        typeof result.hits.total === 'number'
-          ? result.hits.total
-          : result.hits.total.value;
+        typeof result.hits.total === 'number' ? result.hits.total : result.hits.total.value;
 
-      this.logger.log(
-        `✅ Search completed in ${took}ms (ES: ${result.took}ms) - ${total} results`,
-      );
+      this.logger.log(`✅ Search completed in ${took}ms (ES: ${result.took}ms) - ${total} results`);
 
       const response: SearchResult = {
         hits: result.hits.hits.map((hit: any) => ({
@@ -129,8 +123,10 @@ export class SearchService {
       // Cache the results (non-blocking)
       this.cacheService
         .set(cacheKey, response, this.CACHE_TTL)
-        .catch((error) =>
-          this.logger.error(`Failed to cache search results: ${error.message}`),
+        .catch(error =>
+          this.logger.error(
+            `Failed to cache search results: ${error instanceof Error ? error.message : String(error)}`,
+          ),
         );
 
       // Log search analytics (non-blocking)
@@ -145,13 +141,17 @@ export class SearchService {
           userId,
           ipAddress,
         })
-        .catch((error) =>
-          this.logger.error(`Failed to log search: ${error.message}`),
+        .catch(error =>
+          this.logger.error(
+            `Failed to log search: ${error instanceof Error ? error.message : String(error)}`,
+          ),
         );
 
       return response;
     } catch (error) {
-      this.logger.error(`❌ Search failed: ${error.message}`);
+      this.logger.error(
+        `❌ Search failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     }
   }
@@ -231,7 +231,9 @@ export class SearchService {
         category: hit._source.category,
       }));
     } catch (error) {
-      this.logger.error(`❌ Autocomplete failed: ${error.message}`);
+      this.logger.error(
+        `❌ Autocomplete failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     }
   }
@@ -277,7 +279,9 @@ export class SearchService {
         ...hit._source,
       }));
     } catch (error) {
-      this.logger.error(`❌ Similar products search failed: ${error.message}`);
+      this.logger.error(
+        `❌ Similar products search failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     }
   }
@@ -286,8 +290,7 @@ export class SearchService {
    * Build Elasticsearch query from DTO
    */
   private buildQuery(dto: SearchProductsDto): any {
-    const { query, minPrice, maxPrice, categories, minRating, inStock, tags } =
-      dto;
+    const { query, minPrice, maxPrice, categories, minRating, inStock, tags } = dto;
 
     const mustClauses: any[] = [];
     const filterClauses: any[] = [

@@ -42,7 +42,7 @@ export class SanitizePipe implements PipeTransform {
     }
 
     if (Array.isArray(value)) {
-      return value.map((item) => this.transform(item, metadata));
+      return value.map(item => this.transform(item, metadata));
     }
 
     return value;

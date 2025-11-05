@@ -1,10 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiExcludeController,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiExcludeController } from '@nestjs/swagger';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
 import { EmailService } from './services/email.service';
 
@@ -69,8 +64,7 @@ export class TestNotificationsController {
         token: dto.token,
         title: dto.title || '🍄 MASH Alert System',
         body:
-          dto.message ||
-          'Phase 4 Push notification test successful! Your alert system is working.',
+          dto.message || 'Phase 4 Push notification test successful! Your alert system is working.',
         data: dto.data || {
           type: 'test',
           phase: '4',
@@ -111,11 +105,9 @@ export class TestNotificationsController {
       message?: string;
     },
   ) {
-    const results: Array<{ channel: string; status: string; target: string }> =
-      [];
+    const results: Array<{ channel: string; status: string; target: string }> = [];
     const baseMessage =
-      dto.message ||
-      '🍄 MASH Phase 4 Multi-Channel Test: All notification systems operational!';
+      dto.message || '🍄 MASH Phase 4 Multi-Channel Test: All notification systems operational!';
 
     try {
       // Test Email
@@ -146,7 +138,7 @@ export class TestNotificationsController {
           data: {
             type: 'multi-channel-test',
             phase: '4',
-            channels: results.map((r) => r.channel),
+            channels: results.map(r => r.channel),
           },
           priority: 'normal',
         });
@@ -211,9 +203,7 @@ export class TestNotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Test forgot password email template' })
   @ApiResponse({ status: 200, description: 'Forgot password email sent' })
-  async testForgotPasswordEmail(
-    @Body() dto: { to: string; firstName?: string },
-  ) {
+  async testForgotPasswordEmail(@Body() dto: { to: string; firstName?: string }) {
     try {
       await this.emailService.sendForgotPasswordEmail(
         dto.to,
@@ -244,9 +234,7 @@ export class TestNotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Test password changed email template' })
   @ApiResponse({ status: 200, description: 'Password changed email sent' })
-  async testPasswordChangedEmail(
-    @Body() dto: { to: string; firstName?: string },
-  ) {
+  async testPasswordChangedEmail(@Body() dto: { to: string; firstName?: string }) {
     try {
       await this.emailService.sendPasswordChangedEmail(
         dto.to,
@@ -340,9 +328,7 @@ export class TestNotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Test account locked email template' })
   @ApiResponse({ status: 200, description: 'Account locked email sent' })
-  async testAccountLockedEmail(
-    @Body() dto: { to: string; firstName?: string },
-  ) {
+  async testAccountLockedEmail(@Body() dto: { to: string; firstName?: string }) {
     try {
       await this.emailService.sendAccountLockedEmail(
         dto.to,
@@ -379,9 +365,7 @@ export class TestNotificationsController {
     status: 200,
     description: 'Password reset success email sent',
   })
-  async testPasswordResetSuccessEmail(
-    @Body() dto: { to: string; firstName?: string },
-  ) {
+  async testPasswordResetSuccessEmail(@Body() dto: { to: string; firstName?: string }) {
     try {
       await this.emailService.sendPasswordResetSuccessEmail(
         dto.to,
@@ -451,14 +435,10 @@ export class TestNotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Test account deletion email template' })
   @ApiResponse({ status: 200, description: 'Account deletion email sent' })
-  async testAccountDeletionEmail(
-    @Body() dto: { to: string; firstName?: string },
-  ) {
+  async testAccountDeletionEmail(@Body() dto: { to: string; firstName?: string }) {
     try {
       const requestDate = new Date();
-      const deletionDate = new Date(
-        requestDate.getTime() + 30 * 24 * 60 * 60 * 1000,
-      ); // 30 days from now
+      const deletionDate = new Date(requestDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
       await this.emailService.sendAccountDeletionEmail(
         dto.to,
@@ -530,22 +510,12 @@ export class TestNotificationsController {
       },
       {
         name: '2fa-code',
-        send: () =>
-          this.emailService.send2FACodeEmail(
-            dto.to,
-            firstName,
-            '123456',
-            '10 minutes',
-          ),
+        send: () => this.emailService.send2FACodeEmail(dto.to, firstName, '123456', '10 minutes'),
       },
       {
         name: 'welcome',
         send: () =>
-          this.emailService.sendWelcomeEmail(
-            dto.to,
-            firstName,
-            `${process.env.APP_URL}/dashboard`,
-          ),
+          this.emailService.sendWelcomeEmail(dto.to, firstName, `${process.env.APP_URL}/dashboard`),
       },
     ];
 
@@ -554,7 +524,7 @@ export class TestNotificationsController {
         await template.send();
         results.push({ template: template.name, status: 'sent' });
         // Wait 1 second between emails to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         results.push({ template: template.name, status: 'failed' });
       }
@@ -562,7 +532,7 @@ export class TestNotificationsController {
 
     return {
       success: true,
-      message: `Sent ${results.filter((r) => r.status === 'sent').length}/${results.length} email templates to ${dto.to}`,
+      message: `Sent ${results.filter(r => r.status === 'sent').length}/${results.length} email templates to ${dto.to}`,
       results,
       timestamp: new Date().toISOString(),
     };

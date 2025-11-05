@@ -1,12 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsObject,
-  IsNotEmpty,
-  IsOptional,
-  IsNumber,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsObject, IsNotEmpty, IsOptional, IsNumber, Min, Max } from 'class-validator';
 
 export class DeviceConfigurationDto {
   @ApiProperty({

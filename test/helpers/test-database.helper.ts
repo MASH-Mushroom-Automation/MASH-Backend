@@ -140,9 +140,7 @@ export class TestDatabaseHelper {
 
     for (const table of tables) {
       try {
-        await this.prisma.$executeRawUnsafe(
-          `ALTER SEQUENCE "${table}_id_seq" RESTART WITH 1;`,
-        );
+        await this.prisma.$executeRawUnsafe(`ALTER SEQUENCE "${table}_id_seq" RESTART WITH 1;`);
       } catch (error) {
         // Ignore errors for tables without sequences
       }

@@ -101,9 +101,7 @@ describe('HttpExceptionFilter', () => {
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.UNPROCESSABLE_ENTITY);
       // Logger.error is called, not mockLogger.error (uses NestJS Logger, not CustomLogger)
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -117,16 +115,11 @@ describe('HttpExceptionFilter', () => {
     });
 
     it('should handle 500 Internal Server Error', () => {
-      const exception = new HttpException(
-        'Internal error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      const exception = new HttpException('Internal error', HttpStatus.INTERNAL_SERVER_ERROR);
 
       filter.catch(exception, mockArgumentsHost);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
       // Logger logs the error internally
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -153,10 +146,7 @@ describe('HttpExceptionFilter', () => {
     });
 
     it('should handle 401 Unauthorized', () => {
-      const exception = new HttpException(
-        'Unauthorized',
-        HttpStatus.UNAUTHORIZED,
-      );
+      const exception = new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
 
       filter.catch(exception, mockArgumentsHost);
 
