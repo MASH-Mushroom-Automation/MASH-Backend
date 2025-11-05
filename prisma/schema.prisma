@@ -26,6 +26,8 @@ model User {
   twoFactorSecret      String? // TOTP secret (base32 encoded)
   twoFactorEnabled     Boolean              @default(false) // Whether 2FA is enabled
   twoFactorBackupCodes String[]             @default([]) // Hashed backup codes
+  resetToken           String? // Password reset token
+  resetTokenExpiry     DateTime? // Password reset token expiry
   lastLoginAt          DateTime?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt

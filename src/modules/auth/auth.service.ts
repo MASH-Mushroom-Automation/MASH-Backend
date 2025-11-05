@@ -9,6 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { Cacheable } from '../../common/decorators/cache.decorator';
 import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
@@ -23,6 +24,7 @@ import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
+import * as crypto from 'crypto';
 
 // Interfaces for type safety
 interface ClerkUserData {
@@ -61,6 +63,7 @@ export class AuthService {
     private readonly clerkService: ClerkService,
     private readonly emailService: EmailService,
     private readonly prometheusService: PrometheusService,
+    private readonly configService: ConfigService,
   ) {}
 
   async handleClerkWebhook(payload: ClerkWebhookDto) {
@@ -560,10 +563,60 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     try {
-      await this.clerkService.sendPasswordResetEmail(email);
-      return { success: true, message: 'Password reset email sent' };
-    } catch {
-      throw new BadRequestException('Failed to send password reset email');
+      // First, check if user exists in database
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      // Always return success for security (don't reveal if email exists)
+      if (!user) {
+        this.logger.log(`Password reset requested for non-existent email: ${email}`);
+        return {
+          success: true,
+          message: 'If the email exists, a password reset link has been sent',
+        };
+      }
+
+      // Generate reset token (valid for 1 hour)
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      // Store reset token in database
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetToken,
+          resetTokenExpiry,
+        },
+      });
+
+      // Get backend URL from config
+      const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
+      
+      // Generate reset link
+      const resetLink = `${backendUrl}/reset-password?token=${resetToken}`;
+
+      // Send password reset email
+      await this.emailService.sendForgotPasswordEmail(
+        user.email,
+        user.firstName || 'User',
+        resetLink,
+        '1 hour',
+      );
+
+      this.logger.log(`✅ Password reset email sent to: ${email}`);
+      
+      return {
+        success: true,
+        message: 'If the email exists, a password reset link has been sent',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email for ${email}:`, error);
+      // Still return success for security (don't reveal errors)
+      return {
+        success: true,
+        message: 'If the email exists, a password reset link has been sent',
+      };
     }
   }
 

@@ -60,6 +60,7 @@ export function getCorsConfig(
         'http://localhost:5174', // Vite dev server (alternate port)
         'http://localhost:4200', // Angular dev server
         'http://localhost:8080', // Common dev server port
+        'http://localhost:51133', // Custom frontend port (added per request)
         'http://127.0.0.1:3000', // IPv4 localhost
         'http://127.0.0.1:5173', // IPv4 localhost (Vite)
         '*',
