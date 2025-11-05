@@ -6,6 +6,8 @@ import {
   DiskHealthIndicator as TerminusDiskHealthIndicator,
 } from '@nestjs/terminus';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
+import { Public } from '../auth/decorators/public.decorator';
 import { PrismaHealthIndicator } from './indicators/prisma.health';
 import { RedisHealthIndicator } from './indicators/redis.health';
 import { MemoryHealthIndicator } from './indicators/memory.health';
@@ -14,6 +16,7 @@ import { DependenciesHealthIndicator } from './indicators/dependencies.health';
 
 @ApiTags('Health')
 @Controller('health')
+@SkipThrottle() // Skip rate limiting for ALL health endpoints
 export class HealthController {
   constructor(
     private health: HealthCheckService,
@@ -26,6 +29,7 @@ export class HealthController {
   ) {}
 
   @Get()
+  @Public() // Allow public access (no auth required)
   @HealthCheck()
   @ApiOperation({ summary: 'Comprehensive health check of all services' })
   @ApiResponse({ status: 200, description: 'All services are healthy' })
@@ -40,6 +44,7 @@ export class HealthController {
   }
 
   @Get('ready')
+  @Public() // Allow public access (no auth required)
   @HealthCheck()
   @ApiOperation({ summary: 'Readiness probe - Check if app is ready to receive traffic' })
   @ApiResponse({ status: 200, description: 'Application is ready' })
@@ -53,6 +58,7 @@ export class HealthController {
   }
 
   @Get('live')
+  @Public() // Allow public access (no auth required)
   @HealthCheck()
   @ApiOperation({ summary: 'Liveness probe - Check if app is alive' })
   @ApiResponse({ status: 200, description: 'Application is alive' })
