@@ -1,0 +1,20 @@
+{
+  "module": "orders",
+  "totalEndpoints": 18,
+  "testedEndpoints": 1,
+  "passedEndpoints": 1,
+  "failedEndpoints": 0,
+  "skippedEndpoints": 0,
+  "coverage": 5.555555555555555,
+  "lastRunDate": "2025-11-06T18:22:03.786Z",
+  "averageResponseTime": 0,
+  "failures": [],
+  "successfulTests": [
+    {
+      "endpointId": "GET /orders/:id",
+      "testCase": "Non-existent order 404",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T18:22:03.786Z"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "module": "products",
+  "totalEndpoints": 20,
+  "testedEndpoints": 0,
+  "passedEndpoints": 0,
+  "failedEndpoints": 0,
+  "skippedEndpoints": 0,
+  "coverage": 0,
+  "lastRunDate": "2025-11-06T18:21:58.591Z",
+  "averageResponseTime": 0,
+  "failures": [],
+  "successfulTests": []
+}
