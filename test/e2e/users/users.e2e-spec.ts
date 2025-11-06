@@ -19,6 +19,9 @@ describe('Users Module - Automated Testing', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['/'],
+    });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,

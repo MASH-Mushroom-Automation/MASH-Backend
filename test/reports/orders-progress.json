@@ -1,20 +1,13 @@
 {
   "module": "orders",
   "totalEndpoints": 18,
-  "testedEndpoints": 1,
-  "passedEndpoints": 1,
+  "testedEndpoints": 0,
+  "passedEndpoints": 0,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 5.555555555555555,
-  "lastRunDate": "2025-11-06T18:46:04.862Z",
+  "coverage": 0,
+  "lastRunDate": "2025-11-06T20:40:54.861Z",
   "averageResponseTime": 0,
   "failures": [],
-  "successfulTests": [
-    {
-      "endpointId": "GET /orders/:id",
-      "testCase": "Non-existent order 404",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T18:46:04.862Z"
-    }
-  ]
+  "successfulTests": []
 }

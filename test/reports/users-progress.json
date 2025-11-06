@@ -1,20 +1,26 @@
 {
   "module": "users",
   "totalEndpoints": 15,
-  "testedEndpoints": 1,
-  "passedEndpoints": 1,
+  "testedEndpoints": 2,
+  "passedEndpoints": 2,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 6.666666666666667,
-  "lastRunDate": "2025-11-06T18:44:53.687Z",
+  "coverage": 13.333333333333334,
+  "lastRunDate": "2025-11-06T20:30:33.932Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
     {
-      "endpointId": "GET /users/:id",
-      "testCase": "Non-existent user 404",
+      "endpointId": "GET /users",
+      "testCase": "Unauthorized rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:44:53.687Z"
+      "timestamp": "2025-11-06T20:30:11.522Z"
+    },
+    {
+      "endpointId": "DELETE /users/:id",
+      "testCase": "Non-admin rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T20:30:33.932Z"
     }
   ]
 }

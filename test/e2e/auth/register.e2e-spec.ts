@@ -26,6 +26,9 @@ describe('Register Endpoint - Automated Testing (POST /api/v1/auth/register)', (
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['/'],
+    });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,

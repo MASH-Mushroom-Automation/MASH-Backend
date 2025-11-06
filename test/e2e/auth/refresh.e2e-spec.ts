@@ -20,6 +20,9 @@ describe('Refresh Token Endpoint - Automated Testing (POST /api/v1/auth/refresh)
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['/'],
+    });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,

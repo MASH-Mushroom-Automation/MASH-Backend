@@ -22,6 +22,10 @@ describe('Login Endpoint - Automated Testing (POST /api/v1/auth/login)', () => {
     app = moduleFixture.createNestApplication();
     
     // Apply same configuration as main.ts
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['/'], // Exclude root path from prefix
+    });
+    
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,

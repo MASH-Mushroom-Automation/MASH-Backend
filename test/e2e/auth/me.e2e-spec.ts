@@ -20,6 +20,9 @@ describe('Get Current User Endpoint - Automated Testing (GET /api/v1/auth/me)', 
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['/'],
+    });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,

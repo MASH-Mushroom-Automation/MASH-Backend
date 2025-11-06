@@ -1,32 +1,68 @@
 {
   "module": "auth",
   "totalEndpoints": 18,
-  "testedEndpoints": 3,
-  "passedEndpoints": 3,
+  "testedEndpoints": 9,
+  "passedEndpoints": 9,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 16.666666666666664,
-  "lastRunDate": "2025-11-06T18:45:54.166Z",
+  "coverage": 50,
+  "lastRunDate": "2025-11-06T20:39:42.835Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
     {
       "endpointId": "POST /refresh",
+      "testCase": "V2.1 - Missing token rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T20:38:22.626Z"
+    },
+    {
+      "endpointId": "POST /refresh",
+      "testCase": "V2.2 - Invalid format rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T20:38:27.869Z"
+    },
+    {
+      "endpointId": "POST /refresh",
+      "testCase": "V2.3 - Expired token rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T20:38:33.068Z"
+    },
+    {
+      "endpointId": "POST /refresh",
+      "testCase": "V2.4 - Null token rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T20:38:38.565Z"
+    },
+    {
+      "endpointId": "POST /refresh",
+      "testCase": "V2.5 - Empty token rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T20:38:43.765Z"
+    },
+    {
+      "endpointId": "POST /refresh",
       "testCase": "T3.2 - Logged out token (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:45:53.816Z"
+      "timestamp": "2025-11-06T20:38:48.976Z"
     },
     {
       "endpointId": "POST /refresh",
       "testCase": "S5.2 - Token family (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:45:54.136Z"
+      "timestamp": "2025-11-06T20:39:37.614Z"
     },
     {
       "endpointId": "POST /refresh",
       "testCase": "E6.1 - Malformed JSON rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:45:54.166Z"
+      "timestamp": "2025-11-06T20:39:37.639Z"
+    },
+    {
+      "endpointId": "POST /refresh",
+      "testCase": "E6.2 - Long token rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-06T20:39:42.835Z"
     }
   ]
 }

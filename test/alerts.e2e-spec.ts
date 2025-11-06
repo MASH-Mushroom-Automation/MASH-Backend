@@ -15,6 +15,9 @@ describe('Alert Management (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['/'], // Exclude root path from prefix
+    });
     await app.init();
 
     // TODO: Login as admin to get auth token

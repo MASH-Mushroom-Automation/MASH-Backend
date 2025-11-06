@@ -13,6 +13,9 @@ describe('SMS Integration Tests', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1', {
+      exclude: ['/'],
+    });
     await app.init();
   });
 
