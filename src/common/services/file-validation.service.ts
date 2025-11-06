@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import type { File } from 'multer';
 
 /**
  * File Validation Service for Enterprise Security
@@ -151,7 +152,7 @@ export class FileValidationService {
    * ```
    */
   async validateFile(
-    file: Express.Multer.File,
+    file: File,
     options: {
       category?: 'image' | 'document' | 'archive' | 'video' | 'audio';
       maxSize?: number;
@@ -315,7 +316,7 @@ export class FileValidationService {
    * Additional checks for image files
    */
   async validateImage(
-    file: Express.Multer.File,
+    file: File,
     options: {
       maxWidth?: number;
       maxHeight?: number;
@@ -346,7 +347,7 @@ export class FileValidationService {
    * Validate document file specifically
    */
   async validateDocument(
-    file: Express.Multer.File,
+    file: File,
     options: { maxSize?: number } = {},
   ): Promise<boolean> {
     return this.validateFile(file, {
@@ -360,7 +361,7 @@ export class FileValidationService {
    * Batch validate multiple files
    */
   async validateFiles(
-    files: Express.Multer.File[],
+    files: File[],
     options: Parameters<typeof this.validateFile>[1] = {},
   ): Promise<boolean> {
     if (!files || files.length === 0) {

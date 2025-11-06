@@ -57,7 +57,7 @@ ${config.endpoints.map(ep => ` * - ${ep.method.padEnd(6)} ${ep.path.padEnd(40)} 
  * ============================================================================
  */
 
-import * as request from 'supertest';
+import request from 'supertest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../../../src/app.module';
