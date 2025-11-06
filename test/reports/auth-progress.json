@@ -1,68 +1,32 @@
 {
   "module": "auth",
   "totalEndpoints": 18,
-  "testedEndpoints": 9,
-  "passedEndpoints": 9,
+  "testedEndpoints": 3,
+  "passedEndpoints": 3,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 50,
-  "lastRunDate": "2025-11-06T18:22:59.122Z",
+  "coverage": 16.666666666666664,
+  "lastRunDate": "2025-11-06T18:45:54.166Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
     {
-      "endpointId": "POST /login",
-      "testCase": "A3.3 - No user enumeration",
+      "endpointId": "POST /refresh",
+      "testCase": "T3.2 - Logged out token (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:58.619Z"
+      "timestamp": "2025-11-06T18:45:53.816Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "A3.4 - Unverified email (skipped)",
+      "endpointId": "POST /refresh",
+      "testCase": "S5.2 - Token family (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:58.621Z"
+      "timestamp": "2025-11-06T18:45:54.136Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "A3.5 - Disabled account (skipped)",
+      "endpointId": "POST /refresh",
+      "testCase": "E6.1 - Malformed JSON rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:58.623Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "R4.3 - Rate limit not triggered (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:59.087Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "R4.4 - Rate limit reset (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:59.090Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.1 - Database error handling (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:59.093Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.2 - JWT signing error handling (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:59.096Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.3 - Timeout handling (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:59.098Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.4 - Malformed JSON rejected",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:59.122Z"
+      "timestamp": "2025-11-06T18:45:54.166Z"
     }
   ]
 }

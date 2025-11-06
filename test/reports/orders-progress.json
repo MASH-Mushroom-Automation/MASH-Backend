@@ -6,7 +6,7 @@
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
   "coverage": 5.555555555555555,
-  "lastRunDate": "2025-11-06T18:22:03.786Z",
+  "lastRunDate": "2025-11-06T18:46:04.862Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
@@ -14,7 +14,7 @@
       "endpointId": "GET /orders/:id",
       "testCase": "Non-existent order 404",
       "responseTime": 0,
-      "timestamp": "2025-11-06T18:22:03.786Z"
+      "timestamp": "2025-11-06T18:46:04.862Z"
     }
   ]
 }
