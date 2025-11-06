@@ -11,7 +11,7 @@ import http from 'http';
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const PATH = process.env.HEALTH_PATH || '/api/v1/health';
 const HOST = process.env.HEALTH_HOST || '127.0.0.1';
-const TIMEOUT_MS = 3000;
+const TIMEOUT_MS = 10000; // Increased to 10 seconds for cold starts
 
 function checkHealth(): Promise<number> {
   const url = `http://${HOST}:${PORT}${PATH}`;
@@ -23,8 +23,12 @@ function checkHealth(): Promise<number> {
       resolve(ok ? 0 : 1);
     });
 
-    req.on('error', () => resolve(1));
+    req.on('error', err => {
+      console.error(`Health check request error: ${err.message}`);
+      resolve(1);
+    });
     req.setTimeout(TIMEOUT_MS, () => {
+      console.error(`Health check timeout after ${TIMEOUT_MS}ms`);
       req.destroy();
       resolve(1);
     });
@@ -43,4 +47,7 @@ function checkHealth(): Promise<number> {
 
   console.error(`❌ Health check failed: ${HOST}:${PORT}${PATH}`);
   process.exit(1);
-})();
+})().catch((error: Error) => {
+  console.error(`Health check error: ${error.message}`);
+  process.exit(1);
+});

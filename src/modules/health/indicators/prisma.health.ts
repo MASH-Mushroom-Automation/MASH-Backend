@@ -5,7 +5,7 @@ import { PrismaService } from '../../../database/prisma.service';
 @Injectable()
 export class PrismaHealthIndicator extends HealthIndicator {
   private readonly logger = new Logger(PrismaHealthIndicator.name);
-  private readonly healthCheckTimeout = 2000; // 2000ms timeout for health checks (Railway optimized - increased from 500ms)
+  private readonly healthCheckTimeout = 5000; // 5000ms timeout for health checks (increased for Railway/Render cold starts)
 
   constructor(private readonly prismaService: PrismaService) {
     super();
@@ -13,18 +13,21 @@ export class PrismaHealthIndicator extends HealthIndicator {
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const startTime = Date.now();
-    
+
     try {
       // Race between query and timeout
-      const result = await Promise.race([
+      await Promise.race([
         this.prismaService.$queryRaw`SELECT 1`,
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Database health check timeout')), this.healthCheckTimeout),
+          setTimeout(
+            () => reject(new Error('Database health check timeout')),
+            this.healthCheckTimeout,
+          ),
         ),
       ]);
 
       const responseTime = Date.now() - startTime;
-      
+
       // Log slow health checks (> 200ms is concerning)
       if (responseTime > 200) {
         this.logger.warn(`Slow database health check: ${responseTime}ms`);
@@ -34,14 +37,15 @@ export class PrismaHealthIndicator extends HealthIndicator {
         responseTime: `${responseTime}ms`,
         status: 'connected',
       });
-    } catch (e) {
+    } catch (error) {
       const responseTime = Date.now() - startTime;
-      this.logger.error(`Database health check failed after ${responseTime}ms: ${e.message}`);
-      
+      const message = error instanceof Error ? error.message : 'Unknown database error';
+      this.logger.error(`Database health check failed after ${responseTime}ms: ${message}`);
+
       throw new HealthCheckError(
         'Database health check failed',
         this.getStatus(key, false, {
-          message: e.message,
+          message: message,
           responseTime: `${responseTime}ms`,
           status: 'disconnected',
         }),

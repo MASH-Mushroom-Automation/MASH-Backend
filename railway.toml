@@ -5,6 +5,6 @@ dockerfilePath = "Dockerfile"
 [deploy]
 startCommand = "node dist/main.js"
 healthcheckPath = "/api/v1/health"
-healthcheckTimeout = 180
+healthcheckTimeout = 600
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

@@ -26,7 +26,7 @@ export class SuperAdminService {
         },
         select: { createdAt: true, total: true },
       })
-      .then((orders) => {
+      .then(orders => {
         const buckets: Record<string, number> = {};
         for (let i = days - 1; i >= 0; i--) {
           const d = new Date();
@@ -39,7 +39,7 @@ export class SuperAdminService {
           buckets[key] = (buckets[key] || 0) + Number(o.total || 0);
         }
         const labels = Object.keys(buckets).sort();
-        const values = labels.map((k) => buckets[k]);
+        const values = labels.map(k => buckets[k]);
         return { labels, values };
       });
   }
@@ -58,9 +58,7 @@ export class SuperAdminService {
 
     const data = devices.map((d: any) => ({
       chamberId: d.serialNumber || d.id,
-      growerName: d.user
-        ? `${d.user.firstName || ''} ${d.user.lastName || ''}`.trim()
-        : null,
+      growerName: d.user ? `${d.user.firstName || ''} ${d.user.lastName || ''}`.trim() : null,
       location: d.location,
       status: d.isActive ? 'Active' : 'Inactive',
     }));
@@ -81,9 +79,7 @@ export class SuperAdminService {
       for (const g of groups) result[g.role || 'UNKNOWN'] = g._count?.id || 0;
       return result;
     } catch (error) {
-      this.logger.warn(
-        'groupBy not supported or failed, falling back to total count',
-      );
+      this.logger.warn('groupBy not supported or failed, falling back to total count');
       const total = await this.prisma.user.count();
       return { total };
     }
