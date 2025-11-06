@@ -42,59 +42,14 @@ export function getCorsConfig(
 
   /**
    * Parse allowed origins
-   * - Development: Localhost variants for local testing
-   * - Production: Comma-separated list from environment variable
+   * - Development: Allow all origins for easy testing
+   * - Production: Allow all origins (as requested)
    * - Test: Allow all (for integration tests)
    */
   const getAllowedOrigins = (): string | string[] | boolean => {
-    if (isTest) {
-      return true; // Allow all origins in test environment
-    }
-
-    if (isDevelopment) {
-      return [
-        'https://mash-backend-api.up.railway.app', // Production backend
-        'http://localhost:3000', // Main backend
-        'http://localhost:3001', // Secondary backend instance
-        'http://localhost:5173', // Vite dev server (common React/Vue port)
-        'http://localhost:5174', // Vite dev server (alternate port)
-        'http://localhost:4200', // Angular dev server
-        'http://localhost:8080', // Common dev server port
-        'http://127.0.0.1:3000', // IPv4 localhost
-        'http://127.0.0.1:5173', // IPv4 localhost (Vite)
-      ];
-    }
-
-    // Production: Use environment variable or restrictive default
-    if (corsOrigins && corsOrigins.trim() !== '') {
-      const origins = corsOrigins
-        .split(',')
-        .map(origin => origin.trim())
-        .filter(origin => origin.length > 0);
-
-      if (origins.length === 0) {
-        throw new Error(
-          'CORS_ORIGINS environment variable is empty. Please provide valid origins.',
-        );
-      }
-
-      return origins;
-    }
-
-    // Default fallback for production: Allow Railway backend and common dev origins
-    // This allows Swagger UI on Railway and local development to work without requiring CORS_ORIGINS env var
-    // For production deployments, set CORS_ORIGINS environment variable with your specific domains
-    return [
-      'https://mash-backend-api.up.railway.app', // Production backend (Railway)
-      'http://localhost:3000',   // Backend dev server
-      'http://localhost:8080',   // Flutter dev server
-      'http://localhost:5173',   // Vite dev server
-      'http://localhost:51133',  // Custom frontend port
-      'http://127.0.0.1:3000',   // IPv4 localhost variants
-      'http://127.0.0.1:8080',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:51133',
-    ];
+    // Allow all origins in all environments
+    // This enables CORS for both localhost development and production deployment
+    return true;
   };
 
   return {
@@ -115,8 +70,9 @@ export function getCorsConfig(
      * - Client certificates
      *
      * Security Note: When credentials=true, origin cannot be '*'
+     * Since we're allowing all origins (origin: true), we must set credentials to false
      */
-    credentials: enableCredentials,
+    credentials: false, // Must be false when allowing all origins
 
     /**
      * methods: Allowed HTTP methods
