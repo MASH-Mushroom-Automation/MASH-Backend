@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { RedisService } from '../../database/redis.service';
-import { OrderStatus } from '@prisma/client'; // ← ADD THIS
+import { OrderStatus, UserRole } from '@prisma/client';
 
 @Injectable()
 export class SuperAdminService {
@@ -106,8 +106,8 @@ export class SuperAdminService {
       this.prisma.order.count({ where: { status: OrderStatus.PENDING } }), // ← Fixed
       this.prisma.product.count({ where: { isActive: true } }),
       this.prisma.product.count({ where: { isActive: false } }),
-      this.prisma.user.count({ where: { role: 'SELLER', isActive: true } }),
-      this.prisma.user.count({ where: { role: 'SELLER', isActive: false } }),
+      this.prisma.user.count({ where: { role: UserRole.GROWER, isActive: true } }),
+      this.prisma.user.count({ where: { role: UserRole.GROWER, isActive: false } }),
     ]);
 
     return {
