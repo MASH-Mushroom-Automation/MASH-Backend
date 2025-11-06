@@ -81,11 +81,19 @@ export function getCorsConfig(
       return origins;
     }
 
-    // Default fallback for production: Allow Railway backend and localhost
-    // This allows Swagger UI on Railway to work without requiring CORS_ORIGINS env var
+    // Default fallback for production: Allow Railway backend and common dev origins
+    // This allows Swagger UI on Railway and local development to work without requiring CORS_ORIGINS env var
+    // For production deployments, set CORS_ORIGINS environment variable with your specific domains
     return [
       'https://mash-backend-api.up.railway.app', // Production backend (Railway)
-      'http://localhost:3000', // Allow localhost for testing/debugging
+      'http://localhost:3000',   // Backend dev server
+      'http://localhost:8080',   // Flutter dev server
+      'http://localhost:5173',   // Vite dev server
+      'http://localhost:51133',  // Custom frontend port
+      'http://127.0.0.1:3000',   // IPv4 localhost variants
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:51133',
     ];
   };
 
