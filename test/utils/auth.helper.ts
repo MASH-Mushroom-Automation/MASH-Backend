@@ -18,32 +18,33 @@ import request from 'supertest';
 
 /**
  * Test User Credentials
- * Matches the seed data in prisma/seed.ts
+ * Matches the seed data in prisma/seeders/01-users.seeder.ts
+ * Password for all users: PP@Namias99
  */
 export const TEST_USERS = {
   ADMIN: {
-    email: 'admin@example.com',
-    password: 'Admin123!',
+    email: 'admin@mash.com',
+    password: 'PP@Namias99',
     role: 'ADMIN',
   },
   USER: {
-    email: 'test@example.com',
-    password: 'Test123!',
+    email: 'buyer1@example.com',
+    password: 'PP@Namias99',
     role: 'USER',
   },
   SELLER: {
-    email: 'seller@example.com',
-    password: 'Seller123!',
+    email: 'grower1@mash.com',
+    password: 'PP@Namias99',
     role: 'SELLER',
   },
   BUYER: {
-    email: 'buyer@example.com',
-    password: 'Buyer123!',
+    email: 'buyer1@example.com',
+    password: 'PP@Namias99',
     role: 'BUYER',
   },
   SUPER_ADMIN: {
-    email: 'superadmin@example.com',
-    password: 'SuperAdmin123!',
+    email: 'superadmin@mash.com',
+    password: 'PP@Namias99',
     role: 'SUPER_ADMIN',
   },
 };

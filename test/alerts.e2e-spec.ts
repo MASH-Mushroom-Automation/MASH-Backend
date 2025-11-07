@@ -3,6 +3,7 @@ import { INestApplication, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '@/app.module';
 import { AlertPriority, AlertCategory, AlertStatus } from '@prisma/client';
+import { getAuthToken } from './utils/auth.helper';
 
 describe('Alert Management (e2e)', () => {
   let app: INestApplication;
@@ -20,8 +21,8 @@ describe('Alert Management (e2e)', () => {
     });
     await app.init();
 
-    // TODO: Login as admin to get auth token
-    // authToken = await getAdminToken(app);
+    // Get authentication token for ADMIN user
+    authToken = await getAuthToken(app, 'ADMIN');
   });
 
   afterAll(async () => {
@@ -39,8 +40,7 @@ describe('Alert Management (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it.skip('should trigger alert evaluation', () => {
-      // Skip until auth is implemented
+    it('should trigger alert evaluation', () => {
       return request(app.getHttpServer())
         .post('/api/v1/alerts/trigger')
         .set('Authorization', `Bearer ${authToken}`)
@@ -68,7 +68,7 @@ describe('Alert Management (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it.skip('should return paginated alert history', () => {
+    it('should return paginated alert history', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/history')
         .set('Authorization', `Bearer ${authToken}`)
@@ -80,7 +80,7 @@ describe('Alert Management (e2e)', () => {
         });
     });
 
-    it.skip('should filter by priority', () => {
+    it('should filter by priority', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/history')
         .query({ priority: AlertPriority.CRITICAL })
@@ -93,7 +93,7 @@ describe('Alert Management (e2e)', () => {
         });
     });
 
-    it.skip('should filter by category', () => {
+    it('should filter by category', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/history')
         .query({ category: AlertCategory.SECURITY })
@@ -106,7 +106,7 @@ describe('Alert Management (e2e)', () => {
         });
     });
 
-    it.skip('should filter by date range', () => {
+    it('should filter by date range', () => {
       const startDate = new Date('2025-01-01').toISOString();
       const endDate = new Date('2025-12-31').toISOString();
 
@@ -120,7 +120,7 @@ describe('Alert Management (e2e)', () => {
         });
     });
 
-    it.skip('should support pagination', () => {
+    it('should support pagination', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/history')
         .query({ limit: 10, offset: 0 })
@@ -140,7 +140,7 @@ describe('Alert Management (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it.skip('should return active alerts only', () => {
+    it('should return active alerts only', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/active')
         .set('Authorization', `Bearer ${authToken}`)
@@ -158,7 +158,7 @@ describe('Alert Management (e2e)', () => {
         });
     });
 
-    it.skip('should order by priority', () => {
+    it('should order by priority', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/active')
         .set('Authorization', `Bearer ${authToken}`)
@@ -245,7 +245,7 @@ describe('Alert Management (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it.skip('should return alert statistics', () => {
+    it('should return alert statistics', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/statistics')
         .set('Authorization', `Bearer ${authToken}`)
@@ -259,7 +259,7 @@ describe('Alert Management (e2e)', () => {
         });
     });
 
-    it.skip('should support custom time period', () => {
+    it('should support custom time period', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/statistics')
         .query({ days: 30 })
@@ -270,7 +270,7 @@ describe('Alert Management (e2e)', () => {
         });
     });
 
-    it.skip('should calculate resolution time', () => {
+    it('should calculate resolution time', () => {
       return request(app.getHttpServer())
         .get('/api/v1/alerts/statistics')
         .set('Authorization', `Bearer ${authToken}`)
