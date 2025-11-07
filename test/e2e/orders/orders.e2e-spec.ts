@@ -80,9 +80,10 @@ describe('Orders Module - Automated Testing', () => {
 
       const responseTime = Date.now() - startTime;
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('orderNumber');
-      expect(response.body.status).toBe('PENDING');
+      // Response is wrapped in { data: {...} } by TransformInterceptor
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('orderNumber');
+      expect(response.body.data.status).toBe('PENDING');
 
       progressTracker.recordSuccess('POST /orders', responseTime, 'Create order');
     });
@@ -179,8 +180,9 @@ describe('Orders Module - Automated Testing', () => {
         .set('Authorization', `Bearer ${buyerAccessToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('items');
+      // Response is wrapped in { data: {...} } by TransformInterceptor
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('items');
 
       progressTracker.recordSuccess('GET /orders/:id', 0, 'Get order details');
     });

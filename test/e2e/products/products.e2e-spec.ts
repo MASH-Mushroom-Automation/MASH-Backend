@@ -108,8 +108,9 @@ describe('Products Module - Automated Testing', () => {
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body.name).toBe('Fresh Oyster Mushrooms');
+      // Response is wrapped in { data: {...} } by TransformInterceptor
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data.name).toBe('Fresh Oyster Mushrooms');
 
       progressTracker.recordSuccess('POST /products', 0, 'Create product');
     });

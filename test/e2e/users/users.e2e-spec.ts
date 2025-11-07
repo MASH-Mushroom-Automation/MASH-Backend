@@ -106,8 +106,9 @@ describe('Users Module - Automated Testing', () => {
         .set('Authorization', `Bearer ${adminAccessToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('email');
+      // Response is wrapped in { data: {...} } by TransformInterceptor
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('email');
 
       progressTracker.recordSuccess('GET /users/:id', 0, 'Get user by ID');
     });
