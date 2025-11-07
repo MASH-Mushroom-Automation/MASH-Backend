@@ -6,7 +6,7 @@
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
   "coverage": 10,
-  "lastRunDate": "2025-11-06T20:40:43.230Z",
+  "lastRunDate": "2025-11-06T21:18:17.923Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
@@ -14,13 +14,13 @@
       "endpointId": "GET /products",
       "testCase": "Search by name",
       "responseTime": 0,
-      "timestamp": "2025-11-06T20:40:21.315Z"
+      "timestamp": "2025-11-06T21:17:55.730Z"
     },
     {
       "endpointId": "POST /products",
       "testCase": "Unauthorized rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T20:40:43.230Z"
+      "timestamp": "2025-11-06T21:18:17.923Z"
     }
   ]
 }

@@ -1,68 +1,44 @@
 {
   "module": "auth",
   "totalEndpoints": 18,
-  "testedEndpoints": 9,
-  "passedEndpoints": 9,
+  "testedEndpoints": 5,
+  "passedEndpoints": 5,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 50,
-  "lastRunDate": "2025-11-06T20:39:42.835Z",
+  "coverage": 27.77777777777778,
+  "lastRunDate": "2025-11-06T21:15:30.115Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
     {
-      "endpointId": "POST /refresh",
-      "testCase": "V2.1 - Missing token rejected",
+      "endpointId": "GET /me",
+      "testCase": "A2.1 - No token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T20:38:22.626Z"
+      "timestamp": "2025-11-06T21:14:43.767Z"
     },
     {
-      "endpointId": "POST /refresh",
-      "testCase": "V2.2 - Invalid format rejected",
+      "endpointId": "GET /me",
+      "testCase": "A2.2 - Invalid token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T20:38:27.869Z"
+      "timestamp": "2025-11-06T21:14:49.001Z"
     },
     {
-      "endpointId": "POST /refresh",
-      "testCase": "V2.3 - Expired token rejected",
+      "endpointId": "GET /me",
+      "testCase": "A2.3 - Expired token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T20:38:33.068Z"
+      "timestamp": "2025-11-06T21:14:54.191Z"
     },
     {
-      "endpointId": "POST /refresh",
-      "testCase": "V2.4 - Null token rejected",
+      "endpointId": "GET /me",
+      "testCase": "E5.1 - DB failure (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-06T20:38:38.565Z"
+      "timestamp": "2025-11-06T21:15:30.113Z"
     },
     {
-      "endpointId": "POST /refresh",
-      "testCase": "V2.5 - Empty token rejected",
+      "endpointId": "GET /me",
+      "testCase": "E5.2 - User not found (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-06T20:38:43.765Z"
-    },
-    {
-      "endpointId": "POST /refresh",
-      "testCase": "T3.2 - Logged out token (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T20:38:48.976Z"
-    },
-    {
-      "endpointId": "POST /refresh",
-      "testCase": "S5.2 - Token family (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T20:39:37.614Z"
-    },
-    {
-      "endpointId": "POST /refresh",
-      "testCase": "E6.1 - Malformed JSON rejected",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T20:39:37.639Z"
-    },
-    {
-      "endpointId": "POST /refresh",
-      "testCase": "E6.2 - Long token rejected",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T20:39:42.835Z"
+      "timestamp": "2025-11-06T21:15:30.115Z"
     }
   ]
 }
