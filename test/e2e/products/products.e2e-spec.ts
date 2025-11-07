@@ -5,6 +5,7 @@ import { AppModule } from '../../../src/app.module';
 import { PrismaService } from '../../../src/database/prisma.service';
 import { ErrorAnalyzer } from '../../utils/error-analyzer';
 import { ProgressTracker } from '../../utils/progress-tracker';
+import { getAuthToken } from '../../utils/auth.helper';
 
 describe('Products Module - Automated Testing', () => {
   let app: INestApplication;
@@ -35,17 +36,8 @@ describe('Products Module - Automated Testing', () => {
     errorAnalyzer = new ErrorAnalyzer();
     progressTracker = new ProgressTracker('products');
 
-    // Get seller token
-    const loginResponse = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({
-        email: 'seller@mash.com',
-        password: 'SellerPass123!',
-      });
-
-    if (loginResponse.body.accessToken) {
-      sellerAccessToken = loginResponse.body.accessToken;
-    }
+    // Get authentication token for SELLER user
+    sellerAccessToken = await getAuthToken(app, 'SELLER');
   });
 
   afterAll(async () => {

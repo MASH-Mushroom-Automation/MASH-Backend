@@ -1,13 +1,32 @@
 {
   "module": "orders",
   "totalEndpoints": 18,
-  "testedEndpoints": 0,
-  "passedEndpoints": 0,
+  "testedEndpoints": 3,
+  "passedEndpoints": 3,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 0,
-  "lastRunDate": "2025-11-06T21:16:02.495Z",
+  "coverage": 16.666666666666664,
+  "lastRunDate": "2025-11-07T07:51:37.217Z",
   "averageResponseTime": 0,
   "failures": [],
-  "successfulTests": []
+  "successfulTests": [
+    {
+      "endpointId": "POST /orders",
+      "testCase": "Empty items rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:51:05.467Z"
+    },
+    {
+      "endpointId": "POST /orders",
+      "testCase": "Invalid quantity rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:51:11.321Z"
+    },
+    {
+      "endpointId": "GET /orders/:id",
+      "testCase": "Non-existent order 404",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:51:37.217Z"
+    }
+  ]
 }

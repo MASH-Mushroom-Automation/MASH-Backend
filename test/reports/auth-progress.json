@@ -1,44 +1,116 @@
 {
   "module": "auth",
   "totalEndpoints": 18,
-  "testedEndpoints": 5,
-  "passedEndpoints": 5,
+  "testedEndpoints": 17,
+  "passedEndpoints": 17,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 27.77777777777778,
-  "lastRunDate": "2025-11-06T21:15:30.115Z",
+  "coverage": 94.44444444444444,
+  "lastRunDate": "2025-11-07T07:59:08.494Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
     {
-      "endpointId": "GET /me",
-      "testCase": "A2.1 - No token rejected",
+      "endpointId": "POST /login",
+      "testCase": "V2.2 - Missing email rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T21:14:43.767Z"
+      "timestamp": "2025-11-07T07:56:40.121Z"
     },
     {
-      "endpointId": "GET /me",
-      "testCase": "A2.2 - Invalid token rejected",
+      "endpointId": "POST /login",
+      "testCase": "V2.3 - Missing password rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T21:14:49.001Z"
+      "timestamp": "2025-11-07T07:56:46.214Z"
     },
     {
-      "endpointId": "GET /me",
-      "testCase": "A2.3 - Expired token rejected",
+      "endpointId": "POST /login",
+      "testCase": "V2.4 - Empty body rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T21:14:54.191Z"
+      "timestamp": "2025-11-07T07:56:51.723Z"
     },
     {
-      "endpointId": "GET /me",
-      "testCase": "E5.1 - DB failure (skipped)",
+      "endpointId": "POST /login",
+      "testCase": "V2.5 - Short password rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T21:15:30.113Z"
+      "timestamp": "2025-11-07T07:56:56.989Z"
     },
     {
-      "endpointId": "GET /me",
-      "testCase": "E5.2 - User not found (skipped)",
+      "endpointId": "POST /login",
+      "testCase": "V2.6 - Null values rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-06T21:15:30.115Z"
+      "timestamp": "2025-11-07T07:57:02.358Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "V2.7 - Undefined values rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:57:07.845Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "A3.2 - Non-existent user rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:57:20.209Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "A3.3 - No user enumeration",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:57:32.103Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "A3.4 - Unverified email (skipped)",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:57:32.105Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "A3.5 - Disabled account (skipped)",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:57:32.107Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "R4.1 - Rate limit allows 10 requests",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:59:01.241Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "R4.4 - Rate limit reset (skipped)",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:59:02.128Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "E5.1 - Database error handling (skipped)",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:59:02.134Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "E5.2 - JWT signing error handling (skipped)",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:59:02.137Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "E5.3 - Timeout handling (skipped)",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:59:02.139Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "E5.4 - Malformed JSON rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:59:02.171Z"
+    },
+    {
+      "endpointId": "POST /login",
+      "testCase": "E5.5 - Large payload rejected",
+      "responseTime": 0,
+      "timestamp": "2025-11-07T07:59:08.494Z"
     }
   ]
 }

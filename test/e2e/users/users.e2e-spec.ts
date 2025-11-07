@@ -5,6 +5,7 @@ import { AppModule } from '../../../src/app.module';
 import { PrismaService } from '../../../src/database/prisma.service';
 import { ErrorAnalyzer } from '../../utils/error-analyzer';
 import { ProgressTracker } from '../../utils/progress-tracker';
+import { getAuthToken } from '../../utils/auth.helper';
 
 describe('Users Module - Automated Testing', () => {
   let app: INestApplication;
@@ -35,17 +36,8 @@ describe('Users Module - Automated Testing', () => {
     errorAnalyzer = new ErrorAnalyzer();
     progressTracker = new ProgressTracker('users');
 
-    // Get admin token for protected endpoints
-    const loginResponse = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({
-        email: 'admin@mash.com',
-        password: 'AdminPass123!',
-      });
-
-    if (loginResponse.body.accessToken) {
-      adminAccessToken = loginResponse.body.accessToken;
-    }
+    // Get authentication token for ADMIN user
+    adminAccessToken = await getAuthToken(app, 'ADMIN');
   });
 
   afterAll(async () => {

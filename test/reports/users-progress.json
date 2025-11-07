@@ -1,26 +1,13 @@
 {
   "module": "users",
   "totalEndpoints": 15,
-  "testedEndpoints": 2,
-  "passedEndpoints": 2,
+  "testedEndpoints": 0,
+  "passedEndpoints": 0,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 13.333333333333334,
-  "lastRunDate": "2025-11-06T21:13:02.734Z",
+  "coverage": 0,
+  "lastRunDate": "2025-11-07T07:52:30.657Z",
   "averageResponseTime": 0,
   "failures": [],
-  "successfulTests": [
-    {
-      "endpointId": "GET /users",
-      "testCase": "Unauthorized rejected",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T21:12:40.148Z"
-    },
-    {
-      "endpointId": "DELETE /users/:id",
-      "testCase": "Non-admin rejected",
-      "responseTime": 0,
-      "timestamp": "2025-11-06T21:13:02.734Z"
-    }
-  ]
+  "successfulTests": []
 }

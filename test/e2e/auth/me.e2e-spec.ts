@@ -6,6 +6,7 @@ import { PrismaService } from '../../../src/database/prisma.service';
 import { ErrorAnalyzer } from '../../utils/error-analyzer';
 import { ProgressTracker } from '../../utils/progress-tracker';
 import { VALID_LOGIN_DATA } from '../../fixtures/auth/test-data';
+import { getAuthToken } from '../../utils/auth.helper';
 
 describe('Get Current User Endpoint - Automated Testing (GET /api/v1/auth/me)', () => {
   let app: INestApplication;
@@ -36,14 +37,8 @@ describe('Get Current User Endpoint - Automated Testing (GET /api/v1/auth/me)', 
     errorAnalyzer = new ErrorAnalyzer();
     progressTracker = new ProgressTracker('auth');
 
-    // Get a valid access token for testing
-    const loginResponse = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send(VALID_LOGIN_DATA);
-
-    if (loginResponse.body.accessToken) {
-      validAccessToken = loginResponse.body.accessToken;
-    }
+    // Get authentication token for USER
+    validAccessToken = await getAuthToken(app, 'USER');
   });
 
   afterAll(async () => {

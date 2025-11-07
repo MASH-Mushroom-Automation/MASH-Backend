@@ -6,6 +6,7 @@ import { PrismaService } from '../../../src/database/prisma.service';
 import { ErrorAnalyzer } from '../../utils/error-analyzer';
 import { ProgressTracker } from '../../utils/progress-tracker';
 import { VALID_LOGIN_DATA, REFRESH_TOKEN_DATA } from '../../fixtures/auth/test-data';
+import { getAuthTokens } from '../../utils/auth.helper';
 
 describe('Refresh Token Endpoint - Automated Testing (POST /api/v1/auth/refresh)', () => {
   let app: INestApplication;
@@ -36,14 +37,9 @@ describe('Refresh Token Endpoint - Automated Testing (POST /api/v1/auth/refresh)
     errorAnalyzer = new ErrorAnalyzer();
     progressTracker = new ProgressTracker('auth');
 
-    // Get a valid refresh token for testing
-    const loginResponse = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send(VALID_LOGIN_DATA);
-
-    if (loginResponse.body.refreshToken) {
-      validRefreshToken = loginResponse.body.refreshToken;
-    }
+    // Get authentication tokens (access + refresh) for USER
+    const tokens = await getAuthTokens(app, 'USER');
+    validRefreshToken = tokens.refreshToken;
   });
 
   afterAll(async () => {
