@@ -59,9 +59,10 @@ describe('Get Current User Endpoint - Automated Testing (GET /api/v1/auth/me)', 
 
       const responseTime = Date.now() - startTime;
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('email');
-      expect(response.body.email).toBe(VALID_LOGIN_DATA.email);
+      // Response is wrapped in { data: {...} } by TransformInterceptor
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('email');
+      expect(response.body.data.email).toBe(VALID_LOGIN_DATA.email);
 
       progressTracker.recordSuccess('GET /me', responseTime, 'S1.1 - User profile retrieved');
     });
@@ -72,12 +73,13 @@ describe('Get Current User Endpoint - Automated Testing (GET /api/v1/auth/me)', 
         .set('Authorization', `Bearer ${validAccessToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('email');
-      expect(response.body).toHaveProperty('firstName');
-      expect(response.body).toHaveProperty('lastName');
-      expect(response.body).toHaveProperty('role');
-      expect(response.body).toHaveProperty('createdAt');
+      // Response is wrapped in { data: {...} } by TransformInterceptor
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('email');
+      expect(response.body.data).toHaveProperty('firstName');
+      expect(response.body.data).toHaveProperty('lastName');
+      expect(response.body.data).toHaveProperty('role');
+      expect(response.body.data).toHaveProperty('createdAt');
 
       progressTracker.recordSuccess('GET /me', 0, 'S1.2 - Complete user data');
     });
@@ -88,7 +90,8 @@ describe('Get Current User Endpoint - Automated Testing (GET /api/v1/auth/me)', 
         .set('Authorization', `Bearer ${validAccessToken}`)
         .expect(200);
 
-      expect(response.body).not.toHaveProperty('password');
+      // Response is wrapped in { data: {...} } by TransformInterceptor
+      expect(response.body.data).not.toHaveProperty('password');
 
       progressTracker.recordSuccess('GET /me', 0, 'S1.3 - Password excluded');
     });

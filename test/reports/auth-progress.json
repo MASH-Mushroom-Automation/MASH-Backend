@@ -1,116 +1,80 @@
 {
   "module": "auth",
   "totalEndpoints": 18,
-  "testedEndpoints": 17,
-  "passedEndpoints": 17,
+  "testedEndpoints": 11,
+  "passedEndpoints": 11,
   "failedEndpoints": 0,
   "skippedEndpoints": 0,
-  "coverage": 94.44444444444444,
-  "lastRunDate": "2025-11-07T07:59:08.494Z",
+  "coverage": 61.111111111111114,
+  "lastRunDate": "2025-11-07T08:45:19.568Z",
   "averageResponseTime": 0,
   "failures": [],
   "successfulTests": [
     {
-      "endpointId": "POST /login",
-      "testCase": "V2.2 - Missing email rejected",
+      "endpointId": "POST /refresh",
+      "testCase": "V2.1 - Missing token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:56:40.121Z"
+      "timestamp": "2025-11-07T08:43:21.153Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "V2.3 - Missing password rejected",
+      "endpointId": "POST /refresh",
+      "testCase": "V2.2 - Invalid format rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:56:46.214Z"
+      "timestamp": "2025-11-07T08:43:26.393Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "V2.4 - Empty body rejected",
+      "endpointId": "POST /refresh",
+      "testCase": "V2.3 - Expired token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:56:51.723Z"
+      "timestamp": "2025-11-07T08:43:31.846Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "V2.5 - Short password rejected",
+      "endpointId": "POST /refresh",
+      "testCase": "V2.4 - Null token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:56:56.989Z"
+      "timestamp": "2025-11-07T08:43:37.050Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "V2.6 - Null values rejected",
+      "endpointId": "POST /refresh",
+      "testCase": "V2.5 - Empty token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:57:02.358Z"
+      "timestamp": "2025-11-07T08:43:42.251Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "V2.7 - Undefined values rejected",
+      "endpointId": "POST /refresh",
+      "testCase": "T3.1 - Token reuse handled",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:57:07.845Z"
+      "timestamp": "2025-11-07T08:43:53.422Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "A3.2 - Non-existent user rejected",
+      "endpointId": "POST /refresh",
+      "testCase": "T3.2 - Logged out token (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:57:20.209Z"
+      "timestamp": "2025-11-07T08:43:53.425Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "A3.3 - No user enumeration",
+      "endpointId": "POST /refresh",
+      "testCase": "T3.3 - Tampered token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:57:32.103Z"
+      "timestamp": "2025-11-07T08:43:59.481Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "A3.4 - Unverified email (skipped)",
+      "endpointId": "POST /refresh",
+      "testCase": "S5.2 - Token family (skipped)",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:57:32.105Z"
+      "timestamp": "2025-11-07T08:45:14.325Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "A3.5 - Disabled account (skipped)",
+      "endpointId": "POST /refresh",
+      "testCase": "E6.1 - Malformed JSON rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:57:32.107Z"
+      "timestamp": "2025-11-07T08:45:14.376Z"
     },
     {
-      "endpointId": "POST /login",
-      "testCase": "R4.1 - Rate limit allows 10 requests",
+      "endpointId": "POST /refresh",
+      "testCase": "E6.2 - Long token rejected",
       "responseTime": 0,
-      "timestamp": "2025-11-07T07:59:01.241Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "R4.4 - Rate limit reset (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-07T07:59:02.128Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.1 - Database error handling (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-07T07:59:02.134Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.2 - JWT signing error handling (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-07T07:59:02.137Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.3 - Timeout handling (skipped)",
-      "responseTime": 0,
-      "timestamp": "2025-11-07T07:59:02.139Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.4 - Malformed JSON rejected",
-      "responseTime": 0,
-      "timestamp": "2025-11-07T07:59:02.171Z"
-    },
-    {
-      "endpointId": "POST /login",
-      "testCase": "E5.5 - Large payload rejected",
-      "responseTime": 0,
-      "timestamp": "2025-11-07T07:59:08.494Z"
+      "timestamp": "2025-11-07T08:45:19.568Z"
     }
   ]
 }

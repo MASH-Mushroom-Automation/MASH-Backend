@@ -122,12 +122,15 @@ export class DynamicRateLimitService {
       // Execute rate limit check
       const result = await strategy.checkLimit(key, config);
 
-      // Record metrics
-      this.prometheus.rateLimitViolationsTotal.inc({
-        endpoint,
-        strategy: strategy.getName(),
-        allowed: result.allowed ? 'yes' : 'no',
-      });
+      // Record metrics with correct labels (user_role, endpoint_category, source)
+      // Only increment when rate limit is violated (not allowed)
+      if (!result.allowed) {
+        this.prometheus.rateLimitViolationsTotal.inc({
+          user_role: userId ? 'authenticated' : 'anonymous',
+          endpoint_category: this.categorizeEndpoint(endpoint),
+          source: override ? 'custom_override' : 'default',
+        });
+      }
 
       const durationMs = Date.now() - startMs;
       this.logger.debug(
@@ -335,5 +338,21 @@ export class DynamicRateLimitService {
     this.logger.log(`Cleaned up ${result.count} expired rate limit overrides`);
 
     return result.count;
+  }
+
+  /**
+   * Categorize endpoint for metrics
+   * Maps endpoints to high-level categories for Prometheus labels
+   */
+  private categorizeEndpoint(endpoint: string): string {
+    if (endpoint.startsWith('/api/v1/auth')) return 'auth';
+    if (endpoint.startsWith('/api/v1/users')) return 'users';
+    if (endpoint.startsWith('/api/v1/products')) return 'products';
+    if (endpoint.startsWith('/api/v1/orders')) return 'orders';
+    if (endpoint.startsWith('/api/v1/payments')) return 'payments';
+    if (endpoint.startsWith('/api/v1/devices')) return 'devices';
+    if (endpoint.startsWith('/api/v1/alerts')) return 'alerts';
+    if (endpoint.startsWith('/api/v1/health')) return 'health';
+    return 'other';
   }
 }

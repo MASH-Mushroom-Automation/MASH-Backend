@@ -357,7 +357,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Current user information' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getCurrentUser(@Request() req: AuthenticatedRequest) {
-    return this.authService.getCurrentUser(req.user.userId);
+    // JWT strategy returns user.id, not user.userId
+    return this.authService.getCurrentUser(req.user.id);
   }
 
   @Get('session')
