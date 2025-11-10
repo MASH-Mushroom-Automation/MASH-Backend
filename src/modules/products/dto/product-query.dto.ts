@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, Min, IsString, IsEnum, IsBoolean } from 'class-validator';
+import { IsInt, IsOptional, Min, IsString, IsEnum, IsBoolean, IsNumber } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export enum SortOrder {
@@ -51,6 +51,15 @@ export class ProductQueryDto {
   categoryId?: string;
 
   @ApiProperty({
+    example: 'Fresh Mushroom',
+    description: 'Filter by category name',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({
     example: 'ACTIVE',
     description: 'Filter by status',
     required: false,
@@ -91,4 +100,24 @@ export class ProductQueryDto {
   })
   @IsBoolean()
   isFeatured?: boolean;
+
+  @ApiProperty({
+    example: 0,
+    description: 'Minimum price filter',
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  minPrice?: number;
+
+  @ApiProperty({
+    example: 1000,
+    description: 'Maximum price filter',
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  maxPrice?: number;
 }

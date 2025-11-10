@@ -43,10 +43,13 @@ export class ProductsService {
       limit = 10,
       search,
       categoryId,
+      category,
       status,
       sortBy = 'createdAt',
       sortOrder = 'desc',
       isFeatured,
+      minPrice,
+      maxPrice,
     } = query;
 
     // Generate cache key from query parameters
@@ -72,11 +75,19 @@ export class ProductsService {
       ];
     }
 
-    // Category filter (categories is Json array, use path)
+    // Category filter by ID (categories is Json array, use path)
     if (categoryId) {
       where.categories = {
         path: [],
         array_contains: categoryId,
+      } as any;
+    }
+
+    // Category filter by name (for frontend compatibility)
+    if (category) {
+      where.categories = {
+        path: [],
+        array_contains: category,
       } as any;
     }
 
@@ -88,6 +99,17 @@ export class ProductsService {
     // Featured filter
     if (isFeatured !== undefined) {
       where.isFeatured = isFeatured;
+    }
+
+    // Price range filter
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.price = {};
+      if (minPrice !== undefined) {
+        where.price.gte = minPrice;
+      }
+      if (maxPrice !== undefined) {
+        where.price.lte = maxPrice;
+      }
     }
 
     const [products, total] = await Promise.all([
