@@ -759,22 +759,212 @@ All error responses follow this format:
 ```
 
 **Common Status Codes:**
-- `400` - Bad Request
-- `401` - Unauthorized
-- `403` - Forbidden
-- `404` - Not Found
+- `200` - OK - Request successful
+- `201` - Created - Resource created successfully
+- `204` - No Content - Request successful with no response body
+- `400` - Bad Request - Invalid input data
+- `401` - Unauthorized - Missing or invalid authentication token
+- `403` - Forbidden - Insufficient permissions
+- `404` - Not Found - Resource not found
 - `409` - Conflict (e.g., device already registered)
 - `422` - Unprocessable Entity (validation error)
-- `500` - Internal Server Error
-- `503` - Service Unavailable
+- `429` - Too Many Requests - Rate limit exceeded
+- `500` - Internal Server Error - Unexpected server error
+- `503` - Service Unavailable - Service temporarily unavailable
+
+**Detailed Error Response Examples:**
+
+**1. Validation Error (422):**
+```json
+{
+  "success": false,
+  "statusCode": 422,
+  "error": "Unprocessable Entity",
+  "message": [
+    "deviceId must be a string",
+    "name should not be empty",
+    "type must be one of: MUSHROOM_CHAMBER, SENSOR_NODE, ACTUATOR_NODE, GATEWAY"
+  ],
+  "timestamp": "2024-11-11T10:30:00Z",
+  "path": "/api/v1/devices",
+  "correlationId": "abc-123-def-456"
+}
+```
+
+**2. Authentication Error (401):**
+```json
+{
+  "success": false,
+  "statusCode": 401,
+  "error": "Unauthorized",
+  "message": "Invalid or expired authentication token",
+  "timestamp": "2024-11-11T10:30:00Z",
+  "path": "/api/v1/devices"
+}
+```
+
+**3. Authorization Error (403):**
+```json
+{
+  "success": false,
+  "statusCode": 403,
+  "error": "Forbidden",
+  "message": "You do not have permission to access this device",
+  "timestamp": "2024-11-11T10:30:00Z",
+  "path": "/api/v1/devices/device-123"
+}
+```
+
+**4. Resource Not Found (404):**
+```json
+{
+  "success": false,
+  "statusCode": 404,
+  "error": "Not Found",
+  "message": "Device with ID 'device-123' not found",
+  "timestamp": "2024-11-11T10:30:00Z",
+  "path": "/api/v1/devices/device-123"
+}
+```
+
+**5. Conflict Error (409):**
+```json
+{
+  "success": false,
+  "statusCode": 409,
+  "error": "Conflict",
+  "message": "Device with deviceId 'MASH-A1-CAL25-AC2415' is already registered",
+  "timestamp": "2024-11-11T10:30:00Z",
+  "path": "/api/v1/devices"
+}
+```
+
+**6. Database Error (500):**
+```json
+{
+  "success": false,
+  "statusCode": 500,
+  "error": "Internal Server Error",
+  "message": "An unexpected error occurred while processing your request",
+  "timestamp": "2024-11-11T10:30:00Z",
+  "path": "/api/v1/devices",
+  "correlationId": "abc-123-def-456"
+}
+```
 
 ---
 
 ## Rate Limiting
 
-- **User API:** 100 requests/minute
-- **Device API:** 1000 requests/minute (for sensor data submission)
-- **WebSocket:** 1 connection per device
+**API Rate Limits (Enforced by @nestjs/throttler):**
+
+| Endpoint Category | Rate Limit | Window | Notes |
+|-------------------|------------|--------|-------|
+| **Authentication** | 10 req/min | Per IP | Login, register, password reset |
+| **Device CRUD** | 60 req/min | Per user | Create, read, update, delete devices |
+| **Device Commands** | 30 req/min | Per user | Send commands, restart, reset |
+| **Sensor Data** | 1000 req/min | Per device | High-frequency sensor data submission |
+| **Health Checks** | 100 req/min | Per device | Health status and diagnostics |
+| **Analytics** | 20 req/min | Per user | Performance analytics queries |
+| **WebSocket** | 1 connection | Per device | Real-time updates |
+
+**Rate Limit Headers:**
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1699267200
+```
+
+**Rate Limit Exceeded Response:**
+```json
+{
+  "success": false,
+  "statusCode": 429,
+  "error": "Too Many Requests",
+  "message": "Rate limit exceeded. Please try again in 60 seconds.",
+  "timestamp": "2024-11-11T10:30:00Z"
+}
+```
+
+---
+
+## Postman Collection
+
+**📦 Complete IoT Device Management Collection Available!**
+
+**Location:** `postman/07-IoT-Device-Management-API.postman_collection.json`
+
+**Collection Structure (8 Folders):**
+1. **Device Registration & Onboarding** (3 requests)
+   - Register device
+   - Activate device
+   - Toggle activation
+
+2. **Device CRUD Operations** (5 requests)
+   - List devices with filters
+   - Get device details
+   - Update device
+   - Delete device
+   - Create device (duplicate for testing)
+
+3. **Device Control & Commands** (5 requests)
+   - Send command
+   - Get command history
+   - Get device status
+   - Restart device
+   - Factory reset
+
+4. **Configuration & Firmware** (4 requests)
+   - Get configuration
+   - Update configuration
+   - Firmware update (OTA)
+   - Firmware history
+
+5. **Sensor Management** (5 requests)
+   - List sensors
+   - Add sensor
+   - Update sensor
+   - Remove sensor
+   - Calibrate sensor
+
+6. **Health Monitoring & Diagnostics** (6 requests)
+   - Get analytics
+   - Get current health
+   - Record health data
+   - Get health history
+   - Perform health check
+   - Get fleet health summary
+
+7. **Analytics & Reporting** (1 request)
+   - Get device analytics with time-series data
+
+8. **Integration Tests** (Complete Device Lifecycle)
+   - 6-step end-to-end test scenario
+   - Validates full device lifecycle
+   - Tests device registration → activation → command → health → analytics → cleanup
+
+**Import Instructions:**
+1. Open Postman
+2. File > Import
+3. Select `postman/07-IoT-Device-Management-API.postman_collection.json`
+4. Import environment: `postman/MASH-backend.postman_environment.json`
+5. Set variables:
+   - `baseUrl`: `http://localhost:3000/api/v1`
+   - `accessToken`: (Get from login endpoint)
+6. Run "Integration Tests" folder for complete validation
+
+**Pre-request Script Features:**
+- Automatic test device ID generation
+- Timestamp management
+- Environment variable setup
+- Authentication token management
+
+**Test Assertions:**
+- Response time validation (<2000ms)
+- Status code verification
+- Response structure validation
+- Data type checking
+- Error handling verification
 
 ---
 
