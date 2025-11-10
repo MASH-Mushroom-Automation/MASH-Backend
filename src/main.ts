@@ -1,5 +1,6 @@
 // Initialize OpenTelemetry tracing FIRST (before any other imports)
-import './monitoring/tracing';
+// NOTE: Temporarily commented out to fix build issue - tracing.ts not compiling
+// import './monitoring/tracing';
 
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
@@ -134,19 +135,20 @@ async function bootstrap() {
     .setVersion('1.0.0')
     .setContact('MASH Support', 'https://github.com/MASH-Mushroom-Automation/MASH-Backend', 'pp.namias@gmail.com')
     .setLicense('MIT', 'https://opensource.org/licenses/MIT')
-    // API Tags (lowercase for consistency with controllers)
-    .addTag('auth', 'User authentication and authorization')
-    .addTag('users', 'User management')
-    .addTag('profile', 'User profile management')
-    .addTag('products', 'Product catalog management')
-    .addTag('orders', 'Order management')
-    .addTag('categories', 'Product categories')
-    .addTag('devices', 'IoT device management')
-    .addTag('sensors', 'Sensor data and monitoring')
-    .addTag('notifications', 'Push notifications, SMS, and email')
-    .addTag('inventory', 'Inventory management')
-    .addTag('health', 'System health monitoring')
-    .addTag('rate-limits', 'Rate limiting and throttling')
+    // API Tags (professional naming without emojis)
+    .addTag('Authentication', 'User authentication and authorization')
+    .addTag('Users', 'User management')
+    .addTag('Profile', 'User profile management')
+    .addTag('Products', 'Product catalog management')
+    .addTag('Orders', 'Order management')
+    .addTag('Categories', 'Product categories')
+    .addTag('Devices', 'IoT device management')
+    .addTag('Sensors', 'Sensor data and monitoring')
+    .addTag('Notifications', 'Push notifications, SMS, and email')
+    .addTag('Inventory', 'Inventory management')
+    .addTag('Health', 'System health monitoring')
+    .addTag('Rate Limits', 'Rate limiting and throttling')
+    .addTag('Database Seeding', 'Database seeding operations')
     // Authentication
     .addBearerAuth(
       {

@@ -49,7 +49,7 @@ interface AuthenticatedRequest {
   };
 }
 
-@ApiTags('🔐 Authentication & Authorization')
+@ApiTags('Authentication')
 @ApiExtraModels(RegisterDto, LoginDto, VerifyEmailDto, ResendVerificationDto, RefreshTokenDto)
 @Controller('auth')
 export class AuthController {
