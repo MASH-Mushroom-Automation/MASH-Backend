@@ -22,11 +22,7 @@ model User {
   phoneNumber          String?
   role                 UserRole             @default(USER)
   isActive             Boolean              @default(true)
-  preferences          Json? // User preferences (theme, language, timezone, notifications)  
-  // Email Verification Fields
-  emailVerified              Boolean   @default(false) // Email verification status
-  emailVerificationToken     String?   // Verification token (64-char hex)
-  emailVerificationExpiry    DateTime? // Token expiration timestamp
+  preferences          Json? // User preferences (theme, language, timezone, notifications)
   twoFactorSecret      String? // TOTP secret (base32 encoded)
   twoFactorEnabled     Boolean              @default(false) // Whether 2FA is enabled
   twoFactorBackupCodes String[]             @default([]) // Hashed backup codes
@@ -68,8 +64,6 @@ model User {
   @@index([isActive, role])
   @@index([lastLoginAt])
   @@index([email, isActive]) // Email lookup with active filter (Neon optimization)
-  @@index([emailVerificationToken]) // Fast lookup for verification tokens
-  @@index([email, emailVerified]) // Query verified users efficiently
   @@map("users")
 }
 

@@ -16,11 +16,12 @@ import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RegisterDto } from './dto/register.dto';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { VerifyEmailDto, ResendVerificationDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/password-reset.dto';
 import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
+import { generateVerificationToken, generateTokenExpiry, isTokenExpired } from '../../common/helpers/token.helper';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
@@ -274,6 +275,13 @@ export class AuthService {
               throw new UnauthorizedException('Invalid credentials');
             }
 
+            // Check if email is verified
+            if (!user.emailVerified) {
+              throw new UnauthorizedException(
+                'Please verify your email address before logging in. Check your inbox for the verification link.'
+              );
+            }
+
             const isPasswordMatching = await comparePassword(pass, user.password);
             if (!isPasswordMatching) {
               throw new UnauthorizedException('Invalid credentials');
@@ -322,6 +330,13 @@ export class AuthService {
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user) {
           throw new UnauthorizedException('Invalid credentials');
+        }
+
+        // Check if email is verified
+        if (!user.emailVerified) {
+          throw new UnauthorizedException(
+            'Please verify your email address before logging in. Check your inbox for the verification link.'
+          );
         }
 
         const isPasswordMatching = await comparePassword(pass, user.password);
@@ -455,6 +470,7 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     try {
       const hashedPassword = await hashPassword(registerDto.password);
+      
       // Register user in Clerk
       const clerkUser = await this.clerkService.registerUser({
         email: registerDto.email,
@@ -464,13 +480,17 @@ export class AuthService {
         username: registerDto.username,
       });
 
+      // Generate verification token for email verification
+      const verificationToken = generateVerificationToken();
+      const verificationExpiry = generateTokenExpiry(24); // 24 hours
+
       // Generate DiceBear avatar URL based on username or email
       // Uses bottts-neutral style for consistent, professional avatars
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
       const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
-      // Create user in local database with generated avatar
-      await this.prisma.user.create({
+      // Create user in local database with generated avatar and verification token
+      const user = await this.prisma.user.create({
         data: {
           clerkId: clerkUser.id,
           email: registerDto.email,
@@ -480,22 +500,25 @@ export class AuthService {
           password: hashedPassword,
           imageUrl: diceBearAvatarUrl, // Use DiceBear avatar instead of Clerk's
           role: 'USER', // Default role
+          emailVerified: false, // Email not verified yet
+          emailVerificationToken: verificationToken,
+          emailVerificationExpiry: verificationExpiry,
         },
       });
 
       this.prometheusService.recordUserRegistration();
 
       this.logger.log(
-        `✅ Generated DiceBear avatar for ${registerDto.email}: ${diceBearAvatarUrl}`,
+        `✅ User registered: ${registerDto.email} with DiceBear avatar: ${diceBearAvatarUrl}`,
       );
 
       // Send Clerk verification email (primary verification)
       await this.clerkService.sendEmailVerification(registerDto.email);
 
-      // Send MASH-branded verification email (non-blocking)
+      // Send MASH-branded verification email with token (non-blocking)
       // This provides a better user experience with our custom branding
       try {
-        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(registerDto.email)}`;
+        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         await this.emailService.sendVerificationEmail(
           registerDto.email,
           registerDto.firstName,
@@ -523,11 +546,13 @@ export class AuthService {
 
       return {
         success: true,
-        message: 'User registered successfully. Please verify your email.',
-        userId: clerkUser.id,
+        message: 'Registration successful! Please check your email to verify your account.',
+        userId: user.id,
+        clerkId: clerkUser.id,
         email: registerDto.email,
         username: registerDto.username || null,
         avatarUrl: diceBearAvatarUrl, // DiceBear avatar URL
+        emailVerified: false,
         verificationSent: true,
       };
     } catch (error: unknown) {
@@ -542,19 +567,120 @@ export class AuthService {
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
     try {
-      await this.clerkService.verifyEmail(verifyEmailDto.email, verifyEmailDto.code);
-      return { success: true, message: 'Email verified successfully' };
-    } catch {
-      throw new BadRequestException('Invalid or expired verification code');
+      // Find user by verification token
+      const user = await this.prisma.user.findFirst({
+        where: {
+          emailVerificationToken: verifyEmailDto.token,
+          emailVerified: false,
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('Invalid or already used verification token');
+      }
+
+      // Check if token expired
+      if (isTokenExpired(user.emailVerificationExpiry)) {
+        throw new BadRequestException('Verification token has expired. Please request a new one.');
+      }
+
+      // Update user as verified
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
+        },
+      });
+
+      // Also update Clerk metadata to reflect local verification
+      try {
+        await this.clerkService.updateUser(user.clerkId, {
+          publicMetadata: {
+            emailVerifiedLocally: true,
+            verifiedAt: new Date().toISOString(),
+          },
+        });
+      } catch (clerkError) {
+        this.logger.error(`Failed to update Clerk metadata: ${clerkError.message}`);
+        // Don't fail the verification if Clerk update fails
+      }
+
+      this.logger.log(`✅ Email verified successfully for user: ${user.email}`);
+
+      return {
+        success: true,
+        message: 'Email verified successfully! You can now log in.',
+        email: user.email,
+        verified: true,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Email verification failed: ${error.message}`);
+      throw new BadRequestException('Email verification failed. Please try again.');
     }
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerificationEmail(resendDto: ResendVerificationDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: resendDto.email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists or not (security)
+      return {
+        success: true,
+        message: 'If an account exists with this email, a verification email has been sent.',
+      };
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    // Generate new token
+    const verificationToken = generateVerificationToken();
+    const verificationExpiry = generateTokenExpiry(24);
+
+    // Update user with new token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiry: verificationExpiry,
+      },
+    });
+
+    // Send new verification email
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+    await this.emailService.sendVerificationEmail(
+      user.email,
+      user.firstName,
+      verificationLink,
+      '24 hours',
+    );
+
+    this.logger.log(`✅ Verification email resent to: ${resendDto.email}`);
+
+    return {
+      success: true,
+      message: 'Verification email sent. Please check your inbox.',
+      email: user.email,
+    };
   }
 
   async resendVerification(email: string) {
     try {
       await this.clerkService.sendEmailVerification(email);
-      return { success: true, message: 'Verification email sent' };
+      return { success: true, message: 'Verification email resent' };
     } catch {
-      throw new BadRequestException('Failed to send verification email');
+      throw new BadRequestException('Failed to resend verification email');
     }
   }
 
