@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, Min, IsString, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Min, IsString, IsEnum, IsBoolean } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export enum SortOrder {
   ASC = 'asc',
@@ -84,5 +84,11 @@ export class ProductQueryDto {
     required: false,
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
   isFeatured?: boolean;
 }
