@@ -398,21 +398,32 @@ This endpoint validates the verification token sent to the user's email and mark
   }
 
   /**
-   * 🔄 RESEND EMAIL VERIFICATION
-   * =============================
-   * Generates and sends a new verification token if the original expired.
+   * 🔄 RESEND 6-DIGIT VERIFICATION CODE (UNIFIED METHOD)
+   * =====================================================
+   * Sends a new 6-digit verification code to user's email.
+   * This endpoint now uses the same 6-digit code system as registration.
    * 
-   * Process:
-   * 1. Finds user by email
-   * 2. Checks if already verified (returns error if yes)
-   * 3. Generates new 64-character token
-   * 4. Sets new 24h expiration
-   * 5. Sends new verification email
+   * Why 6-Digit Code?
+   * - ✅ Mobile-friendly: Easy to type on mobile keyboard
+   * - ✅ User stays in app (no deep linking required)
+   * - ✅ Faster verification (10 minutes vs 24 hours)
+   * - ✅ More secure: Short expiry window
+   * - ✅ Familiar UX: Like OTP/2FA systems
    * 
    * Security Features:
-   * - Rate limited: 3 requests per 5 minutes
-   * - Doesn't reveal if email exists (security by obscurity)
-   * - Prevents spam to verified accounts
+   * - Rate limited: 1 request per minute (60 seconds cooldown)
+   * - Doesn't reveal if email exists (prevents enumeration)
+   * - Single-use codes (cannot reuse same code)
+   * - Short expiry (10 minutes)
+   * - Resets failed attempt counter
+   * 
+   * Process:
+   * 1. Validates user exists and is not verified
+   * 2. Checks rate limit (1 minute cooldown)
+   * 3. Generates new 6-digit code
+   * 4. Clears old code and resets attempts
+   * 5. Sends email with new code
+   * 6. User verifies with POST /auth/verify-email-code
    */
   @Post('resend-verification')
   @Public()
@@ -421,38 +432,48 @@ This endpoint validates the verification token sent to the user's email and mark
   @ApiOperation({
     summary: '🔄 Resend verification email',
     description: `
-**Send new verification token to user email**
+**Send new 6-digit verification code to user email**
 
-This endpoint generates a new verification token and sends it to the user's email address.
+This endpoint generates a new 6-digit verification code and sends it to the user's email address. 
+**Note: This endpoint now uses the same 6-digit code system as registration (no longer token-based).**
 
 ### When to Use:
-- ⏱️ Original verification token expired (after 24 hours)
+- ⏱️ Original verification code expired (after 10 minutes)
 - 📧 User didn't receive the original email
 - 🗑️ User accidentally deleted the verification email
-- 🔄 User needs a fresh verification link
+- 🔄 User needs a fresh verification code
+- 🔁 User failed verification attempts and wants to reset
 
 ### Request Requirements:
 - Email must be registered (but not verified)
 - User cannot be already verified
-- Must not exceed rate limit (3 requests per 5 minutes)
+- Must not exceed rate limit (1 request per minute)
 
 ### Process Flow:
 1. **User Lookup**: Finds user by email address
 2. **Status Check**: Verifies user is not already verified
-3. **Token Generation**: Creates new 64-char verification token
-4. **Expiry Update**: Sets new 24-hour expiration
-5. **Email Delivery**: Sends new verification email
-6. **Response**: Returns success (doesn't reveal if email exists)
+3. **Rate Limit Check**: Ensures 1 minute has passed since last code
+4. **Code Generation**: Creates new 6-digit numeric code (e.g., "123456")
+5. **Expiry Update**: Sets new 10-minute expiration
+6. **Attempt Reset**: Resets failed verification attempts to 0
+7. **Email Delivery**: Sends new verification code email (same template as registration)
+8. **Response**: Returns success (doesn't reveal if email exists)
 
 ### Important Notes:
-- 🔒 Old token is replaced (previous token becomes invalid)
-- ⏱️ New token expires in 24 hours from generation
-- 🚫 Rate limited to prevent spam (3 per 5 minutes)
+- 🔒 Old code is replaced (previous code becomes invalid)
+- ⏱️ New code expires in 10 minutes (not 24 hours)
+- 🚫 Rate limited to 1 request per minute (prevents spam)
 - 🔐 For security, always returns success even if email doesn't exist
-- ✅ User can verify with new token immediately
+- ✅ User can verify with new code using POST /auth/verify-email-code
+- 🔄 Resets failed attempt counter (gives user fresh 5 attempts)
 
 ### Security Best Practice:
 This endpoint doesn't reveal whether an email exists in the system. It always returns a success message, even if the email is not registered. This prevents email enumeration attacks.
+
+### Changed from Token-Based:
+- ❌ Old: 24-hour token with deep link verification
+- ✅ New: 10-minute 6-digit code with in-app verification
+- 🎯 Benefit: Faster, more secure, better mobile UX
 `,
   })
   @ApiBody({
@@ -469,31 +490,41 @@ This endpoint doesn't reveal whether an email exists in the system. It always re
   })
   @ApiResponse({
     status: 200,
-    description: '✅ Verification email sent (or email not found - security)',
+    description: '✅ Verification code sent (or email not found - security)',
     schema: {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
         message: {
           type: 'string',
-          example: 'If the email exists, a new verification link has been sent.',
+          example: 'A new 6-digit verification code has been sent to your email.',
         },
-        note: {
+        expiresIn: {
           type: 'string',
-          example:
-            'For security reasons, we do not reveal whether the email exists. Please check your inbox and spam folder.',
+          example: '10 minutes',
+        },
+        email: {
+          type: 'string',
+          example: 'john.doe@example.com',
+        },
+        nextStep: {
+          type: 'string',
+          example: 'Enter the code using POST /auth/verify-email-code',
         },
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description: '❌ Bad Request - Email already verified',
+    description: '❌ Bad Request - Email already verified or rate limit hit',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Email is already verified. You can log in now.' },
+        message: { 
+          type: 'string', 
+          example: 'Email is already verified. You can log in now.',
+        },
         error: { type: 'string', example: 'Bad Request' },
       },
     },

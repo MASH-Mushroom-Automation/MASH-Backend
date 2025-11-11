@@ -911,50 +911,82 @@ export class AuthService {
    * Resend verification email
    */
   async resendVerificationEmail(resendDto: ResendVerificationDto) {
+    const logger = new Logger('AuthService.resendVerificationEmail');
+    logger.log(`[STARTUP] Resend verification request for email: ${resendDto.email}`);
+
     const user = await this.prisma.user.findUnique({
       where: { email: resendDto.email },
     });
 
     if (!user) {
       // Don't reveal if user exists or not (security)
+      logger.warn(`[WARN] Resend request for non-existent email: ${resendDto.email}`);
       return {
         success: true,
-        message: 'If an account exists with this email, a verification email has been sent.',
+        message: 'If an account exists with this email, a verification code has been sent.',
+        expiresIn: '10 minutes',
       };
     }
 
     if (user.emailVerified) {
-      throw new BadRequestException('Email is already verified');
+      logger.warn(`[WARN] Resend request for already verified email: ${resendDto.email}`);
+      throw new BadRequestException('Email is already verified. You can log in now.');
     }
 
-    // Generate new token
-    const verificationToken = generateVerificationToken();
-    const verificationExpiry = generateTokenExpiry(24);
+    // Rate limiting: Check if 1 minute has passed since last code was sent
+    const timeSinceLastSent = user.emailVerificationCodeSentAt
+      ? Date.now() - user.emailVerificationCodeSentAt.getTime()
+      : Infinity;
 
-    // Update user with new token
+    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
+      const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
+      logger.warn(`[WARN] Rate limit hit for email: ${resendDto.email}, wait ${waitSeconds}s`);
+      throw new BadRequestException(
+        `Please wait ${waitSeconds} seconds before requesting a new code.`,
+      );
+    }
+
+    // Generate new 6-digit verification code (same as registration)
+    const verificationCode = generateSixDigitCode();
+    const codeExpiry = generateCodeExpiry(10); // 10 minutes
+
+    logger.log(`[CONFIG] New 6-digit verification code generated: ${verificationCode}`);
+
+    // Update user with new code and reset attempts
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        emailVerificationToken: verificationToken,
-        emailVerificationExpiry: verificationExpiry,
+        emailVerificationCode: verificationCode,
+        emailVerificationCodeExpiry: codeExpiry,
+        emailVerificationCodeUsed: false,
+        emailVerificationAttempts: 0, // Reset failed attempts
+        emailVerificationCodeSentAt: new Date(),
       },
     });
 
-    // Send new verification email
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-    await this.emailService.sendVerificationEmail(
-      user.email,
-      user.firstName,
-      verificationLink,
-      '24 hours',
-    );
-
-    this.logger.log(`✅ Verification email resent to: ${resendDto.email}`);
+    // Send verification code email (same as registration)
+    logger.log(`[CONFIG] Sending 6-digit verification code via email`);
+    
+    try {
+      await this.emailService.sendVerificationCodeEmail(
+        user.email,
+        user.firstName || 'User',
+        verificationCode,
+        '10 minutes',
+      );
+      
+      logger.log(`[SUCCESS] 6-digit verification code sent to: ${user.email}`);
+    } catch (emailError) {
+      logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
+      throw new InternalServerErrorException('Failed to send verification code. Please try again later.');
+    }
 
     return {
       success: true,
-      message: 'Verification email sent. Please check your inbox.',
+      message: 'A new 6-digit verification code has been sent to your email.',
+      expiresIn: '10 minutes',
       email: user.email,
+      nextStep: 'Enter the code using POST /auth/verify-email-code',
     };
   }
 
