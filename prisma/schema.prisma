@@ -509,6 +509,8 @@ model RateLimitLog {
 
   @@unique([identifier, endpoint, windowStart])
   @@index([identifier, windowStart])
+  @@index([identifier, blocked]) // Optimize whitelist checks
+  @@index([endpoint, windowStart]) // Optimize endpoint-specific rate limiting
   @@index([endpoint])
   @@map("rate_limit_logs")
 }
@@ -1257,6 +1259,8 @@ model RateLimitOverride {
 
   @@unique([userId, endpoint])
   @@index([apiKey])
+  @@index([endpoint, expiresAt]) // Optimize active override lookups
+  @@index([userId, endpoint, expiresAt]) // Optimize user-specific override checks
   @@index([endpoint])
   @@map("rate_limit_overrides")
 }
