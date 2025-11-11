@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, Length, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, Length, MinLength, Matches } from 'class-validator';
 
 /**
- * DTO for email verification with token
+ * DTO for email verification with 64-character token (web/email links)
  */
 export class VerifyEmailDto {
   @ApiProperty({
@@ -16,32 +16,37 @@ export class VerifyEmailDto {
 }
 
 /**
- * DTO for email verification with code (alternative method)
+ * DTO for email verification with 6-digit code (mobile/app)
  */
-export class VerifyEmailWithCodeDto {
+export class VerifyEmailCodeDto {
   @ApiProperty({
     example: 'john.doe@example.com',
     description: 'Email address to verify',
   })
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
   @ApiProperty({
     example: '123456',
     description: '6-digit verification code sent to email',
+    minLength: 6,
+    maxLength: 6,
   })
   @IsString()
-  @Length(6, 6)
+  @IsNotEmpty()
+  @Length(6, 6, { message: 'Verification code must be exactly 6 digits' })
+  @Matches(/^\d{6}$/, { message: 'Verification code must contain only numbers' })
   code: string;
 }
 
 /**
- * DTO for resending verification email
+ * DTO for resending verification code
  */
-export class ResendVerificationDto {
+export class ResendVerificationCodeDto {
   @ApiProperty({
     example: 'john.doe@example.com',
-    description: 'Email address to resend verification email to',
+    description: 'Email address to resend verification code to',
   })
   @IsEmail()
   @IsNotEmpty()

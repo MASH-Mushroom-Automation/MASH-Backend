@@ -25,8 +25,18 @@ model User {
   preferences          Json? // User preferences (theme, language, timezone, notifications)  
   // Email Verification Fields
   emailVerified              Boolean   @default(false) // Email verification status
+  
+  // 6-digit code system (primary method for mobile)
+  emailVerificationCode        String?   // 6-digit numeric code (e.g., "123456")
+  emailVerificationCodeExpiry  DateTime? // Code expires in 10 minutes
+  emailVerificationCodeUsed    Boolean   @default(false) // Prevent code reuse
+  emailVerificationAttempts    Int       @default(0) // Track failed attempts
+  emailVerificationCodeSentAt  DateTime? // When code was last sent (rate limiting)
+  
+  // Token system (fallback for web/email links)
   emailVerificationToken     String?   // Verification token (64-char hex)
   emailVerificationExpiry    DateTime? // Token expiration timestamp
+  
   twoFactorSecret      String? // TOTP secret (base32 encoded)
   twoFactorEnabled     Boolean              @default(false) // Whether 2FA is enabled
   twoFactorBackupCodes String[]             @default([]) // Hashed backup codes
@@ -70,6 +80,8 @@ model User {
   @@index([email, isActive]) // Email lookup with active filter (Neon optimization)
   @@index([emailVerificationToken]) // Fast lookup for verification tokens
   @@index([email, emailVerified]) // Query verified users efficiently
+  @@index([email, emailVerificationCode]) // Fast lookup for 6-digit code verification
+  @@index([emailVerificationCode, emailVerificationCodeExpiry]) // Optimize code expiry checks
   @@map("users")
 }
 
