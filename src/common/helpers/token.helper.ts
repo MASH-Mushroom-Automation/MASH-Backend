@@ -204,3 +204,62 @@ export function generateTokenWithMetadata(
   
   return { token, expiry };
 }
+
+/**
+ * Generate a secure 6-digit verification code
+ * 
+ * Uses crypto.randomInt() for cryptographically secure random number generation.
+ * Generates codes from 000000 to 999999 (always 6 digits with leading zeros).
+ * 
+ * @returns 6-digit numeric code as string (e.g., "123456", "000042")
+ * 
+ * @example
+ * const code = generateSixDigitCode(); // Returns: "482917"
+ * // Store code in database, send to user via email
+ */
+export function generateSixDigitCode(): string {
+  const crypto = require('crypto');
+  // Generate random integer between 0 and 999999
+  const code = crypto.randomInt(0, 1000000);
+  // Pad with leading zeros to ensure 6 digits
+  return code.toString().padStart(6, '0');
+}
+
+/**
+ * Generate code expiry time
+ * 
+ * Creates a Date object representing when the verification code should expire.
+ * Default expiration is 10 minutes (recommended for OTP-style codes).
+ * 
+ * @param minutes - Number of minutes until expiration (default: 10)
+ * @returns Date object representing the expiration time
+ * 
+ * @example
+ * const expiry = generateCodeExpiry(10); // 10 minutes from now
+ * const shortExpiry = generateCodeExpiry(5); // 5 minutes from now
+ */
+export function generateCodeExpiry(minutes: number = 10): Date {
+  return new Date(Date.now() + minutes * 60 * 1000);
+}
+
+/**
+ * Check if verification code has expired
+ * 
+ * Compares the code expiry date with the current time to determine if the code
+ * is still valid. Returns true if the code has expired or if expiry date is null.
+ * 
+ * @param expiryDate - The code's expiration date
+ * @returns True if the code has expired, false if still valid
+ * 
+ * @example
+ * const isExpired = isCodeExpired(user.emailVerificationCodeExpiry);
+ * if (isExpired) {
+ *   throw new Error('Verification code has expired. Please request a new one.');
+ * }
+ */
+export function isCodeExpired(expiryDate: Date | null): boolean {
+  if (!expiryDate) {
+    return true; // Null expiry dates are considered expired
+  }
+  return new Date() > expiryDate;
+}

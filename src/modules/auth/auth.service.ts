@@ -16,12 +16,12 @@ import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RegisterDto } from './dto/register.dto';
-import { VerifyEmailDto, ResendVerificationDto } from './dto/verify-email.dto';
+import { VerifyEmailDto, ResendVerificationDto, VerifyEmailCodeDto, ResendVerificationCodeDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/password-reset.dto';
 import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
-import { generateVerificationToken, generateTokenExpiry, isTokenExpired } from '../../common/helpers/token.helper';
+import { generateVerificationToken, generateTokenExpiry, isTokenExpired, generateSixDigitCode, generateCodeExpiry, isCodeExpired } from '../../common/helpers/token.helper';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
@@ -501,12 +501,15 @@ export class AuthService {
       logger.log('[CONFIG] Hashing password');
       const hashedPassword = await hashPassword(registerDto.password);
 
-      // Step 4: Generate email verification token
-      logger.log('[CONFIG] Generating email verification token');
-      const verificationToken = generateVerificationToken();
-      const verificationExpiry = generateTokenExpiry(24); // 24 hours
+      // Step 4: Generate email verification code (6-digit for mobile) and token (64-char for web fallback)
+      logger.log('[CONFIG] Generating email verification code and token');
+      const verificationCode = generateSixDigitCode(); // "123456"
+      const codeExpiry = generateCodeExpiry(10); // 10 minutes
+      const verificationToken = generateVerificationToken(); // 64-char hex
+      const tokenExpiry = generateTokenExpiry(24); // 24 hours
 
-      logger.log(`[INFO] Verification token generated, expires: ${verificationExpiry.toISOString()}`);
+      logger.log(`[INFO] Verification code generated (expires in 10 minutes): ${verificationCode}`);
+      logger.log(`[INFO] Verification token generated (expires: ${tokenExpiry.toISOString()})`);
 
       // Step 5: Try to create Clerk user (optional - won't fail registration if Clerk is down)
       let clerkId = `local_${generateVerificationToken().substring(0, 32)}`; // Generate local ID as fallback
@@ -549,8 +552,15 @@ export class AuthService {
           role: 'USER',
           isActive: true,
           emailVerified: false, // Not verified yet
+          // 6-digit code system (primary for mobile)
+          emailVerificationCode: verificationCode,
+          emailVerificationCodeExpiry: codeExpiry,
+          emailVerificationCodeUsed: false,
+          emailVerificationAttempts: 0,
+          emailVerificationCodeSentAt: new Date(),
+          // Token system (fallback for web)
           emailVerificationToken: verificationToken,
-          emailVerificationExpiry: verificationExpiry,
+          emailVerificationExpiry: tokenExpiry,
         },
       });
 
@@ -567,21 +577,19 @@ export class AuthService {
         }
       }
 
-      // Step 9: Send MASH verification email (primary method)
-      logger.log('[CONFIG] Sending verification email via Gmail SMTP');
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-      const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
+      // Step 9: Send MASH verification code email (primary method for mobile)
+      logger.log('[CONFIG] Sending 6-digit verification code via Gmail SMTP');
 
       try {
-        await this.emailService.sendVerificationEmail(
+        await this.emailService.sendVerificationCodeEmail(
           registerDto.email,
           registerDto.firstName,
-          verificationLink,
-          '24 hours',
+          verificationCode,
+          '10 minutes',
         );
-        logger.log('[SUCCESS] Verification email sent successfully');
+        logger.log('[SUCCESS] Verification code email sent successfully');
       } catch (emailError: unknown) {
-        logger.error('[ERROR] Failed to send verification email');
+        logger.error('[ERROR] Failed to send verification code email');
         const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
         logger.error(`[ERROR] Email error: ${errorMessage}`);
 
@@ -598,7 +606,7 @@ export class AuthService {
       logger.log('[SUCCESS] Registration process completed');
       return {
         success: true,
-        message: 'Registration successful! Please check your email to verify your account.',
+        message: 'Registration successful! A 6-digit verification code has been sent to your email.',
         user: {
           id: user.id,
           clerkId: user.clerkId,
@@ -613,10 +621,11 @@ export class AuthService {
         },
         verification: {
           sent: true,
-          expiresIn: '24 hours',
+          method: 'code', // 6-digit code is primary method
+          expiresIn: '10 minutes',
           email: user.email,
         },
-        nextStep: `Check your email (${user.email}) and click the verification link. Then call POST /auth/verify-email with the token.`,
+        nextStep: `Check your email (${user.email}) for a 6-digit verification code. Enter it in the app using POST /auth/verify-email-code.`,
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -692,53 +701,292 @@ export class AuthService {
   }
 
   /**
+   * Verify email with 6-digit code (PRIMARY METHOD for mobile apps)
+   * Security features:
+   * - Single-use codes
+   * - 10-minute expiry
+   * - Attempt tracking (max 5 attempts)
+   * - Account lockout after 5 failed attempts
+   * - Immediate login with JWT token
+   */
+  async verifyEmailWithCode(dto: VerifyEmailCodeDto) {
+    const logger = new Logger('AuthService.verifyEmailWithCode');
+    logger.log(`[STARTUP] Code verification attempt for email: ${dto.email}`);
+
+    try {
+      // Find user by email and code
+      const user = await this.prisma.user.findFirst({
+        where: {
+          email: dto.email,
+          emailVerificationCode: dto.code,
+          emailVerified: false,
+        },
+      });
+
+      if (!user) {
+        // Increment failed attempts for this email
+        await this.prisma.user.updateMany({
+          where: { email: dto.email, emailVerified: false },
+          data: {
+            emailVerificationAttempts: {
+              increment: 1,
+            },
+          },
+        });
+
+        logger.warn(`[WARN] Invalid verification code for email: ${dto.email}`);
+        throw new BadRequestException('Invalid verification code. Please check your email and try again.');
+      }
+
+      // Check if code already used
+      if (user.emailVerificationCodeUsed) {
+        logger.warn(`[WARN] Code already used for email: ${dto.email}`);
+        throw new BadRequestException('This verification code has already been used. Please request a new code.');
+      }
+
+      // Check if code expired
+      if (isCodeExpired(user.emailVerificationCodeExpiry)) {
+        logger.warn(`[WARN] Verification code expired for email: ${dto.email}`);
+        throw new BadRequestException('Verification code has expired. Please request a new code.');
+      }
+
+      // Check failed attempts (max 5)
+      if (user.emailVerificationAttempts >= 5) {
+        logger.warn(`[WARN] Too many verification attempts for email: ${dto.email}`);
+        throw new BadRequestException('Too many failed verification attempts. Please request a new code.');
+      }
+
+      // ✅ ALL CHECKS PASSED - Mark email as verified
+      logger.log(`[SUCCESS] Verification code valid, marking email as verified`);
+      
+      const verifiedUser = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          emailVerificationCode: null,
+          emailVerificationCodeExpiry: null,
+          emailVerificationCodeUsed: true,
+          emailVerificationAttempts: 0,
+          // Also clear old token system
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
+        },
+      });
+
+      // Update Clerk metadata (if applicable)
+      try {
+        await this.clerkService.updateUser(user.clerkId, {
+          publicMetadata: {
+            emailVerifiedLocally: true,
+            verifiedAt: new Date().toISOString(),
+            verificationMethod: 'code',
+          },
+        });
+        logger.log(`[SUCCESS] Clerk metadata updated`);
+      } catch (clerkError) {
+        logger.warn(`[WARN] Failed to update Clerk metadata (non-critical)`);
+      }
+
+      // Generate JWT token for immediate login
+      const token = this.jwtService.sign({
+        sub: verifiedUser.id,
+        email: verifiedUser.email,
+        role: verifiedUser.role,
+      });
+
+      logger.log(`[SUCCESS] Email verified successfully for: ${verifiedUser.email}`);
+      this.prometheusService.recordUserRegistration(); // Record successful verification
+
+      return {
+        success: true,
+        message: 'Email verified successfully! You are now logged in.',
+        token,
+        user: {
+          id: verifiedUser.id,
+          email: verifiedUser.email,
+          username: verifiedUser.username,
+          firstName: verifiedUser.firstName,
+          lastName: verifiedUser.lastName,
+          imageUrl: verifiedUser.imageUrl,
+          role: verifiedUser.role,
+          emailVerified: true,
+        },
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      logger.error(`[ERROR] Code verification failed: ${error.message}`);
+      throw new BadRequestException('Email verification failed. Please try again.');
+    }
+  }
+
+  /**
+   * Resend verification code (rate-limited to prevent spam)
+   * - 1-minute cooldown between requests
+   * - Resets failed attempt counter
+   * - Generates new 6-digit code
+   */
+  async resendVerificationCode(dto: ResendVerificationCodeDto) {
+    const logger = new Logger('AuthService.resendVerificationCode');
+    logger.log(`[STARTUP] Resend code request for email: ${dto.email}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists (security best practice)
+      logger.warn(`[WARN] Resend request for non-existent email: ${dto.email}`);
+      return {
+        success: true,
+        message: 'If an account exists with this email, a new verification code has been sent.',
+        expiresIn: '10 minutes',
+      };
+    }
+
+    // Check if already verified
+    if (user.emailVerified) {
+      logger.warn(`[WARN] Resend request for already verified email: ${dto.email}`);
+      throw new BadRequestException('Email is already verified. You can log in now.');
+    }
+
+    // Rate limiting: Check if 1 minute has passed since last code was sent
+    const timeSinceLastSent = user.emailVerificationCodeSentAt
+      ? Date.now() - user.emailVerificationCodeSentAt.getTime()
+      : Infinity;
+
+    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
+      const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
+      logger.warn(`[WARN] Rate limit hit for email: ${dto.email}, wait ${waitSeconds}s`);
+      throw new BadRequestException(
+        `Please wait ${waitSeconds} seconds before requesting a new code.`,
+      );
+    }
+
+    // Generate new verification code
+    const verificationCode = generateSixDigitCode();
+    const codeExpiry = generateCodeExpiry(10); // 10 minutes
+
+    logger.log(`[CONFIG] New verification code generated: ${verificationCode}`);
+
+    // Update user with new code and reset attempts
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationCode: verificationCode,
+        emailVerificationCodeExpiry: codeExpiry,
+        emailVerificationCodeUsed: false,
+        emailVerificationAttempts: 0, // Reset failed attempts
+        emailVerificationCodeSentAt: new Date(),
+      },
+    });
+
+    // Send new verification code via email
+    logger.log(`[CONFIG] Sending new verification code via email`);
+    
+    try {
+      await this.emailService.sendVerificationCodeEmail(
+        user.email,
+        user.firstName || 'User',
+        verificationCode,
+        '10 minutes',
+      );
+      
+      logger.log(`[SUCCESS] New verification code sent to: ${user.email}`);
+    } catch (emailError) {
+      logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
+      throw new InternalServerErrorException('Failed to send verification code. Please try again later.');
+    }
+
+    return {
+      success: true,
+      message: 'A new 6-digit verification code has been sent to your email.',
+      expiresIn: '10 minutes',
+      email: user.email,
+    };
+  }
+
+  /**
    * Resend verification email
    */
   async resendVerificationEmail(resendDto: ResendVerificationDto) {
+    const logger = new Logger('AuthService.resendVerificationEmail');
+    logger.log(`[STARTUP] Resend verification request for email: ${resendDto.email}`);
+
     const user = await this.prisma.user.findUnique({
       where: { email: resendDto.email },
     });
 
     if (!user) {
       // Don't reveal if user exists or not (security)
+      logger.warn(`[WARN] Resend request for non-existent email: ${resendDto.email}`);
       return {
         success: true,
-        message: 'If an account exists with this email, a verification email has been sent.',
+        message: 'If an account exists with this email, a verification code has been sent.',
+        expiresIn: '10 minutes',
       };
     }
 
     if (user.emailVerified) {
-      throw new BadRequestException('Email is already verified');
+      logger.warn(`[WARN] Resend request for already verified email: ${resendDto.email}`);
+      throw new BadRequestException('Email is already verified. You can log in now.');
     }
 
-    // Generate new token
-    const verificationToken = generateVerificationToken();
-    const verificationExpiry = generateTokenExpiry(24);
+    // Rate limiting: Check if 1 minute has passed since last code was sent
+    const timeSinceLastSent = user.emailVerificationCodeSentAt
+      ? Date.now() - user.emailVerificationCodeSentAt.getTime()
+      : Infinity;
 
-    // Update user with new token
+    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
+      const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
+      logger.warn(`[WARN] Rate limit hit for email: ${resendDto.email}, wait ${waitSeconds}s`);
+      throw new BadRequestException(
+        `Please wait ${waitSeconds} seconds before requesting a new code.`,
+      );
+    }
+
+    // Generate new 6-digit verification code (same as registration)
+    const verificationCode = generateSixDigitCode();
+    const codeExpiry = generateCodeExpiry(10); // 10 minutes
+
+    logger.log(`[CONFIG] New 6-digit verification code generated: ${verificationCode}`);
+
+    // Update user with new code and reset attempts
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        emailVerificationToken: verificationToken,
-        emailVerificationExpiry: verificationExpiry,
+        emailVerificationCode: verificationCode,
+        emailVerificationCodeExpiry: codeExpiry,
+        emailVerificationCodeUsed: false,
+        emailVerificationAttempts: 0, // Reset failed attempts
+        emailVerificationCodeSentAt: new Date(),
       },
     });
 
-    // Send new verification email
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-    await this.emailService.sendVerificationEmail(
-      user.email,
-      user.firstName,
-      verificationLink,
-      '24 hours',
-    );
-
-    this.logger.log(`✅ Verification email resent to: ${resendDto.email}`);
+    // Send verification code email (same as registration)
+    logger.log(`[CONFIG] Sending 6-digit verification code via email`);
+    
+    try {
+      await this.emailService.sendVerificationCodeEmail(
+        user.email,
+        user.firstName || 'User',
+        verificationCode,
+        '10 minutes',
+      );
+      
+      logger.log(`[SUCCESS] 6-digit verification code sent to: ${user.email}`);
+    } catch (emailError) {
+      logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
+      throw new InternalServerErrorException('Failed to send verification code. Please try again later.');
+    }
 
     return {
       success: true,
-      message: 'Verification email sent. Please check your inbox.',
+      message: 'A new 6-digit verification code has been sent to your email.',
+      expiresIn: '10 minutes',
       email: user.email,
+      nextStep: 'Enter the code using POST /auth/verify-email-code',
     };
   }
 
