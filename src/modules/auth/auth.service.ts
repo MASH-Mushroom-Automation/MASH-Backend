@@ -465,102 +465,169 @@ export class AuthService {
   // ==================== NEW AUTHENTICATION FLOW METHODS ====================
 
   /**
-   * Register a new user
+   * Register a new user with email verification
+   * Clerk integration is optional - system works with database-first registration
    */
   async register(registerDto: RegisterDto) {
+    const logger = new Logger('AuthService.register');
+    logger.log('[STARTUP] User registration process started');
+
     try {
-      const hashedPassword = await hashPassword(registerDto.password);
-      
-      // Register user in Clerk
-      const clerkUser = await this.clerkService.registerUser({
-        email: registerDto.email,
-        password: registerDto.password,
-        firstName: registerDto.firstName,
-        lastName: registerDto.lastName,
-        username: registerDto.username,
+      // Step 1: Check if email already exists
+      logger.log('[CONFIG] Checking for duplicate email');
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: registerDto.email },
       });
 
-      // Generate verification token for email verification
+      if (existingUser) {
+        logger.warn('[WARN] Registration failed - Email already exists');
+        throw new ConflictException('User with this email already exists');
+      }
+
+      // Step 2: Check if username already exists (if provided)
+      if (registerDto.username) {
+        logger.log('[CONFIG] Checking for duplicate username');
+        const existingUsername = await this.prisma.user.findUnique({
+          where: { username: registerDto.username },
+        });
+
+        if (existingUsername) {
+          logger.warn('[WARN] Registration failed - Username already taken');
+          throw new ConflictException('Username already taken');
+        }
+      }
+
+      // Step 3: Hash password
+      logger.log('[CONFIG] Hashing password');
+      const hashedPassword = await hashPassword(registerDto.password);
+
+      // Step 4: Generate email verification token
+      logger.log('[CONFIG] Generating email verification token');
       const verificationToken = generateVerificationToken();
       const verificationExpiry = generateTokenExpiry(24); // 24 hours
 
-      // Generate DiceBear avatar URL based on username or email
-      // Uses bottts-neutral style for consistent, professional avatars
+      logger.log(`[INFO] Verification token generated, expires: ${verificationExpiry.toISOString()}`);
+
+      // Step 5: Try to create Clerk user (optional - won't fail registration if Clerk is down)
+      let clerkId = `local_${generateVerificationToken().substring(0, 32)}`; // Generate local ID as fallback
+      let clerkUser: any = null;
+
+      try {
+        logger.log('[CONFIG] Attempting Clerk user creation');
+        clerkUser = await this.clerkService.registerUser({
+          email: registerDto.email,
+          password: registerDto.password,
+          firstName: registerDto.firstName,
+          lastName: registerDto.lastName,
+          username: registerDto.username,
+        });
+        clerkId = clerkUser.id;
+        logger.log('[SUCCESS] Clerk user created successfully');
+      } catch (clerkError: unknown) {
+        // Clerk is optional - log warning but continue with local registration
+        logger.warn('[WARN] Clerk user creation failed, using local auth only');
+        const errorMessage = clerkError instanceof Error ? clerkError.message : 'Unknown error';
+        logger.warn(`[WARN] Clerk error: ${errorMessage}`);
+        // Continue with registration using local clerkId
+      }
+
+      // Step 6: Generate DiceBear avatar URL
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
       const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
-      // Create user in local database with generated avatar and verification token
+      // Step 7: Create user in database
+      logger.log('[CONFIG] Creating user in database');
       const user = await this.prisma.user.create({
         data: {
-          clerkId: clerkUser.id,
+          clerkId: clerkId,
           email: registerDto.email,
           username: registerDto.username || null,
           firstName: registerDto.firstName,
           lastName: registerDto.lastName,
           password: hashedPassword,
-          imageUrl: diceBearAvatarUrl, // Use DiceBear avatar instead of Clerk's
-          role: 'USER', // Default role
-          emailVerified: false, // Email not verified yet
+          imageUrl: diceBearAvatarUrl,
+          role: 'USER',
+          isActive: true,
+          emailVerified: false, // Not verified yet
           emailVerificationToken: verificationToken,
           emailVerificationExpiry: verificationExpiry,
         },
       });
 
+      logger.log(`[SUCCESS] User created in database: ${user.id}`);
       this.prometheusService.recordUserRegistration();
 
-      this.logger.log(
-        `✅ User registered: ${registerDto.email} with DiceBear avatar: ${diceBearAvatarUrl}`,
-      );
+      // Step 8: Send Clerk verification email (optional)
+      if (clerkUser) {
+        try {
+          await this.clerkService.sendEmailVerification(registerDto.email);
+          logger.log('[SUCCESS] Clerk verification email sent');
+        } catch (clerkEmailError) {
+          logger.warn('[WARN] Clerk email verification failed, using MASH email only');
+        }
+      }
 
-      // Send Clerk verification email (primary verification)
-      await this.clerkService.sendEmailVerification(registerDto.email);
+      // Step 9: Send MASH verification email (primary method)
+      logger.log('[CONFIG] Sending verification email via Gmail SMTP');
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
-      // Send MASH-branded verification email with token (non-blocking)
-      // This provides a better user experience with our custom branding
       try {
-        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         await this.emailService.sendVerificationEmail(
           registerDto.email,
           registerDto.firstName,
           verificationLink,
           '24 hours',
         );
-        this.logger.log(`✅ MASH verification email sent successfully to: ${registerDto.email}`);
+        logger.log('[SUCCESS] Verification email sent successfully');
       } catch (emailError: unknown) {
-        // Don't fail registration if custom email fails
-        this.logger.error(
-          `❌ CRITICAL: Failed to send MASH verification email to ${registerDto.email}`,
-        );
+        logger.error('[ERROR] Failed to send verification email');
         const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
-        this.logger.error(`Error details: ${errorMessage}`);
-        if (
-          errorMessage.includes('Missing credentials') ||
-          errorMessage.includes('Invalid login')
-        ) {
-          this.logger.error('🔧 FIX: Add EMAIL_* environment variables to Railway dashboard');
-          this.logger.error(
-            '📋 Required: EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM',
-          );
-        }
+        logger.error(`[ERROR] Email error: ${errorMessage}`);
+
+        // Rollback user creation if email fails (user won't be able to verify)
+        await this.prisma.user.delete({ where: { id: user.id } });
+        logger.error('[ERROR] User creation rolled back due to email failure');
+
+        throw new InternalServerErrorException(
+          'Failed to send verification email. Please try again later.',
+        );
       }
 
+      // Step 10: Return success response
+      logger.log('[SUCCESS] Registration process completed');
       return {
         success: true,
         message: 'Registration successful! Please check your email to verify your account.',
-        userId: user.id,
-        clerkId: clerkUser.id,
-        email: registerDto.email,
-        username: registerDto.username || null,
-        avatarUrl: diceBearAvatarUrl, // DiceBear avatar URL
-        emailVerified: false,
-        verificationSent: true,
+        user: {
+          id: user.id,
+          clerkId: user.clerkId,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          imageUrl: user.imageUrl,
+          emailVerified: false,
+          role: user.role,
+          createdAt: user.createdAt,
+        },
+        verification: {
+          sent: true,
+          expiresIn: '24 hours',
+          email: user.email,
+        },
+        nextStep: `Check your email (${user.email}) and click the verification link. Then call POST /auth/verify-email with the token.`,
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Registration failed for ${registerDto.email}: ${errorMessage}`);
-      if (errorMessage.includes('already exists')) {
-        throw new ConflictException('User with this email already exists');
+      logger.error(`[ERROR] Registration failed for ${registerDto.email}: ${errorMessage}`);
+
+      // Re-throw known errors
+      if (error instanceof ConflictException || error instanceof InternalServerErrorException) {
+        throw error;
       }
+
+      // Handle any other errors
       throw new InternalServerErrorException('Registration failed. Please try again.');
     }
   }
