@@ -62,6 +62,8 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     '/api/v1/metrics',
     '/api/v1/auth/login',
     '/api/v1/auth/register',
+    '/api/v1/auth/verify-email-code', // 6-digit email verification (public endpoint)
+    '/api/v1/auth/resend-verification-code', // Resend 6-digit code (public endpoint)
     '/api/v1/auth/forgot-password',
     '/api/v1/webhook', // Webhook endpoints (use signature verification instead)
   ];
