@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - MASH</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; color: #333333; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; }
+        .logo { font-size: 36px; font-weight: bold; color: #ffffff; margin: 0; }
+        .welcome-icon { font-size: 48px; margin-bottom: 10px; }
+        .content { padding: 40px 30px; }
+        .greeting { font-size: 24px; font-weight: 600; color: #333333; margin: 0 0 20px 0; }
+        .message { font-size: 16px; line-height: 1.6; color: #555555; margin: 0 0 30px 0; }
+        .code-box { background-color: #f8f9fa; border: 2px dashed #667eea; padding: 30px; margin: 20px 0; text-align: center; border-radius: 8px; }
+        .code-text { font-size: 48px; font-weight: bold; color: #667eea; letter-spacing: 12px; font-family: 'Courier New', monospace; }
+        .info-box { background-color: #d1ecf1; border-left: 4px solid #0c5460; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .warning-box { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .footer { background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0; }
+        .footer-text { font-size: 14px; color: #888888; margin: 5px 0; }
+        .footer-links { margin: 20px 0; }
+        .footer-link { color: #667eea; text-decoration: none; margin: 0 10px; font-size: 14px; }
+        .divider { height: 1px; background-color: #e0e0e0; margin: 30px 0; }
+        @media only screen and (max-width: 600px) {
+            .content { padding: 30px 20px; }
+            .header { padding: 30px 20px; }
+            .greeting { font-size: 20px; }
+            .code-text { font-size: 36px; letter-spacing: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="welcome-icon">🎉</div>
+            <h1 class="logo">MASH</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px;">Email Verification</p>
+        </div>
+
+        <div class="content">
+            <h2 class="greeting">Welcome, {{firstName}}!</h2>
+            
+            <p class="message">
+                Thank you for registering with <strong>MASH - Mushroom Automation Smart Home</strong>! 
+                You're just one step away from accessing your account.
+            </p>
+
+            <p class="message">
+                Please verify your email address by entering the 6-digit code below in your mobile app:
+            </p>
+
+            <div class="code-box">
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: 600;">YOUR VERIFICATION CODE</p>
+                <div class="code-text">{{code}}</div>
+                <p style="margin: 15px 0 0 0; font-size: 12px; color: #888888;">
+                    ⏰ This code expires in {{expiresIn}}
+                </p>
+            </div>
+
+            <div class="info-box">
+                <p style="margin: 0 0 10px 0;"><strong>📱 How to Verify Your Email</strong></p>
+                <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #0c5460; line-height: 1.8;">
+                    <li>Return to the MASH mobile app</li>
+                    <li>Navigate to the email verification screen</li>
+                    <li>Enter the 6-digit code shown above</li>
+                    <li>Tap "Verify Code" to complete registration</li>
+                </ol>
+                <p style="margin: 15px 0 0 0; font-size: 13px; color: #0c5460;">
+                    💡 <strong>Tip:</strong> You can copy the code by tapping on it, then paste it in the app!
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <p style="margin: 0 0 10px 0;"><strong>⚠️ Important Security Notice</strong></p>
+                <p style="margin: 0; font-size: 14px; color: #856404; line-height: 1.6;">
+                    This verification code is valid for <strong>{{expiresIn}} only</strong>. 
+                    After that, you'll need to request a new code. Never share this code with anyone—MASH staff will never ask for it.
+                </p>
+            </div>
+
+            <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0 0 10px 0;"><strong>🆘 Need Help?</strong></p>
+                <p style="margin: 0; font-size: 14px; color: #0d47a1; line-height: 1.6;">
+                    <strong>Code not working?</strong> Make sure you entered all 6 digits correctly.<br>
+                    <strong>Code expired?</strong> Tap "Resend Code" in the app to get a new one.<br>
+                    <strong>Still having issues?</strong> Contact us at <strong>{{supportEmail}}</strong>
+                </p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0 0 10px 0;"><strong>🚨 Didn't Create an Account?</strong></p>
+                <p style="margin: 0; font-size: 14px; color: #721c24; line-height: 1.6;">
+                    If you didn't sign up for a MASH account, someone may have used your email address by mistake. 
+                    You can safely ignore this email—the account won't be activated without the verification code. 
+                    If you're concerned, please contact us immediately at <strong>{{supportEmail}}</strong>.
+                </p>
+            </div>
+
+            <p class="message" style="margin-top: 40px;">
+                We're excited to have you on board! 🚀<br>
+                <strong>The MASH Team</strong>
+            </p>
+        </div>
+
+        <div class="footer">
+            <div class="footer-links">
+                <a href="{{appUrl}}" class="footer-link">Home</a>
+                <a href="{{appUrl}}/support" class="footer-link">Support</a>
+                <a href="{{appUrl}}/privacy" class="footer-link">Privacy</a>
+                <a href="{{appUrl}}/terms" class="footer-link">Terms</a>
+            </div>
+            
+            <div class="divider"></div>
+
+            <p class="footer-text">© {{year}} MASH. All rights reserved.</p>
+            <p class="footer-text">Mushroom Automation Smart Home System</p>
+            <p class="footer-text" style="margin-top: 15px; font-size: 12px;">
+                📧 This is an automated email. Please do not reply directly to this message.
+            </p>
+            <p class="footer-text" style="font-size: 12px; color: #aaaaaa;">
+                If you didn't request this email, you can safely ignore it.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

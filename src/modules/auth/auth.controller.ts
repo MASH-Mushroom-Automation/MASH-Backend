@@ -26,7 +26,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
-import { VerifyEmailDto, ResendVerificationDto } from './dto/verify-email.dto';
+import { VerifyEmailDto, ResendVerificationDto, VerifyEmailCodeDto, ResendVerificationCodeDto } from './dto/verify-email.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { OAuthCallbackDto, OAuthInitiateDto } from './dto/oauth.dto';
@@ -504,6 +504,284 @@ This endpoint doesn't reveal whether an email exists in the system. It always re
   })
   async resendVerification(@Body() resendDto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(resendDto);
+  }
+
+  /**
+   * ✅ VERIFY EMAIL WITH 6-DIGIT CODE (PRIMARY METHOD)
+   * =================================================
+   * Mobile-friendly email verification using 6-digit numeric code.
+   * This is the RECOMMENDED method for mobile apps.
+   * 
+   * Why 6-Digit Code?
+   * - ✅ Easy to type on mobile keyboard
+   * - ✅ User stays in app (no deep linking required)
+   * - ✅ Familiar UX (like OTP systems)
+   * - ✅ Short expiry (10 minutes) for better security
+   * - ✅ Immediate login with JWT token
+   * 
+   * Security Features:
+   * - Single-use codes (cannot reuse same code)
+   * - 10-minute expiration (vs 24h for tokens)
+   * - Attempt tracking (max 5 attempts before lockout)
+   * - Rate limited: 5 verification attempts per minute
+   */
+  @Post('verify-email-code')
+  @Public()
+  @Throttle({ short: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '✅ Verify email with 6-digit code (Mobile-Friendly)',
+    description: `
+**Verify user email with 6-digit verification code**
+
+This is the PRIMARY email verification method for mobile applications. 
+Users receive a 6-digit code in their email and enter it directly in the app.
+
+### Advantages Over Token-Based Verification:
+- 📱 Mobile-optimized: Easy to type on mobile keyboard
+- 🎯 User stays in app (no deep linking required)
+- ⚡ Faster: ~30 seconds vs 1-2 minutes with tokens
+- 🔒 More secure: 10-minute expiry vs 24-hour tokens
+- 💡 Familiar UX: Like banking apps and 2FA systems
+
+### Required Before:
+- ✅ User must have registered (POST /auth/register)
+- ✅ User must have received verification code via email
+- ✅ Code must not be expired (10-minute validity)
+- ✅ Code must not have been used already
+
+### Request Requirements:
+- Email: Valid registered email address
+- Code: Exactly 6 numeric digits (e.g., "123456")
+- Code must match the one sent to email
+- Maximum 5 failed attempts allowed
+
+### Process Flow:
+1. **Code Validation**: Finds user by email + code
+2. **Security Checks**:
+   - Code not already used (single-use enforcement)
+   - Code not expired (10-minute window)
+   - Failed attempts < 5 (prevents brute force)
+3. **Account Activation**:
+   - Sets emailVerified = true
+   - Clears all verification codes
+   - Resets failed attempt counter
+4. **Immediate Login**: Generates JWT token for instant access
+5. **Response**: Returns token + user data
+
+### Important Notes:
+- 🔒 Codes are single-use only (deleted after verification)
+- ⏱️ Codes expire after 10 minutes
+- 🚫 Locked after 5 failed attempts (request new code)
+- 🔄 Use POST /auth/resend-verification-code if code expired
+- ✅ Returns JWT token for immediate login (no separate login needed)
+
+### Error Scenarios:
+- **Invalid code**: Wrong digits entered → Increments attempt counter
+- **Code used**: Already verified → Request new code
+- **Code expired**: Older than 10 minutes → Request new code
+- **Too many attempts**: 5+ failures → Request new code (resets counter)
+- **User not found**: Email doesn't exist or already verified
+`,
+  })
+  @ApiBody({
+    type: VerifyEmailCodeDto,
+    description: '6-digit verification code from email',
+    examples: {
+      validCode: {
+        summary: 'Valid Verification Code',
+        value: {
+          email: 'user@example.com',
+          code: '123456',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '✅ Email verified successfully - Returns JWT token for immediate login',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Email verified successfully! You are now logged in.' },
+        token: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT token for immediate API access',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'cm3h88u5s0001vxqlx01j0002' },
+            email: { type: 'string', example: 'user@example.com' },
+            username: { type: 'string', example: 'john_doe', nullable: true },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
+            imageUrl: { type: 'string', example: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=john_doe' },
+            role: { type: 'string', example: 'USER' },
+            emailVerified: { type: 'boolean', example: true },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '❌ Bad Request - Various error scenarios',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
+          type: 'string',
+          examples: [
+            'Invalid verification code. Please check your email and try again.',
+            'This verification code has already been used. Please request a new code.',
+            'Verification code has expired. Please request a new code.',
+            'Too many failed verification attempts. Please request a new code.',
+          ],
+        },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 429,
+    description: '⏱️ Too Many Requests - Rate limit exceeded (5 attempts per minute)',
+  })
+  async verifyEmailCode(@Body() dto: VerifyEmailCodeDto) {
+    return this.authService.verifyEmailWithCode(dto);
+  }
+
+  /**
+   * 🔄 RESEND 6-DIGIT VERIFICATION CODE
+   * ====================================
+   * Request a new 6-digit verification code if previous one expired or failed.
+   * 
+   * Rate Limiting:
+   * - 3 requests per minute (prevents spam)
+   * - 1-minute cooldown between code requests (enforced server-side)
+   * 
+   * What Happens:
+   * - Generates new 6-digit code
+   * - Resets failed attempt counter
+   * - Sends new verification email
+   * - Updates last-sent timestamp
+   */
+  @Post('resend-verification-code')
+  @Public()
+  @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '🔄 Resend 6-digit verification code',
+    description: `
+**Request new 6-digit verification code**
+
+This endpoint generates a new verification code and sends it to the user's email.
+
+### When to Use:
+- ⏱️ Original code expired (after 10 minutes)
+- ❌ Too many failed verification attempts (5+)
+- 📧 User didn't receive the email
+- 🗑️ User accidentally deleted the email
+- 🔄 User needs a fresh code
+
+### Request Requirements:
+- Email must be registered (but not verified)
+- User cannot be already verified
+- Must respect 1-minute cooldown between requests
+- Must not exceed rate limit (3 requests per minute)
+
+### Process Flow:
+1. **User Lookup**: Finds user by email address
+2. **Status Check**: Verifies user is not already verified
+3. **Cooldown Check**: Ensures 1 minute passed since last code sent
+4. **Code Generation**: Creates new 6-digit code
+5. **Attempt Reset**: Resets failed verification attempts to 0
+6. **Email Delivery**: Sends new verification code
+7. **Response**: Returns success with expiry time
+
+### Important Notes:
+- 🔒 Old code is replaced (previous code becomes invalid)
+- ⏱️ New code expires in 10 minutes from generation
+- 🚫 Rate limited: 3 requests per minute
+- 🕐 Cooldown: 1 minute between requests
+- 🔄 Resets failed attempt counter (fresh start)
+
+### Rate Limiting:
+- **Endpoint-level**: 3 requests per minute (NestJS throttler)
+- **Server-side**: 1-minute cooldown between code generations
+- **Purpose**: Prevents spam and abuse
+
+### Error Scenarios:
+- **Already verified**: User completed verification → Can login
+- **Too soon**: Less than 1 minute since last code → Wait X seconds
+- **Rate limit**: Too many requests → Wait and try again
+- **User not found**: Email doesn't exist (doesn't reveal this for security)
+`,
+  })
+  @ApiBody({
+    type: ResendVerificationCodeDto,
+    description: 'User email address to resend code to',
+    examples: {
+      resendRequest: {
+        summary: 'Resend Code Request',
+        value: {
+          email: 'user@example.com',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '✅ New verification code sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'A new 6-digit verification code has been sent to your email.' },
+        expiresIn: { type: 'string', example: '10 minutes' },
+        email: { type: 'string', example: 'user@example.com' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '❌ Bad Request - Various error scenarios',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
+          type: 'string',
+          examples: [
+            'Email is already verified. You can log in now.',
+            'Please wait 45 seconds before requesting a new code.',
+          ],
+        },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 429,
+    description: '⏱️ Too Many Requests - Rate limit exceeded (3 per minute)',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '❌ Internal Server Error - Failed to send email',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Failed to send verification code. Please try again later.' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async resendVerificationCode(@Body() dto: ResendVerificationCodeDto) {
+    return this.authService.resendVerificationCode(dto);
   }
 
   /**

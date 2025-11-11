@@ -11,6 +11,7 @@ export interface EmailTemplateVariables {
 
 export enum EmailTemplateType {
   VERIFICATION = 'verification',
+  VERIFICATION_CODE = 'verification-code', // NEW: 6-digit code verification
   FORGOT_PASSWORD = 'forgot-password',
   PASSWORD_CHANGED = 'password-changed',
   RESEND_VERIFICATION = 'resend-verification',
@@ -166,6 +167,7 @@ export class EmailTemplateService {
   private getSubject(templateType: EmailTemplateType, variables: EmailTemplateVariables): string {
     const subjects: Record<EmailTemplateType, string> = {
       [EmailTemplateType.VERIFICATION]: 'Verify Your Email - Welcome to MASH! 🍄',
+      [EmailTemplateType.VERIFICATION_CODE]: 'Verify Your Email - MASH 🍄', // NEW: 6-digit code subject
       [EmailTemplateType.FORGOT_PASSWORD]: 'Reset Your Password - MASH',
       [EmailTemplateType.PASSWORD_CHANGED]: 'Your Password Has Been Changed - MASH',
       [EmailTemplateType.RESEND_VERIFICATION]: 'Verify Your Email - Action Required',

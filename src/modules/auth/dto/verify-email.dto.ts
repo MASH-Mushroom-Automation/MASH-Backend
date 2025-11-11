@@ -53,3 +53,9 @@ export class ResendVerificationCodeDto {
   email: string;
 }
 
+/**
+ * DTO for resending verification email (legacy token-based system)
+ * Alias for backward compatibility
+ */
+export class ResendVerificationDto extends ResendVerificationCodeDto {}
+
