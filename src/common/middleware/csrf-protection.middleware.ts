@@ -78,6 +78,12 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
       return next();
     }
 
+    // Skip CSRF for IoT device requests
+    if (this.isIoTDeviceRequest(req)) {
+      this.logger.debug(`Skipping CSRF for IoT device request: ${req.method} ${req.path} from ${req.ip}`);
+      return next();
+    }
+
     // Skip CSRF for API key authenticated requests
     if (req.headers['x-api-key']) {
       this.logger.debug(`Skipping CSRF for API key authenticated request: ${req.path}`);
@@ -223,6 +229,22 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
    */
   private isExcludedPath(path: string): boolean {
     return this.excludedPaths.some(excluded => path.startsWith(excluded));
+  }
+
+  /**
+   * Check if request is from an IoT device
+   * IoT devices are identified by their User-Agent header
+   */
+  private isIoTDeviceRequest(req: Request): boolean {
+    const userAgent = req.headers['user-agent'];
+    
+    if (!userAgent) {
+      return false;
+    }
+
+    // Check for MASH IoT device User-Agent pattern
+    // Format: MASH-IoT-Device/DEVICE_SERIAL_NUMBER
+    return typeof userAgent === 'string' && userAgent.includes('MASH-IoT-Device');
   }
 }
 
