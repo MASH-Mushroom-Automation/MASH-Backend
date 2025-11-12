@@ -1060,7 +1060,7 @@ export class AuthService {
     logger.log(`[CONFIG] Sending password reset code via email`);
     
     try {
-      await this.emailService.sendForgotPasswordEmail(
+      await this.emailService.sendPasswordResetCodeEmail(
         user.email,
         user.firstName || 'User',
         resetCode,
