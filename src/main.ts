@@ -4,7 +4,7 @@
 
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from '@nestjs/common';
+import { Logger, RequestMethod } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
@@ -125,7 +125,17 @@ async function bootstrap() {
 
   // API prefix - exclude auth HTML pages and metrics endpoint from the prefix
   app.setGlobalPrefix('api/v1', {
-    exclude: ['/', '/register', '/verify', '/forgot-password', '/reset-password', '/dashboard', '/metrics(.*)'],
+    exclude: [
+      '/', 
+      '/register', 
+      '/verify', 
+      '/forgot-password', 
+      '/reset-password', 
+      '/dashboard', 
+      { path: '/metrics', method: RequestMethod.ALL },
+      { path: '/metrics/json', method: RequestMethod.ALL },
+      { path: '/metrics/health', method: RequestMethod.ALL },
+    ],
   });
 
   // Swagger/OpenAPI Documentation - Clean and Simple Configuration
