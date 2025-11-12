@@ -86,17 +86,20 @@ export class ElasticsearchService implements OnModuleInit {
       const exists = await this.client.indices.exists({ index });
 
       if (!exists) {
-        const indexConfig: any = {
-          index,
-          mappings: mapping,
-        };
+        const body: any = {};
 
         // Add settings if provided (includes analyzers)
         if (settings) {
-          indexConfig.settings = settings;
+          body.settings = settings;
         }
 
-        await this.client.indices.create(indexConfig);
+        // Add mappings
+        body.mappings = mapping;
+
+        await this.client.indices.create({
+          index,
+          body,
+        });
         this.logger.log(`✅ Created index: ${index}`);
       } else {
         this.logger.log(`ℹ️ Index already exists: ${index}`);
