@@ -100,8 +100,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy public folder for static assets (email templates, images, etc.)
 COPY --from=builder /app/public ./public
 
-# Copy scripts folder (if it exists)
-COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
+# Copy scripts folder (if it exists and is not empty)
+# Note: Commented out because scripts folder is currently empty and Docker doesn't copy empty directories
+# COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs /app/uploads/exports /app/uploads/temp && \
