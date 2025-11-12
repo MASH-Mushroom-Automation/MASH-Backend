@@ -13,6 +13,8 @@ export enum EmailTemplateType {
   VERIFICATION = 'verification',
   VERIFICATION_CODE = 'verification-code', // NEW: 6-digit code verification
   FORGOT_PASSWORD = 'forgot-password',
+  PASSWORD_RESET_CODE = 'password-reset-code', // NEW: 6-digit password reset code
+  PASSWORD_RESET_CONFIRMATION = 'password-reset-confirmation', // NEW: Password reset confirmation
   PASSWORD_CHANGED = 'password-changed',
   RESEND_VERIFICATION = 'resend-verification',
   ACCOUNT_LOCKED = 'account-locked',
@@ -110,7 +112,7 @@ export class EmailTemplateService {
     if (!variables.appUrl) {
       result = result.replace(
         /{{appUrl}}/g,
-        process.env.APP_URL || 'https://mash-backend-api.up.railway.app',
+        process.env.APP_URL || 'https://mash-backend-api-production.up.railway.app',
       );
     }
 
@@ -169,6 +171,8 @@ export class EmailTemplateService {
       [EmailTemplateType.VERIFICATION]: 'Verify Your Email - Welcome to MASH! 🍄',
       [EmailTemplateType.VERIFICATION_CODE]: 'Verify Your Email - MASH 🍄', // NEW: 6-digit code subject
       [EmailTemplateType.FORGOT_PASSWORD]: 'Reset Your Password - MASH',
+      [EmailTemplateType.PASSWORD_RESET_CODE]: 'Reset Your Password - MASH 🔐', // NEW: 6-digit password reset
+      [EmailTemplateType.PASSWORD_RESET_CONFIRMATION]: 'Password Reset Successful - MASH ✅', // NEW: Reset confirmation
       [EmailTemplateType.PASSWORD_CHANGED]: 'Your Password Has Been Changed - MASH',
       [EmailTemplateType.RESEND_VERIFICATION]: 'Verify Your Email - Action Required',
       [EmailTemplateType.ACCOUNT_LOCKED]: 'Account Security Alert - MASH',
