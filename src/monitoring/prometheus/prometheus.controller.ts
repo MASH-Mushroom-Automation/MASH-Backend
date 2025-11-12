@@ -15,11 +15,11 @@
 import { Controller, Get, Post, HttpCode, HttpStatus, Headers } from '@nestjs/common';
 import { PrometheusService } from './prometheus.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('metrics')
 @Controller('metrics')
-@ThrottleEndpoint('CHEAP') // Metrics scraping is frequent - 1000 req/min
+@SkipThrottle() // Skip rate limiting entirely - Prometheus scrapes every 5-15 seconds, no DB queries needed
 export class PrometheusController {
   constructor(private readonly prometheusService: PrometheusService) {}
 

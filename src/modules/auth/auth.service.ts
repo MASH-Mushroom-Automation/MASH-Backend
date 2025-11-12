@@ -9,23 +9,22 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { Cacheable } from '../../common/decorators/cache.decorator';
 import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
-import { OAuthService } from '../oauth/oauth.service';
-import { OAuthUserData } from '../oauth/interfaces/oauth-user.interface';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RegisterDto } from './dto/register.dto';
-import { VerifyEmailDto, ResendVerificationDto, VerifyEmailCodeDto, ResendVerificationCodeDto } from './dto/verify-email.dto';
-import { ResetPasswordDto, VerifyResetCodeDto, ResendPasswordResetCodeDto } from './dto/password-reset.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResetPasswordDto } from './dto/password-reset.dto';
 import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
-import { generateVerificationToken, generateTokenExpiry, isTokenExpired, generateSixDigitCode, generateCodeExpiry, isCodeExpired } from '../../common/helpers/token.helper';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
+import * as crypto from 'crypto';
 
 // Interfaces for type safety
 interface ClerkUserData {
@@ -64,7 +63,7 @@ export class AuthService {
     private readonly clerkService: ClerkService,
     private readonly emailService: EmailService,
     private readonly prometheusService: PrometheusService,
-    private readonly oauthService: OAuthService,
+    private readonly configService: ConfigService,
   ) {}
 
   async handleClerkWebhook(payload: ClerkWebhookDto) {
@@ -278,13 +277,6 @@ export class AuthService {
               throw new UnauthorizedException('Invalid credentials');
             }
 
-            // Check if email is verified
-            if (!user.emailVerified) {
-              throw new UnauthorizedException(
-                'Please verify your email address before logging in. Check your inbox for the verification link.'
-              );
-            }
-
             const isPasswordMatching = await comparePassword(pass, user.password);
             if (!isPasswordMatching) {
               throw new UnauthorizedException('Invalid credentials');
@@ -333,13 +325,6 @@ export class AuthService {
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user) {
           throw new UnauthorizedException('Invalid credentials');
-        }
-
-        // Check if email is verified
-        if (!user.emailVerified) {
-          throw new UnauthorizedException(
-            'Please verify your email address before logging in. Check your inbox for the verification link.'
-          );
         }
 
         const isPasswordMatching = await comparePassword(pass, user.password);
@@ -468,807 +453,184 @@ export class AuthService {
   // ==================== NEW AUTHENTICATION FLOW METHODS ====================
 
   /**
-   * Register a new user with email verification
-   * Clerk integration is optional - system works with database-first registration
+   * Register a new user
    */
   async register(registerDto: RegisterDto) {
-    const logger = new Logger('AuthService.register');
-    logger.log('[STARTUP] User registration process started');
-
     try {
-      // Step 1: Check if email already exists
-      logger.log('[CONFIG] Checking for duplicate email');
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: registerDto.email },
+      const hashedPassword = await hashPassword(registerDto.password);
+      // Register user in Clerk
+      const clerkUser = await this.clerkService.registerUser({
+        email: registerDto.email,
+        password: registerDto.password,
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        username: registerDto.username,
       });
 
-      if (existingUser) {
-        logger.warn('[WARN] Registration failed - Email already exists');
-        throw new ConflictException('User with this email already exists');
-      }
-
-      // Step 2: Check if username already exists (if provided)
-      if (registerDto.username) {
-        logger.log('[CONFIG] Checking for duplicate username');
-        const existingUsername = await this.prisma.user.findUnique({
-          where: { username: registerDto.username },
-        });
-
-        if (existingUsername) {
-          logger.warn('[WARN] Registration failed - Username already taken');
-          throw new ConflictException('Username already taken');
-        }
-      }
-
-      // Step 3: Hash password
-      logger.log('[CONFIG] Hashing password');
-      const hashedPassword = await hashPassword(registerDto.password);
-
-      // Step 4: Generate email verification code (6-digit for mobile) and token (64-char for web fallback)
-      logger.log('[CONFIG] Generating email verification code and token');
-      const verificationCode = generateSixDigitCode(); // "123456"
-      const codeExpiry = generateCodeExpiry(10); // 10 minutes
-      const verificationToken = generateVerificationToken(); // 64-char hex
-      const tokenExpiry = generateTokenExpiry(24); // 24 hours
-
-      logger.log(`[INFO] Verification code generated (expires in 10 minutes): ${verificationCode}`);
-      logger.log(`[INFO] Verification token generated (expires: ${tokenExpiry.toISOString()})`);
-
-      // Step 5: Try to create Clerk user (optional - won't fail registration if Clerk is down)
-      let clerkId = `local_${generateVerificationToken().substring(0, 32)}`; // Generate local ID as fallback
-      let clerkUser: any = null;
-      let clerkUsername = registerDto.username;
-
-      try {
-        logger.log('[CONFIG] Attempting Clerk user creation');
-        clerkUser = await this.clerkService.registerUser({
-          email: registerDto.email,
-          password: registerDto.password,
-          firstName: registerDto.firstName,
-          lastName: registerDto.lastName,
-          username: registerDto.username,
-        });
-        clerkId = clerkUser.id;
-        logger.log('[SUCCESS] Clerk user created successfully');
-      } catch (clerkError: any) {
-        // Clerk is optional - log warning but continue with local registration
-        logger.warn('[WARN] Clerk user creation failed, using local auth only');
-        const errorMessage = clerkError instanceof Error ? clerkError.message : 'Unknown error';
-        logger.warn(`[WARN] Clerk error: ${errorMessage}`);
-        
-        // If Clerk username is taken, generate a unique username for local database
-        if (clerkError?.errors?.[0]?.code === 'form_identifier_exists' && clerkError?.errors?.[0]?.meta?.paramName === 'username') {
-          // Generate unique username by appending random suffix
-          const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-          clerkUsername = `${registerDto.username}_${randomSuffix}`;
-          logger.warn(`[WARN] Clerk username taken, using local username: ${clerkUsername}`);
-        }
-        
-        // Continue with registration using local clerkId
-      }
-
-      // Step 6: Generate DiceBear avatar URL
+      // Generate DiceBear avatar URL based on username or email
+      // Uses bottts-neutral style for consistent, professional avatars
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
       const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
-      // Step 7: Create user in database (with timeout handling)
-      logger.log('[CONFIG] Creating user in database');
-      let user;
-      
-      try {
-        // Set timeout for database operation (10 seconds max)
-        const createUserPromise = this.prisma.user.create({
-          data: {
-            clerkId: clerkId,
-            email: registerDto.email,
-            username: clerkUsername || null,
-            firstName: registerDto.firstName,
-            lastName: registerDto.lastName,
-            password: hashedPassword,
-            imageUrl: diceBearAvatarUrl,
-            role: 'USER',
-            isActive: true,
-            emailVerified: false, // Not verified yet
-            // 6-digit code system (primary for mobile)
-            emailVerificationCode: verificationCode,
-            emailVerificationCodeExpiry: codeExpiry,
-            emailVerificationCodeUsed: false,
-            emailVerificationAttempts: 0,
-            emailVerificationCodeSentAt: new Date(),
-            // Token system (fallback for web)
-            emailVerificationToken: verificationToken,
-            emailVerificationExpiry: tokenExpiry,
-          },
-        });
-        
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Database operation timeout (10s)')), 10000)
-        );
-        
-        user = await Promise.race([createUserPromise, timeoutPromise]);
-        logger.log(`[SUCCESS] User created in database: ${user.id}`);
-      } catch (dbError: any) {
-        logger.error(`[ERROR] Database user creation failed: ${dbError.message}`);
-        throw new InternalServerErrorException(
-          'Database is currently unavailable. Please try again in a few minutes.'
-        );
-      }
+      // Create user in local database with generated avatar
+      await this.prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email: registerDto.email,
+          username: registerDto.username || null,
+          firstName: registerDto.firstName,
+          lastName: registerDto.lastName,
+          password: hashedPassword,
+          imageUrl: diceBearAvatarUrl, // Use DiceBear avatar instead of Clerk's
+          role: 'USER', // Default role
+        },
+      });
+
       this.prometheusService.recordUserRegistration();
 
-      // Step 8: Send Clerk verification email (optional)
-      if (clerkUser) {
-        try {
-          await this.clerkService.sendEmailVerification(registerDto.email);
-          logger.log('[SUCCESS] Clerk verification email sent');
-        } catch (clerkEmailError) {
-          logger.warn('[WARN] Clerk email verification failed, using MASH email only');
+      this.logger.log(
+        `✅ Generated DiceBear avatar for ${registerDto.email}: ${diceBearAvatarUrl}`,
+      );
+
+      // Send Clerk verification email (primary verification)
+      await this.clerkService.sendEmailVerification(registerDto.email);
+
+      // Send MASH-branded verification email (non-blocking)
+      // This provides a better user experience with our custom branding
+      try {
+        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(registerDto.email)}`;
+        await this.emailService.sendVerificationEmail(
+          registerDto.email,
+          registerDto.firstName,
+          verificationLink,
+          '24 hours',
+        );
+        this.logger.log(`✅ MASH verification email sent successfully to: ${registerDto.email}`);
+      } catch (emailError: unknown) {
+        // Don't fail registration if custom email fails
+        this.logger.error(
+          `❌ CRITICAL: Failed to send MASH verification email to ${registerDto.email}`,
+        );
+        const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
+        this.logger.error(`Error details: ${errorMessage}`);
+        if (
+          errorMessage.includes('Missing credentials') ||
+          errorMessage.includes('Invalid login')
+        ) {
+          this.logger.error('🔧 FIX: Add EMAIL_* environment variables to Railway dashboard');
+          this.logger.error(
+            '📋 Required: EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM',
+          );
         }
       }
 
-      // Step 9: Send MASH verification code email (primary method for mobile)
-      logger.log('[CONFIG] Sending 6-digit verification code via Gmail SMTP');
-
-      try {
-        await this.emailService.sendVerificationCodeEmail(
-          registerDto.email,
-          registerDto.firstName,
-          verificationCode,
-          '10 minutes',
-        );
-        logger.log('[SUCCESS] Verification code email sent successfully');
-      } catch (emailError: unknown) {
-        logger.error('[ERROR] Failed to send verification code email');
-        const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
-        logger.error(`[ERROR] Email error: ${errorMessage}`);
-
-        // Rollback user creation if email fails (user won't be able to verify)
-        await this.prisma.user.delete({ where: { id: user.id } });
-        logger.error('[ERROR] User creation rolled back due to email failure');
-
-        throw new InternalServerErrorException(
-          'Failed to send verification email. Please try again later.',
-        );
-      }
-
-      // Step 10: Return success response
-      logger.log('[SUCCESS] Registration process completed');
       return {
         success: true,
-        message: 'Registration successful! A 6-digit verification code has been sent to your email.',
-        user: {
-          id: user.id,
-          clerkId: user.clerkId,
-          email: user.email,
-          username: user.username,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          imageUrl: user.imageUrl,
-          emailVerified: false,
-          role: user.role,
-          createdAt: user.createdAt,
-        },
-        verification: {
-          sent: true,
-          method: 'code', // 6-digit code is primary method
-          expiresIn: '10 minutes',
-          email: user.email,
-        },
-        nextStep: `Check your email (${user.email}) for a 6-digit verification code. Enter it in the app using POST /auth/verify-email-code.`,
+        message: 'User registered successfully. Please verify your email.',
+        userId: clerkUser.id,
+        email: registerDto.email,
+        username: registerDto.username || null,
+        avatarUrl: diceBearAvatarUrl, // DiceBear avatar URL
+        verificationSent: true,
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`[ERROR] Registration failed for ${registerDto.email}: ${errorMessage}`);
-
-      // Re-throw known errors
-      if (error instanceof ConflictException || error instanceof InternalServerErrorException) {
-        throw error;
+      this.logger.error(`Registration failed for ${registerDto.email}: ${errorMessage}`);
+      if (errorMessage.includes('already exists')) {
+        throw new ConflictException('User with this email already exists');
       }
-
-      // Handle any other errors
       throw new InternalServerErrorException('Registration failed. Please try again.');
     }
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
     try {
-      // Find user by verification token
-      const user = await this.prisma.user.findFirst({
-        where: {
-          emailVerificationToken: verifyEmailDto.token,
-          emailVerified: false,
-        },
-      });
-
-      if (!user) {
-        throw new BadRequestException('Invalid or already used verification token');
-      }
-
-      // Check if token expired
-      if (isTokenExpired(user.emailVerificationExpiry)) {
-        throw new BadRequestException('Verification token has expired. Please request a new one.');
-      }
-
-      // Update user as verified
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          emailVerified: true,
-          emailVerificationToken: null,
-          emailVerificationExpiry: null,
-        },
-      });
-
-      // Also update Clerk metadata to reflect local verification
-      try {
-        await this.clerkService.updateUser(user.clerkId, {
-          publicMetadata: {
-            emailVerifiedLocally: true,
-            verifiedAt: new Date().toISOString(),
-          },
-        });
-      } catch (clerkError) {
-        this.logger.error(`Failed to update Clerk metadata: ${clerkError.message}`);
-        // Don't fail the verification if Clerk update fails
-      }
-
-      this.logger.log(`✅ Email verified successfully for user: ${user.email}`);
-
-      return {
-        success: true,
-        message: 'Email verified successfully! You can now log in.',
-        email: user.email,
-        verified: true,
-      };
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      this.logger.error(`Email verification failed: ${error.message}`);
-      throw new BadRequestException('Email verification failed. Please try again.');
+      await this.clerkService.verifyEmail(verifyEmailDto.email, verifyEmailDto.code);
+      return { success: true, message: 'Email verified successfully' };
+    } catch {
+      throw new BadRequestException('Invalid or expired verification code');
     }
-  }
-
-  /**
-   * Verify email with 6-digit code (PRIMARY METHOD for mobile apps)
-   * Security features:
-   * - Single-use codes
-   * - 10-minute expiry
-   * - Attempt tracking (max 5 attempts)
-   * - Account lockout after 5 failed attempts
-   * - Immediate login with JWT token
-   */
-  async verifyEmailWithCode(dto: VerifyEmailCodeDto) {
-    const logger = new Logger('AuthService.verifyEmailWithCode');
-    logger.log(`[STARTUP] Code verification attempt for email: ${dto.email}`);
-
-    try {
-      // Find user by email and code
-      const user = await this.prisma.user.findFirst({
-        where: {
-          email: dto.email,
-          emailVerificationCode: dto.code,
-          emailVerified: false,
-        },
-      });
-
-      if (!user) {
-        // Increment failed attempts for this email
-        await this.prisma.user.updateMany({
-          where: { email: dto.email, emailVerified: false },
-          data: {
-            emailVerificationAttempts: {
-              increment: 1,
-            },
-          },
-        });
-
-        logger.warn(`[WARN] Invalid verification code for email: ${dto.email}`);
-        throw new BadRequestException('Invalid verification code. Please check your email and try again.');
-      }
-
-      // Check if code already used
-      if (user.emailVerificationCodeUsed) {
-        logger.warn(`[WARN] Code already used for email: ${dto.email}`);
-        throw new BadRequestException('This verification code has already been used. Please request a new code.');
-      }
-
-      // Check if code expired
-      if (isCodeExpired(user.emailVerificationCodeExpiry)) {
-        logger.warn(`[WARN] Verification code expired for email: ${dto.email}`);
-        throw new BadRequestException('Verification code has expired. Please request a new code.');
-      }
-
-      // Check failed attempts (max 5)
-      if (user.emailVerificationAttempts >= 5) {
-        logger.warn(`[WARN] Too many verification attempts for email: ${dto.email}`);
-        throw new BadRequestException('Too many failed verification attempts. Please request a new code.');
-      }
-
-      // ✅ ALL CHECKS PASSED - Mark email as verified
-      logger.log(`[SUCCESS] Verification code valid, marking email as verified`);
-      
-      const verifiedUser = await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          emailVerified: true,
-          emailVerificationCode: null,
-          emailVerificationCodeExpiry: null,
-          emailVerificationCodeUsed: true,
-          emailVerificationAttempts: 0,
-          // Also clear old token system
-          emailVerificationToken: null,
-          emailVerificationExpiry: null,
-        },
-      });
-
-      // Update Clerk metadata (if applicable)
-      try {
-        await this.clerkService.updateUser(user.clerkId, {
-          publicMetadata: {
-            emailVerifiedLocally: true,
-            verifiedAt: new Date().toISOString(),
-            verificationMethod: 'code',
-          },
-        });
-        logger.log(`[SUCCESS] Clerk metadata updated`);
-      } catch (clerkError) {
-        logger.warn(`[WARN] Failed to update Clerk metadata (non-critical)`);
-      }
-
-      // Generate JWT token for immediate login
-      const token = this.jwtService.sign({
-        sub: verifiedUser.id,
-        email: verifiedUser.email,
-        role: verifiedUser.role,
-      });
-
-      logger.log(`[SUCCESS] Email verified successfully for: ${verifiedUser.email}`);
-      this.prometheusService.recordUserRegistration(); // Record successful verification
-
-      return {
-        success: true,
-        message: 'Email verified successfully! You are now logged in.',
-        token,
-        user: {
-          id: verifiedUser.id,
-          email: verifiedUser.email,
-          username: verifiedUser.username,
-          firstName: verifiedUser.firstName,
-          lastName: verifiedUser.lastName,
-          imageUrl: verifiedUser.imageUrl,
-          role: verifiedUser.role,
-          emailVerified: true,
-        },
-      };
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      logger.error(`[ERROR] Code verification failed: ${error.message}`);
-      throw new BadRequestException('Email verification failed. Please try again.');
-    }
-  }
-
-  /**
-   * Resend verification code (rate-limited to prevent spam)
-   * - 1-minute cooldown between requests
-   * - Resets failed attempt counter
-   * - Generates new 6-digit code
-   */
-  async resendVerificationCode(dto: ResendVerificationCodeDto) {
-    const logger = new Logger('AuthService.resendVerificationCode');
-    logger.log(`[STARTUP] Resend code request for email: ${dto.email}`);
-
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (!user) {
-      // Don't reveal if user exists (security best practice)
-      logger.warn(`[WARN] Resend request for non-existent email: ${dto.email}`);
-      return {
-        success: true,
-        message: 'If an account exists with this email, a new verification code has been sent.',
-        expiresIn: '10 minutes',
-      };
-    }
-
-    // Check if already verified
-    if (user.emailVerified) {
-      logger.warn(`[WARN] Resend request for already verified email: ${dto.email}`);
-      throw new BadRequestException('Email is already verified. You can log in now.');
-    }
-
-    // Rate limiting: Check if 1 minute has passed since last code was sent
-    const timeSinceLastSent = user.emailVerificationCodeSentAt
-      ? Date.now() - user.emailVerificationCodeSentAt.getTime()
-      : Infinity;
-
-    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
-      const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
-      logger.warn(`[WARN] Rate limit hit for email: ${dto.email}, wait ${waitSeconds}s`);
-      throw new BadRequestException(
-        `Please wait ${waitSeconds} seconds before requesting a new code.`,
-      );
-    }
-
-    // Generate new verification code
-    const verificationCode = generateSixDigitCode();
-    const codeExpiry = generateCodeExpiry(10); // 10 minutes
-
-    logger.log(`[CONFIG] New verification code generated: ${verificationCode}`);
-
-    // Update user with new code and reset attempts
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerificationCode: verificationCode,
-        emailVerificationCodeExpiry: codeExpiry,
-        emailVerificationCodeUsed: false,
-        emailVerificationAttempts: 0, // Reset failed attempts
-        emailVerificationCodeSentAt: new Date(),
-      },
-    });
-
-    // Send new verification code via email
-    logger.log(`[CONFIG] Sending new verification code via email`);
-    
-    try {
-      await this.emailService.sendVerificationCodeEmail(
-        user.email,
-        user.firstName || 'User',
-        verificationCode,
-        '10 minutes',
-      );
-      
-      logger.log(`[SUCCESS] New verification code sent to: ${user.email}`);
-    } catch (emailError) {
-      logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
-      throw new InternalServerErrorException('Failed to send verification code. Please try again later.');
-    }
-
-    return {
-      success: true,
-      message: 'A new 6-digit verification code has been sent to your email.',
-      expiresIn: '10 minutes',
-      email: user.email,
-    };
-  }
-
-  /**
-   * Resend verification email
-   */
-  async resendVerificationEmail(resendDto: ResendVerificationDto) {
-    const logger = new Logger('AuthService.resendVerificationEmail');
-    logger.log(`[STARTUP] Resend verification request for email: ${resendDto.email}`);
-
-    const user = await this.prisma.user.findUnique({
-      where: { email: resendDto.email },
-    });
-
-    if (!user) {
-      // Don't reveal if user exists or not (security)
-      logger.warn(`[WARN] Resend request for non-existent email: ${resendDto.email}`);
-      return {
-        success: true,
-        message: 'If an account exists with this email, a verification code has been sent.',
-        expiresIn: '10 minutes',
-      };
-    }
-
-    if (user.emailVerified) {
-      logger.warn(`[WARN] Resend request for already verified email: ${resendDto.email}`);
-      throw new BadRequestException('Email is already verified. You can log in now.');
-    }
-
-    // Rate limiting: Check if 1 minute has passed since last code was sent
-    const timeSinceLastSent = user.emailVerificationCodeSentAt
-      ? Date.now() - user.emailVerificationCodeSentAt.getTime()
-      : Infinity;
-
-    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
-      const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
-      logger.warn(`[WARN] Rate limit hit for email: ${resendDto.email}, wait ${waitSeconds}s`);
-      throw new BadRequestException(
-        `Please wait ${waitSeconds} seconds before requesting a new code.`,
-      );
-    }
-
-    // Generate new 6-digit verification code (same as registration)
-    const verificationCode = generateSixDigitCode();
-    const codeExpiry = generateCodeExpiry(10); // 10 minutes
-
-    logger.log(`[CONFIG] New 6-digit verification code generated: ${verificationCode}`);
-
-    // Update user with new code and reset attempts
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerificationCode: verificationCode,
-        emailVerificationCodeExpiry: codeExpiry,
-        emailVerificationCodeUsed: false,
-        emailVerificationAttempts: 0, // Reset failed attempts
-        emailVerificationCodeSentAt: new Date(),
-      },
-    });
-
-    // Send verification code email (same as registration)
-    logger.log(`[CONFIG] Sending 6-digit verification code via email`);
-    
-    try {
-      await this.emailService.sendVerificationCodeEmail(
-        user.email,
-        user.firstName || 'User',
-        verificationCode,
-        '10 minutes',
-      );
-      
-      logger.log(`[SUCCESS] 6-digit verification code sent to: ${user.email}`);
-    } catch (emailError) {
-      logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
-      throw new InternalServerErrorException('Failed to send verification code. Please try again later.');
-    }
-
-    return {
-      success: true,
-      message: 'A new 6-digit verification code has been sent to your email.',
-      expiresIn: '10 minutes',
-      email: user.email,
-      nextStep: 'Enter the code using POST /auth/verify-email-code',
-    };
   }
 
   async resendVerification(email: string) {
     try {
       await this.clerkService.sendEmailVerification(email);
-      return { success: true, message: 'Verification email resent' };
+      return { success: true, message: 'Verification email sent' };
     } catch {
-      throw new BadRequestException('Failed to resend verification email');
+      throw new BadRequestException('Failed to send verification email');
     }
   }
 
-  /**
-   * FORGOT PASSWORD - Send 6-digit reset code
-   * ===========================================
-   * Step 1 of password reset process
-   */
   async forgotPassword(email: string) {
-    const logger = new Logger('AuthService.forgotPassword');
-    logger.log(`[STARTUP] Password reset request for email: ${email}`);
+    try {
+      // First, check if user exists in database
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
 
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+      // Always return success for security (don't reveal if email exists)
+      if (!user) {
+        this.logger.log(`Password reset requested for non-existent email: ${email}`);
+        return {
+          success: true,
+          message: 'If the email exists, a password reset link has been sent',
+        };
+      }
 
-    if (!user) {
-      // Don't reveal if user exists (security best practice)
-      logger.warn(`[WARN] Password reset request for non-existent email: ${email}`);
+      // Generate reset token (valid for 1 hour)
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      // Store reset token in database
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetToken,
+          resetTokenExpiry,
+        },
+      });
+
+      // Get backend URL from config
+      const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
+      
+      // Generate reset link
+      const resetLink = `${backendUrl}/reset-password?token=${resetToken}`;
+
+      // Send password reset email
+      await this.emailService.sendForgotPasswordEmail(
+        user.email,
+        user.firstName || 'User',
+        resetLink,
+        '1 hour',
+      );
+
+      this.logger.log(`✅ Password reset email sent to: ${email}`);
+      
       return {
         success: true,
-        message: 'If an account exists with this email, a password reset code has been sent.',
-        expiresIn: '10 minutes',
+        message: 'If the email exists, a password reset link has been sent',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email for ${email}:`, error);
+      // Still return success for security (don't reveal errors)
+      return {
+        success: true,
+        message: 'If the email exists, a password reset link has been sent',
       };
     }
-
-    // Rate limiting: Check if 1 minute has passed since last code was sent
-    const timeSinceLastSent = user.passwordResetCodeSentAt
-      ? Date.now() - user.passwordResetCodeSentAt.getTime()
-      : Infinity;
-
-    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
-      const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
-      logger.warn(`[WARN] Rate limit hit for email: ${email}, wait ${waitSeconds}s`);
-      throw new BadRequestException(
-        `Please wait ${waitSeconds} seconds before requesting a new code.`,
-      );
-    }
-
-    // Generate 6-digit reset code
-    const resetCode = generateSixDigitCode();
-    const codeExpiry = generateCodeExpiry(10); // 10 minutes
-
-    logger.log(`[CONFIG] Password reset code generated: ${resetCode}`);
-
-    // Update user with reset code and reset attempts
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordResetCode: resetCode,
-        passwordResetCodeExpiry: codeExpiry,
-        passwordResetCodeUsed: false,
-        passwordResetAttempts: 0, // Reset failed attempts
-        passwordResetCodeSentAt: new Date(),
-      },
-    });
-
-    // Send password reset code via email
-    logger.log(`[CONFIG] Sending password reset code via email`);
-    
-    try {
-      await this.emailService.sendPasswordResetCodeEmail(
-        user.email,
-        user.firstName || 'User',
-        resetCode,
-        '10 minutes',
-      );
-      
-      logger.log(`[SUCCESS] Password reset code sent to: ${user.email}`);
-    } catch (emailError) {
-      logger.error(`[ERROR] Failed to send password reset code: ${emailError.message}`);
-      throw new InternalServerErrorException('Failed to send password reset code. Please try again later.');
-    }
-
-    return {
-      success: true,
-      message: 'A 6-digit password reset code has been sent to your email.',
-      expiresIn: '10 minutes',
-      email: user.email,
-      nextStep: 'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
-    };
   }
 
-  /**
-   * VERIFY RESET CODE
-   * ==================
-   * Step 2 of password reset process - Verify the 6-digit code
-   */
-  async verifyResetCode(dto: VerifyResetCodeDto) {
-    const logger = new Logger('AuthService.verifyResetCode');
-    logger.log(`[STARTUP] Verifying reset code for email: ${dto.email}`);
-
-    const user = await this.prisma.user.findUnique({
-      where: { 
-        email: dto.email,
-        passwordResetCode: dto.code,
-      },
-    });
-
-    if (!user) {
-      logger.warn(`[WARN] Invalid reset code attempt for email: ${dto.email}`);
-      
-      // Increment failed attempts if user exists
-      const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
-      if (existingUser && existingUser.passwordResetCode) {
-        const newAttempts = existingUser.passwordResetAttempts + 1;
-        await this.prisma.user.update({
-          where: { id: existingUser.id },
-          data: { passwordResetAttempts: newAttempts },
-        });
-
-        if (newAttempts >= 5) {
-          logger.warn(`[WARN] Maximum reset attempts reached for email: ${dto.email}`);
-          throw new BadRequestException(
-            'Maximum verification attempts reached. Please request a new code.',
-          );
-        }
-      }
-      
-      throw new BadRequestException('Invalid verification code.');
-    }
-
-    // Check if code has been used
-    if (user.passwordResetCodeUsed) {
-      logger.warn(`[WARN] Attempt to use already-used code for email: ${dto.email}`);
-      throw new BadRequestException('This code has already been used. Please request a new one.');
-    }
-
-    // Check if code has expired
-    if (!user.passwordResetCodeExpiry || isCodeExpired(user.passwordResetCodeExpiry)) {
-      logger.warn(`[WARN] Expired reset code for email: ${dto.email}`);
-      throw new BadRequestException('Verification code has expired. Please request a new one.');
-    }
-
-    // Check failed attempts
-    if (user.passwordResetAttempts >= 5) {
-      logger.warn(`[WARN] Too many failed attempts for email: ${dto.email}`);
-      throw new BadRequestException(
-        'Too many failed attempts. Please request a new code.',
-      );
-    }
-
-    logger.log(`[SUCCESS] Reset code verified for email: ${dto.email}`);
-
-    return {
-      success: true,
-      message: 'Code verified successfully. You can now reset your password.',
-      email: user.email,
-      nextStep: 'Reset your password using POST /auth/reset-password with the same code',
-    };
-  }
-
-  /**
-   * RESET PASSWORD WITH CODE
-   * =========================
-   * Step 3 of password reset process - Reset password with verified code
-   */
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const logger = new Logger('AuthService.resetPassword');
-    logger.log(`[STARTUP] Password reset for email: ${resetPasswordDto.email}`);
-
-    const user = await this.prisma.user.findUnique({
-      where: { 
-        email: resetPasswordDto.email,
-        passwordResetCode: resetPasswordDto.code,
-      },
-    });
-
-    if (!user) {
-      logger.warn(`[WARN] Invalid reset code during password reset for email: ${resetPasswordDto.email}`);
-      throw new BadRequestException('Invalid verification code.');
-    }
-
-    // Check if code has been used
-    if (user.passwordResetCodeUsed) {
-      logger.warn(`[WARN] Attempt to use already-used code for password reset: ${resetPasswordDto.email}`);
-      throw new BadRequestException('This code has already been used. Please request a new one.');
-    }
-
-    // Check if code has expired
-    if (!user.passwordResetCodeExpiry || isCodeExpired(user.passwordResetCodeExpiry)) {
-      logger.warn(`[WARN] Expired code during password reset for email: ${resetPasswordDto.email}`);
-      throw new BadRequestException('Verification code has expired. Please request a new one.');
-    }
-
-    // Check failed attempts
-    if (user.passwordResetAttempts >= 5) {
-      logger.warn(`[WARN] Too many failed attempts during password reset: ${resetPasswordDto.email}`);
-      throw new BadRequestException(
-        'Too many failed attempts. Please request a new code.',
-      );
-    }
-
-    // Hash new password
-    logger.log(`[CONFIG] Hashing new password`);
-    const hashedPassword = await hashPassword(resetPasswordDto.newPassword);
-
-    // Update user with new password and clear reset code
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        passwordResetCode: null,
-        passwordResetCodeExpiry: null,
-        passwordResetCodeUsed: true,
-        passwordResetAttempts: 0,
-        passwordResetCodeSentAt: null,
-      },
-    });
-
-    logger.log(`[SUCCESS] Password reset successfully for email: ${user.email}`);
-
-    // Send confirmation email
     try {
-      await this.emailService.sendPasswordResetSuccessEmail(
-        user.email,
-        user.firstName || 'User',
-        new Date().toLocaleString(),
-        'Unknown', // IP address
-        'Unknown', // device
-        `${process.env.FRONTEND_URL || 'http://localhost:3001'}/login`,
+      await this.clerkService.resetPassword(
+        resetPasswordDto.email,
+        resetPasswordDto.code,
+        resetPasswordDto.newPassword,
       );
-    } catch (emailError) {
-      logger.warn(`[WARN] Failed to send confirmation email: ${emailError.message}`);
-      // Don't fail the reset if confirmation email fails
+      return { success: true, message: 'Password reset successfully' };
+    } catch {
+      throw new BadRequestException('Invalid or expired reset code');
     }
-
-    return {
-      success: true,
-      message: 'Password has been reset successfully. You can now log in with your new password.',
-      email: user.email,
-    };
-  }
-
-  /**
-   * RESEND PASSWORD RESET CODE
-   * ===========================
-   * Resend the 6-digit code if expired or not received
-   */
-  async resendPasswordResetCode(dto: ResendPasswordResetCodeDto) {
-    const logger = new Logger('AuthService.resendPasswordResetCode');
-    logger.log(`[STARTUP] Resend reset code request for email: ${dto.email}`);
-
-    // Reuse the forgotPassword method logic
-    return this.forgotPassword(dto.email);
   }
 
   async initiateOAuth(provider: string, redirectUrl?: string) {
@@ -1290,469 +652,5 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('OAuth authentication failed');
     }
-  }
-
-  // ==================== GOOGLE & FACEBOOK SSO METHODS ====================
-
-  /**
-   * Login with Google ID Token
-   * Validates token, finds or creates user, generates JWT tokens
-   * 
-   * @param dto - Google login DTO containing ID token
-   * @returns JWT tokens and user data
-   */
-  async loginWithGoogle(dto: { idToken: string; deviceInfo?: any }) {
-    return this.tracer.startActiveSpan('AuthService.loginWithGoogle', async span => {
-      const startTime = Date.now();
-      this.logger.log('🔐 Google login initiated');
-
-      try {
-        // 1. Validate Google ID token with OAuth service
-        const oauthUser = await this.oauthService.validateGoogleToken(dto.idToken);
-        
-        span.setAttribute('oauth.provider', 'google');
-        span.setAttribute('user.email', oauthUser.email);
-        this.logger.log(`Google token validated for user: ${oauthUser.email}`);
-
-        // 2. Find or create user in database
-        const { user, isNewUser } = await this.findOrCreateOAuthUser(oauthUser);
-        span.setAttribute('user.id', user.id);
-        span.setAttribute('user.isNew', isNewUser);
-
-        // 3. Generate JWT tokens (same pattern as login method)
-        const accessToken = this.jwtService.sign({
-          sub: user.id,
-          email: user.email,
-          role: user.role,
-        });
-
-        const refreshToken = this.jwtService.sign(
-          {
-            sub: user.id,
-            email: user.email,
-            role: user.role,
-          },
-          { expiresIn: '30d' },
-        );
-
-        // 4. Record metrics
-        if (isNewUser) {
-          this.prometheusService.recordUserRegistration();
-        }
-
-        span.addEvent('Google login successful');
-        span.setStatus({ code: SpanStatusCode.OK });
-        this.logger.log(`✅ Google login successful for user: ${user.id}`);
-
-        return {
-          success: true,
-          message: 'Google authentication successful',
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            imageUrl: user.imageUrl,
-            role: user.role,
-            oauthProvider: user.oauthProvider,
-          },
-          isNewUser,
-        };
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
-        span.recordException(error instanceof Error ? error : new Error(String(error)));
-        this.logger.error(`❌ Google login failed: ${errorMessage}`, error instanceof Error ? error.stack : '');
-        
-        if (error instanceof UnauthorizedException) {
-          throw error;
-        }
-        
-        throw new InternalServerErrorException('Google login failed. Please try again.');
-      } finally {
-        span.end();
-      }
-    });
-  }
-
-  /**
-   * Login with Facebook Access Token
-   * Validates token, finds or creates user, generates JWT tokens
-   * 
-   * @param dto - Facebook login DTO containing access token
-   * @returns JWT tokens and user data
-   */
-  async loginWithFacebook(dto: { accessToken: string; deviceInfo?: any }) {
-    return this.tracer.startActiveSpan('AuthService.loginWithFacebook', async span => {
-      const startTime = Date.now();
-      this.logger.log('🔐 Facebook login initiated');
-
-      try {
-        // 1. Validate Facebook access token with OAuth service
-        const oauthUser = await this.oauthService.validateFacebookToken(dto.accessToken);
-        
-        span.setAttribute('oauth.provider', 'facebook');
-        span.setAttribute('user.email', oauthUser.email);
-        this.logger.log(`Facebook token validated for user: ${oauthUser.email}`);
-
-        // 2. Find or create user in database
-        const { user, isNewUser } = await this.findOrCreateOAuthUser(oauthUser);
-        span.setAttribute('user.id', user.id);
-        span.setAttribute('user.isNew', isNewUser);
-
-        // 3. Generate JWT tokens (same pattern as login method)
-        const accessToken = this.jwtService.sign({
-          sub: user.id,
-          email: user.email,
-          role: user.role,
-        });
-
-        const refreshToken = this.jwtService.sign(
-          {
-            sub: user.id,
-            email: user.email,
-            role: user.role,
-          },
-          { expiresIn: '30d' },
-        );
-
-        // 4. Record metrics
-        if (isNewUser) {
-          this.prometheusService.recordUserRegistration();
-        }
-
-        span.addEvent('Facebook login successful');
-        span.setStatus({ code: SpanStatusCode.OK });
-        this.logger.log(`✅ Facebook login successful for user: ${user.id}`);
-
-        return {
-          success: true,
-          message: 'Facebook authentication successful',
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            imageUrl: user.imageUrl,
-            role: user.role,
-            oauthProvider: user.oauthProvider,
-          },
-          isNewUser,
-        };
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
-        span.recordException(error instanceof Error ? error : new Error(String(error)));
-        this.logger.error(`❌ Facebook login failed: ${errorMessage}`, error instanceof Error ? error.stack : '');
-        
-        if (error instanceof UnauthorizedException) {
-          throw error;
-        }
-        
-        throw new InternalServerErrorException('Facebook login failed. Please try again.');
-      } finally {
-        span.end();
-      }
-    });
-  }
-
-  /**
-   * Find existing user or create new user from OAuth data
-   * Handles email conflicts and account linking logic
-   * 
-   * @param oauthUser - Normalized OAuth user data
-   * @returns User and isNewUser flag
-   */
-  private async findOrCreateOAuthUser(oauthUser: OAuthUserData) {
-    const { provider, id: providerId, email, firstName, lastName, imageUrl, emailVerified } = oauthUser;
-
-    // 1. Check if user exists with this OAuth provider ID
-    const existingByProviderId = await this.prisma.user.findFirst({
-      where: provider === 'google' ? { googleId: providerId } : { facebookId: providerId },
-    });
-
-    if (existingByProviderId) {
-      // User already registered with this OAuth provider
-      return { user: existingByProviderId, isNewUser: false };
-    }
-
-    // 2. Check if user exists with this email
-    const existingByEmail = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingByEmail) {
-      // Email already exists - link OAuth account to existing user
-      this.logger.log(`Linking ${provider} account to existing user: ${existingByEmail.id}`);
-
-      const updatedUser = await this.prisma.user.update({
-        where: { id: existingByEmail.id },
-        data: {
-          ...(provider === 'google' ? { googleId: providerId } : { facebookId: providerId }),
-          oauthProvider: {
-            set: [...new Set([...(existingByEmail.oauthProvider || []), provider])],
-          },
-          imageUrl: imageUrl || existingByEmail.imageUrl,
-          emailVerified: emailVerified || existingByEmail.emailVerified,
-        },
-      });
-
-      return { user: updatedUser, isNewUser: false };
-    }
-
-    // 3. Create new user from OAuth data
-    this.logger.log(`Creating new user from ${provider} OAuth data`);
-
-    // Generate unique username from email
-    const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    let username = baseUsername;
-    let counter = 1;
-
-    // Ensure username is unique
-    while (await this.prisma.user.findUnique({ where: { username } })) {
-      username = `${baseUsername}${counter}`;
-      counter++;
-    }
-
-    const newUser = await this.prisma.user.create({
-      data: {
-        email,
-        username,
-        firstName,
-        lastName,
-        imageUrl,
-        ...(provider === 'google' ? { googleId: providerId } : { facebookId: providerId }),
-        oauthProvider: [provider],
-        emailVerified: emailVerified,
-        role: 'USER',
-        isActive: true,
-        password: null, // OAuth users don't have password initially
-      },
-    });
-
-    this.logger.log(`✅ New user created via ${provider}: ${newUser.id}`);
-
-    return { user: newUser, isNewUser: true };
-  }
-
-  /**
-   * Link Google account to existing authenticated user
-   * 
-   * @param userId - Current user ID
-   * @param idToken - Google ID token
-   */
-  async linkGoogleAccount(userId: string, idToken: string) {
-    try {
-      // 1. Validate Google token
-      const oauthUser = await this.oauthService.validateGoogleToken(idToken);
-
-      // 2. Get current user
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      // 3. Check if this Google account is already linked to another user
-      const existingGoogleUser = await this.prisma.user.findFirst({
-        where: { googleId: oauthUser.id, NOT: { id: userId } },
-      });
-
-      if (existingGoogleUser) {
-        throw new ConflictException('This Google account is already linked to another user');
-      }
-
-      // 4. Link Google account
-      const updatedUser = await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          googleId: oauthUser.id,
-          oauthProvider: {
-            set: [...new Set([...(user.oauthProvider || []), 'google'])],
-          },
-        },
-      });
-
-      this.logger.log(`✅ Google account linked to user: ${userId}`);
-
-      return {
-        success: true,
-        message: 'Google account linked successfully',
-        user: {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          oauthProvider: updatedUser.oauthProvider,
-        },
-      };
-    } catch (error) {
-      this.logger.error(`❌ Failed to link Google account: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Link Facebook account to existing authenticated user
-   * 
-   * @param userId - Current user ID
-   * @param accessToken - Facebook access token
-   */
-  async linkFacebookAccount(userId: string, accessToken: string) {
-    try {
-      // 1. Validate Facebook token
-      const oauthUser = await this.oauthService.validateFacebookToken(accessToken);
-
-      // 2. Get current user
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      // 3. Check if this Facebook account is already linked to another user
-      const existingFacebookUser = await this.prisma.user.findFirst({
-        where: { facebookId: oauthUser.id, NOT: { id: userId } },
-      });
-
-      if (existingFacebookUser) {
-        throw new ConflictException('This Facebook account is already linked to another user');
-      }
-
-      // 4. Link Facebook account
-      const updatedUser = await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          facebookId: oauthUser.id,
-          oauthProvider: {
-            set: [...new Set([...(user.oauthProvider || []), 'facebook'])],
-          },
-        },
-      });
-
-      this.logger.log(`✅ Facebook account linked to user: ${userId}`);
-
-      return {
-        success: true,
-        message: 'Facebook account linked successfully',
-        user: {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          oauthProvider: updatedUser.oauthProvider,
-        },
-      };
-    } catch (error) {
-      this.logger.error(`❌ Failed to link Facebook account: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Unlink social account from user
-   * Requires user to have password or another OAuth provider
-   * 
-   * @param userId - Current user ID
-   * @param provider - Provider to unlink ('google' | 'facebook')
-   */
-  async unlinkSocialAccount(userId: string, provider: 'google' | 'facebook') {
-    try {
-      // 1. Get current user
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      // 2. Check if this provider is linked
-      if (!user.oauthProvider?.includes(provider)) {
-        throw new NotFoundException(`${provider} account is not linked`);
-      }
-
-      // 3. Ensure user has alternative authentication method
-      const otherProviders = user.oauthProvider.filter(p => p !== provider);
-      if (!user.password && otherProviders.length === 0) {
-        throw new BadRequestException(
-          'Cannot unlink last authentication method. Please set a password first.',
-        );
-      }
-
-      // 4. Unlink provider
-      const updatedUser = await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          ...(provider === 'google' ? { googleId: null } : { facebookId: null }),
-          oauthProvider: {
-            set: otherProviders,
-          },
-        },
-      });
-
-      this.logger.log(`✅ ${provider} account unlinked from user: ${userId}`);
-
-      return {
-        success: true,
-        message: `${provider} account unlinked successfully`,
-        user: {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          oauthProvider: updatedUser.oauthProvider,
-        },
-      };
-    } catch (error) {
-      this.logger.error(`❌ Failed to unlink ${provider} account: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Get OAuth status for current user
-   * Returns linked providers and authentication options
-   * 
-   * @param userId - Current user ID
-   */
-  async getOAuthStatus(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        oauthProvider: true,
-        googleId: true,
-        facebookId: true,
-        password: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const hasPassword = !!user.password;
-    const linkedProviders = user.oauthProvider || [];
-    const canUnlink = hasPassword || linkedProviders.length > 1;
-
-    return {
-      success: true,
-      linkedProviders,
-      hasPassword,
-      canUnlink,
-      details: {
-        ...(user.googleId && {
-          google: {
-            linkedAt: user.updatedAt,
-            email: user.email,
-            googleId: user.googleId,
-          },
-        }),
-        ...(user.facebookId && {
-          facebook: {
-            linkedAt: user.updatedAt,
-            email: user.email,
-            facebookId: user.facebookId,
-          },
-        }),
-      },
-    };
   }
 }
