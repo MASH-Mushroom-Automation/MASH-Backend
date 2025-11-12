@@ -63,9 +63,12 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     '/api/v1/auth/login',
     '/api/v1/auth/register',
     '/api/v1/auth/verify-email-code', // 6-digit email verification (public endpoint)
-    '/api/v1/auth/resend-verification-code', // Resend 6-digit code (public endpoint)
-    '/api/v1/auth/resend-verification', // Resend token-based verification (public endpoint)
-    '/api/v1/auth/forgot-password',
+    '/api/v1/auth/resend-verification-code', // Resend 6-digit verification code (public endpoint)
+    '/api/v1/auth/resend-verification', // Resend verification (converted to 6-digit code)
+    '/api/v1/auth/forgot-password', // Request 6-digit password reset code
+    '/api/v1/auth/verify-reset-code', // Verify password reset code (NEW)
+    '/api/v1/auth/reset-password', // Reset password with 6-digit code (NEW)
+    '/api/v1/auth/resend-password-reset-code', // Resend password reset code (NEW)
     '/api/v1/webhook', // Webhook endpoints (use signature verification instead)
   ];
 
@@ -78,12 +81,6 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
 
     // Skip CSRF for excluded paths
     if (this.isExcludedPath(req.path)) {
-      return next();
-    }
-
-    // Skip CSRF for IoT device requests
-    if (this.isIoTDeviceRequest(req)) {
-      this.logger.debug(`Skipping CSRF for IoT device request: ${req.method} ${req.path} from ${req.ip}`);
       return next();
     }
 
@@ -232,22 +229,6 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
    */
   private isExcludedPath(path: string): boolean {
     return this.excludedPaths.some(excluded => path.startsWith(excluded));
-  }
-
-  /**
-   * Check if request is from an IoT device
-   * IoT devices are identified by their User-Agent header
-   */
-  private isIoTDeviceRequest(req: Request): boolean {
-    const userAgent = req.headers['user-agent'];
-    
-    if (!userAgent) {
-      return false;
-    }
-
-    // Check for MASH IoT device User-Agent pattern
-    // Format: MASH-IoT-Device/DEVICE_SERIAL_NUMBER
-    return typeof userAgent === 'string' && userAgent.includes('MASH-IoT-Device');
   }
 }
 

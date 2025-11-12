@@ -277,7 +277,63 @@ export class EmailService {
   }
 
   /**
-   * Send forgot password email
+   * Send password reset code email (6-digit code)
+   */
+  async sendPasswordResetCodeEmail(
+    to: string,
+    firstName: string,
+    code: string,
+    expiresIn: string = '10 minutes',
+  ): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
+
+    await this.sendTemplatedEmail({
+      to,
+      templateType: EmailTemplateType.PASSWORD_RESET_CODE,
+      variables: {
+        firstName,
+        code,
+        expiresIn,
+        supportEmail,
+        appUrl: frontendUrl,
+        year: new Date().getFullYear().toString(),
+      },
+    });
+
+    this.logger.log(`✅ Password reset code email sent to: ${to} (Code: ${code}, Expires: ${expiresIn})`);
+  }
+
+  /**
+   * Send password reset confirmation email
+   */
+  async sendPasswordResetConfirmationEmail(
+    to: string,
+    firstName: string,
+  ): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
+
+    await this.sendTemplatedEmail({
+      to,
+      templateType: EmailTemplateType.PASSWORD_RESET_CONFIRMATION,
+      variables: {
+        firstName,
+        supportEmail,
+        appUrl: frontendUrl,
+        year: new Date().getFullYear().toString(),
+        changeDate: new Date().toLocaleString('en-US', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }),
+      },
+    });
+
+    this.logger.log(`✅ Password reset confirmation email sent to: ${to}`);
+  }
+
+  /**
+   * Send forgot password email (OLD METHOD - using reset link)
    */
   async sendForgotPasswordEmail(
     to: string,
