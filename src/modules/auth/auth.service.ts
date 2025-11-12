@@ -517,6 +517,7 @@ export class AuthService {
       // Step 5: Try to create Clerk user (optional - won't fail registration if Clerk is down)
       let clerkId = `local_${generateVerificationToken().substring(0, 32)}`; // Generate local ID as fallback
       let clerkUser: any = null;
+      let clerkUsername = registerDto.username;
 
       try {
         logger.log('[CONFIG] Attempting Clerk user creation');
@@ -529,11 +530,20 @@ export class AuthService {
         });
         clerkId = clerkUser.id;
         logger.log('[SUCCESS] Clerk user created successfully');
-      } catch (clerkError: unknown) {
+      } catch (clerkError: any) {
         // Clerk is optional - log warning but continue with local registration
         logger.warn('[WARN] Clerk user creation failed, using local auth only');
         const errorMessage = clerkError instanceof Error ? clerkError.message : 'Unknown error';
         logger.warn(`[WARN] Clerk error: ${errorMessage}`);
+        
+        // If Clerk username is taken, generate a unique username for local database
+        if (clerkError?.errors?.[0]?.code === 'form_identifier_exists' && clerkError?.errors?.[0]?.meta?.paramName === 'username') {
+          // Generate unique username by appending random suffix
+          const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+          clerkUsername = `${registerDto.username}_${randomSuffix}`;
+          logger.warn(`[WARN] Clerk username taken, using local username: ${clerkUsername}`);
+        }
+        
         // Continue with registration using local clerkId
       }
 
@@ -541,33 +551,48 @@ export class AuthService {
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
       const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
-      // Step 7: Create user in database
+      // Step 7: Create user in database (with timeout handling)
       logger.log('[CONFIG] Creating user in database');
-      const user = await this.prisma.user.create({
-        data: {
-          clerkId: clerkId,
-          email: registerDto.email,
-          username: registerDto.username || null,
-          firstName: registerDto.firstName,
-          lastName: registerDto.lastName,
-          password: hashedPassword,
-          imageUrl: diceBearAvatarUrl,
-          role: 'USER',
-          isActive: true,
-          emailVerified: false, // Not verified yet
-          // 6-digit code system (primary for mobile)
-          emailVerificationCode: verificationCode,
-          emailVerificationCodeExpiry: codeExpiry,
-          emailVerificationCodeUsed: false,
-          emailVerificationAttempts: 0,
-          emailVerificationCodeSentAt: new Date(),
-          // Token system (fallback for web)
-          emailVerificationToken: verificationToken,
-          emailVerificationExpiry: tokenExpiry,
-        },
-      });
-
-      logger.log(`[SUCCESS] User created in database: ${user.id}`);
+      let user;
+      
+      try {
+        // Set timeout for database operation (10 seconds max)
+        const createUserPromise = this.prisma.user.create({
+          data: {
+            clerkId: clerkId,
+            email: registerDto.email,
+            username: clerkUsername || null,
+            firstName: registerDto.firstName,
+            lastName: registerDto.lastName,
+            password: hashedPassword,
+            imageUrl: diceBearAvatarUrl,
+            role: 'USER',
+            isActive: true,
+            emailVerified: false, // Not verified yet
+            // 6-digit code system (primary for mobile)
+            emailVerificationCode: verificationCode,
+            emailVerificationCodeExpiry: codeExpiry,
+            emailVerificationCodeUsed: false,
+            emailVerificationAttempts: 0,
+            emailVerificationCodeSentAt: new Date(),
+            // Token system (fallback for web)
+            emailVerificationToken: verificationToken,
+            emailVerificationExpiry: tokenExpiry,
+          },
+        });
+        
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Database operation timeout (10s)')), 10000)
+        );
+        
+        user = await Promise.race([createUserPromise, timeoutPromise]);
+        logger.log(`[SUCCESS] User created in database: ${user.id}`);
+      } catch (dbError: any) {
+        logger.error(`[ERROR] Database user creation failed: ${dbError.message}`);
+        throw new InternalServerErrorException(
+          'Database is currently unavailable. Please try again in a few minutes.'
+        );
+      }
       this.prometheusService.recordUserRegistration();
 
       // Step 8: Send Clerk verification email (optional)
