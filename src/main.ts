@@ -123,9 +123,9 @@ async function bootstrap() {
 
   // Note: Global validation pipes are registered in CommonModule
 
-  // API prefix - exclude auth HTML pages from the prefix
+  // API prefix - exclude auth HTML pages and metrics endpoint from the prefix
   app.setGlobalPrefix('api/v1', {
-    exclude: ['/', '/register', '/verify', '/forgot-password', '/reset-password', '/dashboard'],
+    exclude: ['/', '/register', '/verify', '/forgot-password', '/reset-password', '/dashboard', '/metrics(.*)'],
   });
 
   // Swagger/OpenAPI Documentation - Clean and Simple Configuration

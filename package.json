@@ -48,7 +48,7 @@
     "@clerk/backend": "^2.17.1",
     "@clerk/clerk-js": "^5.99.0",
     "@clerk/clerk-sdk-node": "^5.1.6",
-    "@elastic/elasticsearch": "^9.1.1",
+    "@elastic/elasticsearch": "^8.19.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/bull": "^10.2.3",
     "@nestjs/bull-shared": "^11.0.4",
