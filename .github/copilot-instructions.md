@@ -1,120 +1,759 @@
-## MASH-Backend — Comprehensive Instructions for AI Coding Agents
+## MASH-Backend — AI Agent Instructions
 
-**Purpose**: Provide AI agents with complete, high-value context to be immediately productive in this repository.
-
----
-
-## 📋 Table of Contents
-1. [Quick Start: Build & Run Backend](#quick-start)
-2. [Project Architecture](#architecture)
-3. [Development Workflow](#development)
-4. [Code Conventions](#conventions)
-5. [Testing Strategy](#testing)
-6. [Deployment & Infrastructure](#deployment)
-7. [Common Tasks](#common-tasks)
-8. [Troubleshooting](#troubleshooting)
+**Purpose**: Essential knowledge for AI coding agents to be immediately productive in this NestJS e-commerce/IoT backend.
 
 ---
 
-## 🚀 Quick Start: Build & Run Backend {#quick-start}
+## � Quick Start
 
-### Prerequisites Checklist
-
-Before building and running the MASH backend, ensure you have:
-
-- ✅ **Node.js 18.x or higher** installed ([Download](https://nodejs.org/))
-- ✅ **npm 9.x or higher** (comes with Node.js)
-- ✅ **PostgreSQL 15+** running (or access to Neon cloud database)
-- ✅ **Redis 7.x** running (or access to Upstash cloud)
-- ✅ **Git** installed for version control
-- ✅ **.env file** configured with all required variables (see below)
-
-### Step 1: Clone and Install Dependencies
-
+### Prerequisites & Setup
 ```bash
-# Clone the repository
-git clone https://github.com/MASH-Mushroom-Automation/MASH-Backend.git
-cd MASH-Backend
-
-# Install dependencies (use --legacy-peer-deps for compatibility)
+# Install dependencies (MUST use --legacy-peer-deps)
 npm install --legacy-peer-deps
 
-# Verify installation
-npm list --depth=0
-```
-
-**Expected output**: Should show ~88 production dependencies without errors.
-
-### Step 2: Environment Configuration
-
-Create a `.env` file in the root directory. **Required variables** for basic operation:
-
-```bash
-# === CORE CONFIGURATION (REQUIRED) ===
-NODE_ENV=development
-PORT=3000
-
-# Database (PostgreSQL - Neon Cloud or Local)
-DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
-
-# Redis Cache (Upstash Cloud or Local)
-REDIS_URL="redis://default:password@host:port"
-
-# JWT Authentication
-JWT_SECRET="your-super-secret-jwt-key-min-32-chars-recommended"
-JWT_EXPIRES_IN=24h
-JWT_REFRESH_EXPIRES_IN=7d
-
-# === OPTIONAL BUT RECOMMENDED ===
-
-# Clerk Authentication (if using Clerk)
-CLERK_SECRET_KEY="sk_test_..."
-CLERK_PUBLISHABLE_KEY="pk_test_..."
-
-# Email Notifications (SendGrid or SMTP)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASSWORD=your-app-password
-EMAIL_FROM=noreply@mash.com
-
-# Firebase (for Storage & FCM)
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
-
-# OpenTelemetry Tracing
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
-
-# Frontend URL (for CORS and email links)
-FRONTEND_URL=http://localhost:3001
-```
-
-**Quick tip**: Copy `.env.example` if available:
-```bash
-cp .env.example .env
-# Then edit .env with your actual credentials
-```
-
-### Step 3: Database Setup
-
-```bash
-# Generate Prisma Client (creates type-safe database client)
+# Generate Prisma client (REQUIRED before build/run)
 npx prisma generate
 
-# Run database migrations (creates all tables)
+# Run migrations
 npx prisma migrate dev
 
-# Seed database with initial data (optional but recommended)
-npm run db:seed
+# Build & start development server
+npm run build
+npm run start:dev
 ```
 
-**Troubleshooting**:
-- If migrations fail, check `DATABASE_URL` connection string
-- For "SSL required" errors, add `?sslmode=require` to DATABASE_URL
-- Use `npx prisma migrate reset` to reset database (WARNING: deletes all data)
+**Critical**: Always run `npx prisma generate` after `npm install` or any schema changes. Server runs on `http://localhost:3000`.
 
-### Step 4: Build the Application
+### Verify Installation
+```bash
+# Health check (must return "ok")
+curl http://localhost:3000/api/v1/health
+
+# Swagger docs
+start http://localhost:3000/api/docs
+
+# Metrics endpoint
+curl http://localhost:3000/metrics
+```
+
+### Environment Configuration (.env)
+**Minimum required variables**:
+```bash
+DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
+JWT_SECRET="your-secret-min-32-chars"
+NODE_ENV=development
+PORT=3000
+```
+
+**Optional but recommended**: `REDIS_URL`, `CLERK_SECRET_KEY`, email/Firebase credentials. App degrades gracefully if Redis is unavailable (no caching).
+
+---
+
+## 🏗️ Architecture Overview
+
+### Tech Stack
+- **Framework**: NestJS 10.x (TypeScript + dependency injection)
+- **Database**: PostgreSQL 15+ via Prisma ORM 5.x (type-safe client)
+- **Cache**: Redis 7.x (optional - app runs without it)
+- **Auth**: Clerk + JWT + Passport (OAuth: Google, Facebook)
+- **Real-time**: Socket.IO WebSockets, MQTT for IoT devices
+- **Monitoring**: Prometheus metrics, Jaeger tracing (OpenTelemetry), Winston logging
+- **Queue**: Bull (Redis-backed background jobs)
+- **Storage**: Firebase Storage, Multer for uploads
+- **Notifications**: SendGrid/Nodemailer (email), Twilio (SMS), FCM (push)
+
+### Critical Module Structure
+```
+src/
+├── main.ts                    # Bootstrap (middleware, CORS, Swagger, health)
+├── app.module.ts              # Root module (imports all features)
+├── common/                    # Shared utilities & infrastructure
+│   ├── decorators/            # @Public, @Roles, @Cacheable
+│   ├── guards/                # JwtAuthGuard, RolesGuard
+│   ├── interceptors/          # CacheInterceptor, AuditLogInterceptor
+│   ├── filters/               # PrismaExceptionFilter, HttpExceptionFilter
+│   ├── middleware/            # CorrelationIdMiddleware, CsrfProtectionMiddleware
+│   └── utils/                 # CustomLogger, bcrypt helpers, token helpers
+├── database/                  # PrismaService, RedisService (singletons)
+├── monitoring/                # PrometheusService, tracing setup
+├── modules/                   # Feature modules (auth, users, orders, products, etc.)
+│   ├── auth/                  # Multi-strategy auth (JWT, Clerk, OAuth)
+│   ├── users/                 # User management + RBAC
+│   ├── orders/                # E-commerce order processing
+│   ├── products/              # Product catalog + categories
+│   ├── devices/               # IoT device management (MQTT)
+│   ├── sensors/               # Sensor data collection & analytics
+│   ├── notifications/         # Email, SMS, Push notifications
+│   ├── queues/                # Bull job processing
+│   └── websocket/             # Real-time WebSocket gateway
+└── types/                     # Global TypeScript types
+
+prisma/
+├── schema.prisma              # Single source of truth for DB schema
+├── migrations/                # Versioned migrations (NEVER edit manually)
+└── seed.ts                    # Database seeding script
+```
+
+### Key Architectural Patterns
+
+#### 1. Lazy-Loaded Prisma Client (Windows Compatibility Fix)
+**Critical**: PrismaService uses dynamic imports to avoid native DLL loading issues on Windows during module initialization.
+```typescript
+// src/database/prisma.service.ts
+// ❌ NEVER do this: import { PrismaClient } from '@prisma/client'
+// ✅ ALWAYS use lazy loading:
+private client: PrismaClient | null = null; // Initialized on first use
+```
+
+#### 2. Graceful Redis Degradation
+**Pattern**: RedisService returns `null` if unavailable; app continues without caching.
+```typescript
+// src/database/redis.service.ts
+if (!redisUrl) {
+  this.logger.warn('Redis disabled - app runs with degraded caching');
+  this.client = null; // App continues without Redis
+}
+```
+
+#### 3. Multi-Strategy Authentication
+- **JWT**: Default auth for most endpoints (`@UseGuards(JwtAuthGuard)`)
+- **Clerk**: Webhook-based user sync (`/api/v1/auth/clerk-webhook`)
+- **OAuth**: Google/Facebook via `oauth` module (stores `googleId`, `facebookId` in User model)
+- **Public endpoints**: Use `@Public()` decorator to skip auth
+
+#### 4. Role-Based Access Control (RBAC)
+```typescript
+enum UserRole { USER, GROWER, ADMIN, SUPER_ADMIN } // Defined in Prisma schema
+
+// Controller example:
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'SUPER_ADMIN')
+@Delete(':id')
+async deleteUser(@Param('id') id: string) { }
+```
+
+#### 5. Observability Stack
+- **Metrics**: 60+ custom Prometheus metrics via `PrometheusService` (`/metrics` endpoint)
+- **Tracing**: OpenTelemetry auto-instrumentation + custom spans (`trace.getTracer()`)
+- **Logging**: Winston with correlation IDs (see `CustomLogger`, `CorrelationIdMiddleware`)
+- **Health**: Terminus-based checks at `/api/v1/health` (DB, Redis, Memory)
+
+#### 6. Caching Strategy
+```typescript
+// Method-level caching with @Cacheable decorator
+@Cacheable({ ttl: 300, tags: ['products'] })
+async findAll() { return this.prisma.product.findMany(); }
+
+// Invalidate cache with @CacheEvict
+@CacheEvict({ tags: ['products'] })
+async create(dto: CreateProductDto) { }
+```
+
+---
+
+## 💻 Development Workflow
+
+### Daily Commands
+```bash
+# Development (hot reload)
+npm run start:dev
+
+# Build for production
+npm run build
+
+# Run production server
+npm run start:prod
+
+# Testing
+npm test                  # Unit tests
+npm run test:e2e         # E2E tests
+npm run test:cov         # Coverage report
+
+# Code quality
+npm run lint             # ESLint (auto-fix)
+npm run format           # Prettier (auto-format)
+
+# Database
+npx prisma generate      # Regenerate client (after schema changes)
+npx prisma migrate dev   # Create migration
+npx prisma studio        # Open database GUI
+npm run db:seed          # Seed database
+
+# API testing
+npm run postman:test     # Run all Postman collections
+npm run postman:auth     # Run auth tests only
+```
+
+### Windows-Specific Commands
+```cmd
+REM Kill process on port 3000
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+REM Clean install
+rmdir /s /q node_modules dist
+del package-lock.json
+npm install --legacy-peer-deps
+npx prisma generate
+npm run build
+```
+
+### Docker Development Stack
+```bash
+# Start all services (Postgres, Redis, Prometheus, Grafana, Jaeger)
+docker compose -f docker-compose.dev.yml up -d
+
+# Access monitoring dashboards
+# Grafana:       http://localhost:4000 (admin/admin)
+# Prometheus:    http://localhost:9090
+# Jaeger:        http://localhost:16686
+# Alertmanager:  http://localhost:9093
+
+# Stop all services
+docker compose -f docker-compose.dev.yml down
+
+# Fresh start (delete volumes)
+docker compose -f docker-compose.dev.yml down -v
+```
+
+---
+
+## 📝 Code Conventions & Patterns
+
+### Module Structure (Standard Template)
+Every feature module follows this pattern:
+```
+src/modules/feature/
+├── feature.module.ts        # Module definition
+├── feature.controller.ts    # REST API endpoints
+├── feature.service.ts       # Business logic
+├── feature.spec.ts          # Unit tests
+├── dto/
+│   ├── create-feature.dto.ts  # Input validation (class-validator)
+│   ├── update-feature.dto.ts  # PartialType of CreateDto
+│   └── query-feature.dto.ts   # Query parameters
+├── guards/                  # Feature-specific guards (if any)
+└── interfaces/              # TypeScript interfaces
+```
+
+### Database Access Pattern (ALWAYS use PrismaService)
+```typescript
+// ✅ CORRECT: Inject PrismaService
+@Injectable()
+export class UserService {
+  constructor(private prisma: PrismaService) {}
+  
+  async findUser(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+  
+  // Use executeTransaction for multi-step operations
+  async createWithProfile(data: CreateUserDto) {
+    return this.prisma.executeTransaction(async (tx) => {
+      const user = await tx.user.create({ data: userData });
+      const profile = await tx.profile.create({ data: profileData });
+      return { user, profile };
+    });
+  }
+}
+
+// ❌ NEVER create new PrismaClient instances
+const prisma = new PrismaClient(); // WRONG!
+```
+
+### Caching Pattern (RedisService)
+```typescript
+@Injectable()
+export class ProductService {
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
+  
+  async getProduct(id: string) {
+    // Try cache first
+    const cached = await this.redis.get<Product>(`product:${id}`);
+    if (cached) return cached;
+    
+    // Fetch from DB
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    
+    // Cache for 5 minutes
+    await this.redis.set(`product:${id}`, product, 300);
+    return product;
+  }
+  
+  // Invalidate cache on update
+  async updateProduct(id: string, data: UpdateProductDto) {
+    const updated = await this.prisma.product.update({ where: { id }, data });
+    await this.redis.delete(`product:${id}`);
+    return updated;
+  }
+}
+```
+
+### Error Handling (Use NestJS Exceptions)
+```typescript
+import { NotFoundException, BadRequestException } from '@nestjs/common';
+
+async getUser(id: string) {
+  const user = await this.prisma.user.findUnique({ where: { id } });
+  
+  if (!user) {
+    throw new NotFoundException(`User with ID ${id} not found`);
+  }
+  
+  return user;
+}
+
+// ❌ NEVER throw generic errors
+throw new Error('User not found'); // WRONG!
+```
+
+### DTO Validation Pattern
+```typescript
+import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateUserDto {
+  @ApiProperty({ example: 'john.doe@example.com' })
+  @IsEmail()
+  email: string;
+  
+  @ApiProperty({ minLength: 8 })
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[0-9])(?=.*[!@#$%^&*])/, {
+    message: 'Password must contain at least one number and special character',
+  })
+  password: string;
+}
+
+// Update DTOs extend PartialType
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
+```
+
+### Controller Pattern (CRUD + Auth)
+```typescript
+@Controller('users')
+@ApiTags('Users')
+@UseGuards(JwtAuthGuard)  // All routes require JWT auth
+export class UserController {
+  constructor(private userService: UserService) {}
+  
+  @Get()
+  @ApiOperation({ summary: 'List all users' })
+  async findAll(@Query() query: QueryUserDto) {
+    return this.userService.findAll(query);
+  }
+  
+  @Post()
+  @Roles('ADMIN', 'SUPER_ADMIN')  // Role-based access
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Create user' })
+  async create(@Body() dto: CreateUserDto) {
+    return this.userService.create(dto);
+  }
+  
+  @Post('public-endpoint')
+  @Public()  // Skip authentication
+  async publicEndpoint() { }
+  
+  @Post('rate-limited')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })  // 5 req/min
+  async rateLimited() { }
+}
+```
+
+### Logging Pattern
+```typescript
+@Injectable()
+export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+  
+  async createOrder(data: CreateOrderDto) {
+    this.logger.log(`Creating order for user ${data.userId}`);
+    
+    try {
+      const order = await this.prisma.order.create({ data });
+      this.logger.log(`Order created: ${order.id}`);
+      return order;
+    } catch (error) {
+      this.logger.error(`Failed to create order: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+}
+```
+
+### Monitoring Integration
+```typescript
+// Add custom metrics
+@Injectable()
+export class OrderService {
+  constructor(
+    private prisma: PrismaService,
+    private prometheus: PrometheusService,
+  ) {}
+  
+  async createOrder(data: CreateOrderDto) {
+    const order = await this.prisma.order.create({ data });
+    
+    // Record business metric
+    this.prometheus.recordOrder(order.id, order.status);
+    
+    return order;
+  }
+}
+
+// Add custom tracing spans
+import { trace } from '@opentelemetry/api';
+
+@Injectable()
+export class PaymentService {
+  private tracer = trace.getTracer('payment-service');
+  
+  async processPayment(orderId: string, amount: number) {
+    return await this.tracer.startActiveSpan('processPayment', async (span) => {
+      try {
+        span.setAttribute('order.id', orderId);
+        span.setAttribute('payment.amount', amount);
+        
+        const result = await this.externalPaymentGateway.charge(amount);
+        return result;
+      } catch (error) {
+        span.recordException(error);
+        throw error;
+      } finally {
+        span.end();
+      }
+    });
+  }
+}
+```
+
+---
+
+## 🧪 Testing Strategy
+
+### Test Organization
+- **Unit tests**: `*.spec.ts` co-located with source files
+- **E2E tests**: `test/*.e2e-spec.ts`
+- **Postman collections**: `postman/*.postman_collection.json`
+- **Load tests**: `test/k6/*.js` (k6 scripts)
+
+### Running Tests
+```bash
+npm test                 # All unit tests
+npm run test:watch       # Watch mode
+npm run test:cov         # Coverage report
+npm run test:e2e         # E2E tests
+npm run postman:test     # Postman collections
+```
+
+### Unit Test Template
+```typescript
+describe('UserService', () => {
+  let service: UserService;
+  let prisma: PrismaService;
+  
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              findUnique: jest.fn(),
+              create: jest.fn(),
+            },
+          },
+        },
+      ],
+    }).compile();
+    
+    service = module.get<UserService>(UserService);
+    prisma = module.get<PrismaService>(PrismaService);
+  });
+  
+  it('should return a user', async () => {
+    const mockUser = { id: '1', email: 'test@example.com' };
+    jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+    
+    const result = await service.findOne('1');
+    
+    expect(result).toEqual(mockUser);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: '1' } });
+  });
+});
+```
+
+---
+
+## 🚀 CI/CD & Deployment
+
+### CI Pipeline (`.github/workflows/ci.yml`)
+Runs on push to `main`, `develop`, feature branches:
+1. **Linting**: ESLint + Prettier checks
+2. **Type checking**: `tsc --noEmit`
+3. **Unit tests**: Jest with coverage
+4. **E2E tests**: Integration tests with Postgres/Redis
+5. **Database**: Prisma generate + migrations
+6. **API tests**: Newman Postman collections
+7. **Docker**: Build and push image (main/develop only)
+
+**Important**: CI expects `/api/v1/health` to respond 200 OK during tests.
+
+### Production Deployment Checklist
+```bash
+# 1. Run tests
+npm test && npm run test:e2e
+
+# 2. Build application
+npm run build
+
+# 3. Apply migrations (production)
+npx prisma migrate deploy
+
+# 4. Start server
+npm run start:prod
+
+# 5. Verify health
+curl https://your-domain.com/api/v1/health
+```
+
+### Docker Deployment
+```bash
+# Build image
+docker build -t mash-backend:latest .
+
+# Run with docker-compose (includes monitoring)
+docker compose -f docker-compose.dev.yml up -d
+```
+
+**Note**: Dockerfile uses multi-stage build with health check (`node dist/health-check.js`).
+
+---
+
+## 🔧 Common Tasks
+
+### Adding a New Module
+```bash
+nest g module modules/feature
+nest g controller modules/feature
+nest g service modules/feature
+
+# Create DTOs
+mkdir src/modules/feature/dto
+# Add create-feature.dto.ts, update-feature.dto.ts, query-feature.dto.ts
+
+# Create test
+# Add feature.service.spec.ts
+```
+
+### Adding a Database Table
+```typescript
+// 1. Edit prisma/schema.prisma
+model Feature {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@map("features")
+}
+
+// 2. Create migration
+npx prisma migrate dev --name add_feature_table
+
+// 3. Regenerate client
+npx prisma generate
+
+// 4. Use in service
+const feature = await this.prisma.feature.create({ data });
+```
+
+### Adding a New API Endpoint
+```typescript
+// 1. Create DTO (dto/create-feature.dto.ts)
+export class CreateFeatureDto {
+  @IsString()
+  @ApiProperty()
+  name: string;
+}
+
+// 2. Add controller method
+@Post('features')
+@ApiOperation({ summary: 'Create feature' })
+async createFeature(@Body() dto: CreateFeatureDto) {
+  return this.featureService.create(dto);
+}
+
+// 3. Implement service
+async create(dto: CreateFeatureDto) {
+  return this.prisma.feature.create({ data: dto });
+}
+
+// 4. Add unit test
+it('should create a feature', async () => {
+  const dto = { name: 'Test' };
+  const result = await service.create(dto);
+  expect(result.name).toBe('Test');
+});
+
+// 5. Update Postman collection in postman/ folder
+```
+
+---
+
+## 🔥 Troubleshooting
+
+### Build Issues
+**Problem**: "Cannot find module" errors
+```bash
+# Solution: Clean install
+rmdir /s /q node_modules dist
+del package-lock.json
+npm install --legacy-peer-deps
+npx prisma generate
+```
+
+**Problem**: TypeScript compilation errors
+```bash
+npm run lint -- --fix
+npx tsc --noEmit
+npm run build
+```
+
+### Database Issues
+**Problem**: Prisma client out of sync
+```bash
+npx prisma generate  # Always run after schema changes
+```
+
+**Problem**: Migration conflicts
+```bash
+# DEVELOPMENT ONLY (deletes all data)
+npx prisma migrate reset
+npx prisma migrate dev
+```
+
+**Problem**: Connection errors
+```bash
+# Check DATABASE_URL format
+# postgresql://user:password@localhost:5432/database?sslmode=require
+
+# Test connection
+npx prisma db push
+```
+
+### Redis Issues
+**Problem**: Redis connection refused
+```bash
+# Start Redis with Docker
+docker run -d -p 6379:6379 redis:7-alpine
+
+# Or disable Redis (app runs without it)
+# Comment out REDIS_URL in .env
+```
+
+### Runtime Issues
+**Problem**: Port 3000 in use (Windows)
+```cmd
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+```
+
+**Problem**: Health endpoint returns unhealthy
+```bash
+curl http://localhost:3000/api/v1/health
+# Check response for failing service (database/redis/memory)
+```
+
+### Monitoring Issues
+**Problem**: No metrics in Prometheus
+```bash
+# 1. Check metrics endpoint
+curl http://localhost:3000/metrics
+
+# 2. Check Prometheus targets
+start http://localhost:9090/targets
+
+# 3. Restart Prometheus
+docker compose -f docker-compose.dev.yml restart prometheus
+```
+
+---
+
+## 🎯 Best Practices
+
+### Always Do ✅
+- Use `PrismaService` for database access (never create raw PrismaClient)
+- Use `RedisService` for caching (handles unavailability gracefully)
+- Add Swagger decorators (`@ApiOperation`, `@ApiProperty`) to all endpoints
+- Write unit tests for all services
+- Use DTOs with class-validator for input validation
+- Handle errors with NestJS exceptions (NotFoundException, etc.)
+- Add logging with proper log levels (Logger)
+- Add monitoring metrics for critical paths (PrometheusService)
+- Run `npx prisma generate` after schema changes
+- Use TypeScript strict mode (no `any` types)
+
+### Never Do ❌
+- Don't commit secrets or `.env` files
+- Don't create raw Prisma/Redis clients (use services)
+- Don't throw generic `Error` objects (use NestJS exceptions)
+- Don't skip input validation
+- Don't edit migration files manually
+- Don't deploy without running tests
+- Don't ignore TypeScript errors
+- Don't use `any` type
+- Don't break API contracts without versioning
+
+### Code Review Checklist
+- [ ] All tests pass (`npm run test`)
+- [ ] Build succeeds (`npm run build`)
+- [ ] Linting passes (`npm run lint`)
+- [ ] Type checking passes (`npx tsc --noEmit`)
+- [ ] New code has unit tests
+- [ ] DTOs have proper validation
+- [ ] Swagger docs are up to date
+- [ ] Error handling is complete
+- [ ] Logging is adequate
+- [ ] No secrets in code
+- [ ] Database migrations are reversible
+
+---
+
+## 📚 Key Resources
+
+### Documentation
+- **Monitoring**: `docs/monitoring/README.md`
+- **Windows Setup**: `docs/WINDOWS_QUICK_START.md`
+- **OAuth Setup**: `docs/OAUTH_SETUP_GUIDE.md`
+- **API Specification**: `API_SPECIFICATION.md`
+
+### Key Files
+- **Environment template**: `.env.example`
+- **Database schema**: `prisma/schema.prisma` (single source of truth)
+- **API collections**: `postman/*.postman_collection.json`
+- **CI/CD**: `.github/workflows/ci.yml`
+- **Docker**: `docker-compose.dev.yml`, `Dockerfile`
+
+### External Links
+- [NestJS Docs](https://docs.nestjs.com)
+- [Prisma Docs](https://www.prisma.io/docs)
+- [Prometheus Best Practices](https://prometheus.io/docs/practices/)
+
+---
+
+**Last Updated**: November 13, 2024  
+**Version**: 2.0 (Condensed for AI agents)  
+**Coverage**: Core patterns, critical workflows, project-specific conventions
 
 ```bash
 # Build TypeScript to JavaScript
