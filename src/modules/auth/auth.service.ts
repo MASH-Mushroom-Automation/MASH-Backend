@@ -536,6 +536,13 @@ export class AuthService {
         const errorMessage = clerkError instanceof Error ? clerkError.message : 'Unknown error';
         logger.warn(`[WARN] Clerk error: ${errorMessage}`);
         
+        // Check if it's a duplicate error (orphaned Clerk user scenario)
+        if (errorMessage.includes('already exists') || errorMessage.includes('identifier_exists')) {
+          logger.warn('[WARN] Email exists in Clerk but not in database - likely orphaned user from failed registration');
+          logger.warn('[WARN] Continuing with local registration using fallback ID');
+          logger.warn('[INFO] User can login using local auth (database password)');
+        }
+        
         // If Clerk username is taken, generate a unique username for local database
         if (clerkError?.errors?.[0]?.code === 'form_identifier_exists' && clerkError?.errors?.[0]?.meta?.paramName === 'username') {
           // Generate unique username by appending random suffix
@@ -545,6 +552,7 @@ export class AuthService {
         }
         
         // Continue with registration using local clerkId
+        // The user can still login using local auth (database password)
       }
 
       // Step 6: Generate DiceBear avatar URL
