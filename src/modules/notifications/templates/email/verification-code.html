@@ -7,7 +7,7 @@
     <style>
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f7fb; color: #2b2b2b; }
         .email-container { max-width: 680px; margin: 24px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 6px 24px rgba(10,22,38,0.08); }
-        .header { position: relative; height: 220px; background-image: url('cid:banner'); background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .header { position: relative; height: 220px; background-image: url('banner.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; }
         .header-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,30,50,0.12) 0%, rgba(6,30,50,0.24) 100%); }
         .logo-container { position: absolute; bottom: -48px; left: 50%; transform: translateX(-50%); z-index: 10; }
         .logo { width: 112px; height: 112px; background-color: #ffffff; border-radius: 14px; padding: 10px; box-shadow: 0 6px 18px rgba(10,22,38,0.12); display: block; object-fit: contain; }
@@ -42,14 +42,14 @@
         <div class="header" role="img" aria-label="MASH banner image">
             <div class="header-overlay" aria-hidden="true"></div>
             <div class="logo-container">
-                <img src="cid:logo" alt="MASH logo" class="logo">
+                <img src="MASH Logo.png" alt="MASH logo" class="logo">
             </div>
         </div>
 
         <div class="content">
             <h1 class="greeting">Hello {{firstName}},</h1>
 
-            <p class="message">Thank you for creating an account with MASH (Mushroom Automation Smart Home). To complete your registration, enter the 6-digit verification code below in your app.</p>
+            <p class="message">Thank you for creating an account with MASH. To complete your registration, enter the 6-digit verification code below in your app.</p>
 
             <div class="code-box" aria-label="Verification code">
                 <div class="code-label">Your verification code</div>
