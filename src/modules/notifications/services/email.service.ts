@@ -248,6 +248,35 @@ export class EmailService {
   }
 
   /**
+   * Send verification code email (6-digit code for mobile apps)
+   * PRIMARY METHOD for mobile-friendly email verification
+   */
+  async sendVerificationCodeEmail(
+    to: string,
+    firstName: string,
+    code: string,
+    expiresIn: string = '10 minutes',
+  ): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
+
+    await this.sendTemplatedEmail({
+      to,
+      templateType: EmailTemplateType.VERIFICATION_CODE,
+      variables: {
+        firstName,
+        code,
+        expiresIn,
+        supportEmail,
+        appUrl: frontendUrl,
+        year: new Date().getFullYear().toString(),
+      },
+    });
+
+    this.logger.log(`✅ Verification code email sent to: ${to} (Code: ${code}, Expires: ${expiresIn})`);
+  }
+
+  /**
    * Send forgot password email
    */
   async sendForgotPasswordEmail(

@@ -1,9 +1,10 @@
 // Initialize OpenTelemetry tracing FIRST (before any other imports)
-import './monitoring/tracing';
+// NOTE: Temporarily commented out to fix build issue - tracing.ts not compiling
+// import './monitoring/tracing';
 
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from '@nestjs/common';
+import { Logger, RequestMethod } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
@@ -28,22 +29,22 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  logger.log('🚀 Bootstrap function started');
+  logger.log('[STARTUP] Bootstrap function started');
 
-  logger.log('🔧 Stage 1: Creating NestJS application...');
+  logger.log('[CONFIG] Stage 1: Creating NestJS application...');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
   });
 
-  logger.log('✅ Stage 1 complete: Application created');
+  logger.log('[SUCCESS] Stage 1 complete: Application created');
 
-  logger.log('🔧 Stage 2: Setting up custom logger...');
+  logger.log('[CONFIG] Stage 2: Setting up custom logger...');
   // Use CustomLogger from CommonModule
   try {
     const customLogger = app.get(CustomLogger);
     app.useLogger(customLogger);
-    logger.log('✅ Stage 2 complete: Logger configured');
+    logger.log('[SUCCESS] Stage 2 complete: Logger configured');
   } catch (error) {
     logger.error('Failed to setup custom logger:', error);
   }
@@ -88,27 +89,27 @@ async function bootstrap() {
     prefix: '/public/',
   });
 
-  logger.log('🔧 Stage 3: Applying security middleware...');
+  logger.log('[CONFIG] Stage 3: Applying security middleware...');
   // Security middleware - Helmet with comprehensive headers
   app.use(helmet(getHelmetConfig(nodeEnv)));
 
-  logger.log('🔧 Stage 4: Applying compression...');
+  logger.log('[CONFIG] Stage 4: Applying compression...');
   // Compression middleware - Optimized response compression with threshold and filtering
   app.use(compression(getCompressionConfig(nodeEnv)));
 
-  logger.log('🔧 Stage 5: Enabling CORS...');
+  logger.log('[CONFIG] Stage 5: Enabling CORS...');
   // CORS configuration - Cross-origin resource sharing
   const corsOrigins = configService.get<string>('CORS_ORIGINS');
   const corsCredentials = configService.get<boolean>('CORS_CREDENTIALS', true);
   app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
 
-  logger.log('🔧 Stage 6: Setting up audit logging...');
+  logger.log('[CONFIG] Stage 6: Setting up audit logging...');
   // Audit logging interceptor - Track sensitive operations
   const reflector = app.get(Reflector);
   const auditLogService = app.get(AuditLogService);
   app.useGlobalInterceptors(new AuditLogInterceptor(reflector, auditLogService));
 
-  logger.log('🔧 Stage 7: Applying global exception filters...');
+  logger.log('[CONFIG] Stage 7: Applying global exception filters...');
   // ==================== GLOBAL EXCEPTION FILTERS ====================
   // Apply exception filters in order of specificity (most specific first)
   // Order matters: Specific exceptions should be caught before generic ones
@@ -118,13 +119,23 @@ async function bootstrap() {
     new HttpExceptionFilter(), // Catch HTTP exceptions
     new AllExceptionsFilter(), // Catch all other exceptions (fallback)
   );
-  logger.log('✅ Global exception filters applied successfully');
+  logger.log('[SUCCESS] Global exception filters applied successfully');
 
   // Note: Global validation pipes are registered in CommonModule
 
-  // API prefix - exclude auth HTML pages from the prefix
+  // API prefix - exclude auth HTML pages and metrics endpoint from the prefix
   app.setGlobalPrefix('api/v1', {
-    exclude: ['/', '/register', '/verify', '/forgot-password', '/reset-password', '/dashboard'],
+    exclude: [
+      '/', 
+      '/register', 
+      '/verify', 
+      '/forgot-password', 
+      '/reset-password', 
+      '/dashboard', 
+      { path: '/metrics', method: RequestMethod.ALL },
+      { path: '/metrics/json', method: RequestMethod.ALL },
+      { path: '/metrics/health', method: RequestMethod.ALL },
+    ],
   });
 
   // Swagger/OpenAPI Documentation - Clean and Simple Configuration
@@ -134,19 +145,20 @@ async function bootstrap() {
     .setVersion('1.0.0')
     .setContact('MASH Support', 'https://github.com/MASH-Mushroom-Automation/MASH-Backend', 'pp.namias@gmail.com')
     .setLicense('MIT', 'https://opensource.org/licenses/MIT')
-    // API Tags (lowercase for consistency with controllers)
-    .addTag('auth', 'User authentication and authorization')
-    .addTag('users', 'User management')
-    .addTag('profile', 'User profile management')
-    .addTag('products', 'Product catalog management')
-    .addTag('orders', 'Order management')
-    .addTag('categories', 'Product categories')
-    .addTag('devices', 'IoT device management')
-    .addTag('sensors', 'Sensor data and monitoring')
-    .addTag('notifications', 'Push notifications, SMS, and email')
-    .addTag('inventory', 'Inventory management')
-    .addTag('health', 'System health monitoring')
-    .addTag('rate-limits', 'Rate limiting and throttling')
+    // API Tags (professional naming without emojis)
+    .addTag('Authentication', 'User authentication and authorization')
+    .addTag('Users', 'User management')
+    .addTag('Profile', 'User profile management')
+    .addTag('Products', 'Product catalog management')
+    .addTag('Orders', 'Order management')
+    .addTag('Categories', 'Product categories')
+    .addTag('Devices', 'IoT device management')
+    .addTag('Sensors', 'Sensor data and monitoring')
+    .addTag('Notifications', 'Push notifications, SMS, and email')
+    .addTag('Inventory', 'Inventory management')
+    .addTag('Health', 'System health monitoring')
+    .addTag('Rate Limits', 'Rate limiting and throttling')
+    .addTag('Database Seeding', 'Database seeding operations')
     // Authentication
     .addBearerAuth(
       {
@@ -176,20 +188,20 @@ async function bootstrap() {
     },
   });
 
-  logger.log(`✅ Swagger API Documentation: http://localhost:${port}/api/docs`);
+  logger.log(`[SUCCESS] Swagger API Documentation: http://localhost:${port}/api/docs`);
 
-  logger.log('🔧 Stage 8: Enabling graceful shutdown...');
+  logger.log('[CONFIG] Stage 8: Enabling graceful shutdown...');
   // Graceful shutdown
   try {
     app.enableShutdownHooks();
-    logger.log('✅ Stage 8 complete: Shutdown hooks enabled');
+    logger.log('[SUCCESS] Stage 8 complete: Shutdown hooks enabled');
   } catch (error) {
-    logger.error('❌ Stage 8 failed:', error);
+    logger.error('[ERROR] Stage 8 failed:', error);
     throw error;
   }
 
-  logger.log(`🔧 Stage 9: Binding to port ${port} on 0.0.0.0...`);
-  logger.log(`📊 Memory before listen: ${JSON.stringify(process.memoryUsage())}`);
+  logger.log(`[CONFIG] Stage 9: Binding to port ${port} on 0.0.0.0...`);
+  logger.log(`[METRICS] Memory before listen: ${JSON.stringify(process.memoryUsage())}`);
   
   // Bind to 0.0.0.0 to accept connections from any network interface
   // This is required for cloud platforms like Render, Railway, etc.
@@ -197,25 +209,25 @@ async function bootstrap() {
     const startTime = Date.now();
     await app.listen(port, '0.0.0.0');
     const listenTime = Date.now() - startTime;
-    logger.log(`✅ Stage 9 complete: Server listening on port ${port} (took ${listenTime}ms)`);
+    logger.log(`[SUCCESS] Stage 9 complete: Server listening on port ${port} (took ${listenTime}ms)`);
   } catch (error) {
-    logger.error('❌ Stage 9 failed - Could not bind to port:', error);
+    logger.error('[ERROR] Stage 9 failed - Could not bind to port:', error);
     throw error;
   }
 
-  logger.log(`🎉 Application successfully started!`);
-  logger.log(`📍 Running on: http://localhost:${port}`);
-  logger.log(`🌍 Environment: ${nodeEnv}`);
-  logger.log(`🔗 API Prefix: api/v1`);
-  logger.log(`📖 API Docs: http://localhost:${port}/api/docs`);
-  logger.log(`💚 Health Check: http://localhost:${port}/api/v1/health`);
-  logger.log(`📊 Final Memory: ${JSON.stringify(process.memoryUsage())}`);
+  logger.log(`[READY] Application successfully started!`);
+  logger.log(`[INFO] Running on: http://localhost:${port}`);
+  logger.log(`[INFO] Environment: ${nodeEnv}`);
+  logger.log(`[INFO] API Prefix: api/v1`);
+  logger.log(`[DOCS] API Docs: http://localhost:${port}/api/docs`);
+  logger.log(`[HEALTH] Health Check: http://localhost:${port}/api/v1/health`);
+  logger.log(`[METRICS] Final Memory: ${JSON.stringify(process.memoryUsage())}`);
 }
 
-// 🔧 DEBUGGING: Add global error handlers to catch unhandled errors
+// [CONFIG] DEBUGGING: Add global error handlers to catch unhandled errors
 process.on('uncaughtException', error => {
   const logger = new Logger('UncaughtException');
-  logger.error('🔥 UNCAUGHT EXCEPTION:');
+  logger.error('[CRITICAL] UNCAUGHT EXCEPTION:');
   logger.error(`Error type: ${error.constructor.name}`);
   logger.error(`Message: ${error.message}`);
   logger.error(`Stack: ${error.stack}`);
@@ -224,7 +236,7 @@ process.on('uncaughtException', error => {
 
 process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
   const logger = new Logger('UnhandledRejection');
-  logger.error('🔥 UNHANDLED REJECTION:');
+  logger.error('[CRITICAL] UNHANDLED REJECTION:');
   logger.error('Promise:', promise);
 
   if (reason instanceof Error) {
@@ -238,11 +250,11 @@ process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) =>
   process.exit(1);
 });
 
-// 🔧 DEBUGGING: Add startup timeout to prevent infinite hanging
+// [CONFIG] DEBUGGING: Add startup timeout to prevent infinite hanging
 const STARTUP_TIMEOUT = 120000; // 2 minutes
 const startupTimer = setTimeout(() => {
   const logger = new Logger('StartupTimeout');
-  logger.error('❌ APPLICATION STARTUP TIMEOUT');
+  logger.error('[ERROR] APPLICATION STARTUP TIMEOUT');
   logger.error(`Application failed to start within ${STARTUP_TIMEOUT / 1000} seconds`);
   logger.error('This usually indicates a hanging async operation during initialization');
   logger.error(`Current memory: ${JSON.stringify(process.memoryUsage())}`);
@@ -253,12 +265,12 @@ bootstrap()
   .then(() => {
     clearTimeout(startupTimer);
     const logger = new Logger('Bootstrap');
-    logger.log('✅ Bootstrap completed successfully');
+    logger.log('[SUCCESS] Bootstrap completed successfully');
   })
   .catch(error => {
     clearTimeout(startupTimer);
     const logger = new Logger('Bootstrap');
-    logger.error('❌ FATAL ERROR DURING BOOTSTRAP:');
+    logger.error('[ERROR] FATAL ERROR DURING BOOTSTRAP:');
     logger.error(`Error type: ${typeof error}`);
     logger.error('Error:', error);
     if (error instanceof Error) {

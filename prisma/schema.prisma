@@ -11,65 +11,85 @@ datasource db {
 }
 
 model User {
-  id                   String               @id @default(cuid())
-  clerkId              String               @unique
-  email                String               @unique
-  username             String?              @unique
-  password             String?
-  firstName            String?
-  lastName             String?
-  imageUrl             String?
-  phoneNumber          String?
-  role                 UserRole             @default(USER)
-  isActive             Boolean              @default(true)
-  preferences          Json? // User preferences (theme, language, timezone, notifications)  
-  // Email Verification Fields
-  emailVerified              Boolean   @default(false) // Email verification status
-  emailVerificationToken     String?   // Verification token (64-char hex)
-  emailVerificationExpiry    DateTime? // Token expiration timestamp
-  twoFactorSecret      String? // TOTP secret (base32 encoded)
-  twoFactorEnabled     Boolean              @default(false) // Whether 2FA is enabled
-  twoFactorBackupCodes String[]             @default([]) // Hashed backup codes
-  lastLoginAt          DateTime?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  addresses            Address[]
-  apiKeys              ApiKey[]
-  devices              Device[]
-  userNotifications    UserNotification[]   @relation("UserNotifications")
-  orders               Order[]
-  payments             Payment[]
-  sensorData           SensorData[]
-  sessions             Session[]
-  userRoleAssignments  UserRoleAssignment[]
+  id                      String                 @id @default(cuid())
+  clerkId                 String?                @unique
+  email                   String                 @unique
+  username                String?                @unique
+  firstName               String?
+  lastName                String?
+  imageUrl                String?
+  phoneNumber             String?
+  role                    UserRole               @default(USER)
+  isActive                Boolean                @default(true)
+  lastLoginAt             DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  preferences             Json?
+  twoFactorBackupCodes    String[]               @default([])
+  twoFactorEnabled        Boolean                @default(false)
+  twoFactorSecret         String?
+  password                String?
+  emailVerified           Boolean                @default(false)
+  emailVerificationToken  String?
+  emailVerificationExpiry DateTime?
+  
+  // === OAUTH/SSO FIELDS (Google & Facebook) ===
+  googleId                String?   @unique // Google user ID (sub claim from JWT)
+  facebookId              String?   @unique // Facebook user ID
+  oauthProvider           String[]  @default([]) // Array: ["google", "facebook"] if both linked
+  oauthAccessToken        String?   // Optional: Store OAuth access token (encrypted)
+  oauthRefreshToken       String?   // Optional: Store OAuth refresh token (encrypted)
+  oauthTokenExpiry        DateTime? // Optional: Track token expiration
+  
+  // 6-Digit Verification Code Fields (Mobile-Friendly)
+  emailVerificationCode        String?   // 6-digit numeric code (e.g., "123456")
+  emailVerificationCodeExpiry  DateTime? // Code expires in 10 minutes
+  emailVerificationCodeUsed    Boolean   @default(false) // Single-use enforcement
+  emailVerificationAttempts    Int       @default(0) // Track failed attempts (max 5)
+  emailVerificationCodeSentAt  DateTime? // Rate limiting timestamp
+  
+  // 6-Digit Password Reset Code Fields (Mobile-Friendly)
+  passwordResetCode            String?   // 6-digit numeric code for password reset
+  passwordResetCodeExpiry      DateTime? // Code expires in 10 minutes
+  passwordResetCodeUsed        Boolean   @default(false) // Single-use enforcement
+  passwordResetAttempts        Int       @default(0) // Track failed attempts (max 5)
+  passwordResetCodeSentAt      DateTime? // Rate limiting timestamp
+  
+  addresses               Address[]
+  alertAcknowledgments    AlertAcknowledgment[]  @relation("AlertAcknowledgmentUser")
+  alertRecipients         AlertRuleRecipient[]   @relation("AlertRecipient")
+  alertRulesCreated       AlertRule[]            @relation("AlertRuleCreator")
+  alertRulesUpdated       AlertRule[]            @relation("AlertRuleUpdater")
+  apiKeys                 ApiKey[]
+  apiUsageLogs            ApiUsageLog[]
+  apiVersionUsage         ApiVersionUsage[]
+  devices                 Device[]
+  importExportJobs        ImportExportJob[]      @relation("ImportExportJobsCreated")
+  notificationTemplates   NotificationTemplate[] @relation("NotificationTemplateCreator")
+  alertNotifications      Notification[]
+  orders                  Order[]
+  payments                Payment[]
+  pushSubscriptions       PushSubscription[]
+  rateLimitOverrides      RateLimitOverride[]
+  requestQueues           RequestQueue[]
+  sensorData              SensorData[]
+  sessions                Session[]
+  userNotifications       UserNotification[]     @relation("UserNotifications")
+  userRoleAssignments     UserRoleAssignment[]
 
-  // Alert System Relations
-  alertRulesCreated     AlertRule[]            @relation("AlertRuleCreator")
-  alertRulesUpdated     AlertRule[]            @relation("AlertRuleUpdater")
-  alertRecipients       AlertRuleRecipient[]   @relation("AlertRecipient")
-  alertAcknowledgments  AlertAcknowledgment[]  @relation("AlertAcknowledgmentUser")
-  notificationTemplates NotificationTemplate[] @relation("NotificationTemplateCreator")
-  alertNotifications    Notification[]
-
-  // Import/Export System Relations
-  importExportJobs ImportExportJob[] @relation("ImportExportJobsCreated")
-
-  // API Gateway & Rate Limiting Relations (Issue #32)
-  rateLimitOverrides RateLimitOverride[]
-  apiUsageLogs       ApiUsageLog[]
-  requestQueues      RequestQueue[]
-  apiVersionUsage    ApiVersionUsage[]
-
-  // Push Notifications Relations (Issue #29)
-  pushSubscriptions PushSubscription[]
-
-  // Performance Indexes for analytics queries
   @@index([createdAt])
   @@index([isActive, role])
   @@index([lastLoginAt])
-  @@index([email, isActive]) // Email lookup with active filter (Neon optimization)
-  @@index([emailVerificationToken]) // Fast lookup for verification tokens
-  @@index([email, emailVerified]) // Query verified users efficiently
+  @@index([email, isActive])
+  @@index([emailVerificationToken])
+  @@index([email, emailVerified])
+  @@index([email, emailVerificationCode]) // Fast lookup for code-based verification
+  @@index([emailVerificationCode, emailVerificationCodeExpiry]) // Fast expiry checks
+  @@index([email, passwordResetCode]) // Fast lookup for password reset
+  @@index([passwordResetCode, passwordResetCodeExpiry]) // Fast expiry checks for password reset
+  @@index([googleId]) // Fast lookup for Google OAuth users
+  @@index([facebookId]) // Fast lookup for Facebook OAuth users
+  @@index([oauthProvider]) // Fast lookup by OAuth provider
   @@map("users")
 }
 
@@ -79,7 +99,7 @@ model Device {
   type              DeviceType
   serialNumber      String             @unique
   status            DeviceStatus       @default(OFFLINE)
-  userId            String
+  userId            String?
   location          String?
   description       String?
   firmware          String?
@@ -89,15 +109,14 @@ model Device {
   isActive          Boolean            @default(true)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  alerts            SensorAlert[]
   deviceCommands    DeviceCommand[]
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  healthRecords     DeviceHealth[]
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pushSubscriptions PushSubscription[]
+  alerts            SensorAlert[]
   sensorData        SensorData[]
   sensors           Sensor[]
-  healthRecords     DeviceHealth[]
-  pushSubscriptions PushSubscription[]
 
-  // Performance Indexes (Task 1.2)
   @@index([userId, status, isActive])
   @@index([status, lastSeen(sort: Desc)])
   @@index([createdAt])
@@ -196,20 +215,19 @@ model Product {
   attributes     Json?
   isActive       Boolean     @default(true)
   isFeatured     Boolean     @default(false)
-  isDeleted      Boolean     @default(false) // Soft delete for archived products
-  deletedAt      DateTime? // When product was archived
   seoTitle       String?
   seoDescription String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?
+  isDeleted      Boolean     @default(false)
   orderItems     OrderItem[]
 
-  // Performance Indexes (Task 1.2)
   @@index([isActive, isFeatured, createdAt(sort: Desc)])
   @@index([slug, isActive])
   @@index([stock, minStock])
   @@index([createdAt])
-  @@index([isDeleted, isActive]) // Soft delete filtering (Neon optimization)
+  @@index([isDeleted, isActive])
   @@map("products")
 }
 
@@ -227,7 +245,6 @@ model Category {
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
 
-  // Performance Indexes (Task 1.2)
   @@index([isActive, sortOrder])
   @@index([parentId, isActive])
   @@index([createdAt])
@@ -258,7 +275,6 @@ model Order {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments        Payment[]
 
-  // Performance Indexes (Task 1.2)
   @@index([userId, status, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([orderNumber])
@@ -277,7 +293,6 @@ model OrderItem {
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
 
-  // Analytics indexes for product performance queries
   @@index([productId])
   @@index([orderId])
   @@index([productId, orderId])
@@ -324,7 +339,6 @@ model Payment {
   order           Order?        @relation(fields: [orderId], references: [id])
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Payment history index (Neon optimization)
   @@index([userId, status, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([transactionId])
@@ -513,6 +527,514 @@ model RateLimitLog {
   @@map("rate_limit_logs")
 }
 
+model AlertRule {
+  id              String               @id @default(uuid())
+  name            String
+  description     String?
+  category        AlertCategory
+  priority        AlertPriority
+  eventType       String
+  condition       Json
+  activeHours     Json?
+  cooldownMinutes Int                  @default(15)
+  isActive        Boolean              @default(true)
+  isDeleted       Boolean              @default(false)
+  createdBy       String
+  updatedBy       String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  recipients      AlertRuleRecipient[]
+  creator         User                 @relation("AlertRuleCreator", fields: [createdBy], references: [id])
+  updater         User?                @relation("AlertRuleUpdater", fields: [updatedBy], references: [id])
+  alerts          Alert[]
+
+  @@index([eventType])
+  @@index([isActive])
+  @@index([category, priority])
+  @@index([createdBy])
+  @@map("alert_rules")
+}
+
+model AlertRuleRecipient {
+  id            String        @id @default(uuid())
+  ruleId        String
+  recipientType RecipientType
+  recipientId   String?
+  role          String?
+  email         String?
+  phone         String?
+  enableEmail   Boolean       @default(true)
+  enableSms     Boolean       @default(false)
+  enablePush    Boolean       @default(true)
+  enableInApp   Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User?         @relation("AlertRecipient", fields: [recipientId], references: [id])
+  rule          AlertRule     @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([recipientId])
+  @@map("alert_rule_recipients")
+}
+
+model Alert {
+  id              String                @id @default(uuid())
+  title           String
+  message         String
+  resolvedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  acknowledgedAt  DateTime?
+  category        AlertCategory
+  escalatedAt     DateTime?
+  eventData       Json?
+  eventId         String?
+  eventType       String
+  fingerprint     String
+  firstOccurrence DateTime              @default(now())
+  groupKey        String?
+  lastOccurrence  DateTime              @default(now())
+  metadata        Json?
+  occurrenceCount Int                   @default(1)
+  priority        AlertPriority
+  ruleId          String
+  snoozedUntil    DateTime?
+  status          AlertStatus           @default(PENDING)
+  tags            String[]              @default([])
+  triggeredAt     DateTime              @default(now())
+  severity        Int                   @default(5)
+  acknowledgments AlertAcknowledgment[]
+  rule            AlertRule             @relation(fields: [ruleId], references: [id])
+  notifications   Notification[]        @relation("AlertNotifications")
+
+  @@index([ruleId])
+  @@index([status])
+  @@index([priority])
+  @@index([fingerprint])
+  @@index([triggeredAt])
+  @@index([eventType, eventId])
+  @@map("alerts")
+}
+
+model Notification {
+  id                String                @id @default(uuid())
+  userId            String?
+  createdAt         DateTime              @default(now())
+  alertId           String?
+  body              String
+  channel           NotificationChannel
+  deliveredAt       DateTime?
+  errorMessage      String?
+  failedAt          DateTime?
+  maxRetries        Int                   @default(3)
+  metadata          Json?
+  nextRetryAt       DateTime?
+  priority          Int                   @default(5)
+  provider          String?
+  providerMessageId String?
+  providerResponse  Json?
+  queuedAt          DateTime?
+  recipientEmail    String?
+  recipientId       String?
+  recipientPhone    String?
+  retryCount        Int                   @default(0)
+  sentAt            DateTime?
+  status            NotificationStatus    @default(PENDING)
+  subject           String?
+  templateId        String?
+  updatedAt         DateTime              @updatedAt
+  alert             Alert?                @relation("AlertNotifications", fields: [alertId], references: [id])
+  template          NotificationTemplate? @relation(fields: [templateId], references: [id])
+  user              User?                 @relation(fields: [userId], references: [id])
+
+  @@index([alertId])
+  @@index([userId])
+  @@index([status])
+  @@index([channel])
+  @@index([queuedAt])
+  @@index([createdAt])
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, priority, queuedAt])
+  @@index([status, nextRetryAt])
+  @@map("notifications")
+}
+
+model AlertAcknowledgment {
+  id        String               @id @default(uuid())
+  alertId   String
+  userId    String
+  action    AcknowledgmentAction
+  comment   String?
+  metadata  Json?
+  createdAt DateTime             @default(now())
+  alert     Alert                @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  user      User                 @relation("AlertAcknowledgmentUser", fields: [userId], references: [id])
+
+  @@index([alertId])
+  @@index([userId])
+  @@map("alert_acknowledgments")
+}
+
+model NotificationTemplate {
+  id            String              @id @default(uuid())
+  name          String              @unique
+  description   String?
+  category      AlertCategory
+  channel       NotificationChannel
+  subject       String?
+  body          String
+  variables     Json?
+  isActive      Boolean             @default(true)
+  createdBy     String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  creator       User                @relation("NotificationTemplateCreator", fields: [createdBy], references: [id])
+  notifications Notification[]
+
+  @@index([name])
+  @@index([category, channel])
+  @@map("notification_templates")
+}
+
+model AlertEscalationPolicy {
+  id                String          @id @default(uuid())
+  name              String
+  description       String?
+  priority          AlertPriority[]
+  category          AlertCategory[]
+  unacknowledgedMin Int             @default(30)
+  steps             Json
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([isActive])
+  @@map("alert_escalation_policies")
+}
+
+model Report {
+  id            String               @id @default(uuid())
+  name          String
+  description   String?
+  type          ReportType
+  configuration Json
+  schedule      Json?
+  isActive      Boolean              @default(true)
+  createdBy     String
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  executions    ReportExecution[]
+  subscriptions ReportSubscription[]
+
+  @@index([type])
+  @@index([createdBy])
+  @@index([isActive, type])
+  @@map("reports")
+}
+
+model ReportExecution {
+  id           String          @id @default(uuid())
+  reportId     String
+  status       ExecutionStatus @default(PENDING)
+  startedAt    DateTime        @default(now())
+  completedAt  DateTime?
+  duration     Int?
+  resultData   Json?
+  resultUrl    String?
+  errorMessage String?
+  executedBy   String?
+  report       Report          @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([reportId, status])
+  @@map("report_executions")
+}
+
+model ReportSubscription {
+  id         String                @id @default(uuid())
+  reportId   String
+  userId     String
+  channel    NotificationChannel
+  frequency  SubscriptionFrequency
+  isActive   Boolean               @default(true)
+  lastSentAt DateTime?
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  report     Report                @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, userId, channel])
+  @@index([reportId])
+  @@index([userId])
+  @@index([isActive, frequency])
+  @@map("report_subscriptions")
+}
+
+model SearchLog {
+  id            String   @id @default(cuid())
+  query         String
+  index         String
+  resultsCount  Int
+  took          Int
+  filters       Json?
+  sort          Json?
+  userId        String?
+  ipAddress     String?
+  userAgent     String?
+  clickedResult String?
+  isSlowQuery   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([query])
+  @@index([createdAt])
+  @@index([isSlowQuery, took])
+  @@index([userId, createdAt])
+  @@index([index, createdAt])
+  @@map("search_logs")
+}
+
+model ImportExportJob {
+  id               String              @id @default(cuid())
+  type             JobType
+  entityType       EntityType
+  status           JobStatus
+  priority         JobPriority
+  fileName         String
+  fileFormat       FileFormat
+  fileSize         Int
+  fileUrl          String?
+  resultFileUrl    String?
+  totalRecords     Int                 @default(0)
+  processedRecords Int                 @default(0)
+  successCount     Int                 @default(0)
+  failureCount     Int                 @default(0)
+  warningCount     Int                 @default(0)
+  progressPercent  Float               @default(0)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  estimatedTimeMs  Int?
+  options          Json?
+  filters          Json?
+  createdBy        String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  errors           ImportExportError[]
+  createdByUser    User                @relation("ImportExportJobsCreated", fields: [createdBy], references: [id])
+
+  @@index([status, createdAt])
+  @@index([entityType, type])
+  @@index([createdBy])
+  @@map("import_export_jobs")
+}
+
+model ImportExportError {
+  id             String          @id @default(cuid())
+  jobId          String
+  rowNumber      Int?
+  columnName     String?
+  fieldPath      String?
+  errorType      ErrorType
+  severity       ErrorSeverity
+  errorCode      String
+  message        String
+  suggestion     String?
+  originalValue  String?
+  expectedFormat String?
+  createdAt      DateTime        @default(now())
+  job            ImportExportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, severity])
+  @@map("import_export_errors")
+}
+
+model ImportExportTemplate {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  entityType  EntityType
+  fileFormat  FileFormat
+  headers     Json
+  sampleData  Json
+  validation  Json
+  isActive    Boolean    @default(true)
+  createdBy   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([entityType, fileFormat])
+  @@map("import_export_templates")
+}
+
+model ApiGatewayConfig {
+  id             String                @id @default(cuid())
+  serviceName    String                @unique
+  basePath       String
+  targetUrl      String
+  healthCheckUrl String?
+  timeout        Int                   @default(30000)
+  retryAttempts  Int                   @default(3)
+  circuitBreaker Boolean               @default(true)
+  loadBalancing  LoadBalancingStrategy @default(ROUND_ROBIN)
+  isActive       Boolean               @default(true)
+  priority       Int                   @default(0)
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@map("api_gateway_configs")
+}
+
+model RateLimitOverride {
+  id           String            @id @default(cuid())
+  userId       String?
+  apiKey       String?
+  endpoint     String
+  requestLimit Int
+  timeWindowMs Int
+  strategy     RateLimitStrategy @default(TOKEN_BUCKET)
+  priority     Int               @default(0)
+  reason       String?
+  expiresAt    DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  user         User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([apiKey])
+  @@index([endpoint])
+  @@map("rate_limit_overrides")
+}
+
+model ApiUsageLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  apiKey       String?
+  endpoint     String
+  method       String
+  version      String
+  statusCode   Int
+  responseTime Int
+  requestSize  Int?
+  responseSize Int?
+  ipAddress    String
+  userAgent    String?
+  referer      String?
+  rateLimitHit Boolean  @default(false)
+  throttled    Boolean  @default(false)
+  queueTime    Int?
+  metadata     Json?
+  timestamp    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, timestamp])
+  @@index([endpoint, timestamp])
+  @@index([timestamp])
+  @@index([apiKey])
+  @@map("api_usage_logs")
+}
+
+model RequestQueue {
+  id              String             @id @default(cuid())
+  userId          String?
+  endpoint        String
+  method          String
+  priority        Int                @default(50)
+  payload         Json?
+  headers         Json?
+  status          RequestQueueStatus @default(PENDING)
+  estimatedWaitMs Int?
+  queuedAt        DateTime           @default(now())
+  processedAt     DateTime?
+  completedAt     DateTime?
+  expiresAt       DateTime
+  retryCount      Int                @default(0)
+  errorMessage    String?
+  user            User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, priority, queuedAt])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("request_queues")
+}
+
+model ApiVersionUsage {
+  id           String   @id @default(cuid())
+  version      String
+  endpoint     String
+  userId       String?
+  requestCount Int      @default(1)
+  lastUsedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@unique([version, endpoint, userId])
+  @@index([version])
+  @@index([userId])
+  @@map("api_version_usage")
+}
+
+model CircuitBreakerState {
+  id            String                  @id @default(cuid())
+  serviceName   String                  @unique
+  state         CircuitBreakerStateEnum @default(CLOSED)
+  failureCount  Int                     @default(0)
+  successCount  Int                     @default(0)
+  lastFailureAt DateTime?
+  lastSuccessAt DateTime?
+  nextRetryAt   DateTime?
+  openedAt      DateTime?
+  metadata      Json?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([state])
+  @@map("circuit_breaker_states")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  deviceId  String?
+  endpoint  String   @unique
+  keys      Json
+  userAgent String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  device    Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+model DeviceHealth {
+  id             String             @id @default(uuid())
+  deviceId       String
+  timestamp      DateTime           @default(now())
+  status         DeviceHealthStatus
+  cpuUsage       Float?
+  memoryUsage    Float?
+  diskUsage      Float?
+  temperature    Float?
+  batteryLevel   Float?
+  networkLatency Int?
+  uptime         Int?
+  errorCount     Int                @default(0)
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  device         Device             @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp(sort: Desc)])
+  @@index([status])
+  @@index([timestamp])
+  @@map("device_health")
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -580,405 +1102,69 @@ enum NotificationType {
   PAYMENT_UPDATE
 }
 
-// ============================================
-// ALERT & NOTIFICATION SYSTEM (Issue #10)
-// ============================================
-
-// Alert Categories
 enum AlertCategory {
-  SYSTEM // System-level alerts (CPU, memory, disk)
-  SECURITY // Security-related alerts (unauthorized access, suspicious activity)
-  BUSINESS // Business logic alerts (low inventory, high sales)
-  USER // User-related alerts (account activity)
-  SENSOR // IoT sensor alerts (temperature, humidity)
-  ORDER // Order-related alerts (order delays, cancellations)
-  PAYMENT // Payment-related alerts (failed payments, refunds)
+  SYSTEM
+  SECURITY
+  BUSINESS
+  USER
+  SENSOR
+  ORDER
+  PAYMENT
 }
 
-// Alert Priority Levels
 enum AlertPriority {
-  CRITICAL // Requires immediate action
-  HIGH // Requires prompt attention
-  MEDIUM // Should be addressed soon
-  LOW // Can be addressed when convenient
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
 }
 
-// Alert Status
 enum AlertStatus {
-  PENDING // Alert created, waiting to be sent
-  SENT // Notifications sent
-  ACKNOWLEDGED // User acknowledged the alert
-  RESOLVED // Issue resolved
-  ESCALATED // Alert escalated to higher level
-  SNOOZED // Temporarily muted
-  CANCELLED // Alert cancelled
+  PENDING
+  SENT
+  ACKNOWLEDGED
+  RESOLVED
+  ESCALATED
+  SNOOZED
+  CANCELLED
 }
 
-// Notification Channel Types
 enum NotificationChannel {
-  EMAIL // Email notification
-  SMS // SMS notification
-  PUSH // Push notification (Firebase, OneSignal)
-  IN_APP // In-app notification
-  WEBHOOK // Webhook callback
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+  WEBHOOK
 }
 
-// Notification Status
 enum NotificationStatus {
-  PENDING // Queued, not sent yet
-  QUEUED // In processing queue
-  SENDING // Currently being sent
-  SENT // Successfully sent
-  DELIVERED // Confirmed delivery (webhook callback)
-  FAILED // Failed to send
-  BOUNCED // Email bounced
-  RETRYING // Retrying after failure
-  CANCELLED // Cancelled before sending
+  PENDING
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+  RETRYING
+  CANCELLED
 }
 
-// Recipient Types for Alert Rules
 enum RecipientType {
-  USER // Specific user by ID
-  ROLE // All users with a specific role
-  EMAIL // Direct email address
-  PHONE // Direct phone number
+  USER
+  ROLE
+  EMAIL
+  PHONE
 }
 
-// Acknowledgment Actions
 enum AcknowledgmentAction {
-  ACKNOWLEDGED // User acknowledged the alert
-  RESOLVED // User marked as resolved
-  ESCALATED // User escalated the alert
-  SNOOZED // User snoozed the alert
-  COMMENTED // User added a comment
-  CANCELLED // User cancelled the alert
+  ACKNOWLEDGED
+  RESOLVED
+  ESCALATED
+  SNOOZED
+  COMMENTED
+  CANCELLED
 }
 
-// ============================================
-// 1. ALERT RULES - Define when alerts trigger
-// ============================================
-model AlertRule {
-  id              String        @id @default(uuid())
-  name            String // Rule name (e.g., "High Temperature Alert")
-  description     String? // Detailed description
-  category        AlertCategory // Alert category
-  priority        AlertPriority // Alert priority
-  eventType       String // Event type to monitor (e.g., "sensor.temperature")
-  condition       Json // Condition to evaluate { operator: "GT", threshold: 30, field: "value" }
-  activeHours     Json? // Active time window { start: "09:00", end: "17:00", days: [1,2,3,4,5] }
-  cooldownMinutes Int           @default(15) // Cooldown period between alerts
-  isActive        Boolean       @default(true)
-  isDeleted       Boolean       @default(false)
-  createdBy       String // User who created the rule
-  updatedBy       String? // User who last updated
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // Relations
-  creator    User                 @relation("AlertRuleCreator", fields: [createdBy], references: [id])
-  updater    User?                @relation("AlertRuleUpdater", fields: [updatedBy], references: [id])
-  recipients AlertRuleRecipient[]
-  alerts     Alert[]
-
-  @@index([eventType])
-  @@index([isActive])
-  @@index([category, priority])
-  @@index([createdBy]) // User's created rules (Neon optimization)
-  @@map("alert_rules")
-}
-
-// ============================================
-// 2. ALERT RULE RECIPIENTS - Who receives alerts
-// ============================================
-model AlertRuleRecipient {
-  id            String        @id @default(uuid())
-  ruleId        String // Alert rule
-  recipientType RecipientType // Type of recipient
-  recipientId   String? // User ID (if USER type)
-  role          String? // Role name (if ROLE type)
-  email         String? // Email address (if EMAIL type)
-  phone         String? // Phone number (if PHONE type)
-
-  // Channel preferences
-  enableEmail Boolean @default(true)
-  enableSms   Boolean @default(false)
-  enablePush  Boolean @default(true)
-  enableInApp Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  rule AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  user User?     @relation("AlertRecipient", fields: [recipientId], references: [id])
-
-  @@index([ruleId])
-  @@index([recipientId])
-  @@map("alert_rule_recipients")
-}
-
-// ============================================
-// 3. ALERTS - Alert instances when rules trigger
-// ============================================
-model Alert {
-  id       String        @id @default(uuid())
-  ruleId   String // Alert rule that triggered this
-  title    String // Alert title
-  message  String // Alert message
-  category AlertCategory // Alert category
-  priority AlertPriority // Alert priority
-  severity Int           @default(5) // Severity score (1-10)
-  status   AlertStatus   @default(PENDING)
-
-  // Event Information
-  eventType String // Event type (e.g., "sensor.temperature")
-  eventId   String? // Original event ID
-  eventData Json? // Event data snapshot
-
-  // Deduplication & Grouping
-  fingerprint     String // Unique fingerprint for deduplication
-  groupKey        String? // Group similar alerts together
-  occurrenceCount Int      @default(1) // Number of times this alert occurred
-  firstOccurrence DateTime @default(now())
-  lastOccurrence  DateTime @default(now())
-
-  // Timing
-  triggeredAt    DateTime  @default(now())
-  acknowledgedAt DateTime?
-  resolvedAt     DateTime?
-  escalatedAt    DateTime?
-  snoozedUntil   DateTime?
-
-  // Metadata
-  metadata Json? // Additional metadata
-  tags     String[] @default([]) // Tags for filtering
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  rule            AlertRule             @relation(fields: [ruleId], references: [id])
-  notifications   Notification[]        @relation("AlertNotifications")
-  acknowledgments AlertAcknowledgment[]
-
-  @@index([ruleId])
-  @@index([status])
-  @@index([priority])
-  @@index([fingerprint])
-  @@index([triggeredAt])
-  @@index([eventType, eventId])
-  @@map("alerts")
-}
-
-// ============================================
-// 4. NOTIFICATIONS - Notification delivery records
-// ============================================
-model Notification {
-  id      String              @id @default(uuid())
-  alertId String? // Alert that triggered this notification
-  userId  String? // User receiving notification (for in-app)
-  channel NotificationChannel // Delivery channel
-  status  NotificationStatus  @default(PENDING)
-
-  // Recipient Information
-  recipientEmail String? // Email recipient
-  recipientPhone String? // Phone recipient
-  recipientId    String? // User ID recipient
-
-  // Content
-  subject    String? // Email subject / Push title
-  body       String // Message body
-  templateId String? // Template used (if any)
-
-  // Delivery Tracking
-  queuedAt    DateTime? // When added to queue
-  sentAt      DateTime? // When sent
-  deliveredAt DateTime? // When delivered (webhook confirmation)
-  failedAt    DateTime? // When failed
-
-  // Retry Logic
-  retryCount  Int       @default(0)
-  maxRetries  Int       @default(3)
-  nextRetryAt DateTime? // When to retry next
-
-  // Provider Details
-  provider          String? // Provider used (SendGrid, Twilio, Firebase)
-  providerMessageId String? // External message ID
-  providerResponse  Json? // Provider response data
-  errorMessage      String? // Error message if failed
-
-  // Metadata
-  metadata Json? // Additional metadata
-  priority Int   @default(5) // Priority for queue processing
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  alert    Alert?                @relation("AlertNotifications", fields: [alertId], references: [id])
-  user     User?                 @relation(fields: [userId], references: [id])
-  template NotificationTemplate? @relation(fields: [templateId], references: [id])
-
-  @@index([alertId])
-  @@index([userId])
-  @@index([status])
-  @@index([channel])
-  @@index([queuedAt])
-  @@index([createdAt])
-  // Performance Indexes (Task 1.2)
-  @@index([userId, status, createdAt(sort: Desc)])
-  @@index([status, priority, queuedAt])
-  @@index([status, nextRetryAt])
-  @@map("notifications")
-}
-
-// ============================================
-// 5. ALERT ACKNOWLEDGMENTS - Alert action history
-// ============================================
-model AlertAcknowledgment {
-  id        String               @id @default(uuid())
-  alertId   String // Alert being acknowledged
-  userId    String // User taking action
-  action    AcknowledgmentAction // Action taken
-  comment   String? // Optional comment
-  metadata  Json? // Additional metadata
-  createdAt DateTime             @default(now())
-
-  // Relations
-  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
-  user  User  @relation("AlertAcknowledgmentUser", fields: [userId], references: [id])
-
-  @@index([alertId])
-  @@index([userId])
-  @@map("alert_acknowledgments")
-}
-
-// ============================================
-// 6. NOTIFICATION TEMPLATES - Reusable templates
-// ============================================
-model NotificationTemplate {
-  id          String              @id @default(uuid())
-  name        String              @unique // Template identifier
-  description String? // Template description
-  category    AlertCategory // Category this template is for
-  channel     NotificationChannel // Channel type
-  subject     String? // Email subject / Push title template
-  body        String // Message body template (supports variables {{var}})
-  variables   Json? // Expected variables { "sensorName": "Sensor name", "temperature": "Current temp" }
-  isActive    Boolean             @default(true)
-  createdBy   String // User who created
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  // Relations
-  creator       User           @relation("NotificationTemplateCreator", fields: [createdBy], references: [id])
-  notifications Notification[]
-
-  @@index([name])
-  @@index([category, channel])
-  @@map("notification_templates")
-}
-
-// ============================================
-// 7. ALERT ESCALATION POLICIES - Auto-escalation rules
-// ============================================
-model AlertEscalationPolicy {
-  id                String          @id @default(uuid())
-  name              String // Policy name
-  description       String? // Policy description
-  priority          AlertPriority[] // Alert priorities this applies to
-  category          AlertCategory[] // Alert categories this applies to
-  unacknowledgedMin Int             @default(30) // Minutes before escalation
-  steps             Json // Escalation steps [{ level: 1, delay: 15, recipients: [...], channels: [...] }]
-  isActive          Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@index([isActive])
-  @@map("alert_escalation_policies")
-}
-
-// ============================================
-// UPDATE EXISTING USER MODEL RELATIONS
-// ============================================
-// Add these relations to the existing User model above:
-// - alertRulesCreated      AlertRule[]              @relation("AlertRuleCreator")
-// - alertRulesUpdated      AlertRule[]              @relation("AlertRuleUpdater")
-// - alertRecipients        AlertRuleRecipient[]     @relation("AlertRecipient")
-// - alertAcknowledgments   AlertAcknowledgment[]    @relation("AlertAcknowledgmentUser")
-// - notificationTemplates  NotificationTemplate[]   @relation("NotificationTemplateCreator")
-
-// ============================================
-// 8. ANALYTICS & REPORTING MODELS
-// ============================================
-model Report {
-  id            String     @id @default(uuid())
-  name          String // Report name
-  description   String? // Report description
-  type          ReportType // Report type (sales, users, products, etc.)
-  configuration Json // Report configuration (filters, grouping, etc.)
-  schedule      Json? // Schedule configuration for automated reports
-  isActive      Boolean    @default(true)
-  createdBy     String // User who created the report
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  // Relations
-  executions    ReportExecution[]
-  subscriptions ReportSubscription[]
-
-  @@index([type])
-  @@index([createdBy])
-  @@index([isActive, type])
-  @@map("reports")
-}
-
-model ReportExecution {
-  id           String          @id @default(uuid())
-  reportId     String // Report being executed
-  status       ExecutionStatus @default(PENDING)
-  startedAt    DateTime        @default(now())
-  completedAt  DateTime? // When execution completed
-  duration     Int? // Execution time in milliseconds
-  resultData   Json? // Execution result data
-  resultUrl    String? // URL to exported file (if applicable)
-  errorMessage String? // Error message if failed
-  executedBy   String? // User who triggered (null for scheduled)
-
-  // Relations
-  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  @@index([reportId])
-  @@index([status])
-  @@index([startedAt])
-  @@index([reportId, status])
-  @@map("report_executions")
-}
-
-model ReportSubscription {
-  id         String                @id @default(uuid())
-  reportId   String // Report being subscribed to
-  userId     String // Subscriber user
-  channel    NotificationChannel // Delivery channel
-  frequency  SubscriptionFrequency // How often to receive
-  isActive   Boolean               @default(true)
-  lastSentAt DateTime? // Last time report was sent
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
-
-  // Relations
-  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  @@unique([reportId, userId, channel])
-  @@index([reportId])
-  @@index([userId])
-  @@index([isActive, frequency])
-  @@map("report_subscriptions")
-}
-
-// ============================================
-// ANALYTICS ENUMS
-// ============================================
 enum ReportType {
   SALES
   REVENUE
@@ -1004,133 +1190,6 @@ enum SubscriptionFrequency {
   REAL_TIME
 }
 
-// ============================================
-// SEARCH ANALYTICS
-// ============================================
-
-model SearchLog {
-  id            String   @id @default(cuid())
-  query         String // The search query string
-  index         String // Which index was searched (products, orders, etc.)
-  resultsCount  Int // Number of results returned
-  took          Int // Query time in milliseconds
-  filters       Json? // Applied filters (price, category, etc.)
-  sort          Json? // Sort configuration
-  userId        String? // User ID if authenticated search
-  ipAddress     String? // IP address for rate limiting/analytics
-  userAgent     String? // Browser/client info
-  clickedResult String? // Product ID if user clicked a result
-  isSlowQuery   Boolean  @default(false) // Flag for queries >500ms
-  createdAt     DateTime @default(now())
-
-  // Indexes for analytics queries
-  @@index([query]) // Popular searches
-  @@index([createdAt]) // Time-based analytics
-  @@index([isSlowQuery, took]) // Slow query analysis
-  @@index([userId, createdAt]) // User search history
-  @@index([index, createdAt]) // Index-specific analytics
-  @@map("search_logs")
-}
-
-// ============================================
-// IMPORT/EXPORT SYSTEM
-// ============================================
-
-model ImportExportJob {
-  id         String      @id @default(cuid())
-  type       JobType // IMPORT | EXPORT
-  entityType EntityType // PRODUCT | ORDER | USER | CATEGORY | etc.
-  status     JobStatus // QUEUED | PROCESSING | COMPLETED | FAILED | CANCELLED
-  priority   JobPriority // URGENT | NORMAL | LOW
-
-  // File information
-  fileName      String
-  fileFormat    FileFormat // CSV | EXCEL | JSON | XML
-  fileSize      Int // in bytes
-  fileUrl       String? // S3/MinIO URL
-  resultFileUrl String? // For exports
-
-  // Progress tracking
-  totalRecords     Int   @default(0)
-  processedRecords Int   @default(0)
-  successCount     Int   @default(0)
-  failureCount     Int   @default(0)
-  warningCount     Int   @default(0)
-  progressPercent  Float @default(0)
-
-  // Timing
-  startedAt       DateTime?
-  completedAt     DateTime?
-  estimatedTimeMs Int?
-
-  // Configuration
-  options Json? // Import/export options (delimiter, skipRows, etc.)
-  filters Json? // Export filters
-
-  // Error tracking
-  errors ImportExportError[]
-
-  // Audit
-  createdBy     String
-  createdByUser User     @relation("ImportExportJobsCreated", fields: [createdBy], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([status, createdAt])
-  @@index([entityType, type])
-  @@index([createdBy])
-  @@map("import_export_jobs")
-}
-
-model ImportExportError {
-  id    String          @id @default(cuid())
-  jobId String
-  job   ImportExportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  // Error location
-  rowNumber  Int? // Row in file (1-indexed)
-  columnName String?
-  fieldPath  String? // For nested JSON/XML
-
-  // Error details
-  errorType  ErrorType // VALIDATION | CONSTRAINT | FORMAT | BUSINESS_RULE
-  severity   ErrorSeverity // ERROR | WARNING
-  errorCode  String // E.g., "REQUIRED_FIELD_MISSING"
-  message    String
-  suggestion String? // How to fix
-
-  // Original data
-  originalValue  String?
-  expectedFormat String?
-
-  createdAt DateTime @default(now())
-
-  @@index([jobId, severity])
-  @@map("import_export_errors")
-}
-
-model ImportExportTemplate {
-  id          String     @id @default(cuid())
-  name        String
-  description String?
-  entityType  EntityType
-  fileFormat  FileFormat
-
-  // Template configuration
-  headers    Json // Column names and order
-  sampleData Json // Example rows
-  validation Json // Validation rules
-
-  isActive  Boolean  @default(true)
-  createdBy String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([entityType, fileFormat])
-  @@map("import_export_templates")
-}
-
-// Enums for Import/Export System
 enum JobType {
   IMPORT
   EXPORT
@@ -1180,11 +1239,6 @@ enum ErrorSeverity {
   WARNING
 }
 
-// ============================================
-// API GATEWAY & RATE LIMITING (Issue #32)
-// ============================================
-
-// Load Balancing Strategy enum
 enum LoadBalancingStrategy {
   ROUND_ROBIN
   LEAST_CONNECTIONS
@@ -1193,7 +1247,6 @@ enum LoadBalancingStrategy {
   HEALTH_BASED
 }
 
-// Rate Limit Strategy enum
 enum RateLimitStrategy {
   TOKEN_BUCKET
   LEAKY_BUCKET
@@ -1202,7 +1255,6 @@ enum RateLimitStrategy {
   ADAPTIVE
 }
 
-// Request Queue Status enum
 enum RequestQueueStatus {
   PENDING
   PROCESSING
@@ -1211,200 +1263,10 @@ enum RequestQueueStatus {
   EXPIRED
 }
 
-// Circuit Breaker State enum
 enum CircuitBreakerStateEnum {
   CLOSED
   OPEN
   HALF_OPEN
-}
-
-// 1. API Gateway Configuration - Routing rules and service registry
-model ApiGatewayConfig {
-  id             String                @id @default(cuid())
-  serviceName    String                @unique
-  basePath       String // e.g., /api/v1/orders
-  targetUrl      String // e.g., http://orders-service:3001
-  healthCheckUrl String? // e.g., http://orders-service:3001/health
-  timeout        Int                   @default(30000) // milliseconds
-  retryAttempts  Int                   @default(3)
-  circuitBreaker Boolean               @default(true)
-  loadBalancing  LoadBalancingStrategy @default(ROUND_ROBIN)
-  isActive       Boolean               @default(true)
-  priority       Int                   @default(0) // Higher priority routes checked first
-  metadata       Json? // Additional configuration
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-
-  @@map("api_gateway_configs")
-}
-
-// 2. Rate Limit Overrides - Per-user or per-API-key custom limits
-model RateLimitOverride {
-  id           String            @id @default(cuid())
-  userId       String?
-  apiKey       String?
-  endpoint     String // e.g., /api/v1/products
-  requestLimit Int // Number of requests allowed
-  timeWindowMs Int // Time window in milliseconds
-  strategy     RateLimitStrategy @default(TOKEN_BUCKET)
-  priority     Int               @default(0)
-  reason       String? // Why this override exists
-  expiresAt    DateTime? // When this override expires
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, endpoint])
-  @@index([apiKey])
-  @@index([endpoint])
-  @@map("rate_limit_overrides")
-}
-
-// 3. API Usage Logs - Detailed analytics for every API request
-model ApiUsageLog {
-  id           String   @id @default(cuid())
-  userId       String?
-  apiKey       String?
-  endpoint     String
-  method       String // HTTP method (GET, POST, etc.)
-  version      String // API version (v1, v2)
-  statusCode   Int
-  responseTime Int // milliseconds
-  requestSize  Int? // bytes
-  responseSize Int? // bytes
-  ipAddress    String
-  userAgent    String?
-  referer      String?
-  rateLimitHit Boolean  @default(false)
-  throttled    Boolean  @default(false)
-  queueTime    Int? // milliseconds in queue
-  metadata     Json?
-  timestamp    DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId, timestamp])
-  @@index([endpoint, timestamp])
-  @@index([timestamp])
-  @@index([apiKey])
-  @@map("api_usage_logs")
-}
-
-// 4. Request Queue - Throttled requests waiting to be processed
-model RequestQueue {
-  id              String             @id @default(cuid())
-  userId          String?
-  endpoint        String
-  method          String
-  priority        Int                @default(50) // 0-100 scale (higher = more priority)
-  payload         Json?
-  headers         Json?
-  status          RequestQueueStatus @default(PENDING)
-  estimatedWaitMs Int?
-  queuedAt        DateTime           @default(now())
-  processedAt     DateTime?
-  completedAt     DateTime?
-  expiresAt       DateTime
-  retryCount      Int                @default(0)
-  errorMessage    String?
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([status, priority, queuedAt])
-  @@index([userId])
-  @@index([expiresAt])
-  @@map("request_queues")
-}
-
-// 5. API Version Usage - Track which API versions are being used
-model ApiVersionUsage {
-  id           String   @id @default(cuid())
-  version      String
-  endpoint     String
-  userId       String?
-  requestCount Int      @default(1)
-  lastUsedAt   DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@unique([version, endpoint, userId])
-  @@index([version])
-  @@index([userId])
-  @@map("api_version_usage")
-}
-
-// 6. Circuit Breaker State - Track circuit breaker state for each service
-model CircuitBreakerState {
-  id            String                  @id @default(cuid())
-  serviceName   String                  @unique
-  state         CircuitBreakerStateEnum @default(CLOSED)
-  failureCount  Int                     @default(0)
-  successCount  Int                     @default(0)
-  lastFailureAt DateTime?
-  lastSuccessAt DateTime?
-  nextRetryAt   DateTime?
-  openedAt      DateTime?
-  metadata      Json?
-  createdAt     DateTime                @default(now())
-  updatedAt     DateTime                @updatedAt
-
-  @@index([state])
-  @@map("circuit_breaker_states")
-}
-
-// ============================================
-// PUSH NOTIFICATIONS (Issue #29)
-// ============================================
-model PushSubscription {
-  id        String   @id @default(uuid())
-  userId    String
-  deviceId  String?
-  endpoint  String   @unique
-  keys      Json // { p256dh: string, auth: string }
-  userAgent String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([deviceId])
-  @@index([isActive])
-  @@map("push_subscriptions")
-}
-
-// ============================================
-// DEVICE HEALTH MONITORING (Issue #29)
-// ============================================
-model DeviceHealth {
-  id             String             @id @default(uuid())
-  deviceId       String
-  timestamp      DateTime           @default(now())
-  status         DeviceHealthStatus
-  cpuUsage       Float? // CPU usage percentage
-  memoryUsage    Float? // Memory usage percentage
-  diskUsage      Float? // Disk usage percentage
-  temperature    Float? // Device temperature
-  batteryLevel   Float? // Battery level percentage (if applicable)
-  networkLatency Int? // Network latency in ms
-  uptime         Int? // Uptime in seconds
-  errorCount     Int                @default(0) // Number of errors since last check
-  metadata       Json? // Additional health data
-  createdAt      DateTime           @default(now())
-
-  // Relations
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  @@index([deviceId, timestamp(sort: Desc)])
-  @@index([status])
-  @@index([timestamp])
-  @@map("device_health")
 }
 
 enum DeviceHealthStatus {
@@ -1414,7 +1276,3 @@ enum DeviceHealthStatus {
   OFFLINE
   MAINTENANCE
 }
-
-// Add relation to Device model
-// In the Device model, add:
-// healthRecords DeviceHealth[]

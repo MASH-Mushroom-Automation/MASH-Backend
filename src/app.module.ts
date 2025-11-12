@@ -35,8 +35,7 @@ import { CommonModule } from './common/common.module';
 import { PrometheusModule } from './monitoring/prometheus/prometheus.module';
 import { TracingModule } from './monitoring/tracing/tracing.module';
 import { UsersModule } from './modules/users/users.module';
-// 🔧 TEMPORARILY DISABLED FOR DEBUGGING
-// import { DevicesModule } from './modules/devices/devices.module';
+import { DevicesModule } from './modules/devices/devices.module';
 import { SensorsModule } from './modules/sensors/sensors.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -105,10 +104,7 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     ProfileModule,
 
     UsersModule,
-
-    // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
-    // DevicesModule,
-
+    DevicesModule,
     SensorsModule,
 
     ProductsModule,

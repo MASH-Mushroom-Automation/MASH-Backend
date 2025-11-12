@@ -1,0 +1,1407 @@
+{
+  "info": {
+    "name": "07-IoT-Device-Management-API",
+    "_postman_id": "iot-device-mgmt-001",
+    "description": "Complete IoT device lifecycle management and fleet operations for MASH Backend.\n\n**Features:**\n- Device registration and onboarding\n- Real-time device monitoring\n- Fleet management with analytics\n- Device control and commands\n- Health monitoring and diagnostics\n- Sensor management\n- Firmware updates (OTA)\n\n**Base URL:** {{baseUrl}}/devices\n**Authentication:** Bearer Token (JWT)\n**Total Endpoints:** 27",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set base URL if not already set",
+          "if (!pm.environment.get('baseUrl')) {",
+          "    pm.environment.set('baseUrl', 'http://localhost:3000/api/v1');",
+          "}",
+          "",
+          "// Generate unique test device ID",
+          "const timestamp = Date.now();",
+          "const random = Math.floor(Math.random() * 1000);",
+          "pm.environment.set('testDeviceId', `MASH-TEST-${timestamp}-${random}`);",
+          "",
+          "// Set current timestamp",
+          "pm.environment.set('timestamp', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Common test assertions",
+          "pm.test('Response time is less than 2000ms', function() {",
+          "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+          "});",
+          "",
+          "pm.test('Content-Type is application/json', function() {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Device Registration & Onboarding",
+      "item": [
+        {
+          "name": "Register New Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has success property', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success');",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Device data is returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "    pm.expect(response.data).to.have.property('deviceId');",
+                  "    pm.expect(response.data).to.have.property('name');",
+                  "    pm.expect(response.data).to.have.property('type');",
+                  "    pm.expect(response.data).to.have.property('status');",
+                  "});",
+                  "",
+                  "pm.test('Device status is OFFLINE initially', function() {",
+                  "    const device = pm.response.json().data;",
+                  "    pm.expect(device.status).to.be.oneOf(['OFFLINE', 'ONLINE']);",
+                  "});",
+                  "",
+                  "// Save device ID for subsequent requests",
+                  "if (pm.response.code === 201) {",
+                  "    const deviceId = pm.response.json().data.id;",
+                  "    pm.environment.set('deviceId', deviceId);",
+                  "    console.log('✅ Device registered with ID:', deviceId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceId\": \"{{testDeviceId}}\",\n  \"name\": \"Test Mushroom Chamber {{$timestamp}}\",\n  \"type\": \"MUSHROOM_CHAMBER\",\n  \"location\": \"Lab Room A - Testing\",\n  \"ipAddress\": \"192.168.1.100\",\n  \"port\": 5000,\n  \"configuration\": {\n    \"spawningTempMin\": 20,\n    \"spawningTempMax\": 25,\n    \"fruitingTempMin\": 15,\n    \"fruitingTempMax\": 20,\n    \"spawningHumidityMin\": 90,\n    \"spawningHumidityMax\": 95,\n    \"fruitingHumidityMin\": 85,\n    \"fruitingHumidityMax\": 90,\n    \"spawningCO2Min\": 10000,\n    \"fruitingCO2Min\": 500,\n    \"fruitingCO2Max\": 800\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices"]
+            },
+            "description": "Register a new IoT device to the user's account. Device will be created with OFFLINE status initially."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Devices",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has data array', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.have.property('devices');",
+                  "    pm.expect(response.data.devices).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Pagination information included', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('pagination');",
+                  "    pm.expect(response.data.pagination).to.have.all.keys('page', 'limit', 'total', 'totalPages');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieve all devices registered to the authenticated user with pagination support."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Device Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Device details returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    const device = response.data;",
+                  "    pm.expect(device).to.have.property('id');",
+                  "    pm.expect(device).to.have.property('deviceId');",
+                  "    pm.expect(device).to.have.property('name');",
+                  "    pm.expect(device).to.have.property('type');",
+                  "    pm.expect(device).to.have.property('status');",
+                  "    pm.expect(device).to.have.property('configuration');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}"]
+            },
+            "description": "Get detailed information about a specific device including configuration and latest readings."
+          },
+          "response": []
+        }
+      ],
+      "description": "Device registration and onboarding endpoints for secure device management."
+    },
+    {
+      "name": "2. Device CRUD Operations",
+      "item": [
+        {
+          "name": "Update Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Device updated successfully', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Test Chamber {{$timestamp}}\",\n  \"location\": \"Lab Room B - Production\",\n  \"ipAddress\": \"192.168.1.101\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}"]
+            },
+            "description": "Update device information such as name, location, or IP address."
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Device activation toggled', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "activate"]
+            },
+            "description": "Activate or deactivate a device."
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Devices by Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Filtered devices returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.devices).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices?status=ONLINE",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ONLINE"
+                }
+              ]
+            },
+            "description": "Filter devices by status (ONLINE, OFFLINE, MAINTENANCE)."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Devices by Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Search results returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.devices).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices?search=Test",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Test"
+                }
+              ]
+            },
+            "description": "Search devices by name or device ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Device deleted successfully', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}"]
+            },
+            "description": "Soft delete a device (Admin/Super Admin only)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Complete CRUD operations for device management."
+    },
+    {
+      "name": "3. Device Control & Commands",
+      "item": [
+        {
+          "name": "Send Command to Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Command sent successfully', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.have.property('commandId');",
+                  "});",
+                  "",
+                  "// Save command ID for history check",
+                  "if (pm.response.code === 200) {",
+                  "    const commandId = pm.response.json().data.commandId;",
+                  "    pm.environment.set('lastCommandId', commandId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": \"SET_MODE\",\n  \"parameters\": {\n    \"mode\": \"FRUITING\",\n    \"temperature\": 18,\n    \"humidity\": 88,\n    \"co2Level\": 600\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/command",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "command"]
+            },
+            "description": "Send a command to device via MQTT. Commands are delivered in real-time."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Command History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Command history returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/commands",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "commands"]
+            },
+            "description": "Get device command history with timestamps and status."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Device Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Device status returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('status');",
+                  "    pm.expect(response.data.status).to.be.oneOf(['ONLINE', 'OFFLINE', 'MAINTENANCE']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "status"]
+            },
+            "description": "Get real-time device status (WebSocket compatible)."
+          },
+          "response": []
+        },
+        {
+          "name": "Restart Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Restart command sent', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/restart",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "restart"]
+            },
+            "description": "Send restart command to device."
+          },
+          "response": []
+        },
+        {
+          "name": "Factory Reset Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Reset command sent', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "reset"]
+            },
+            "description": "Factory reset device (Admin/Grower only). This will reset all device settings."
+          },
+          "response": []
+        }
+      ],
+      "description": "Device control and command execution endpoints."
+    },
+    {
+      "name": "4. Configuration & Firmware",
+      "item": [
+        {
+          "name": "Get Device Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Configuration returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('configuration');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/configuration",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "configuration"]
+            },
+            "description": "Get current device configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Device Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Configuration updated', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"configuration\": {\n    \"spawningTempMin\": 21,\n    \"spawningTempMax\": 26,\n    \"fruitingTempMin\": 16,\n    \"fruitingTempMax\": 21,\n    \"spawningHumidityMin\": 91,\n    \"spawningHumidityMax\": 96\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/configuration",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "configuration"]
+            },
+            "description": "Update device configuration via MQTT."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Firmware (OTA)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Firmware update initiated', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"v1.2.4\",\n  \"url\": \"https://firmware.mash.com/v1.2.4.bin\",\n  \"checksum\": \"sha256:abc123def456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/firmware",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "firmware"]
+            },
+            "description": "Initiate Over-The-Air (OTA) firmware update for device."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Firmware History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Firmware history returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/firmware/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "firmware", "history"]
+            },
+            "description": "Get firmware update history for device."
+          },
+          "response": []
+        }
+      ],
+      "description": "Device configuration and firmware management endpoints."
+    },
+    {
+      "name": "5. Sensor Management",
+      "item": [
+        {
+          "name": "List Device Sensors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Sensors list returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/sensors",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "sensors"]
+            },
+            "description": "List all sensors attached to device."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Sensor to Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Sensor added successfully', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "});",
+                  "",
+                  "// Save sensor ID",
+                  "if (pm.response.code === 201) {",
+                  "    const sensorId = pm.response.json().data.id;",
+                  "    pm.environment.set('sensorId', sensorId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorType\": \"TEMPERATURE\",\n  \"name\": \"DHT22 Temperature Sensor\",\n  \"unit\": \"celsius\",\n  \"minValue\": -40,\n  \"maxValue\": 80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/sensors",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "sensors"]
+            },
+            "description": "Add a new sensor to device."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Sensor Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Sensor updated', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"DHT22 Temperature Sensor - Calibrated\",\n  \"minValue\": -30,\n  \"maxValue\": 70\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/sensors/{{sensorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "sensors", "{{sensorId}}"]
+            },
+            "description": "Update sensor configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Calibrate Sensor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Calibration initiated', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calibrationType\": \"TWO_POINT\",\n  \"referenceValues\": [0, 100],\n  \"measuredValues\": [0.5, 99.8]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/sensors/{{sensorId}}/calibrate",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "sensors", "{{sensorId}}", "calibrate"]
+            },
+            "description": "Calibrate sensor readings."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Sensor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Sensor removed', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/sensors/{{sensorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "sensors", "{{sensorId}}"]
+            },
+            "description": "Remove sensor from device."
+          },
+          "response": []
+        }
+      ],
+      "description": "Sensor management endpoints for device sensor operations."
+    },
+    {
+      "name": "6. Health Monitoring & Diagnostics",
+      "item": [
+        {
+          "name": "Record Device Health Data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Health data recorded', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"HEALTHY\",\n  \"cpuUsage\": 45.2,\n  \"memoryUsage\": 62.8,\n  \"diskUsage\": 38.5,\n  \"temperature\": 42.3,\n  \"batteryLevel\": 87,\n  \"networkLatency\": 12,\n  \"uptime\": 86400,\n  \"errorCount\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "health"]
+            },
+            "description": "Record device health metrics."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Device Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Health data returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "health"]
+            },
+            "description": "Get current device health status and diagnostics."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Health History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Health history returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/health/history?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "health", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get device health history with time-series data."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Health Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Health status returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('status');",
+                  "    pm.expect(response.data.status).to.be.oneOf(['HEALTHY', 'WARNING', 'CRITICAL', 'OFFLINE']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/health/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "health", "status"]
+            },
+            "description": "Get current device health status."
+          },
+          "response": []
+        },
+        {
+          "name": "Perform Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Health check performed', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/health/check",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "health", "check"]
+            },
+            "description": "Perform comprehensive health check on device."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Fleet Health Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Fleet health summary returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('totalDevices');",
+                  "    pm.expect(response.data).to.have.property('healthyCount');",
+                  "    pm.expect(response.data).to.have.property('warningCount');",
+                  "    pm.expect(response.data).to.have.property('criticalCount');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/health/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "health", "summary"]
+            },
+            "description": "Get health summary for all devices in fleet."
+          },
+          "response": []
+        }
+      ],
+      "description": "Health monitoring and diagnostics endpoints for device fleet management."
+    },
+    {
+      "name": "7. Analytics & Reporting",
+      "item": [
+        {
+          "name": "Get Device Analytics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Analytics data returned', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('metrics');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/analytics?period=7d",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{deviceId}}", "analytics"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "7d"
+                }
+              ]
+            },
+            "description": "Get device performance analytics for specified period."
+          },
+          "response": []
+        }
+      ],
+      "description": "Device analytics and reporting endpoints."
+    },
+    {
+      "name": "8. Integration Tests",
+      "item": [
+        {
+          "name": "Complete Device Lifecycle",
+          "item": [
+            {
+              "name": "Step 1 - Register Device",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('✅ Step 1: Device registered', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "    const deviceId = pm.response.json().data.id;",
+                      "    pm.environment.set('lifecycleDeviceId', deviceId);",
+                      "    console.log('Device ID:', deviceId);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"deviceId\": \"MASH-LIFECYCLE-{{$timestamp}}\",\n  \"name\": \"Lifecycle Test Device\",\n  \"type\": \"MUSHROOM_CHAMBER\",\n  \"location\": \"Integration Test Lab\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/devices",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["devices"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Step 2 - Activate Device",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('✅ Step 2: Device activated', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/devices/{{lifecycleDeviceId}}/activate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["devices", "{{lifecycleDeviceId}}", "activate"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Step 3 - Send Command",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('✅ Step 3: Command sent', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"command\": \"SET_MODE\",\n  \"parameters\": {\n    \"mode\": \"SPAWNING\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/devices/{{lifecycleDeviceId}}/command",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["devices", "{{lifecycleDeviceId}}", "command"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Step 4 - Record Health",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('✅ Step 4: Health recorded', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"HEALTHY\",\n  \"cpuUsage\": 35.0,\n  \"memoryUsage\": 50.0\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/devices/{{lifecycleDeviceId}}/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["devices", "{{lifecycleDeviceId}}", "health"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Step 5 - Get Analytics",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('✅ Step 5: Analytics retrieved', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/devices/{{lifecycleDeviceId}}/analytics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["devices", "{{lifecycleDeviceId}}", "analytics"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Step 6 - Delete Device",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('✅ Step 6: Device deleted - LIFECYCLE COMPLETE!', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "    console.log('🎉 Complete device lifecycle test passed!');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/devices/{{lifecycleDeviceId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["devices", "{{lifecycleDeviceId}}"]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Complete device lifecycle from registration to deletion."
+        }
+      ],
+      "description": "Integration test scenarios for complete device lifecycle and fleet management."
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    }
+  ]
+}
