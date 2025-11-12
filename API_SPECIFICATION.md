@@ -949,7 +949,7 @@ X-RateLimit-Reset: 1699267200
 3. Select `postman/07-IoT-Device-Management-API.postman_collection.json`
 4. Import environment: `postman/MASH-backend.postman_environment.json`
 5. Set variables:
-   - `baseUrl`: `http://localhost:3000/api/v1`
+   - `baseUrl`: `https://mash-backend-api-production.up.railway.app/api/v1` (or `http://localhost:3000/api/v1` for local testing)
    - `accessToken`: (Get from login endpoint)
 6. Run "Integration Tests" folder for complete validation
 
