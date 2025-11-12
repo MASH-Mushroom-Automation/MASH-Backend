@@ -168,10 +168,10 @@ export class EmailTemplateService {
    */
   private getSubject(templateType: EmailTemplateType, variables: EmailTemplateVariables): string {
     const subjects: Record<EmailTemplateType, string> = {
-      [EmailTemplateType.VERIFICATION]: 'Verify Your Email - Welcome to MASH! 🍄',
-      [EmailTemplateType.VERIFICATION_CODE]: 'Verify Your Email - MASH 🍄', // NEW: 6-digit code subject
+      [EmailTemplateType.VERIFICATION]: 'Verify Your Email - Welcome to MASH!',
+      [EmailTemplateType.VERIFICATION_CODE]: 'Verify Your Email - MASH', // NEW: 6-digit code subject
       [EmailTemplateType.FORGOT_PASSWORD]: 'Reset Your Password - MASH',
-      [EmailTemplateType.PASSWORD_RESET_CODE]: 'Reset Your Password - MASH 🔐', // NEW: 6-digit password reset
+      [EmailTemplateType.PASSWORD_RESET_CODE]: 'Reset Your Password - MASH', // NEW: 6-digit password reset
       [EmailTemplateType.PASSWORD_RESET_CONFIRMATION]: 'Password Reset Successful - MASH ✅', // NEW: Reset confirmation
       [EmailTemplateType.PASSWORD_CHANGED]: 'Your Password Has Been Changed - MASH',
       [EmailTemplateType.RESEND_VERIFICATION]: 'Verify Your Email - Action Required',
@@ -180,7 +180,7 @@ export class EmailTemplateService {
       [EmailTemplateType.PASSWORD_RESET_SUCCESS]: 'Password Reset Successful - MASH',
       [EmailTemplateType.EMAIL_CHANGED]: 'Email Address Changed - MASH',
       [EmailTemplateType.ACCOUNT_DELETION]: 'Account Deletion Confirmation - MASH',
-      [EmailTemplateType.WELCOME]: 'Welcome to MASH! 🍄',
+      [EmailTemplateType.WELCOME]: 'Welcome to MASH!',
       [EmailTemplateType.DEVICE_OFFLINE]: 'Device Offline Alert - MASH',
       [EmailTemplateType.DEVICE_ERROR]: 'Device Error Alert - MASH',
       [EmailTemplateType.HEALTH_WARNING]: 'Device Health Warning - MASH',
