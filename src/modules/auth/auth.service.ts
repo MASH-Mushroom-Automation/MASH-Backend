@@ -1060,7 +1060,7 @@ export class AuthService {
     logger.log(`[CONFIG] Sending password reset code via email`);
     
     try {
-      await this.emailService.sendPasswordResetCodeEmail(
+      await this.emailService.sendForgotPasswordEmail(
         user.email,
         user.firstName || 'User',
         resetCode,
@@ -1213,9 +1213,13 @@ export class AuthService {
 
     // Send confirmation email
     try {
-      await this.emailService.sendPasswordResetConfirmationEmail(
+      await this.emailService.sendPasswordResetSuccessEmail(
         user.email,
         user.firstName || 'User',
+        new Date().toLocaleString(),
+        'Unknown', // IP address
+        'Unknown', // device
+        `${process.env.FRONTEND_URL || 'http://localhost:3001'}/login`,
       );
     } catch (emailError) {
       logger.warn(`[WARN] Failed to send confirmation email: ${emailError.message}`);
