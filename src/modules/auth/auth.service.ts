@@ -14,10 +14,12 @@ import { Cacheable } from '../../common/decorators/cache.decorator';
 import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
+import { OAuthService } from '../oauth/oauth.service';
+import { OAuthUserData } from '../oauth/interfaces/oauth-user.interface';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto, ResendVerificationDto, VerifyEmailCodeDto, ResendVerificationCodeDto } from './dto/verify-email.dto';
-import { ResetPasswordDto } from './dto/password-reset.dto';
+import { ResetPasswordDto, VerifyResetCodeDto, ResendPasswordResetCodeDto } from './dto/password-reset.dto';
 import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
@@ -62,6 +64,7 @@ export class AuthService {
     private readonly clerkService: ClerkService,
     private readonly emailService: EmailService,
     private readonly prometheusService: PrometheusService,
+    private readonly oauthService: OAuthService,
   ) {}
 
   async handleClerkWebhook(payload: ClerkWebhookDto) {
@@ -999,26 +1002,244 @@ export class AuthService {
     }
   }
 
+  /**
+   * FORGOT PASSWORD - Send 6-digit reset code
+   * ===========================================
+   * Step 1 of password reset process
+   */
   async forgotPassword(email: string) {
-    try {
-      await this.clerkService.sendPasswordResetEmail(email);
-      return { success: true, message: 'Password reset email sent' };
-    } catch {
-      throw new BadRequestException('Failed to send password reset email');
+    const logger = new Logger('AuthService.forgotPassword');
+    logger.log(`[STARTUP] Password reset request for email: ${email}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists (security best practice)
+      logger.warn(`[WARN] Password reset request for non-existent email: ${email}`);
+      return {
+        success: true,
+        message: 'If an account exists with this email, a password reset code has been sent.',
+        expiresIn: '10 minutes',
+      };
     }
+
+    // Rate limiting: Check if 1 minute has passed since last code was sent
+    const timeSinceLastSent = user.passwordResetCodeSentAt
+      ? Date.now() - user.passwordResetCodeSentAt.getTime()
+      : Infinity;
+
+    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
+      const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
+      logger.warn(`[WARN] Rate limit hit for email: ${email}, wait ${waitSeconds}s`);
+      throw new BadRequestException(
+        `Please wait ${waitSeconds} seconds before requesting a new code.`,
+      );
+    }
+
+    // Generate 6-digit reset code
+    const resetCode = generateSixDigitCode();
+    const codeExpiry = generateCodeExpiry(10); // 10 minutes
+
+    logger.log(`[CONFIG] Password reset code generated: ${resetCode}`);
+
+    // Update user with reset code and reset attempts
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetCode: resetCode,
+        passwordResetCodeExpiry: codeExpiry,
+        passwordResetCodeUsed: false,
+        passwordResetAttempts: 0, // Reset failed attempts
+        passwordResetCodeSentAt: new Date(),
+      },
+    });
+
+    // Send password reset code via email
+    logger.log(`[CONFIG] Sending password reset code via email`);
+    
+    try {
+      await this.emailService.sendPasswordResetCodeEmail(
+        user.email,
+        user.firstName || 'User',
+        resetCode,
+        '10 minutes',
+      );
+      
+      logger.log(`[SUCCESS] Password reset code sent to: ${user.email}`);
+    } catch (emailError) {
+      logger.error(`[ERROR] Failed to send password reset code: ${emailError.message}`);
+      throw new InternalServerErrorException('Failed to send password reset code. Please try again later.');
+    }
+
+    return {
+      success: true,
+      message: 'A 6-digit password reset code has been sent to your email.',
+      expiresIn: '10 minutes',
+      email: user.email,
+      nextStep: 'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
+    };
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    try {
-      await this.clerkService.resetPassword(
-        resetPasswordDto.email,
-        resetPasswordDto.code,
-        resetPasswordDto.newPassword,
-      );
-      return { success: true, message: 'Password reset successfully' };
-    } catch {
-      throw new BadRequestException('Invalid or expired reset code');
+  /**
+   * VERIFY RESET CODE
+   * ==================
+   * Step 2 of password reset process - Verify the 6-digit code
+   */
+  async verifyResetCode(dto: VerifyResetCodeDto) {
+    const logger = new Logger('AuthService.verifyResetCode');
+    logger.log(`[STARTUP] Verifying reset code for email: ${dto.email}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { 
+        email: dto.email,
+        passwordResetCode: dto.code,
+      },
+    });
+
+    if (!user) {
+      logger.warn(`[WARN] Invalid reset code attempt for email: ${dto.email}`);
+      
+      // Increment failed attempts if user exists
+      const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existingUser && existingUser.passwordResetCode) {
+        const newAttempts = existingUser.passwordResetAttempts + 1;
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { passwordResetAttempts: newAttempts },
+        });
+
+        if (newAttempts >= 5) {
+          logger.warn(`[WARN] Maximum reset attempts reached for email: ${dto.email}`);
+          throw new BadRequestException(
+            'Maximum verification attempts reached. Please request a new code.',
+          );
+        }
+      }
+      
+      throw new BadRequestException('Invalid verification code.');
     }
+
+    // Check if code has been used
+    if (user.passwordResetCodeUsed) {
+      logger.warn(`[WARN] Attempt to use already-used code for email: ${dto.email}`);
+      throw new BadRequestException('This code has already been used. Please request a new one.');
+    }
+
+    // Check if code has expired
+    if (!user.passwordResetCodeExpiry || isCodeExpired(user.passwordResetCodeExpiry)) {
+      logger.warn(`[WARN] Expired reset code for email: ${dto.email}`);
+      throw new BadRequestException('Verification code has expired. Please request a new one.');
+    }
+
+    // Check failed attempts
+    if (user.passwordResetAttempts >= 5) {
+      logger.warn(`[WARN] Too many failed attempts for email: ${dto.email}`);
+      throw new BadRequestException(
+        'Too many failed attempts. Please request a new code.',
+      );
+    }
+
+    logger.log(`[SUCCESS] Reset code verified for email: ${dto.email}`);
+
+    return {
+      success: true,
+      message: 'Code verified successfully. You can now reset your password.',
+      email: user.email,
+      nextStep: 'Reset your password using POST /auth/reset-password with the same code',
+    };
+  }
+
+  /**
+   * RESET PASSWORD WITH CODE
+   * =========================
+   * Step 3 of password reset process - Reset password with verified code
+   */
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const logger = new Logger('AuthService.resetPassword');
+    logger.log(`[STARTUP] Password reset for email: ${resetPasswordDto.email}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { 
+        email: resetPasswordDto.email,
+        passwordResetCode: resetPasswordDto.code,
+      },
+    });
+
+    if (!user) {
+      logger.warn(`[WARN] Invalid reset code during password reset for email: ${resetPasswordDto.email}`);
+      throw new BadRequestException('Invalid verification code.');
+    }
+
+    // Check if code has been used
+    if (user.passwordResetCodeUsed) {
+      logger.warn(`[WARN] Attempt to use already-used code for password reset: ${resetPasswordDto.email}`);
+      throw new BadRequestException('This code has already been used. Please request a new one.');
+    }
+
+    // Check if code has expired
+    if (!user.passwordResetCodeExpiry || isCodeExpired(user.passwordResetCodeExpiry)) {
+      logger.warn(`[WARN] Expired code during password reset for email: ${resetPasswordDto.email}`);
+      throw new BadRequestException('Verification code has expired. Please request a new one.');
+    }
+
+    // Check failed attempts
+    if (user.passwordResetAttempts >= 5) {
+      logger.warn(`[WARN] Too many failed attempts during password reset: ${resetPasswordDto.email}`);
+      throw new BadRequestException(
+        'Too many failed attempts. Please request a new code.',
+      );
+    }
+
+    // Hash new password
+    logger.log(`[CONFIG] Hashing new password`);
+    const hashedPassword = await hashPassword(resetPasswordDto.newPassword);
+
+    // Update user with new password and clear reset code
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetCode: null,
+        passwordResetCodeExpiry: null,
+        passwordResetCodeUsed: true,
+        passwordResetAttempts: 0,
+        passwordResetCodeSentAt: null,
+      },
+    });
+
+    logger.log(`[SUCCESS] Password reset successfully for email: ${user.email}`);
+
+    // Send confirmation email
+    try {
+      await this.emailService.sendPasswordResetConfirmationEmail(
+        user.email,
+        user.firstName || 'User',
+      );
+    } catch (emailError) {
+      logger.warn(`[WARN] Failed to send confirmation email: ${emailError.message}`);
+      // Don't fail the reset if confirmation email fails
+    }
+
+    return {
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.',
+      email: user.email,
+    };
+  }
+
+  /**
+   * RESEND PASSWORD RESET CODE
+   * ===========================
+   * Resend the 6-digit code if expired or not received
+   */
+  async resendPasswordResetCode(dto: ResendPasswordResetCodeDto) {
+    const logger = new Logger('AuthService.resendPasswordResetCode');
+    logger.log(`[STARTUP] Resend reset code request for email: ${dto.email}`);
+
+    // Reuse the forgotPassword method logic
+    return this.forgotPassword(dto.email);
   }
 
   async initiateOAuth(provider: string, redirectUrl?: string) {
@@ -1040,5 +1261,469 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('OAuth authentication failed');
     }
+  }
+
+  // ==================== GOOGLE & FACEBOOK SSO METHODS ====================
+
+  /**
+   * Login with Google ID Token
+   * Validates token, finds or creates user, generates JWT tokens
+   * 
+   * @param dto - Google login DTO containing ID token
+   * @returns JWT tokens and user data
+   */
+  async loginWithGoogle(dto: { idToken: string; deviceInfo?: any }) {
+    return this.tracer.startActiveSpan('AuthService.loginWithGoogle', async span => {
+      const startTime = Date.now();
+      this.logger.log('🔐 Google login initiated');
+
+      try {
+        // 1. Validate Google ID token with OAuth service
+        const oauthUser = await this.oauthService.validateGoogleToken(dto.idToken);
+        
+        span.setAttribute('oauth.provider', 'google');
+        span.setAttribute('user.email', oauthUser.email);
+        this.logger.log(`Google token validated for user: ${oauthUser.email}`);
+
+        // 2. Find or create user in database
+        const { user, isNewUser } = await this.findOrCreateOAuthUser(oauthUser);
+        span.setAttribute('user.id', user.id);
+        span.setAttribute('user.isNew', isNewUser);
+
+        // 3. Generate JWT tokens (same pattern as login method)
+        const accessToken = this.jwtService.sign({
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        });
+
+        const refreshToken = this.jwtService.sign(
+          {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+          },
+          { expiresIn: '30d' },
+        );
+
+        // 4. Record metrics
+        if (isNewUser) {
+          this.prometheusService.recordUserRegistration();
+        }
+
+        span.addEvent('Google login successful');
+        span.setStatus({ code: SpanStatusCode.OK });
+        this.logger.log(`✅ Google login successful for user: ${user.id}`);
+
+        return {
+          success: true,
+          message: 'Google authentication successful',
+          accessToken,
+          refreshToken,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl,
+            role: user.role,
+            oauthProvider: user.oauthProvider,
+          },
+          isNewUser,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
+        this.logger.error(`❌ Google login failed: ${errorMessage}`, error instanceof Error ? error.stack : '');
+        
+        if (error instanceof UnauthorizedException) {
+          throw error;
+        }
+        
+        throw new InternalServerErrorException('Google login failed. Please try again.');
+      } finally {
+        span.end();
+      }
+    });
+  }
+
+  /**
+   * Login with Facebook Access Token
+   * Validates token, finds or creates user, generates JWT tokens
+   * 
+   * @param dto - Facebook login DTO containing access token
+   * @returns JWT tokens and user data
+   */
+  async loginWithFacebook(dto: { accessToken: string; deviceInfo?: any }) {
+    return this.tracer.startActiveSpan('AuthService.loginWithFacebook', async span => {
+      const startTime = Date.now();
+      this.logger.log('🔐 Facebook login initiated');
+
+      try {
+        // 1. Validate Facebook access token with OAuth service
+        const oauthUser = await this.oauthService.validateFacebookToken(dto.accessToken);
+        
+        span.setAttribute('oauth.provider', 'facebook');
+        span.setAttribute('user.email', oauthUser.email);
+        this.logger.log(`Facebook token validated for user: ${oauthUser.email}`);
+
+        // 2. Find or create user in database
+        const { user, isNewUser } = await this.findOrCreateOAuthUser(oauthUser);
+        span.setAttribute('user.id', user.id);
+        span.setAttribute('user.isNew', isNewUser);
+
+        // 3. Generate JWT tokens (same pattern as login method)
+        const accessToken = this.jwtService.sign({
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        });
+
+        const refreshToken = this.jwtService.sign(
+          {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+          },
+          { expiresIn: '30d' },
+        );
+
+        // 4. Record metrics
+        if (isNewUser) {
+          this.prometheusService.recordUserRegistration();
+        }
+
+        span.addEvent('Facebook login successful');
+        span.setStatus({ code: SpanStatusCode.OK });
+        this.logger.log(`✅ Facebook login successful for user: ${user.id}`);
+
+        return {
+          success: true,
+          message: 'Facebook authentication successful',
+          accessToken,
+          refreshToken,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl,
+            role: user.role,
+            oauthProvider: user.oauthProvider,
+          },
+          isNewUser,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
+        this.logger.error(`❌ Facebook login failed: ${errorMessage}`, error instanceof Error ? error.stack : '');
+        
+        if (error instanceof UnauthorizedException) {
+          throw error;
+        }
+        
+        throw new InternalServerErrorException('Facebook login failed. Please try again.');
+      } finally {
+        span.end();
+      }
+    });
+  }
+
+  /**
+   * Find existing user or create new user from OAuth data
+   * Handles email conflicts and account linking logic
+   * 
+   * @param oauthUser - Normalized OAuth user data
+   * @returns User and isNewUser flag
+   */
+  private async findOrCreateOAuthUser(oauthUser: OAuthUserData) {
+    const { provider, id: providerId, email, firstName, lastName, imageUrl, emailVerified } = oauthUser;
+
+    // 1. Check if user exists with this OAuth provider ID
+    const existingByProviderId = await this.prisma.user.findFirst({
+      where: provider === 'google' ? { googleId: providerId } : { facebookId: providerId },
+    });
+
+    if (existingByProviderId) {
+      // User already registered with this OAuth provider
+      return { user: existingByProviderId, isNewUser: false };
+    }
+
+    // 2. Check if user exists with this email
+    const existingByEmail = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingByEmail) {
+      // Email already exists - link OAuth account to existing user
+      this.logger.log(`Linking ${provider} account to existing user: ${existingByEmail.id}`);
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          ...(provider === 'google' ? { googleId: providerId } : { facebookId: providerId }),
+          oauthProvider: {
+            set: [...new Set([...(existingByEmail.oauthProvider || []), provider])],
+          },
+          imageUrl: imageUrl || existingByEmail.imageUrl,
+          emailVerified: emailVerified || existingByEmail.emailVerified,
+        },
+      });
+
+      return { user: updatedUser, isNewUser: false };
+    }
+
+    // 3. Create new user from OAuth data
+    this.logger.log(`Creating new user from ${provider} OAuth data`);
+
+    // Generate unique username from email
+    const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    let username = baseUsername;
+    let counter = 1;
+
+    // Ensure username is unique
+    while (await this.prisma.user.findUnique({ where: { username } })) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+
+    const newUser = await this.prisma.user.create({
+      data: {
+        email,
+        username,
+        firstName,
+        lastName,
+        imageUrl,
+        ...(provider === 'google' ? { googleId: providerId } : { facebookId: providerId }),
+        oauthProvider: [provider],
+        emailVerified: emailVerified,
+        role: 'USER',
+        isActive: true,
+        password: null, // OAuth users don't have password initially
+      },
+    });
+
+    this.logger.log(`✅ New user created via ${provider}: ${newUser.id}`);
+
+    return { user: newUser, isNewUser: true };
+  }
+
+  /**
+   * Link Google account to existing authenticated user
+   * 
+   * @param userId - Current user ID
+   * @param idToken - Google ID token
+   */
+  async linkGoogleAccount(userId: string, idToken: string) {
+    try {
+      // 1. Validate Google token
+      const oauthUser = await this.oauthService.validateGoogleToken(idToken);
+
+      // 2. Get current user
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // 3. Check if this Google account is already linked to another user
+      const existingGoogleUser = await this.prisma.user.findFirst({
+        where: { googleId: oauthUser.id, NOT: { id: userId } },
+      });
+
+      if (existingGoogleUser) {
+        throw new ConflictException('This Google account is already linked to another user');
+      }
+
+      // 4. Link Google account
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          googleId: oauthUser.id,
+          oauthProvider: {
+            set: [...new Set([...(user.oauthProvider || []), 'google'])],
+          },
+        },
+      });
+
+      this.logger.log(`✅ Google account linked to user: ${userId}`);
+
+      return {
+        success: true,
+        message: 'Google account linked successfully',
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          oauthProvider: updatedUser.oauthProvider,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ Failed to link Google account: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Link Facebook account to existing authenticated user
+   * 
+   * @param userId - Current user ID
+   * @param accessToken - Facebook access token
+   */
+  async linkFacebookAccount(userId: string, accessToken: string) {
+    try {
+      // 1. Validate Facebook token
+      const oauthUser = await this.oauthService.validateFacebookToken(accessToken);
+
+      // 2. Get current user
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // 3. Check if this Facebook account is already linked to another user
+      const existingFacebookUser = await this.prisma.user.findFirst({
+        where: { facebookId: oauthUser.id, NOT: { id: userId } },
+      });
+
+      if (existingFacebookUser) {
+        throw new ConflictException('This Facebook account is already linked to another user');
+      }
+
+      // 4. Link Facebook account
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          facebookId: oauthUser.id,
+          oauthProvider: {
+            set: [...new Set([...(user.oauthProvider || []), 'facebook'])],
+          },
+        },
+      });
+
+      this.logger.log(`✅ Facebook account linked to user: ${userId}`);
+
+      return {
+        success: true,
+        message: 'Facebook account linked successfully',
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          oauthProvider: updatedUser.oauthProvider,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ Failed to link Facebook account: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Unlink social account from user
+   * Requires user to have password or another OAuth provider
+   * 
+   * @param userId - Current user ID
+   * @param provider - Provider to unlink ('google' | 'facebook')
+   */
+  async unlinkSocialAccount(userId: string, provider: 'google' | 'facebook') {
+    try {
+      // 1. Get current user
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // 2. Check if this provider is linked
+      if (!user.oauthProvider?.includes(provider)) {
+        throw new NotFoundException(`${provider} account is not linked`);
+      }
+
+      // 3. Ensure user has alternative authentication method
+      const otherProviders = user.oauthProvider.filter(p => p !== provider);
+      if (!user.password && otherProviders.length === 0) {
+        throw new BadRequestException(
+          'Cannot unlink last authentication method. Please set a password first.',
+        );
+      }
+
+      // 4. Unlink provider
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(provider === 'google' ? { googleId: null } : { facebookId: null }),
+          oauthProvider: {
+            set: otherProviders,
+          },
+        },
+      });
+
+      this.logger.log(`✅ ${provider} account unlinked from user: ${userId}`);
+
+      return {
+        success: true,
+        message: `${provider} account unlinked successfully`,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          oauthProvider: updatedUser.oauthProvider,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ Failed to unlink ${provider} account: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get OAuth status for current user
+   * Returns linked providers and authentication options
+   * 
+   * @param userId - Current user ID
+   */
+  async getOAuthStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        oauthProvider: true,
+        googleId: true,
+        facebookId: true,
+        password: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hasPassword = !!user.password;
+    const linkedProviders = user.oauthProvider || [];
+    const canUnlink = hasPassword || linkedProviders.length > 1;
+
+    return {
+      success: true,
+      linkedProviders,
+      hasPassword,
+      canUnlink,
+      details: {
+        ...(user.googleId && {
+          google: {
+            linkedAt: user.updatedAt,
+            email: user.email,
+            googleId: user.googleId,
+          },
+        }),
+        ...(user.facebookId && {
+          facebook: {
+            linkedAt: user.updatedAt,
+            email: user.email,
+            facebookId: user.facebookId,
+          },
+        }),
+      },
+    };
   }
 }

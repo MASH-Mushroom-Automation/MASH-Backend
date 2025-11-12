@@ -27,9 +27,10 @@ import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto, ResendVerificationDto, VerifyEmailCodeDto, ResendVerificationCodeDto } from './dto/verify-email.dto';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { ForgotPasswordDto, ResetPasswordDto, VerifyResetCodeDto, ResendPasswordResetCodeDto } from './dto/password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { OAuthCallbackDto, OAuthInitiateDto } from './dto/oauth.dto';
+import { GoogleLoginDto, FacebookLoginDto, LinkGoogleAccountDto, LinkFacebookAccountDto } from '../oauth/dto/oauth-login.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuditLog } from '../../common/decorators/audit-log.decorator';
@@ -1009,28 +1010,116 @@ This endpoint authenticates a user with email and password, returning JWT tokens
     return this.authService.login(loginDto.email, loginDto.password);
   }
 
+  // ==================== PASSWORD RESET (6-DIGIT CODE) ====================
+
   @Post('forgot-password')
   @Public()
   @Throttle({ short: { limit: 3, ttl: 300000 } }) // 3 requests per 5 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Request password reset',
-    description: 'Send password reset code to user email. Does not reveal if email exists.',
+    summary: '🔐 Request password reset (6-digit code)',
+    description: `
+**Send 6-digit password reset code to user email**
+
+### Security Features:
+- ✅ Rate limiting: 3 requests per 5 minutes
+- ✅ Code expires in 10 minutes
+- ✅ Does not reveal if email exists (security best practice)
+- ✅ Only numeric 6-digit code (mobile-friendly)
+- ✅ 1-minute cooldown between resend requests
+
+### Mobile & PC Friendly:
+- 📱 Easy to type on mobile devices (numeric keyboard)
+- 💻 Works on all platforms (web, mobile app, desktop)
+
+### Process Flow:
+1. User enters their email address
+2. System sends 6-digit code to email
+3. User verifies code: POST /auth/verify-reset-code (optional)
+4. User resets password: POST /auth/reset-password
+`,
   })
   @ApiBody({ type: ForgotPasswordDto })
   @ApiResponse({
     status: 200,
-    description: 'Password reset email sent if user exists',
+    description: 'Password reset code sent successfully',
     schema: {
       example: {
         success: true,
-        message: 'If the email exists, a password reset link has been sent',
+        message: 'A 6-digit password reset code has been sent to your email.',
+        expiresIn: '10 minutes',
+        email: 'user@example.com',
+        nextStep: 'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
       },
     },
   })
-  @ApiResponse({ status: 429, description: 'Too many reset requests' })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Rate limit exceeded - too many requests',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Please wait 45 seconds before requesting a new code.',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({ status: 429, description: 'Too many reset requests (throttle limit)' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Post('verify-reset-code')
+  @Public()
+  @Throttle({ short: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '✅ Verify password reset code',
+    description: `
+**Verify the 6-digit code before resetting password**
+
+### Optional Step:
+This endpoint is optional but recommended for better UX. It allows users to verify
+their code is correct before entering their new password.
+
+### Use Cases:
+- ✅ Show success message before password form
+- ✅ Validate code in multi-step forms
+- ✅ Provide immediate feedback to users
+
+### Security:
+- Maximum 5 failed attempts before lockout
+- Code must not be expired (10 minutes)
+- Code must not have been used already
+`,
+  })
+  @ApiBody({ type: VerifyResetCodeDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Code verified successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Code verified successfully. You can now reset your password.',
+        email: 'user@example.com',
+        nextStep: 'Reset your password using POST /auth/reset-password with the same code',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid, expired, or used code',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid verification code.',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({ status: 429, description: 'Too many verification attempts' })
+  async verifyResetCode(@Body() verifyResetCodeDto: VerifyResetCodeDto) {
+    return this.authService.verifyResetCode(verifyResetCodeDto);
   }
 
   @Post('reset-password')
@@ -1038,8 +1127,31 @@ This endpoint authenticates a user with email and password, returning JWT tokens
   @Throttle({ short: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Reset password with code',
-    description: 'Reset user password using the code sent to their email',
+    summary: '🔑 Reset password with 6-digit code',
+    description: `
+**Reset user password using the 6-digit code sent to their email**
+
+### Requirements:
+- Valid 6-digit code (not expired, not used)
+- New password meeting security requirements:
+  - Minimum 8 characters
+  - At least one uppercase letter
+  - At least one lowercase letter
+  - At least one number
+  - At least one special character (@$!%*?&)
+
+### Process:
+1. User receives 6-digit code via email
+2. User optionally verifies code: POST /auth/verify-reset-code
+3. User enters code + new password
+4. Password is reset and code is invalidated
+
+### After Reset:
+- ✅ Password updated successfully
+- ✅ Reset code marked as used (single-use)
+- ✅ Confirmation email sent
+- ✅ User can log in with new password
+`,
   })
   @ApiBody({ type: ResetPasswordDto })
   @ApiResponse({
@@ -1048,17 +1160,81 @@ This endpoint authenticates a user with email and password, returning JWT tokens
     schema: {
       example: {
         success: true,
-        message: 'Password reset successfully',
+        message: 'Password has been reset successfully. You can now log in with your new password.',
+        email: 'user@example.com',
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid reset code or user not found',
+    description: 'Invalid reset code or weak password',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid verification code.',
+        error: 'Bad Request',
+      },
+    },
   })
   @ApiResponse({ status: 429, description: 'Too many reset attempts' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Post('resend-password-reset-code')
+  @Public()
+  @Throttle({ short: { limit: 3, ttl: 300000 } }) // 3 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '🔄 Resend password reset code',
+    description: `
+**Resend a new 6-digit password reset code if expired or not received**
+
+### When to Use:
+- ⏱️ Code expired (10 minutes passed)
+- 📧 Email not received
+- ❌ Maximum verification attempts reached (5 attempts)
+
+### Rate Limiting:
+- 1-minute cooldown between resend requests
+- 3 requests per 5 minutes (throttle limit)
+
+### Process:
+1. User requests new code
+2. Old code is invalidated
+3. New 6-digit code generated
+4. Code sent via email (10-minute expiry)
+5. Failed attempts counter reset
+`,
+  })
+  @ApiBody({ type: ResendPasswordResetCodeDto })
+  @ApiResponse({
+    status: 200,
+    description: 'New password reset code sent successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'A 6-digit password reset code has been sent to your email.',
+        expiresIn: '10 minutes',
+        email: 'user@example.com',
+        nextStep: 'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Rate limit exceeded - too fast',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Please wait 30 seconds before requesting a new code.',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({ status: 429, description: 'Too many resend requests' })
+  async resendPasswordResetCode(@Body() resendDto: ResendPasswordResetCodeDto) {
+    return this.authService.resendPasswordResetCode(resendDto);
   }
 
   // ==================== OAUTH FLOW ====================
@@ -1372,5 +1548,540 @@ This endpoint authenticates a user with email and password, returning JWT tokens
       throw new BadRequestException('targetUserId is required');
     }
     return this.authService.impersonateUser(req.user.id, body.targetUserId);
+  }
+
+  // ==================== GOOGLE & FACEBOOK SSO ENDPOINTS ====================
+
+  /**
+   * 🔐 GOOGLE LOGIN
+   * ===============
+   * Authenticate user with Google ID Token (Backend Token Validation Approach)
+   * 
+   * Flow:
+   * 1. Client gets Google ID token from Google Sign-In SDK (mobile/web)
+   * 2. Client sends ID token to this endpoint
+   * 3. Backend validates token with Google OAuth API
+   * 4. Backend finds or creates user in database
+   * 5. Backend generates JWT tokens (access + refresh)
+   * 6. Client stores tokens and redirects to dashboard
+   * 
+   * Security:
+   * - Rate limited: 10 requests per 5 minutes per IP
+   * - Token validated with Google's API (prevents forgery)
+   * - Email auto-verified (Google verifies emails)
+   * - Handles email conflicts (auto-links if email verified)
+   */
+  @Post('google/login')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 300000 } }) // 10 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.LOGIN,
+    entity: 'User',
+    getEntityId: (args) => 'google_oauth',
+  })
+  @ApiOperation({
+    summary: '🔐 Login with Google',
+    description: `
+**Google OAuth 2.0 Login (Backend Token Validation)**
+
+Authenticate users with their Google account using ID token validation.
+
+**How It Works:**
+1. Client initiates Google Sign-In (using Google SDK)
+2. Google returns ID token (JWT format)
+3. Client sends ID token to this endpoint
+4. Backend validates token with Google OAuth API
+5. Backend creates/finds user and returns JWT tokens
+
+**Mobile Integration:**
+\`\`\`typescript
+// React Native (iOS/Android)
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
+const handleGoogleLogin = async () => {
+  await GoogleSignin.hasPlayServices();
+  const userInfo = await GoogleSignin.signIn();
+  const idToken = userInfo.idToken;
+  
+  const response = await fetch('/api/v1/auth/google/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  });
+  
+  const { accessToken, refreshToken } = await response.json();
+  // Store tokens and navigate to home
+};
+\`\`\`
+
+**Web Integration:**
+\`\`\`typescript
+// React Web
+import { GoogleLogin } from '@react-oauth/google';
+
+<GoogleLogin
+  onSuccess={(credentialResponse) => {
+    fetch('/api/v1/auth/google/login', {
+      method: 'POST',
+      body: JSON.stringify({ idToken: credentialResponse.credential }),
+    });
+  }}
+/>
+\`\`\`
+
+**Benefits:**
+- ✅ One-click login (no password needed)
+- ✅ Email auto-verified by Google
+- ✅ Faster registration flow
+- ✅ Works on mobile and web
+`,
+  })
+  @ApiBody({ type: GoogleLoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Google authentication successful',
+    schema: {
+      example: {
+        success: true,
+        message: 'Google authentication successful',
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwMjA0NjQwMH0.abc123...',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwNDU1MjAwMH0.xyz789...',
+        user: {
+          id: 'user_abc123xyz',
+          email: 'john.doe@gmail.com',
+          firstName: 'John',
+          lastName: 'Doe',
+          imageUrl: 'https://lh3.googleusercontent.com/a/ACg8ocI...',
+          role: 'USER',
+          oauthProvider: ['google'],
+        },
+        isNewUser: false,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired Google ID token',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid Google ID token',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token validation failed',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Rate limit exceeded (10 requests per 5 minutes)',
+  })
+  async loginWithGoogle(@Body() dto: GoogleLoginDto) {
+    return this.authService.loginWithGoogle(dto);
+  }
+
+  /**
+   * 🔐 FACEBOOK LOGIN
+   * =================
+   * Authenticate user with Facebook Access Token
+   * 
+   * Flow:
+   * 1. Client gets Facebook access token from Facebook Login SDK
+   * 2. Client sends access token to this endpoint
+   * 3. Backend validates token with Facebook Graph API
+   * 4. Backend fetches user data from Facebook
+   * 5. Backend finds or creates user in database
+   * 6. Backend generates JWT tokens
+   * 
+   * Security:
+   * - Rate limited: 10 requests per 5 minutes per IP
+   * - Token validated with Facebook's Graph API
+   * - Email auto-verified (Facebook requires verified emails)
+   */
+  @Post('facebook/login')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 300000 } }) // 10 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.LOGIN,
+    entity: 'User',
+    getEntityId: (args) => 'facebook_oauth',
+  })
+  @ApiOperation({
+    summary: '🔐 Login with Facebook',
+    description: `
+**Facebook Login (Backend Token Validation)**
+
+Authenticate users with their Facebook account using access token validation.
+
+**How It Works:**
+1. Client initiates Facebook Login (using Facebook SDK)
+2. Facebook returns access token
+3. Client sends access token to this endpoint
+4. Backend validates token and fetches user data from Facebook Graph API
+5. Backend creates/finds user and returns JWT tokens
+
+**Mobile Integration:**
+\`\`\`typescript
+// React Native
+import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
+
+const handleFacebookLogin = async () => {
+  const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+  
+  if (!result.isCancelled) {
+    const data = await AccessToken.getCurrentAccessToken();
+    const accessToken = data.accessToken.toString();
+    
+    const response = await fetch('/api/v1/auth/facebook/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken }),
+    });
+    
+    const { accessToken: jwtToken } = await response.json();
+    // Store JWT and navigate
+  }
+};
+\`\`\`
+
+**Web Integration:**
+\`\`\`typescript
+// React Web
+import FacebookLogin from 'react-facebook-login';
+
+<FacebookLogin
+  appId="YOUR_FACEBOOK_APP_ID"
+  fields="name,email,picture"
+  callback={(response) => {
+    fetch('/api/v1/auth/facebook/login', {
+      method: 'POST',
+      body: JSON.stringify({ accessToken: response.accessToken }),
+    });
+  }}
+/>
+\`\`\`
+`,
+  })
+  @ApiBody({ type: FacebookLoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Facebook authentication successful',
+    schema: {
+      example: {
+        success: true,
+        message: 'Facebook authentication successful',
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          id: 'user_xyz789',
+          email: 'jane.smith@facebook.com',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          imageUrl: 'https://graph.facebook.com/1234567890/picture',
+          role: 'USER',
+          oauthProvider: ['facebook'],
+        },
+        isNewUser: true,
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or expired Facebook access token' })
+  @ApiResponse({ status: 401, description: 'Token validation failed' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
+  async loginWithFacebook(@Body() dto: FacebookLoginDto) {
+    return this.authService.loginWithFacebook(dto);
+  }
+
+  /**
+   * 🔗 LINK GOOGLE ACCOUNT
+   * ======================
+   * Link Google account to existing authenticated user
+   * Requires JWT authentication
+   * 
+   * Use Case:
+   * - User registered with email/password
+   * - User wants to add Google login option
+   * - After linking, user can login with either method
+   * 
+   * Security:
+   * - Requires valid JWT token (user must be logged in)
+   * - Prevents linking same Google account to multiple users
+   * - Validates email match (optional, configurable)
+   */
+  @Post('social/link/google')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.USER_UPDATE,
+    entity: 'User',
+    getEntityId: (args) => 'social_link_google',
+  })
+  @ApiOperation({
+    summary: '🔗 Link Google account to existing user',
+    description: `
+**Link Google Account (Requires Authentication)**
+
+Allows existing users to add Google login as an alternative authentication method.
+
+**Use Cases:**
+- User registered with email/password, wants to add Google login
+- User has Facebook login, wants to add Google as backup
+- User wants convenience of OAuth without losing existing account
+
+**Security:**
+- Requires valid JWT token (user must be logged in)
+- Prevents duplicate linking (Google account can only link to one user)
+- Validates token with Google API
+
+**Example:**
+\`\`\`typescript
+// User is logged in with password
+const jwtToken = localStorage.getItem('accessToken');
+
+// User clicks "Link Google Account"
+const googleIdToken = await GoogleSignIn.getIdToken();
+
+await fetch('/api/v1/auth/social/link/google', {
+  method: 'POST',
+  headers: {
+    'Authorization': \`Bearer \${jwtToken}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ idToken: googleIdToken }),
+});
+
+// Now user can login with password OR Google
+\`\`\`
+`,
+  })
+  @ApiBody({ type: LinkGoogleAccountDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Google account linked successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Google account linked successfully',
+        user: {
+          id: 'user_abc123',
+          email: 'john.doe@gmail.com',
+          oauthProvider: ['google', 'facebook'],
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Google account already linked to another user' })
+  @ApiResponse({ status: 401, description: 'JWT token invalid or expired' })
+  @ApiResponse({ status: 409, description: 'Email mismatch or conflict' })
+  async linkGoogleAccount(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: LinkGoogleAccountDto,
+  ) {
+    return this.authService.linkGoogleAccount(req.user.id, dto.idToken);
+  }
+
+  /**
+   * 🔗 LINK FACEBOOK ACCOUNT
+   * ========================
+   * Link Facebook account to existing authenticated user
+   * Requires JWT authentication
+   */
+  @Post('social/link/facebook')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.USER_UPDATE,
+    entity: 'User',
+    getEntityId: (args) => 'social_link_facebook',
+  })
+  @ApiOperation({
+    summary: '🔗 Link Facebook account to existing user',
+    description: `
+**Link Facebook Account (Requires Authentication)**
+
+Allows existing users to add Facebook login as an alternative authentication method.
+
+**Security:**
+- Requires valid JWT token
+- Prevents duplicate linking
+- Validates token with Facebook Graph API
+`,
+  })
+  @ApiBody({ type: LinkFacebookAccountDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Facebook account linked successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Facebook account linked successfully',
+        user: {
+          id: 'user_abc123',
+          email: 'john.doe@gmail.com',
+          oauthProvider: ['google', 'facebook'],
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Facebook account already linked to another user' })
+  @ApiResponse({ status: 401, description: 'JWT token invalid or expired' })
+  @ApiResponse({ status: 409, description: 'Email mismatch or conflict' })
+  async linkFacebookAccount(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: LinkFacebookAccountDto,
+  ) {
+    return this.authService.linkFacebookAccount(req.user.id, dto.accessToken);
+  }
+
+  /**
+   * 🔓 UNLINK SOCIAL ACCOUNT
+   * ========================
+   * Remove Google or Facebook login from user account
+   * Requires JWT authentication
+   * 
+   * Security:
+   * - Requires at least one authentication method remaining
+   * - Cannot unlink if no password set (would lock user out)
+   * - Can unlink if user has password OR another OAuth provider
+   */
+  @Post('social/unlink/:provider')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.USER_UPDATE,
+    entity: 'User',
+    getEntityId: (args) => 'social_unlink',
+  })
+  @ApiOperation({
+    summary: '🔓 Unlink social account (Google or Facebook)',
+    description: `
+**Unlink Social Account (Requires Authentication)**
+
+Remove Google or Facebook login from user account.
+
+**Security Protection:**
+- User must have at least one authentication method
+- Cannot unlink if no password set (would lock user out)
+- Must have password OR another OAuth provider
+
+**URL Parameter:**
+- \`provider\`: "google" or "facebook"
+
+**Example:**
+\`\`\`typescript
+// Unlink Google account
+DELETE /api/v1/auth/social/unlink/google
+
+// Unlink Facebook account
+DELETE /api/v1/auth/social/unlink/facebook
+\`\`\`
+
+**Error Cases:**
+- 400: Cannot unlink (no password, no other OAuth)
+- 404: Social account not linked
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Social account unlinked successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Google account unlinked successfully',
+        user: {
+          id: 'user_abc123',
+          email: 'john.doe@gmail.com',
+          oauthProvider: ['facebook'],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot unlink (no password set, would lock user out)',
+  })
+  @ApiResponse({ status: 401, description: 'JWT token invalid' })
+  @ApiResponse({ status: 404, description: 'Social account not linked' })
+  async unlinkSocialAccount(
+    @Request() req: AuthenticatedRequest,
+    @Query('provider') provider: 'google' | 'facebook',
+  ) {
+    if (!provider || !['google', 'facebook'].includes(provider)) {
+      throw new BadRequestException('Provider must be "google" or "facebook"');
+    }
+    return this.authService.unlinkSocialAccount(req.user.id, provider);
+  }
+
+  /**
+   * 📊 GET OAUTH STATUS
+   * ===================
+   * Get current user's linked OAuth providers and authentication options
+   * Requires JWT authentication
+   * 
+   * Returns:
+   * - List of linked providers (Google, Facebook)
+   * - Whether user has password set
+   * - Whether user can safely unlink providers
+   * - Detailed info about each linked provider
+   */
+  @Get('social/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '📊 Get OAuth status and linked providers',
+    description: `
+**Get OAuth Status (Requires Authentication)**
+
+Returns information about user's linked OAuth providers and authentication options.
+
+**Response includes:**
+- List of linked providers (google, facebook)
+- Whether user has password set
+- Whether user can safely unlink providers
+- Details about each linked account
+
+**Use Cases:**
+- Display linked accounts in user profile
+- Show "Link Google" button if not linked
+- Disable "Unlink" button if it would lock user out
+- Account security dashboard
+`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OAuth status retrieved successfully',
+    schema: {
+      example: {
+        success: true,
+        linkedProviders: ['google', 'facebook'],
+        hasPassword: true,
+        canUnlink: true,
+        details: {
+          google: {
+            linkedAt: '2024-11-01T10:30:00Z',
+            email: 'john.doe@gmail.com',
+            googleId: '1234567890',
+          },
+          facebook: {
+            linkedAt: '2024-10-15T14:20:00Z',
+            email: 'john.doe@facebook.com',
+            facebookId: '9876543210',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'JWT token invalid' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getOAuthStatus(@Request() req: AuthenticatedRequest) {
+    return this.authService.getOAuthStatus(req.user.id);
   }
 }

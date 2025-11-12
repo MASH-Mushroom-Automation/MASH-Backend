@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id                      String                 @id @default(cuid())
-  clerkId                 String                 @unique
+  clerkId                 String?                @unique
   email                   String                 @unique
   username                String?                @unique
   firstName               String?
@@ -33,12 +33,27 @@ model User {
   emailVerificationToken  String?
   emailVerificationExpiry DateTime?
   
+  // === OAUTH/SSO FIELDS (Google & Facebook) ===
+  googleId                String?   @unique // Google user ID (sub claim from JWT)
+  facebookId              String?   @unique // Facebook user ID
+  oauthProvider           String[]  @default([]) // Array: ["google", "facebook"] if both linked
+  oauthAccessToken        String?   // Optional: Store OAuth access token (encrypted)
+  oauthRefreshToken       String?   // Optional: Store OAuth refresh token (encrypted)
+  oauthTokenExpiry        DateTime? // Optional: Track token expiration
+  
   // 6-Digit Verification Code Fields (Mobile-Friendly)
   emailVerificationCode        String?   // 6-digit numeric code (e.g., "123456")
   emailVerificationCodeExpiry  DateTime? // Code expires in 10 minutes
   emailVerificationCodeUsed    Boolean   @default(false) // Single-use enforcement
   emailVerificationAttempts    Int       @default(0) // Track failed attempts (max 5)
   emailVerificationCodeSentAt  DateTime? // Rate limiting timestamp
+  
+  // 6-Digit Password Reset Code Fields (Mobile-Friendly)
+  passwordResetCode            String?   // 6-digit numeric code for password reset
+  passwordResetCodeExpiry      DateTime? // Code expires in 10 minutes
+  passwordResetCodeUsed        Boolean   @default(false) // Single-use enforcement
+  passwordResetAttempts        Int       @default(0) // Track failed attempts (max 5)
+  passwordResetCodeSentAt      DateTime? // Rate limiting timestamp
   
   addresses               Address[]
   alertAcknowledgments    AlertAcknowledgment[]  @relation("AlertAcknowledgmentUser")
@@ -70,6 +85,11 @@ model User {
   @@index([email, emailVerified])
   @@index([email, emailVerificationCode]) // Fast lookup for code-based verification
   @@index([emailVerificationCode, emailVerificationCodeExpiry]) // Fast expiry checks
+  @@index([email, passwordResetCode]) // Fast lookup for password reset
+  @@index([passwordResetCode, passwordResetCodeExpiry]) // Fast expiry checks for password reset
+  @@index([googleId]) // Fast lookup for Google OAuth users
+  @@index([facebookId]) // Fast lookup for Facebook OAuth users
+  @@index([oauthProvider]) // Fast lookup by OAuth provider
   @@map("users")
 }
 
@@ -79,7 +99,7 @@ model Device {
   type              DeviceType
   serialNumber      String             @unique
   status            DeviceStatus       @default(OFFLINE)
-  userId            String
+  userId            String?
   location          String?
   description       String?
   firmware          String?
@@ -91,7 +111,7 @@ model Device {
   updatedAt         DateTime           @updatedAt
   deviceCommands    DeviceCommand[]
   healthRecords     DeviceHealth[]
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   pushSubscriptions PushSubscription[]
   alerts            SensorAlert[]
   sensorData        SensorData[]
