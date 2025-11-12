@@ -9,8 +9,8 @@
         .email-container { max-width: 680px; margin: 24px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 6px 24px rgba(10,22,38,0.08); }
         .header { position: relative; height: 220px; background-image: url('https://raw.githubusercontent.com/MASH-Mushroom-Automation/MASH-Backend/main/public/assets/email/banner.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; }
         .header-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,30,50,0.12) 0%, rgba(6,30,50,0.24) 100%); }
-        .logo-container { position: absolute; bottom: -48px; left: 50%; transform: translateX(-50%); z-index: 10; }
-        .logo { width: 112px; height: 112px; background-color: #ffffff; border-radius: 14px; padding: 10px; box-shadow: 0 6px 18px rgba(10,22,38,0.12); display: block; object-fit: contain; }
+        .logo-container { position: absolute; bottom: -56px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; }
+        .logo { width: 112px; height: 112px; background-color: #ffffff; border-radius: 50%; padding: 12px; box-shadow: 0 6px 18px rgba(10,22,38,0.12); display: block; object-fit: contain; margin: 0 auto; }
         .content { padding: 72px 48px 40px 48px; text-align: center; }
         .greeting { font-size: 26px; font-weight: 700; color: #0b2540; margin: 0 0 12px 0; }
         .message { font-size: 15px; line-height: 1.6; color: #465663; margin: 0 0 18px 0; }
@@ -27,7 +27,8 @@
         @media only screen and (max-width: 620px) {
             .email-container { margin: 12px; }
             .header { height: 160px; }
-            .logo { width: 88px; height: 88px; padding: 8px; }
+            .logo-container { bottom: -44px; }
+            .logo { width: 88px; height: 88px; padding: 10px; }
             .content { padding: 56px 20px 28px 20px; }
             .greeting { font-size: 22px; }
             .feature-grid { grid-template-columns: 1fr; }
