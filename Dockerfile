@@ -97,6 +97,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Copy public folder for static assets (email templates, images, etc.)
+COPY --from=builder /app/public ./public
+
 # Copy scripts folder (if it exists)
 COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
 
@@ -104,8 +107,8 @@ COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
 RUN mkdir -p /app/logs /app/uploads/exports /app/uploads/temp && \
     chown -R appuser:appuser /app/logs /app/uploads
 
-# Set ownership of copied files
-RUN chown -R appuser:appuser /app/dist /app/node_modules /app/prisma
+# Set ownership of copied files (including public folder for static assets)
+RUN chown -R appuser:appuser /app/dist /app/node_modules /app/prisma /app/public
 
 # Switch to non-root user
 USER appuser
