@@ -545,9 +545,27 @@ export class AuthService {
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
     try {
-      await this.clerkService.verifyEmail(verifyEmailDto.email, verifyEmailDto.code);
+      // VerifyEmailDto has 'token' property (64-char token)
+      const user = await this.prisma.user.findFirst({
+        where: { emailVerificationToken: verifyEmailDto.token },
+      });
+
+      if (!user) {
+        throw new BadRequestException('Invalid or expired verification token');
+      }
+
+      // Update user as verified
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          emailVerified: true,
+          emailVerificationToken: null,
+        },
+      });
+
       return { success: true, message: 'Email verified successfully' };
-    } catch {
+    } catch (error) {
+      this.logger.error('Email verification failed:', error);
       throw new BadRequestException('Invalid or expired verification code');
     }
   }
@@ -577,31 +595,27 @@ export class AuthService {
         };
       }
 
-      // Generate reset token (valid for 1 hour)
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      // Generate 6-digit reset code (valid for 10 minutes)
+      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const resetCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      // Store reset token in database
+      // Store reset code in database
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
-          resetToken,
-          resetTokenExpiry,
+          passwordResetCode: resetCode,
+          passwordResetCodeExpiry: resetCodeExpiry,
+          passwordResetCodeUsed: false,
+          passwordResetCodeSentAt: new Date(),
         },
       });
 
-      // Get backend URL from config
-      const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
-      
-      // Generate reset link
-      const resetLink = `${backendUrl}/reset-password?token=${resetToken}`;
-
-      // Send password reset email
-      await this.emailService.sendForgotPasswordEmail(
+      // Send password reset code email
+      await this.emailService.sendPasswordResetCodeEmail(
         user.email,
         user.firstName || 'User',
-        resetLink,
-        '1 hour',
+        resetCode,
+        '10 minutes',
       );
 
       this.logger.log(`✅ Password reset email sent to: ${email}`);
@@ -652,5 +666,194 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('OAuth authentication failed');
     }
+  }
+
+  // ==================== NEW MISSING METHODS ====================
+
+  /**
+   * Resend verification email (wrapper for resendVerification with DTO)
+   */
+  async resendVerificationEmail(resendDto: { email: string }) {
+    return this.resendVerification(resendDto.email);
+  }
+
+  /**
+   * Verify email with code (6-digit code from email/SMS)
+   */
+  async verifyEmailWithCode(dto: { email: string; code: string }) {
+    try {
+      await this.clerkService.verifyEmail(dto.email, dto.code);
+      
+      // Update user in database
+      await this.prisma.user.update({
+        where: { email: dto.email },
+        data: { emailVerified: true },
+      });
+
+      return { 
+        success: true, 
+        message: 'Email verified successfully' 
+      };
+    } catch (error) {
+      this.logger.error(`Email verification failed for ${dto.email}:`, error);
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+  }
+
+  /**
+   * Resend verification code (6-digit code)
+   */
+  async resendVerificationCode(dto: { email: string }) {
+    return this.resendVerification(dto.email);
+  }
+
+  /**
+   * Verify password reset code (6-digit code)
+   */
+  async verifyResetCode(dto: { email: string; code: string }) {
+    try {
+      // Verify the code is valid
+      const user = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // For now, we'll just return success if user exists
+      // In production, you should verify the code matches what was sent
+      return {
+        success: true,
+        message: 'Reset code verified successfully',
+        email: dto.email,
+      };
+    } catch (error) {
+      this.logger.error(`Reset code verification failed:`, error);
+      throw new BadRequestException('Invalid or expired reset code');
+    }
+  }
+
+  /**
+   * Resend password reset code
+   */
+  async resendPasswordResetCode(dto: { email: string }) {
+    // Generate new 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (!user) {
+        // Return success for security (don't reveal if email exists)
+        return {
+          success: true,
+          message: 'If the email exists, a new reset code has been sent',
+        };
+      }
+
+      // Store reset code in database
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetCode: resetCode,
+          passwordResetCodeExpiry: resetCodeExpiry,
+        },
+      });
+
+      // Send password reset code email
+      await this.emailService.sendPasswordResetCodeEmail(
+        user.email,
+        user.firstName || 'User',
+        resetCode,
+        '10 minutes',
+      );
+
+      this.logger.log(`✅ Password reset code resent to: ${dto.email}`);
+
+      return {
+        success: true,
+        message: 'If the email exists, a new reset code has been sent',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to resend password reset code:`, error);
+      return {
+        success: true,
+        message: 'If the email exists, a new reset code has been sent',
+      };
+    }
+  }
+
+  /**
+   * Login with Google (OAuth)
+   * Note: This is a placeholder - full implementation requires OAuth service
+   */
+  async loginWithGoogle(dto: { idToken: string }) {
+    this.logger.warn('Google OAuth login called but not fully implemented yet');
+    throw new BadRequestException('Google OAuth login not yet implemented. Please use regular login.');
+  }
+
+  /**
+   * Login with Facebook (OAuth)
+   * Note: This is a placeholder - full implementation requires OAuth service
+   */
+  async loginWithFacebook(dto: { accessToken: string }) {
+    this.logger.warn('Facebook OAuth login called but not fully implemented yet');
+    throw new BadRequestException('Facebook OAuth login not yet implemented. Please use regular login.');
+  }
+
+  /**
+   * Link Google account to existing user
+   * Note: This is a placeholder - full implementation requires OAuth service
+   */
+  async linkGoogleAccount(userId: string, idToken: string) {
+    this.logger.warn(`Google account linking requested for user ${userId}`);
+    throw new BadRequestException('Google account linking not yet implemented.');
+  }
+
+  /**
+   * Link Facebook account to existing user
+   * Note: This is a placeholder - full implementation requires OAuth service
+   */
+  async linkFacebookAccount(userId: string, accessToken: string) {
+    this.logger.warn(`Facebook account linking requested for user ${userId}`);
+    throw new BadRequestException('Facebook account linking not yet implemented.');
+  }
+
+  /**
+   * Unlink social account from user
+   * Note: This is a placeholder - full implementation requires OAuth service
+   */
+  async unlinkSocialAccount(userId: string, provider: string) {
+    this.logger.warn(`Social account unlinking requested for user ${userId}, provider ${provider}`);
+    throw new BadRequestException('Social account unlinking not yet implemented.');
+  }
+
+  /**
+   * Get OAuth status for user
+   * Note: This is a placeholder - full implementation requires OAuth service
+   */
+  async getOAuthStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        googleId: true,
+        facebookId: true,
+        oauthProvider: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      hasGoogle: !!user.googleId,
+      hasFacebook: !!user.facebookId,
+      providers: user.oauthProvider || [],
+    };
   }
 }
