@@ -517,6 +517,11 @@ model RateLimitLog {
   @@unique([identifier, endpoint, windowStart])
   @@index([identifier, windowStart])
   @@index([endpoint])
+  // 🚀 PERFORMANCE OPTIMIZATION: Composite indexes for fast lookups (targeting 215ms → <10ms)
+  @@index([identifier, blocked, windowStart], name: "idx_identifier_blocked_window")
+  @@index([identifier, windowStart, windowEnd], name: "idx_identifier_window_range")
+  @@index([endpoint, blocked, windowStart], name: "idx_endpoint_blocked_window")
+  @@index([blocked, createdAt], name: "idx_blocked_created")
   @@map("rate_limit_logs")
 }
 
