@@ -30,6 +30,9 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   logger.log('[STARTUP] Bootstrap function started');
+  logger.log(`[ENV] NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+  logger.log(`[ENV] PORT: ${process.env.PORT || 'not set (default 3000)'}`);
+  logger.log(`[ENV] DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ MISSING'}`);
 
   logger.log('[CONFIG] Stage 1: Creating NestJS application...');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -274,8 +277,18 @@ bootstrap()
     logger.error(`Error type: ${typeof error}`);
     logger.error('Error:', error);
     if (error instanceof Error) {
-      logger.error(`Stack: ${error.stack}`);
+      logger.error(`Error name: ${error.name}`);
       logger.error(`Message: ${error.message}`);
+      logger.error(`Stack: ${error.stack}`);
     }
+    
+    // Log critical environment variables for debugging Railway deployments
+    logger.error('[DEBUG] Environment check:');
+    logger.error(`  DATABASE_URL: ${process.env.DATABASE_URL ? '✅ SET (length: ' + process.env.DATABASE_URL.length + ')' : '❌ MISSING'}`);
+    logger.error(`  PORT: ${process.env.PORT || '❌ NOT SET (will default to 3000)'}`);
+    logger.error(`  NODE_ENV: ${process.env.NODE_ENV || '❌ NOT SET'}`);
+    logger.error(`  REDIS_HOST: ${process.env.REDIS_HOST || '❌ NOT SET'}`);
+    logger.error(`  JWT_SECRET: ${process.env.JWT_SECRET ? '✅ SET' : '❌ MISSING'}`);
+    
     process.exit(1);
   });
