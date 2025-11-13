@@ -3,16 +3,23 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma, CartStatus } from '@prisma/client';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { CartResponseDto, CartSummaryResponseDto } from './dto/cart-response.dto';
+import { CartCacheService } from './cart-cache.service';
 
 @Injectable()
 export class CartService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CartService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CartCacheService,
+  ) {}
 
   /**
    * Get or create a cart for a user or guest session
@@ -28,7 +35,14 @@ export class CartService {
       throw new BadRequestException('Either userId or sessionId is required');
     }
 
-    // Try to find existing active cart
+    // Try cache first
+    const cachedCart = await this.cache.getCart(userId, sessionId);
+    if (cachedCart) {
+      this.logger.debug('Cart retrieved from cache');
+      return cachedCart;
+    }
+
+    // Cache miss - query database
     let cart = await this.prisma.cart.findFirst({
       where: {
         ...(userId ? { userId } : { sessionId }),
@@ -82,7 +96,12 @@ export class CartService {
       });
     }
 
-    return this.formatCartResponse(cart);
+    const response = this.formatCartResponse(cart);
+
+    // Warm cache with cart data
+    await this.cache.setCart(response, userId, sessionId);
+
+    return response;
   }
 
   /**
@@ -184,6 +203,9 @@ export class CartService {
     // Update cart totals and activity
     await this.calculateTotals(cart.id);
 
+    // Invalidate cache after update
+    await this.cache.invalidateCart(userId, sessionId);
+
     // Return updated cart
     return this.getOrCreateCart(userId, sessionId);
   }
@@ -231,6 +253,10 @@ export class CartService {
 
     // Update item
     await this.updateItemQuantity(cartId, itemId, dto.quantity, dto.customization);
+
+    // Invalidate cache
+    const cartData = await this.prisma.cart.findUnique({ where: { id: cartId } });
+    await this.cache.invalidateCart(cartData?.userId, cartData?.sessionId);
 
     // Return updated cart
     const cart = await this.prisma.cart.findUnique({
@@ -283,6 +309,10 @@ export class CartService {
 
     // Update cart totals
     await this.calculateTotals(cartId);
+
+    // Invalidate cache
+    const cart = await this.prisma.cart.findUnique({ where: { id: cartId } });
+    await this.cache.invalidateCart(cart?.userId, cart?.sessionId);
   }
 
   /**
@@ -295,7 +325,7 @@ export class CartService {
     });
 
     // Reset cart totals
-    await this.prisma.cart.update({
+    const cart = await this.prisma.cart.update({
       where: { id: cartId },
       data: {
         subtotal: 0,
@@ -305,6 +335,9 @@ export class CartService {
         lastActivityAt: new Date(),
       },
     });
+
+    // Invalidate cache
+    await this.cache.invalidateCart(cart.userId, cart.sessionId);
   }
 
   /**
