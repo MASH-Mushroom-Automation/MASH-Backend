@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 export interface ShippingAddress {
   region: string;
@@ -34,6 +35,8 @@ export interface ShippingCalculation {
 export class ShippingService {
   private readonly logger = new Logger(ShippingService.name);
 
+  constructor(private readonly prometheusService: PrometheusService) {}
+
   // Base shipping rates (in PHP)
   private readonly BASE_RATES = {
     STANDARD: new Decimal(50),
@@ -60,13 +63,13 @@ export class ShippingService {
    * @param method - Shipping method (STANDARD, EXPRESS, SAME_DAY)
    * @returns Shipping cost in PHP
    */
-  async calculateShipping(
+  calculateShipping(
     totalWeight: Decimal,
     address: ShippingAddress,
     method: 'STANDARD' | 'EXPRESS' | 'SAME_DAY' = 'STANDARD',
-  ): Promise<Decimal> {
+  ): Decimal {
     this.logger.debug(
-      `🚚 Calculating shipping: ${totalWeight}kg to ${address.region}, method: ${method}`,
+      `🚚 Calculating shipping: ${totalWeight.toString()}kg to ${address.region}, method: ${method}`,
     );
 
     // Get base rate for method
@@ -82,13 +85,13 @@ export class ShippingService {
       : new Decimal(0);
 
     // Calculate final shipping cost
-    const shippingCost = baseRate
-      .mul(multiplier)
-      .plus(weightSurcharge)
-      .toDecimalPlaces(2);
+    const shippingCost = baseRate.mul(multiplier).plus(weightSurcharge).toDecimalPlaces(2);
+
+    // Record shipping calculation metrics
+    this.prometheusService.recordShippingCalculation(method, address.region);
 
     this.logger.debug(
-      `💰 Shipping cost: ₱${shippingCost} (base: ₱${baseRate}, multiplier: ${multiplier}, weight surcharge: ₱${weightSurcharge})`,
+      `💰 Shipping cost: ₱${shippingCost.toString()} (base: ₱${baseRate.toString()}, multiplier: ${multiplier}, weight surcharge: ₱${weightSurcharge.toString()})`,
     );
 
     return shippingCost;
@@ -100,23 +103,20 @@ export class ShippingService {
    * @param address - Shipping address
    * @returns Array of shipping options
    */
-  async getShippingOptions(
-    totalWeight: Decimal,
-    address: ShippingAddress,
-  ): Promise<ShippingOption[]> {
+  getShippingOptions(totalWeight: Decimal, address: ShippingAddress): ShippingOption[] {
     const region = this.determineRegion(address);
     const isSameDayAvailable = region === 'NCR'; // Same-day only in NCR
 
     const options: ShippingOption[] = [
       {
         method: 'STANDARD',
-        cost: await this.calculateShipping(totalWeight, address, 'STANDARD'),
+        cost: this.calculateShipping(totalWeight, address, 'STANDARD'),
         estimatedDays: this.getEstimatedDays(region, 'STANDARD'),
         description: 'Standard Shipping (5-7 business days)',
       },
       {
         method: 'EXPRESS',
-        cost: await this.calculateShipping(totalWeight, address, 'EXPRESS'),
+        cost: this.calculateShipping(totalWeight, address, 'EXPRESS'),
         estimatedDays: this.getEstimatedDays(region, 'EXPRESS'),
         description: 'Express Shipping (2-3 business days)',
       },
@@ -125,7 +125,7 @@ export class ShippingService {
     if (isSameDayAvailable) {
       options.push({
         method: 'SAME_DAY',
-        cost: await this.calculateShipping(totalWeight, address, 'SAME_DAY'),
+        cost: this.calculateShipping(totalWeight, address, 'SAME_DAY'),
         estimatedDays: 0,
         description: 'Same-Day Delivery (order before 12PM)',
       });
@@ -141,20 +141,15 @@ export class ShippingService {
    * @param preferredMethod - Optional preferred shipping method
    * @returns Shipping calculation with all options
    */
-  async estimateShipping(
+  estimateShipping(
     totalWeight: Decimal,
     address: ShippingAddress,
     preferredMethod: 'STANDARD' | 'EXPRESS' | 'SAME_DAY' = 'STANDARD',
-  ): Promise<ShippingCalculation> {
-    const availableOptions = await this.getShippingOptions(
-      totalWeight,
-      address,
-    );
+  ): ShippingCalculation {
+    const availableOptions = this.getShippingOptions(totalWeight, address);
 
     // Find selected method or default to first available
-    const selectedOption =
-      availableOptions.find((opt) => opt.method === preferredMethod) ||
-      availableOptions[0];
+    const selectedOption = availableOptions.find(opt => opt.method === preferredMethod) || availableOptions[0];
 
     return {
       selectedMethod: selectedOption.method,

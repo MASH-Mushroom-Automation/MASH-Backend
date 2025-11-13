@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CartController } from './cart.controller';
@@ -9,9 +9,14 @@ import { ShippingService } from './shipping.service';
 import { CartSessionInterceptor } from './interceptors/cart-session.interceptor';
 import { PrismaService } from '../../database/prisma.service';
 import { RedisService } from '../../database/redis.service';
+import { OrdersModule } from '../orders/orders.module';
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 @Module({
-  imports: [ScheduleModule.forRoot()],
+  imports: [
+    ScheduleModule.forRoot(),
+    forwardRef(() => OrdersModule),
+  ],
   controllers: [CartController],
   providers: [
     CartService,
@@ -20,6 +25,7 @@ import { RedisService } from '../../database/redis.service';
     ShippingService,
     PrismaService,
     RedisService,
+    PrometheusService,
     CartSessionInterceptor,
     {
       provide: APP_INTERCEPTOR,

@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
 import { CartCacheService } from './cart-cache.service';
 import { CartStatus } from '@prisma/client';
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 /**
  * CartSchedulerService
@@ -17,6 +18,7 @@ export class CartSchedulerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CartCacheService,
+    private readonly prometheusService: PrometheusService,
   ) {}
 
   /**
@@ -102,6 +104,22 @@ export class CartSchedulerService {
     abandonmentThreshold.setHours(abandonmentThreshold.getHours() - 3); // 3 hours ago
 
     try {
+      // Get carts that will be marked as abandoned (for metrics)
+      const cartsToAbandon = await this.prisma.cart.findMany({
+        where: {
+          status: CartStatus.ACTIVE,
+          lastActivityAt: { lt: abandonmentThreshold },
+          abandonedAt: null,
+          items: {
+            some: {},
+          },
+        },
+        select: {
+          id: true,
+          userId: true,
+        },
+      });
+
       // Mark carts as abandoned
       const abandonedCarts = await this.prisma.cart.updateMany({
         where: {
@@ -115,6 +133,12 @@ export class CartSchedulerService {
         data: {
           abandonedAt: now,
         },
+      });
+
+      // Record metrics for each abandoned cart
+      cartsToAbandon.forEach((cart) => {
+        const userType = cart.userId ? 'authenticated' : 'guest';
+        this.prometheusService.recordCartAbandonment(userType);
       });
 
       this.logger.log(

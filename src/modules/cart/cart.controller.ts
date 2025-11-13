@@ -30,7 +30,10 @@ import { EstimateShippingDto, CreateOrderFromCartDto } from './dto/cart-checkout
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { PrismaService } from '../../database/prisma.service';
+import { OrdersService } from '../orders/orders.service';
 import { Request } from 'express';
+import { Inject, forwardRef } from '@nestjs/common';
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 @ApiTags('Cart')
 @Controller('api/v1/cart')
@@ -40,6 +43,9 @@ export class CartController {
   constructor(
     private readonly cartService: CartService,
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => OrdersService))
+    private readonly ordersService: OrdersService,
+    private readonly prometheusService: PrometheusService,
   ) {}
 
   /**
@@ -420,6 +426,11 @@ export class CartController {
       dto.shippingMethod || 'STANDARD',
     );
 
+    // Fetch updated cart with totals
+    const updatedCart = await this.prisma.cart.findUnique({
+      where: { id: cart.id },
+    });
+
     // Store addresses in cart metadata for order creation
     await this.prisma.cart.update({
       where: { id: cart.id },
@@ -428,22 +439,35 @@ export class CartController {
           shippingAddress: dto.shippingAddress as any,
           billingAddress: (dto.billingAddress || dto.shippingAddress) as any,
           notes: dto.notes,
+          shippingMethod: dto.shippingMethod || 'STANDARD',
         } as any,
       },
     });
 
-    // Create order from cart (this will be handled by OrdersService)
-    // For now, we'll need to inject OrdersService
+    // Create order from cart using OrdersService
     this.logger.log(
-      `Checkout initiated for cart ${cart.id} by user ${userId}`,
+      `🛒 Checkout initiated for cart ${cart.id} by user ${userId}`,
     );
 
-    return {
-      message: 'Checkout endpoint ready. OrdersService integration pending.',
-      cartId: cart.id,
+    const order = await this.ordersService.createOrderFromCart(
       userId,
-      paymentMethod: dto.paymentMethod,
-    };
+      cart.id,
+      dto.paymentMethod,
+    );
+
+    // Record checkout metrics
+    if (updatedCart) {
+      this.prometheusService.recordCartCheckout(
+        dto.paymentMethod,
+        updatedCart.total.toNumber(),
+      );
+    }
+
+    this.logger.log(
+      `✅ Order ${order.orderNumber} created successfully from cart ${cart.id}`,
+    );
+
+    return order;
   }
 }
 

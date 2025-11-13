@@ -12,6 +12,7 @@ import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { CartResponseDto, CartSummaryResponseDto } from './dto/cart-response.dto';
 import { CartCacheService } from './cart-cache.service';
 import { ShippingService, ShippingAddress } from './shipping.service';
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
 @Injectable()
 export class CartService {
@@ -27,6 +28,7 @@ export class CartService {
     private readonly prisma: PrismaService,
     private readonly cache: CartCacheService,
     private readonly shippingService: ShippingService,
+    private readonly prometheusService: PrometheusService,
   ) {}
 
   /**
@@ -211,6 +213,10 @@ export class CartService {
     // Update cart totals and activity
     await this.calculateTotals(cart.id);
 
+    // Record metrics
+    const userType = userId ? 'authenticated' : 'guest';
+    this.prometheusService.recordCartItemAdded(dto.productId, userType);
+
     // Invalidate cache after update
     await this.cache.invalidateCart(userId, sessionId);
 
@@ -300,6 +306,7 @@ export class CartService {
     // Verify item belongs to cart
     const item = await this.prisma.cartItem.findUnique({
       where: { id: itemId },
+      include: { cart: true },
     });
 
     if (!item) {
@@ -309,6 +316,10 @@ export class CartService {
     if (item.cartId !== cartId) {
       throw new BadRequestException('Cart item does not belong to this cart');
     }
+
+    // Record metrics before deletion
+    const userType = item.cart.userId ? 'authenticated' : 'guest';
+    this.prometheusService.recordCartItemRemoved(item.productId, userType);
 
     // Delete item
     await this.prisma.cartItem.delete({
@@ -423,6 +434,12 @@ export class CartService {
       : this.TAX_RATES.NCR;
     const tax = subtotal.mul(taxRate).toDecimalPlaces(2);
 
+    // Record tax metrics
+    if (shippingAddress && tax.toNumber() > 0) {
+      const region = this.getTaxRate(shippingAddress.region) === this.TAX_RATES.NCR ? 'NCR' : 'Province';
+      this.prometheusService.recordTaxCollected(region as 'NCR' | 'Province', tax.toNumber());
+    }
+
     // Calculate shipping if address provided
     let shipping = new Prisma.Decimal(0);
     if (shippingAddress) {
@@ -437,6 +454,14 @@ export class CartService {
         shippingAddress,
         shippingMethod || 'STANDARD',
       );
+
+      // Record shipping revenue metrics
+      if (shipping.toNumber() > 0) {
+        this.prometheusService.recordShippingRevenue(
+          shippingMethod || 'STANDARD',
+          shipping.toNumber(),
+        );
+      }
     }
 
     // Calculate final total
