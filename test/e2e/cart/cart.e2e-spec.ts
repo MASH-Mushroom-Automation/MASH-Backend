@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../../../src/app.module';
 import { PrismaService } from '../../../src/database/prisma.service';
 import { CartStatus } from '@prisma/client';
@@ -71,10 +71,12 @@ describe('Cart E2E Tests', () => {
       data: {
         name: 'Test Product',
         description: 'Test product for cart E2E',
+        slug: `test-product-${Date.now()}`,
         price: new Decimal(100),
         stock: 50,
-        sellerId: seller.id,
-        categoryId: category.id,
+        categories: [],
+        images: [],
+        tags: [],
         isActive: true,
         sku: `SKU-${Date.now()}`,
       },
