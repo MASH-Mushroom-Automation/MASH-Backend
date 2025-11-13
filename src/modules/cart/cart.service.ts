@@ -513,6 +513,200 @@ export class CartService {
   }
 
   /**
+   * Merge guest cart into user cart when user logs in
+   * @param userId - User ID (authenticated user)
+   * @param guestSessionId - Guest session ID to merge from
+   * @returns Merged user cart
+   */
+  async mergeGuestCart(
+    userId: string,
+    guestSessionId: string,
+  ): Promise<CartResponseDto> {
+    this.logger.log(
+      `Merging guest cart (session: ${guestSessionId}) into user cart (userId: ${userId})`,
+    );
+
+    // Get guest cart
+    const guestCart = await this.prisma.cart.findFirst({
+      where: {
+        sessionId: guestSessionId,
+        status: CartStatus.ACTIVE,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!guestCart) {
+      this.logger.log('No guest cart found to merge');
+      // Just return user's cart (create if doesn't exist)
+      return this.getOrCreateCart(userId);
+    }
+
+    if (guestCart.items.length === 0) {
+      this.logger.log('Guest cart is empty, marking as merged');
+      // Mark empty guest cart as merged
+      await this.prisma.cart.update({
+        where: { id: guestCart.id },
+        data: {
+          status: CartStatus.MERGED,
+          convertedAt: new Date(),
+        },
+      });
+      return this.getOrCreateCart(userId);
+    }
+
+    // Get or create user cart
+    let userCart = await this.prisma.cart.findFirst({
+      where: {
+        userId,
+        status: CartStatus.ACTIVE,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!userCart) {
+      // Create new user cart
+      userCart = await this.prisma.cart.create({
+        data: {
+          userId,
+          status: CartStatus.ACTIVE,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+    }
+
+    // Merge items from guest cart to user cart
+    const mergeResults = {
+      itemsAdded: 0,
+      quantitiesMerged: 0,
+      skippedItems: 0,
+    };
+
+    for (const guestItem of guestCart.items) {
+      try {
+        // Check if item already exists in user cart
+        const existingUserItem = await this.prisma.cartItem.findUnique({
+          where: {
+            cartId_productId: {
+              cartId: userCart.id,
+              productId: guestItem.productId,
+            },
+          },
+        });
+
+        if (existingUserItem) {
+          // Item exists - merge quantities (respect maxCartQty)
+          const product = guestItem.product;
+          const maxQty = product.maxCartQty || product.stock;
+          const newQuantity = Math.min(
+            existingUserItem.quantity + guestItem.quantity,
+            maxQty,
+            product.stock,
+          );
+
+          await this.prisma.cartItem.update({
+            where: { id: existingUserItem.id },
+            data: {
+              quantity: newQuantity,
+              subtotal: product.price.mul(newQuantity),
+              total: product.price.mul(newQuantity),
+            },
+          });
+
+          mergeResults.quantitiesMerged++;
+          this.logger.debug(
+            `Merged quantities for product ${guestItem.productId}: ${existingUserItem.quantity} + ${guestItem.quantity} = ${newQuantity}`,
+          );
+        } else {
+          // Item doesn't exist - add to user cart
+          const product = guestItem.product;
+
+          // Validate stock and limits
+          if (!product.isActive) {
+            this.logger.warn(
+              `Skipping inactive product ${product.id} during merge`,
+            );
+            mergeResults.skippedItems++;
+            continue;
+          }
+
+          if (product.stock < guestItem.quantity) {
+            this.logger.warn(
+              `Insufficient stock for product ${product.id} during merge. Available: ${product.stock}, Requested: ${guestItem.quantity}`,
+            );
+            mergeResults.skippedItems++;
+            continue;
+          }
+
+          // Create new item in user cart
+          await this.prisma.cartItem.create({
+            data: {
+              cartId: userCart.id,
+              productId: guestItem.productId,
+              quantity: guestItem.quantity,
+              price: guestItem.price,
+              originalPrice: guestItem.price,
+              subtotal: guestItem.subtotal,
+              discount: guestItem.discount,
+              total: guestItem.total,
+              productSnapshot: guestItem.productSnapshot,
+              customization: guestItem.customization,
+            },
+          });
+
+          mergeResults.itemsAdded++;
+          this.logger.debug(`Added product ${guestItem.productId} to user cart`);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error merging item ${guestItem.id}: ${error.message}`,
+        );
+        mergeResults.skippedItems++;
+      }
+    }
+
+    // Mark guest cart as MERGED
+    await this.prisma.cart.update({
+      where: { id: guestCart.id },
+      data: {
+        status: CartStatus.MERGED,
+        convertedAt: new Date(),
+      },
+    });
+
+    // Recalculate totals for user cart
+    await this.calculateTotals(userCart.id);
+
+    // Invalidate both caches
+    await this.cache.invalidateCart(userId, undefined);
+    await this.cache.invalidateCart(undefined, guestSessionId);
+
+    this.logger.log(
+      `✅ Cart merge completed: ${mergeResults.itemsAdded} items added, ${mergeResults.quantitiesMerged} quantities merged, ${mergeResults.skippedItems} items skipped`,
+    );
+
+    // Return updated user cart
+    return this.getOrCreateCart(userId);
+  }
+
+  /**
    * Helper: Format cart response with proper typing
    */
   private formatCartResponse(cart: any): CartResponseDto {

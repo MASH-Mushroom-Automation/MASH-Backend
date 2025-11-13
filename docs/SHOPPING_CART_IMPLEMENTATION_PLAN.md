@@ -14,8 +14,8 @@
 | **Phase 2: Core Cart Service** | ✅ Complete | Nov 13, 2025 | CartService with 10+ methods, DTOs, Stock validation, Price locking |
 | **Phase 3: Redis Caching** | ✅ Complete | Nov 13, 2025 | Redis integration, Cache warming, Invalidation strategy |
 | **Phase 4: API Controllers** | ✅ Complete | Nov 13, 2025 | REST endpoints (7), Swagger docs, Guest session handling |
-| **Phase 5: Advanced Features** | ⏳ Next | TBD | Guest cart merging, Expiration scheduler, Abandonment tracking |
-| **Phase 6: Integration** | ⏳ Pending | TBD | Order flow, Shipping, Tax calculation |
+| **Phase 5: Advanced Features** | ✅ Complete | Nov 13, 2025 | Guest cart merging, Expiration scheduler (daily + 6hr cron), Abandonment tracking |
+| **Phase 6: Integration** | ⏳ Next | TBD | Order flow, Shipping, Tax calculation |
 | **Phase 7: Monitoring** | ⏳ Pending | TBD | Prometheus metrics, Logging, Analytics |
 | **Phase 8: Testing** | ⏳ Pending | TBD | Unit tests, Integration tests, E2E tests, Load testing |
 
@@ -34,12 +34,15 @@
 - **Swagger Documentation**: Full OpenAPI specs with examples
 - **Guest Cart Support**: Automatic session tracking with 7-day cookies
 - **Public Access**: Cart works for both authenticated and guest users
+- **Guest Cart Merging**: Automatic merge when guest logs in
+- **Cart Expiration**: Daily cron job (guest: 7 days, user: 30 days)
+- **Abandoned Cart Detection**: 6-hour cron job marks carts abandoned after 3 hours
+- **Scheduler Statistics**: Monitor cart status and scheduled job metrics
 
 ### 🚧 Next Steps:
-1. **Phase 5**: Add guest cart merging and expiration scheduler (NEXT - 3-5 days)
-2. **Phase 6**: Integrate with order creation flow (2-3 days)
-3. **Phase 7**: Add Prometheus metrics and analytics (1-2 days)
-4. **Phase 8**: Complete testing suite (3-5 days)
+1. **Phase 6**: Integrate with order creation flow (NEXT - 2-3 days)
+2. **Phase 7**: Add Prometheus metrics and analytics (1-2 days)
+3. **Phase 8**: Complete testing suite (3-5 days)
 
 ### 🎯 Quick Start for Phase 5:
 ```bash
@@ -468,14 +471,16 @@ POST   /api/v1/cart/validate     - Validate cart (stock/price check)
 - Comprehensive logging for debugging
 - Full Swagger/OpenAPI documentation at `/api`
 
-### **Phase 5: Advanced Features** (Week 3-4)
-- [ ] Implement guest cart tracking (session-based)
-- [ ] Implement cart merge on login
-- [ ] Implement cart expiration scheduler (cron job)
-- [ ] Implement abandoned cart detection
-- [ ] Implement stock reservation system
-- [ ] Add real-time stock updates (WebSocket)
-- [ ] Add cart event emitters for analytics
+### **Phase 5: Advanced Features** ✅ COMPLETED (November 13, 2025)
+- [x] Implement guest cart tracking (session-based) - CartSessionInterceptor
+- [x] Implement cart merge on login - mergeGuestCart() method + POST /cart/merge endpoint
+- [x] Implement cart expiration scheduler (cron job) - Daily at midnight
+- [x] Implement abandoned cart detection - Every 6 hours cron
+- [x] Cart scheduler statistics - getSchedulerStats() method
+- [x] Manual triggers for testing - manualExpireInactiveCarts() and manualDetectAbandonedCarts()
+- [ ] Implement stock reservation system (Future enhancement)
+- [ ] Add real-time stock updates (WebSocket) (Future enhancement)
+- [ ] Add cart event emitters for analytics (Phase 7)
 
 ### **Phase 6: Integration** (Week 4)
 - [ ] Integrate with order creation flow
@@ -1305,11 +1310,14 @@ curl -X PUT http://localhost:3000/api/v1/cart/items/ITEM_ID \
 - [x] Error handling (NestJS built-in exception filters)
 - [x] Public access decorator for guest users
 
-### Phase 5 (TODO 📋)
-- [ ] Guest cart merging logic
-- [ ] Cart expiration cron job
-- [ ] Abandoned cart detection
-- [ ] Email notifications for abandoned carts
+### Phase 5 (COMPLETED ✅)
+- [x] Guest cart merging logic (mergeGuestCart method)
+- [x] Cart merge endpoint (POST /api/v1/cart/merge)
+- [x] Cart expiration cron job (daily at midnight)
+- [x] Abandoned cart detection (every 6 hours)
+- [x] Scheduler statistics API
+- [x] Manual triggers for testing
+- [ ] Email notifications for abandoned carts (TODO - Phase 6 or later)
 
 ### Phase 6 (TODO 📋)
 - [ ] Order creation from cart
@@ -1330,7 +1338,7 @@ curl -X PUT http://localhost:3000/api/v1/cart/items/ITEM_ID \
 
 ---
 
-**Document Version:** 1.4  
+**Document Version:** 1.5  
 **Last Updated:** November 13, 2025  
-**Status:** ✅ Phase 1-4 Complete (50%) | 🚧 Phase 5 Next  
-**Next Review:** After Phase 5 completion
+**Status:** ✅ Phase 1-5 Complete (62.5%) | 🚧 Phase 6 Next  
+**Next Review:** After Phase 6 completion

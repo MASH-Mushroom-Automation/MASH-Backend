@@ -278,4 +278,42 @@ export class CartController {
 
     return this.cartService.validateCart(cart.id);
   }
+
+  /**
+   * Merge guest cart into user cart (called after login)
+   */
+  @Post('merge')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Merge guest cart into user cart',
+    description:
+      'Merge items from guest cart (identified by session ID) into authenticated user cart. Called automatically after login.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Guest cart merged successfully',
+    type: CartResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
+  async mergeGuestCart(@Req() req: Request): Promise<CartResponseDto> {
+    const userId = req.user?.['id'];
+    const guestSessionId =
+      req.cookies?.['cart_session_id'] || (req.headers['x-session-id'] as string);
+
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+
+    if (!guestSessionId) {
+      this.logger.log('No guest session ID found, returning user cart');
+      return this.cartService.getOrCreateCart(userId);
+    }
+
+    this.logger.log(
+      `Merging guest cart (session: ${guestSessionId}) for user: ${userId}`,
+    );
+
+    return this.cartService.mergeGuestCart(userId, guestSessionId);
+  }
 }

@@ -50,6 +50,13 @@ curl -X POST http://localhost:3000/api/v1/cart/validate \
   -H "Content-Type: application/json"
 ```
 
+### 8. Merge Guest Cart (After Login) **NEW in Phase 5**
+```bash
+curl -X POST http://localhost:3000/api/v1/cart/merge \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Cookie: cart_session_id=GUEST_SESSION_ID"
+```
+
 ---
 
 ## 🔐 Authenticated User Testing
@@ -239,16 +246,73 @@ redis-cli GET "cart:session:SESSION_ID"
 
 ---
 
+## 🎯 Phase 5 Testing - Advanced Features
+
+### Test Guest Cart Merging
+
+**Scenario: Guest adds items, then logs in**
+
+```bash
+# Step 1: Add items as guest
+curl -X POST http://localhost:3000/api/v1/cart/items \
+  -H "Content-Type: application/json" \
+  -d '{"productId":"PRODUCT_ID_1","quantity":2}'
+
+curl -X POST http://localhost:3000/api/v1/cart/items \
+  -H "Content-Type: application/json" \
+  -d '{"productId":"PRODUCT_ID_2","quantity":1}'
+
+# Step 2: Login to get JWT
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password"}'
+
+# Step 3: Merge guest cart
+curl -X POST http://localhost:3000/api/v1/cart/merge \
+  -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Cookie: cart_session_id=GUEST_SESSION_ID"
+
+# Step 4: Verify merged cart
+curl -X GET http://localhost:3000/api/v1/cart \
+  -H "Authorization: Bearer JWT_TOKEN"
+```
+
+**Expected Result:**
+- Guest cart items now in user cart
+- Guest cart status = MERGED
+- Quantities combined for duplicate items
+
+### Test Cart Expiration (Manual)
+
+```typescript
+// In code or via admin API (to be implemented)
+const result = await cartSchedulerService.manualExpireInactiveCarts();
+console.log(result);
+// { expiredGuestCarts: 5, expiredUserCarts: 2, totalExpired: 7 }
+```
+
+### Test Abandoned Cart Detection (Manual)
+
+```typescript
+// In code or via admin API (to be implemented)
+const result = await cartSchedulerService.manualDetectAbandonedCarts();
+console.log(result);
+// { abandonedCarts: 3, timestamp: '2025-11-13T12:00:00Z' }
+```
+
+---
+
 ## 📝 Known Limitations (To Be Implemented)
 
 - ❌ Rate limiting (planned for production)
-- ❌ Guest cart merging on login (Phase 5)
-- ❌ Cart expiration scheduler (Phase 5)
-- ❌ Abandoned cart emails (Phase 5)
+- ✅ Guest cart merging on login (Phase 5 - DONE!)
+- ✅ Cart expiration scheduler (Phase 5 - DONE!)
+- ✅ Abandoned cart detection (Phase 5 - DONE!)
+- ❌ Abandoned cart emails (Phase 6 or later)
 - ❌ Prometheus metrics (Phase 7)
 - ❌ Comprehensive test suite (Phase 8)
 
 ---
 
-**Status:** ✅ Phase 4 Complete - Ready for Testing  
-**Next Phase:** Guest Cart Merging & Advanced Features
+**Status:** ✅ Phase 5 Complete - Advanced Features Working  
+**Next Phase:** Order Integration & Shipping (Phase 6)
