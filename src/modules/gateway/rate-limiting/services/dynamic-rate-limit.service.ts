@@ -172,7 +172,7 @@ export class DynamicRateLimitService {
     if (cached !== null) {
       this.logger.debug(`[CACHE HIT] Rate limit override: ${cacheKey}`);
       // Return null if cached value is "null" string, otherwise parse JSON
-      return cached === 'null' ? null : JSON.parse(cached);
+      return cached === 'null' ? null : JSON.parse(cached as string);
     }
 
     this.logger.debug(`[CACHE MISS] Rate limit override: ${cacheKey}`);
@@ -236,7 +236,6 @@ export class DynamicRateLimitService {
     await this.redis.set(
       cacheKey,
       override ? JSON.stringify(override) : 'null',
-      'EX',
       this.CACHE_TTL,
     );
 
