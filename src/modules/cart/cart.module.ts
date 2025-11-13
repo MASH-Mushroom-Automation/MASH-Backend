@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CartController } from './cart.controller';
+import { CartAnalyticsController } from './cart-analytics.controller';
 import { CartService } from './cart.service';
 import { CartCacheService } from './cart-cache.service';
 import { CartSchedulerService } from './cart-scheduler.service';
@@ -17,7 +18,7 @@ import { PrometheusService } from '../../monitoring/prometheus/prometheus.servic
     ScheduleModule.forRoot(),
     forwardRef(() => OrdersModule),
   ],
-  controllers: [CartController],
+  controllers: [CartController, CartAnalyticsController],
   providers: [
     CartService,
     CartCacheService,
