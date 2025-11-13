@@ -5,6 +5,7 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { CartCacheService } from './cart-cache.service';
 import { CartSchedulerService } from './cart-scheduler.service';
+import { ShippingService } from './shipping.service';
 import { CartSessionInterceptor } from './interceptors/cart-session.interceptor';
 import { PrismaService } from '../../database/prisma.service';
 import { RedisService } from '../../database/redis.service';
@@ -16,6 +17,7 @@ import { RedisService } from '../../database/redis.service';
     CartService,
     CartCacheService,
     CartSchedulerService,
+    ShippingService,
     PrismaService,
     RedisService,
     CartSessionInterceptor,
@@ -24,6 +26,6 @@ import { RedisService } from '../../database/redis.service';
       useClass: CartSessionInterceptor,
     },
   ],
-  exports: [CartService, CartCacheService, CartSchedulerService],
+  exports: [CartService, CartCacheService, CartSchedulerService, ShippingService],
 })
 export class CartModule {}

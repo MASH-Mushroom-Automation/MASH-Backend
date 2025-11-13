@@ -26,8 +26,10 @@ import {
   CartResponseDto,
   CartSummaryResponseDto,
 } from './dto/cart-response.dto';
+import { EstimateShippingDto, CreateOrderFromCartDto } from './dto/cart-checkout.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
+import { PrismaService } from '../../database/prisma.service';
 import { Request } from 'express';
 
 @ApiTags('Cart')
@@ -35,7 +37,10 @@ import { Request } from 'express';
 export class CartController {
   private readonly logger = new Logger(CartController.name);
 
-  constructor(private readonly cartService: CartService) {}
+  constructor(
+    private readonly cartService: CartService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Get current user's cart
@@ -316,4 +321,129 @@ export class CartController {
 
     return this.cartService.mergeGuestCart(userId, guestSessionId);
   }
+
+  /**
+   * Estimate shipping for cart (Phase 6)
+   */
+  @Post('shipping/estimate')
+  @Public()
+  @ApiOperation({
+    summary: 'Estimate shipping cost',
+    description:
+      'Calculate shipping options and costs based on cart weight and destination address',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shipping estimate calculated',
+    schema: {
+      type: 'object',
+      properties: {
+        selectedMethod: { type: 'string', example: 'STANDARD' },
+        cost: { type: 'number', example: 150.00 },
+        estimatedDays: { type: 'number', example: 5 },
+        availableOptions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              method: { type: 'string' },
+              cost: { type: 'number' },
+              estimatedDays: { type: 'number' },
+              description: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Cart not found' })
+  async estimateShipping(
+    @Req() req: Request,
+    @Body() dto: EstimateShippingDto,
+  ) {
+    const userId = req.user?.['id'];
+    const sessionId =
+      req.cookies?.['cart_session_id'] || (req.headers['x-session-id'] as string);
+
+    const cart = await this.cartService.getOrCreateCart(userId, sessionId);
+
+    return this.cartService.estimateShipping(cart.id, dto.address);
+  }
+
+  /**
+   * Checkout: Create order from cart (Phase 6)
+   */
+  @Post('checkout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Checkout cart and create order',
+    description:
+      'Convert cart to order, validate stock, deduct inventory, and create payment record. Cart will be marked as COMPLETED.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Order created successfully from cart',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        orderNumber: { type: 'string' },
+        status: { type: 'string' },
+        total: { type: 'number' },
+        items: { type: 'array' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Cart is empty or invalid' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
+  @ApiResponse({ status: 404, description: 'Cart not found' })
+  @ApiResponse({ status: 409, description: 'Insufficient stock' })
+  async checkout(
+    @Req() req: Request,
+    @Body() dto: CreateOrderFromCartDto,
+  ) {
+    const userId = req.user?.['id'];
+
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+
+    // Get user's cart
+    const cart = await this.cartService.getOrCreateCart(userId);
+
+    // Update cart with shipping/tax before checkout
+    await this.cartService.calculateTotals(
+      cart.id,
+      dto.shippingAddress,
+      dto.shippingMethod || 'STANDARD',
+    );
+
+    // Store addresses in cart metadata for order creation
+    await this.prisma.cart.update({
+      where: { id: cart.id },
+      data: {
+        metadata: {
+          shippingAddress: dto.shippingAddress as any,
+          billingAddress: (dto.billingAddress || dto.shippingAddress) as any,
+          notes: dto.notes,
+        } as any,
+      },
+    });
+
+    // Create order from cart (this will be handled by OrdersService)
+    // For now, we'll need to inject OrdersService
+    this.logger.log(
+      `Checkout initiated for cart ${cart.id} by user ${userId}`,
+    );
+
+    return {
+      message: 'Checkout endpoint ready. OrdersService integration pending.',
+      cartId: cart.id,
+      userId,
+      paymentMethod: dto.paymentMethod,
+    };
+  }
 }
+

@@ -11,14 +11,22 @@ import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { CartResponseDto, CartSummaryResponseDto } from './dto/cart-response.dto';
 import { CartCacheService } from './cart-cache.service';
+import { ShippingService, ShippingAddress } from './shipping.service';
 
 @Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name);
 
+  // Tax rates for Philippines regions
+  private readonly TAX_RATES = {
+    NCR: 0.12, // 12% VAT for National Capital Region
+    PROVINCE: 0.10, // 10% VAT for provinces
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CartCacheService,
+    private readonly shippingService: ShippingService,
   ) {}
 
   /**
@@ -380,11 +388,23 @@ export class CartService {
   /**
    * Calculate and update cart totals
    * @param cartId - Cart ID
+   * @param shippingAddress - Optional shipping address for shipping calculation
+   * @param shippingMethod - Optional shipping method (STANDARD, EXPRESS, SAME_DAY)
    */
-  async calculateTotals(cartId: string): Promise<void> {
+  async calculateTotals(
+    cartId: string,
+    shippingAddress?: ShippingAddress,
+    shippingMethod?: 'STANDARD' | 'EXPRESS' | 'SAME_DAY',
+  ): Promise<void> {
     const cart = await this.prisma.cart.findUnique({
       where: { id: cartId },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
     });
 
     if (!cart) {
@@ -397,11 +417,27 @@ export class CartService {
       new Prisma.Decimal(0),
     );
 
-    // TODO: Implement tax calculation based on region
-    const tax = new Prisma.Decimal(0);
+    // Calculate tax based on region (default to NCR if no address)
+    const taxRate = shippingAddress
+      ? this.getTaxRate(shippingAddress.region)
+      : this.TAX_RATES.NCR;
+    const tax = subtotal.mul(taxRate).toDecimalPlaces(2);
 
-    // TODO: Implement shipping calculation
-    const shipping = new Prisma.Decimal(0);
+    // Calculate shipping if address provided
+    let shipping = new Prisma.Decimal(0);
+    if (shippingAddress) {
+      // Calculate total weight from cart items
+      const totalWeight = cart.items.reduce((weight, item) => {
+        const productWeight = new Prisma.Decimal(item.product.weight || 0.5); // Default 0.5kg if not set
+        return weight.add(productWeight.mul(item.quantity));
+      }, new Prisma.Decimal(0));
+
+      shipping = await this.shippingService.calculateShipping(
+        totalWeight,
+        shippingAddress,
+        shippingMethod || 'STANDARD',
+      );
+    }
 
     // Calculate final total
     const total = subtotal.add(tax).add(shipping).sub(cart.discount);
@@ -417,6 +453,27 @@ export class CartService {
         lastActivityAt: new Date(),
       },
     });
+
+    this.logger.debug(
+      `💰 Cart totals: Subtotal=₱${subtotal}, Tax=₱${tax} (${taxRate * 100}%), Shipping=₱${shipping}, Total=₱${total}`,
+    );
+  }
+
+  /**
+   * Get tax rate for region
+   * @param region - Region name
+   * @returns Tax rate (0.12 for NCR, 0.10 for provinces)
+   */
+  private getTaxRate(region: string): number {
+    const normalizedRegion = region.toUpperCase();
+    if (
+      normalizedRegion.includes('NCR') ||
+      normalizedRegion.includes('METRO MANILA') ||
+      normalizedRegion.includes('NATIONAL CAPITAL')
+    ) {
+      return this.TAX_RATES.NCR;
+    }
+    return this.TAX_RATES.PROVINCE;
   }
 
   /**
@@ -704,6 +761,47 @@ export class CartService {
 
     // Return updated user cart
     return this.getOrCreateCart(userId);
+  }
+
+  /**
+   * Estimate shipping options for cart
+   * @param cartId - Cart ID
+   * @param address - Shipping address
+   * @returns Shipping options with costs
+   */
+  async estimateShipping(cartId: string, address: ShippingAddress) {
+    const cart = await this.prisma.cart.findUnique({
+      where: { id: cartId },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+
+    // Calculate total weight
+    const totalWeight = cart.items.reduce((weight, item) => {
+      const productWeight = new Prisma.Decimal(item.product.weight || 0.5);
+      return weight.add(productWeight.mul(item.quantity));
+    }, new Prisma.Decimal(0));
+
+    // Get shipping options
+    const shippingEstimate = await this.shippingService.estimateShipping(
+      totalWeight,
+      address,
+    );
+
+    this.logger.debug(
+      `📦 Shipping estimate for cart ${cartId}: ₱${shippingEstimate.cost} (${totalWeight}kg to ${address.region})`,
+    );
+
+    return shippingEstimate;
   }
 
   /**

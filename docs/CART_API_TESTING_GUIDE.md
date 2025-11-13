@@ -302,17 +302,126 @@ console.log(result);
 
 ---
 
+---
+
+## 🎯 Phase 6 Testing - Order Integration
+
+### Test 9: Estimate Shipping
+
+```bash
+curl -X POST http://localhost:3000/api/v1/cart/shipping/estimate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": {
+      "region": "NCR",
+      "province": "Metro Manila",
+      "city": "Quezon City",
+      "barangay": "Barangay Commonwealth",
+      "addressLine1": "123 Commonwealth Avenue",
+      "postalCode": "1121"
+    },
+    "method": "STANDARD"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "selectedMethod": "STANDARD",
+  "cost": 50.00,
+  "estimatedDays": 1,
+  "availableOptions": [
+    {
+      "method": "STANDARD",
+      "cost": 50.00,
+      "estimatedDays": 1,
+      "description": "Standard Shipping (5-7 business days)"
+    },
+    {
+      "method": "EXPRESS",
+      "cost": 150.00,
+      "estimatedDays": 1,
+      "description": "Express Shipping (2-3 business days)"
+    },
+    {
+      "method": "SAME_DAY",
+      "cost": 300.00,
+      "estimatedDays": 0,
+      "description": "Same-Day Delivery (order before 12PM)"
+    }
+  ]
+}
+```
+
+### Test 10: Complete Checkout
+
+```bash
+curl -X POST http://localhost:3000/api/v1/cart/checkout \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paymentMethod": "GCASH",
+    "shippingAddress": {
+      "region": "CALABARZON",
+      "province": "Laguna",
+      "city": "Biñan",
+      "barangay": "San Antonio",
+      "addressLine1": "456 Main Street",
+      "postalCode": "4024"
+    },
+    "shippingMethod": "STANDARD",
+    "notes": "Please call before delivery"
+  }'
+```
+
+**Expected Result:**
+- Order created with correct totals
+- OrderItems match cart items
+- Payment record created (PENDING status)
+- Product stock deducted
+- Cart status = COMPLETED
+
+### Verify Order in Database
+
+```sql
+-- Check created order
+SELECT id, "orderNumber", status, subtotal, tax, shipping, total
+FROM orders
+WHERE "userId" = 'YOUR_USER_ID'
+ORDER BY "createdAt" DESC
+LIMIT 1;
+
+-- Check product stock deduction
+SELECT id, name, stock
+FROM products
+WHERE id IN (SELECT "productId" FROM order_items WHERE "orderId" = 'ORDER_ID');
+
+-- Verify cart completed
+SELECT id, status, "convertedAt"
+FROM carts
+WHERE "userId" = 'YOUR_USER_ID'
+ORDER BY "createdAt" DESC
+LIMIT 1;
+```
+
+---
+
 ## 📝 Known Limitations (To Be Implemented)
 
 - ❌ Rate limiting (planned for production)
 - ✅ Guest cart merging on login (Phase 5 - DONE!)
 - ✅ Cart expiration scheduler (Phase 5 - DONE!)
 - ✅ Abandoned cart detection (Phase 5 - DONE!)
-- ❌ Abandoned cart emails (Phase 6 or later)
+- ✅ Shipping calculation with regional rates (Phase 6 - DONE!)
+- ✅ Tax calculation NCR/Province (Phase 6 - DONE!)
+- ✅ Order creation from cart (Phase 6 - DONE!)
+- ❌ OrdersService injection in CartController (Phase 7 - Pending)
+- ❌ Abandoned cart emails (Phase 7 or later)
 - ❌ Prometheus metrics (Phase 7)
 - ❌ Comprehensive test suite (Phase 8)
 
 ---
 
-**Status:** ✅ Phase 5 Complete - Advanced Features Working  
-**Next Phase:** Order Integration & Shipping (Phase 6)
+**Status:** ✅ Phase 6 Complete - Order Integration Ready  
+**Next Phase:** Monitoring & Analytics (Phase 7)

@@ -1091,6 +1091,7 @@ enum PaymentMethod {
   GCASH
   MAYA
   BANK_TRANSFER
+  COD
 }
 
 enum NotificationType {
