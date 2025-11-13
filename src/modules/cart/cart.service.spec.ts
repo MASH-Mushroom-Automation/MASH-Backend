@@ -161,7 +161,7 @@ describe('CartService', () => {
 
     it('should fetch cart from database when cache miss', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(mockCart as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(mockCart as any);
 
       const result = await service.getOrCreateCart(mockUserId);
 
@@ -178,8 +178,8 @@ describe('CartService', () => {
 
     it('should create new cart when none exists', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(null);
-      prismaService.cart.create.mockResolvedValue({ ...mockCart, items: [] } as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(null);
+      (prismaService.cart.create as jest.Mock).mockResolvedValue({ ...mockCart, items: [] } as any);
 
       const result = await service.getOrCreateCart(mockUserId);
 
@@ -201,8 +201,8 @@ describe('CartService', () => {
 
     it('should create guest cart with sessionId', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(null);
-      prismaService.cart.create.mockResolvedValue({ ...mockCart, sessionId: mockSessionId } as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(null);
+      (prismaService.cart.create as jest.Mock).mockResolvedValue({ ...mockCart, sessionId: mockSessionId } as any);
 
       await service.getOrCreateCart(undefined, mockSessionId);
 
@@ -221,11 +221,11 @@ describe('CartService', () => {
 
     beforeEach(() => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue({ ...mockCart, items: [] } as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue({ ...mockCart, items: [] } as any);
     });
 
     it('should throw NotFoundException when product not found', async () => {
-      prismaService.product.findUnique.mockResolvedValue(null);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(service.addItem(mockUserId, undefined, addItemDto)).rejects.toThrow(
         NotFoundException,
@@ -236,7 +236,7 @@ describe('CartService', () => {
     });
 
     it('should throw BadRequestException when product is inactive', async () => {
-      prismaService.product.findUnique.mockResolvedValue({ ...mockProduct, isActive: false });
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue({ ...mockProduct, isActive: false });
 
       await expect(service.addItem(mockUserId, undefined, addItemDto)).rejects.toThrow(
         BadRequestException,
@@ -247,7 +247,7 @@ describe('CartService', () => {
     });
 
     it('should throw BadRequestException when insufficient stock', async () => {
-      prismaService.product.findUnique.mockResolvedValue({ ...mockProduct, stock: 1 });
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue({ ...mockProduct, stock: 1 });
 
       await expect(service.addItem(mockUserId, undefined, addItemDto)).rejects.toThrow(
         BadRequestException,
@@ -258,11 +258,11 @@ describe('CartService', () => {
     });
 
     it('should update quantity when item already in cart', async () => {
-      prismaService.cart.findFirst.mockResolvedValue(mockCart as any);
-      prismaService.product.findUnique.mockResolvedValue(mockProduct);
-      prismaService.cartItem.findFirst.mockResolvedValue(mockCart.items[0] as any);
-      prismaService.cartItem.update.mockResolvedValue({ ...mockCart.items[0], quantity: 4 } as any);
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue(mockProduct);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.cartItem.update as jest.Mock).mockResolvedValue({ ...mockCart.items[0], quantity: 4 } as any);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
 
       const result = await service.addItem(mockUserId, undefined, addItemDto);
 
@@ -274,11 +274,11 @@ describe('CartService', () => {
     });
 
     it('should create new cart item when not in cart', async () => {
-      prismaService.cart.findFirst.mockResolvedValue({ ...mockCart, items: [] } as any);
-      prismaService.product.findUnique.mockResolvedValue(mockProduct);
-      prismaService.cartItem.findFirst.mockResolvedValue(null);
-      prismaService.cartItem.create.mockResolvedValue(mockCart.items[0] as any);
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue({ ...mockCart, items: [] } as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue(mockProduct);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(null);
+      (prismaService.cartItem.create as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
 
       const result = await service.addItem(mockUserId, undefined, addItemDto);
 
@@ -295,16 +295,16 @@ describe('CartService', () => {
     });
 
     it('should record metrics for guest cart', async () => {
-      prismaService.cart.findFirst.mockResolvedValue({
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue({
         ...mockCart,
         userId: null,
         sessionId: mockSessionId,
         items: [],
       } as any);
-      prismaService.product.findUnique.mockResolvedValue(mockProduct);
-      prismaService.cartItem.findFirst.mockResolvedValue(null);
-      prismaService.cartItem.create.mockResolvedValue(mockCart.items[0] as any);
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue(mockProduct);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(null);
+      (prismaService.cartItem.create as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
 
       await service.addItem(undefined, mockSessionId, addItemDto);
 
@@ -314,22 +314,22 @@ describe('CartService', () => {
 
   describe('removeItem', () => {
     it('should throw NotFoundException when cart not found', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(null);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(service.removeItem(mockCartId, mockItemId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when item not found', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
-      prismaService.cartItem.findFirst.mockResolvedValue(null);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(service.removeItem(mockCartId, mockItemId)).rejects.toThrow(NotFoundException);
     });
 
     it('should delete item and invalidate cache', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
-      prismaService.cartItem.findFirst.mockResolvedValue(mockCart.items[0] as any);
-      prismaService.cartItem.delete.mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.cartItem.delete as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
 
       await service.removeItem(mockCartId, mockItemId);
 
@@ -343,9 +343,9 @@ describe('CartService', () => {
 
     it('should record metrics for guest cart on remove', async () => {
       const guestCart = { ...mockCart, userId: null, sessionId: mockSessionId };
-      prismaService.cart.findUnique.mockResolvedValue(guestCart as any);
-      prismaService.cartItem.findFirst.mockResolvedValue(mockCart.items[0] as any);
-      prismaService.cartItem.delete.mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(guestCart as any);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.cartItem.delete as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
 
       await service.removeItem(mockCartId, mockItemId);
 
@@ -357,7 +357,7 @@ describe('CartService', () => {
     const updateDto = { quantity: 5 };
 
     it('should throw NotFoundException when cart not found', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(null);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(service.updateItem(mockCartId, mockItemId, updateDto)).rejects.toThrow(
         NotFoundException,
@@ -365,8 +365,8 @@ describe('CartService', () => {
     });
 
     it('should throw NotFoundException when item not found', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
-      prismaService.cartItem.findFirst.mockResolvedValue(null);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(service.updateItem(mockCartId, mockItemId, updateDto)).rejects.toThrow(
         NotFoundException,
@@ -374,9 +374,9 @@ describe('CartService', () => {
     });
 
     it('should throw BadRequestException when insufficient stock', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
-      prismaService.cartItem.findFirst.mockResolvedValue(mockCart.items[0] as any);
-      prismaService.product.findUnique.mockResolvedValue({ ...mockProduct, stock: 3 });
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue({ ...mockProduct, stock: 3 });
 
       await expect(service.updateItem(mockCartId, mockItemId, updateDto)).rejects.toThrow(
         BadRequestException,
@@ -384,11 +384,11 @@ describe('CartService', () => {
     });
 
     it('should update item quantity and invalidate cache', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
-      prismaService.cartItem.findFirst.mockResolvedValue(mockCart.items[0] as any);
-      prismaService.product.findUnique.mockResolvedValue(mockProduct);
-      prismaService.cartItem.update.mockResolvedValue({ ...mockCart.items[0], quantity: 5 } as any);
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.cartItem.findFirst as jest.Mock).mockResolvedValue(mockCart.items[0] as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue(mockProduct);
+      (prismaService.cartItem.update as jest.Mock).mockResolvedValue({ ...mockCart.items[0], quantity: 5 } as any);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
 
       const result = await service.updateItem(mockCartId, mockItemId, updateDto);
 
@@ -402,14 +402,14 @@ describe('CartService', () => {
 
   describe('clearCart', () => {
     it('should throw NotFoundException when cart not found', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(null);
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(service.clearCart(mockCartId)).rejects.toThrow(NotFoundException);
     });
 
     it('should delete all items and invalidate cache', async () => {
-      prismaService.cart.findUnique.mockResolvedValue(mockCart as any);
-      prismaService.cartItem.deleteMany.mockResolvedValue({ count: 2 });
+      (prismaService.cart.findUnique as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.cartItem.deleteMany as jest.Mock).mockResolvedValue({ count: 2 });
 
       await service.clearCart(mockCartId);
 
@@ -423,7 +423,7 @@ describe('CartService', () => {
   describe('getCartSummary', () => {
     it('should return cart summary with item count and availability', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(mockCart as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(mockCart as any);
 
       const result = await service.getCartSummary(mockUserId);
 
@@ -441,7 +441,7 @@ describe('CartService', () => {
         items: [{ ...mockCart.items[0], product: { ...mockProduct, stock: 0 } }],
       };
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(cartWithOOS as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(cartWithOOS as any);
 
       const result = await service.getCartSummary(mockUserId);
 
@@ -454,7 +454,7 @@ describe('CartService', () => {
         items: [{ ...mockCart.items[0], product: { ...mockProduct, isActive: false } }],
       };
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(cartWithInactive as any);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(cartWithInactive as any);
 
       const result = await service.getCartSummary(mockUserId);
 
@@ -465,8 +465,8 @@ describe('CartService', () => {
   describe('validateCart', () => {
     it('should return empty issues for valid cart', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(mockCart as any);
-      prismaService.product.findUnique.mockResolvedValue(mockProduct);
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue(mockProduct);
 
       const result = await service.validateCart(mockUserId);
 
@@ -476,8 +476,8 @@ describe('CartService', () => {
 
     it('should detect out of stock issues', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(mockCart as any);
-      prismaService.product.findUnique.mockResolvedValue({ ...mockProduct, stock: 1 });
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue({ ...mockProduct, stock: 1 });
 
       const result = await service.validateCart(mockUserId);
 
@@ -488,8 +488,8 @@ describe('CartService', () => {
 
     it('should detect inactive product issues', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(mockCart as any);
-      prismaService.product.findUnique.mockResolvedValue({ ...mockProduct, isActive: false });
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue({ ...mockProduct, isActive: false });
 
       const result = await service.validateCart(mockUserId);
 
@@ -500,8 +500,8 @@ describe('CartService', () => {
 
     it('should detect price changes', async () => {
       cacheService.getCart.mockResolvedValue(null);
-      prismaService.cart.findFirst.mockResolvedValue(mockCart as any);
-      prismaService.product.findUnique.mockResolvedValue({ ...mockProduct, price: new Decimal(150) });
+      (prismaService.cart.findFirst as jest.Mock).mockResolvedValue(mockCart as any);
+      (prismaService.product.findUnique as jest.Mock).mockResolvedValue({ ...mockProduct, price: new Decimal(150) });
 
       const result = await service.validateCart(mockUserId);
 

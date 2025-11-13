@@ -48,9 +48,9 @@ describe('CartAnalyticsController', () => {
         { userId: null, _count: { userId: 100 } },
       ];
 
-      prismaService.cart.groupBy.mockResolvedValueOnce(mockStatusCounts as any);
-      prismaService.cart.aggregate.mockResolvedValue(mockAvgValue as any);
-      prismaService.cart.groupBy.mockResolvedValueOnce(mockUserTypeCounts as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValueOnce(mockStatusCounts as any);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue(mockAvgValue as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValueOnce(mockUserTypeCounts as any);
 
       const result = await controller.getCartAnalytics();
 
@@ -102,8 +102,8 @@ describe('CartAnalyticsController', () => {
       const startDate = '2025-11-01';
       const endDate = '2025-11-30';
 
-      prismaService.cart.groupBy.mockResolvedValue([]);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: null } } as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: null } } as any);
 
       await controller.getCartAnalytics(startDate, endDate);
 
@@ -120,20 +120,20 @@ describe('CartAnalyticsController', () => {
     });
 
     it('should use last 30 days as default date range', async () => {
-      prismaService.cart.groupBy.mockResolvedValue([]);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: null } } as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: null } } as any);
 
       await controller.getCartAnalytics();
 
-      const calls = prismaService.cart.groupBy.mock.calls[0];
+      const calls = (prismaService.cart.groupBy as jest.Mock).mock.calls[0];
       const whereClause = calls[0].where;
       expect(whereClause.createdAt.gte).toBeInstanceOf(Date);
       expect(whereClause.createdAt.lte).toBeInstanceOf(Date);
     });
 
     it('should handle zero carts gracefully', async () => {
-      prismaService.cart.groupBy.mockResolvedValue([]);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: null } } as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: null } } as any);
 
       const result = await controller.getCartAnalytics();
 
@@ -151,10 +151,10 @@ describe('CartAnalyticsController', () => {
         { userId: null, _count: { userId: 50 } },
       ];
 
-      prismaService.cart.groupBy
+      (prismaService.cart.groupBy as jest.Mock)
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce(mockUserTypeCounts as any);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: null } } as any);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: null } } as any);
 
       const result = await controller.getCartAnalytics();
 
@@ -171,7 +171,7 @@ describe('CartAnalyticsController', () => {
         { metadata: { shippingMethod: 'SAME_DAY' }, _sum: { shippingCost: new Decimal(6000) }, _count: { id: 10 } },
       ];
 
-      prismaService.cart.groupBy.mockResolvedValue(mockShippingData as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue(mockShippingData as any);
 
       const result = await controller.getShippingRevenue();
 
@@ -189,7 +189,7 @@ describe('CartAnalyticsController', () => {
       const startDate = '2025-11-01';
       const endDate = '2025-11-30';
 
-      prismaService.cart.groupBy.mockResolvedValue([]);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
 
       await controller.getShippingRevenue(startDate, endDate);
 
@@ -206,7 +206,7 @@ describe('CartAnalyticsController', () => {
     });
 
     it('should handle zero shipping revenue', async () => {
-      prismaService.cart.groupBy.mockResolvedValue([]);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
 
       const result = await controller.getShippingRevenue();
 
@@ -216,7 +216,7 @@ describe('CartAnalyticsController', () => {
     });
 
     it('should only include completed carts', async () => {
-      prismaService.cart.groupBy.mockResolvedValue([]);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
 
       await controller.getShippingRevenue();
 
@@ -234,7 +234,7 @@ describe('CartAnalyticsController', () => {
         { metadata: { shippingMethod: 'STANDARD' }, _sum: { shippingCost: new Decimal(123.456) }, _count: { id: 1 } },
       ];
 
-      prismaService.cart.groupBy.mockResolvedValue(mockData as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue(mockData as any);
 
       const result = await controller.getShippingRevenue();
 
@@ -250,7 +250,7 @@ describe('CartAnalyticsController', () => {
         { metadata: { region: 'PROVINCE' }, _sum: { tax: new Decimal(800) }, _count: { id: 80 } },
       ];
 
-      prismaService.cart.groupBy.mockResolvedValue(mockTaxData as any);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue(mockTaxData as any);
 
       const result = await controller.getTaxCollected();
 
@@ -267,7 +267,7 @@ describe('CartAnalyticsController', () => {
       const startDate = '2025-11-01';
       const endDate = '2025-11-30';
 
-      prismaService.cart.groupBy.mockResolvedValue([]);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
 
       await controller.getTaxCollected(startDate, endDate);
 
@@ -284,7 +284,7 @@ describe('CartAnalyticsController', () => {
     });
 
     it('should handle zero tax collected', async () => {
-      prismaService.cart.groupBy.mockResolvedValue([]);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
 
       const result = await controller.getTaxCollected();
 
@@ -293,7 +293,7 @@ describe('CartAnalyticsController', () => {
     });
 
     it('should only include completed carts', async () => {
-      prismaService.cart.groupBy.mockResolvedValue([]);
+      (prismaService.cart.groupBy as jest.Mock).mockResolvedValue([]);
 
       await controller.getTaxCollected();
 
@@ -324,10 +324,10 @@ describe('CartAnalyticsController', () => {
         },
       ];
 
-      prismaService.cart.count.mockResolvedValue(2);
-      prismaService.cartItem.aggregate.mockResolvedValue({ _count: { id: 3 } } as any);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: new Decimal(200) } } as any);
-      prismaService.cart.findMany.mockResolvedValue(mockActiveCarts as any);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(2);
+      (prismaService.cartItem.aggregate as jest.Mock).mockResolvedValue({ _count: { id: 3 } } as any);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: new Decimal(200) } } as any);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue(mockActiveCarts as any);
 
       const result = await controller.getActiveCarts();
 
@@ -345,10 +345,10 @@ describe('CartAnalyticsController', () => {
         items: [],
       };
 
-      prismaService.cart.count.mockResolvedValue(1);
-      prismaService.cartItem.aggregate.mockResolvedValue({ _count: { id: 0 } } as any);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: new Decimal(100) } } as any);
-      prismaService.cart.findMany.mockResolvedValue([recentCart] as any);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(1);
+      (prismaService.cartItem.aggregate as jest.Mock).mockResolvedValue({ _count: { id: 0 } } as any);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: new Decimal(100) } } as any);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([recentCart] as any);
 
       const result = await controller.getActiveCarts();
 
@@ -369,10 +369,10 @@ describe('CartAnalyticsController', () => {
         items: [],
       };
 
-      prismaService.cart.count.mockResolvedValue(2);
-      prismaService.cartItem.aggregate.mockResolvedValue({ _count: { id: 0 } } as any);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: new Decimal(125) } } as any);
-      prismaService.cart.findMany.mockResolvedValue([cart1, cart2] as any);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(2);
+      (prismaService.cartItem.aggregate as jest.Mock).mockResolvedValue({ _count: { id: 0 } } as any);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: new Decimal(125) } } as any);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([cart1, cart2] as any);
 
       const result = await controller.getActiveCarts();
 
@@ -386,10 +386,10 @@ describe('CartAnalyticsController', () => {
         { id: '3', total: new Decimal(200), updatedAt: new Date(Date.now() - 55 * 60 * 1000), items: [] },
       ];
 
-      prismaService.cart.count.mockResolvedValue(3);
-      prismaService.cartItem.aggregate.mockResolvedValue({ _count: { id: 0 } } as any);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: new Decimal(150) } } as any);
-      prismaService.cart.findMany.mockResolvedValue(carts as any);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(3);
+      (prismaService.cartItem.aggregate as jest.Mock).mockResolvedValue({ _count: { id: 0 } } as any);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: new Decimal(150) } } as any);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue(carts as any);
 
       const result = await controller.getActiveCarts();
 
@@ -397,10 +397,10 @@ describe('CartAnalyticsController', () => {
     });
 
     it('should handle zero active carts', async () => {
-      prismaService.cart.count.mockResolvedValue(0);
-      prismaService.cartItem.aggregate.mockResolvedValue({ _count: { id: 0 } } as any);
-      prismaService.cart.aggregate.mockResolvedValue({ _avg: { total: null } } as any);
-      prismaService.cart.findMany.mockResolvedValue([]);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(0);
+      (prismaService.cartItem.aggregate as jest.Mock).mockResolvedValue({ _count: { id: 0 } } as any);
+      (prismaService.cart.aggregate as jest.Mock).mockResolvedValue({ _avg: { total: null } } as any);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([]);
 
       const result = await controller.getActiveCarts();
 

@@ -84,8 +84,8 @@ describe('CartSchedulerService', () => {
 
   describe('expireInactiveCarts', () => {
     it('should expire carts that have passed expiresAt date', async () => {
-      prismaService.cart.findMany.mockResolvedValue([mockExpiredCart] as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 1 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([mockExpiredCart] as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await service.expireInactiveCarts();
 
@@ -105,8 +105,8 @@ describe('CartSchedulerService', () => {
     });
 
     it('should invalidate cache for expired carts', async () => {
-      prismaService.cart.findMany.mockResolvedValue([mockExpiredCart] as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 1 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([mockExpiredCart] as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await service.expireInactiveCarts();
 
@@ -122,8 +122,8 @@ describe('CartSchedulerService', () => {
         { ...mockExpiredCart, id: 'cart-3', userId: 'user-3' },
         { ...mockExpiredCart, id: 'cart-4', userId: null, sessionId: 'session-4' },
       ];
-      prismaService.cart.findMany.mockResolvedValue(expiredCarts as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 3 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue(expiredCarts as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 3 });
 
       await service.expireInactiveCarts();
 
@@ -139,8 +139,8 @@ describe('CartSchedulerService', () => {
 
     it('should handle guest cart expiration', async () => {
       const guestCart = { ...mockExpiredCart, userId: null, sessionId: 'guest-session' };
-      prismaService.cart.findMany.mockResolvedValue([guestCart] as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 1 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([guestCart] as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await service.expireInactiveCarts();
 
@@ -148,7 +148,7 @@ describe('CartSchedulerService', () => {
     });
 
     it('should do nothing when no expired carts found', async () => {
-      prismaService.cart.findMany.mockResolvedValue([]);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([]);
 
       await service.expireInactiveCarts();
 
@@ -157,7 +157,7 @@ describe('CartSchedulerService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      prismaService.cart.findMany.mockRejectedValue(new Error('Database error'));
+      (prismaService.cart.findMany as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       await expect(service.expireInactiveCarts()).rejects.toThrow('Database error');
     });
@@ -165,8 +165,8 @@ describe('CartSchedulerService', () => {
 
   describe('detectAbandonedCarts', () => {
     it('should detect carts inactive for more than 3 hours', async () => {
-      prismaService.cart.findMany.mockResolvedValue([mockAbandonedCart] as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 1 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([mockAbandonedCart] as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await service.detectAbandonedCarts();
 
@@ -181,8 +181,8 @@ describe('CartSchedulerService', () => {
     });
 
     it('should mark carts as abandoned with notification flag', async () => {
-      prismaService.cart.findMany.mockResolvedValue([mockAbandonedCart] as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 1 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([mockAbandonedCart] as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await service.detectAbandonedCarts();
 
@@ -201,8 +201,8 @@ describe('CartSchedulerService', () => {
         mockAbandonedCart,
         { ...mockAbandonedCart, id: 'cart-5', userId: 'user-5' },
       ];
-      prismaService.cart.findMany.mockResolvedValue(abandonedCarts as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 2 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue(abandonedCarts as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
 
       await service.detectAbandonedCarts();
 
@@ -212,8 +212,8 @@ describe('CartSchedulerService', () => {
 
     it('should record guest cart abandonments', async () => {
       const guestAbandonedCart = { ...mockAbandonedCart, userId: null, sessionId: 'session-123' };
-      prismaService.cart.findMany.mockResolvedValue([guestAbandonedCart] as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 1 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([guestAbandonedCart] as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await service.detectAbandonedCarts();
 
@@ -225,7 +225,7 @@ describe('CartSchedulerService', () => {
         ...mockAbandonedCart,
         metadata: { abandonedNotified: true },
       };
-      prismaService.cart.findMany.mockResolvedValue([notifiedCart] as any);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([notifiedCart] as any);
 
       await service.detectAbandonedCarts();
 
@@ -238,7 +238,7 @@ describe('CartSchedulerService', () => {
     });
 
     it('should do nothing when no abandoned carts found', async () => {
-      prismaService.cart.findMany.mockResolvedValue([]);
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue([]);
 
       await service.detectAbandonedCarts();
 
@@ -252,8 +252,8 @@ describe('CartSchedulerService', () => {
         { ...mockAbandonedCart, id: 'cart-6' },
         { ...mockAbandonedCart, id: 'cart-7' },
       ];
-      prismaService.cart.findMany.mockResolvedValue(multipleCarts as any);
-      prismaService.cart.updateMany.mockResolvedValue({ count: 3 });
+      (prismaService.cart.findMany as jest.Mock).mockResolvedValue(multipleCarts as any);
+      (prismaService.cart.updateMany as jest.Mock).mockResolvedValue({ count: 3 });
 
       await service.detectAbandonedCarts();
 
@@ -269,7 +269,7 @@ describe('CartSchedulerService', () => {
 
   describe('getSchedulerStats', () => {
     it('should return statistics for due expirations and abandonments', async () => {
-      prismaService.cart.count
+      (prismaService.cart.count as jest.Mock)
         .mockResolvedValueOnce(5) // Carts due for expiration
         .mockResolvedValueOnce(3); // Carts due for abandonment
 
@@ -284,7 +284,7 @@ describe('CartSchedulerService', () => {
     });
 
     it('should count carts with expiresAt in the past', async () => {
-      prismaService.cart.count.mockResolvedValue(2);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(2);
 
       await service.getSchedulerStats();
 
@@ -297,7 +297,7 @@ describe('CartSchedulerService', () => {
     });
 
     it('should count carts inactive for more than 3 hours', async () => {
-      prismaService.cart.count
+      (prismaService.cart.count as jest.Mock)
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(4);
 
@@ -314,7 +314,7 @@ describe('CartSchedulerService', () => {
     });
 
     it('should return zero counts when no carts are due', async () => {
-      prismaService.cart.count.mockResolvedValue(0);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(0);
 
       const stats = await service.getSchedulerStats();
 
@@ -323,7 +323,7 @@ describe('CartSchedulerService', () => {
     });
 
     it('should include next run times in stats', async () => {
-      prismaService.cart.count.mockResolvedValue(0);
+      (prismaService.cart.count as jest.Mock).mockResolvedValue(0);
 
       const stats = await service.getSchedulerStats();
 
