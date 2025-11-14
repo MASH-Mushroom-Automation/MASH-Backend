@@ -117,12 +117,12 @@ USER appuser
 # Expose port
 EXPOSE 3000
 
-# Health check - DISABLED to avoid conflicts with Railway's HTTP health check
-# Railway performs HTTP health checks at /api/v1/health (configured in railway.json)
-# Docker's internal health check can interfere with Railway's orchestration
-# If you need Docker health checks for local development, uncomment below:
-# HEALTHCHECK --interval=30s --timeout=45s --start-period=180s --retries=3 \
-#   CMD node dist/health/health-check.js || exit 1
+# Health check - Use built-in Node health-check script
+# The script is compiled to dist/health/health-check.js during build
+# Increased start-period to 120s to allow for full initialization (Railway optimized)
+# Increased timeout to 30s to handle slow database connections
+HEALTHCHECK --interval=30s --timeout=30s --start-period=120s --retries=3 \
+  CMD node dist/health/health-check.js || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
