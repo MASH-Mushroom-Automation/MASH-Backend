@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*.spec.ts",
+    "**/*.int-spec.ts",
+    "**/__tests__/**",
+    "**/*.e2e-spec.ts"
+  ]
+}

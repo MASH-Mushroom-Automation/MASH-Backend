@@ -61,9 +61,7 @@ async function bootstrap() {
 
       // Log which module might be failing
       if (error.message.includes('Cannot find module')) {
-        logger.error(
-          '⚠️  MISSING MODULE DETECTED - Check if all dependencies are installed',
-        );
+        logger.error('⚠️  MISSING MODULE DETECTED - Check if all dependencies are installed');
       } else if (error.message.includes('Circular dependency')) {
         logger.error('⚠️  CIRCULAR DEPENDENCY DETECTED - Check module imports');
       } else if (error.message.includes('inject')) {
@@ -75,12 +73,16 @@ async function bootstrap() {
 
     throw error; // Re-throw to exit process
   }
-  
+
   // 🔥 CRITICAL: Add emergency health endpoint BEFORE any other config
   // This responds even if database/modules fail to initialize
   app.use('/api/v1/health', (req: any, res: any, next: any) => {
-    if (req.method === 'GET' && req.url === '/') {
-      res.status(200).json({
+    const method = req.method as string;
+    const url = req.url as string;
+    if (method === 'GET' && url === '/') {
+      const status = res.status as (code: number) => any;
+      const json = status(200).json as (data: any) => void;
+      json({
         status: 'ok',
         message: 'MASH Backend API is alive',
         timestamp: new Date().toISOString(),
@@ -89,7 +91,8 @@ async function bootstrap() {
         emergency: true, // Flag indicating this is the bypass route
       });
     } else {
-      next();
+      const nextFn = next as () => void;
+      nextFn();
     }
   });
 
@@ -306,14 +309,14 @@ process.on('uncaughtException', error => {
 process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
   const logger = new Logger('UnhandledRejection');
   logger.error('[CRITICAL] UNHANDLED REJECTION:');
-  logger.error('Promise:', String(promise));
+  logger.error('Promise: [Promise object - cannot stringify]');
 
   if (reason instanceof Error) {
     logger.error(`Reason type: ${reason.constructor.name}`);
     logger.error(`Reason: ${reason.message}`);
     logger.error(`Stack: ${reason.stack}`);
   } else {
-    logger.error(`Reason: ${String(reason)}`);
+    logger.error('Reason:', reason);
   }
 
   process.exit(1);
