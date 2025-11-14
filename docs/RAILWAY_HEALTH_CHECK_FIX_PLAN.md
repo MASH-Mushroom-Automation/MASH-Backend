@@ -52,15 +52,25 @@
 - More retries (5 vs 3) = more chances for slow startups to succeed
 - Emergency bypass route should respond in <1 second, so 5 minutes is generous
 
-### 🔄 Phase 4: Production Deployment Verification (IN PROGRESS - 11:33 PM)
-- [🔄] Committing Railway configuration changes
-- [🔄] Pushing to trigger Railway deployment
-- [ ] Monitor Railway build logs (expected: 4-5 minutes)
+### 🔄 Phase 4: Production Deployment Verification (DEPLOYING - 11:35 PM)
+- [x] Committed Railway configuration changes (commit: `889d5ca3`)
+- [x] Pushed to trigger Railway deployment
+- [🔄] **Monitor Railway build logs** ← YOU ARE HERE (expected: 4-5 minutes)
 - [ ] Verify "READY FOR TRAFFIC" message appears in logs
 - [ ] Check first health check attempt succeeds (< 30 seconds)
 - [ ] Test production health endpoint: `https://mash-backend-api-production.up.railway.app/api/v1/health`
 - [ ] Verify no restart loops
 - [ ] Mark deployment successful
+
+**⏱️ Deployment Timeline:**
+- **T+0:00** (11:35 PM): Pushed to GitHub ✅
+- **T+0:30** (11:35:30 PM): Railway detects push, starts build
+- **T+5:00** (11:40 PM): Build completes, container starts
+- **T+5:30** (11:40:30 PM): Server logs "READY FOR TRAFFIC"
+- **T+5:35** (11:40:35 PM): **First health check attempt** ← CRITICAL MOMENT
+- **T+6:00** (11:41 PM): Deployment marked SUCCESSFUL ✅
+
+**Watch Railway Dashboard:** Monitor for green "Successful" badge in ~6 minutes
 
 ---
 
@@ -429,15 +439,250 @@ curl https://mash-backend-api-production.up.railway.app/api/v1/health/system
 
 ---
 
-## Notes for Future Deployments
+## Post-Deployment Testing Checklist
 
-1. **Always verify environment variables** before deploying
-2. **Test health endpoint locally** before pushing
-3. **Monitor first 5 minutes** after deployment
-4. **Keep emergency bypass route** for production resilience
-5. **Document any Railway-specific configurations**
+### Immediate Tests (After Deployment Shows "Successful")
+
+#### Test 1: Emergency Health Check
+```bash
+curl -i https://mash-backend-api-production.up.railway.app/api/v1/health
+```
+
+**Expected Response (within 1 second):**
+```json
+HTTP/2 200 OK
+Content-Type: application/json
+
+{
+  "status": "ok",
+  "message": "MASH Backend API is alive",
+  "timestamp": "2025-11-14T...",
+  "uptime": 45,
+  "env": "production",
+  "emergency": true
+}
+```
+
+✅ **Pass Criteria:** Status 200, `emergency: true` present, response < 1 second
+
+#### Test 2: Full Health Controller (Wait 2 Minutes)
+```bash
+curl https://mash-backend-api-production.up.railway.app/api/v1/health
+```
+
+**Expected Response:**
+```json
+{
+  "status": "ok",
+  "message": "MASH Backend API is running",
+  "timestamp": "2025-11-14T...",
+  "version": "1.0.0",
+  "uptime": 180,
+  "env": "production"
+}
+```
+
+✅ **Pass Criteria:** Status 200, NO `emergency` key (means real controller took over)
+
+#### Test 3: Database Health Check
+```bash
+curl https://mash-backend-api-production.up.railway.app/api/v1/health/database
+```
+
+**Expected Response:**
+```json
+{
+  "status": "ok",
+  "database": "neondb",
+  "responseTime": 45,
+  "connected": true,
+  "timestamp": "2025-11-14T..."
+}
+```
+
+✅ **Pass Criteria:** Status 200, `connected: true`, responseTime < 1000ms
+
+#### Test 4: System Health Check
+```bash
+curl https://mash-backend-api-production.up.railway.app/api/v1/health/system
+```
+
+**Expected Response:**
+```json
+{
+  "status": "healthy",
+  "application": {
+    "status": "ok",
+    "uptime": 300,
+    "version": "1.0.0"
+  },
+  "database": {
+    "status": "ok",
+    "connected": true,
+    "responseTime": 45
+  }
+}
+```
+
+✅ **Pass Criteria:** Status 200, both components healthy
+
+#### Test 5: Swagger Documentation
+```bash
+curl -I https://mash-backend-api-production.up.railway.app/api/docs
+```
+
+**Expected:** `HTTP/2 200 OK`
+
+✅ **Pass Criteria:** Swagger UI loads successfully
 
 ---
 
-**Last Updated:** Nov 14, 2025, 11:02 PM
-**Next Action:** Apply Phase 1 fixes immediately
+## Local Testing Instructions (Optional)
+
+If you want to test the health endpoint locally before Railway deployment:
+
+### Step 1: Start Local Server
+```bash
+npm run start:dev
+```
+
+### Step 2: Wait for "READY FOR TRAFFIC" Message
+Watch console for:
+```
+[STARTUP] Bootstrap function started
+=== ENVIRONMENT DIAGNOSTIC ===
+[EMERGENCY] Health check bypass route registered
+=== SERVER STARTUP COMPLETE ===
+🚀 Application listening on port 3000
+=== READY FOR TRAFFIC ===
+```
+
+### Step 3: Test Local Health Endpoint
+```bash
+# Windows PowerShell
+Invoke-WebRequest -Uri http://localhost:3000/api/v1/health -UseBasicParsing | Select-Object -ExpandProperty Content
+
+# Or use curl
+curl http://localhost:3000/api/v1/health
+```
+
+**Expected Response:**
+```json
+{
+  "status": "ok",
+  "message": "MASH Backend API is alive",
+  "emergency": true,
+  "uptime": 10,
+  "env": "development"
+}
+```
+
+### Step 4: Test Database Connection Locally
+```bash
+curl http://localhost:3000/api/v1/health/database
+```
+
+---
+
+## Troubleshooting if Deployment Still Fails
+
+### Issue: Health Check Still Timing Out
+
+**Check Railway Environment Variables:**
+1. Go to Railway Dashboard → mash-backend-api → Variables
+2. Verify these are set:
+   - `DATABASE_URL` ← CRITICAL
+   - `NODE_ENV=production`
+   - `JWT_SECRET` ← CRITICAL
+   - `PORT` (optional, Railway sets this)
+
+**Check Railway Logs for Errors:**
+```
+Look for:
+❌ "[ERROR] FATAL ERROR DURING BOOTSTRAP"
+❌ "DATABASE_URL: ❌ MISSING"
+❌ "JWT_SECRET: ❌ MISSING"
+❌ "Error: connect ECONNREFUSED"
+```
+
+**If DATABASE_URL is missing:**
+```bash
+# Add in Railway Dashboard → Variables
+DATABASE_URL=postgresql://neondb_owner:npg_B4tIx6OCXiDN@ep-wispy-dream-aduaegct-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&connection_limit=3&pool_timeout=20
+```
+
+**If JWT_SECRET is missing:**
+```bash
+# Generate a secure secret
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+# Add to Railway Dashboard → Variables
+JWT_SECRET=<generated-secret>
+```
+
+### Issue: Deployment Succeeds but Health Check Returns 404
+
+**Possible Causes:**
+1. Global prefix mismatch (check `app.setGlobalPrefix('api/v1')` in main.ts)
+2. Health controller not registered
+3. Wrong path in railway.json
+
+**Fix:**
+Verify in src/main.ts:
+```typescript
+app.setGlobalPrefix('api/v1'); // This must match railway.json path
+```
+
+Verify in src/health/health.controller.ts:
+```typescript
+@Controller('health') // This creates /api/v1/health
+```
+
+### Issue: Emergency Bypass Never Transitions to Real Controller
+
+**Possible Cause:** NestJS modules failing to initialize
+
+**Debug:**
+Check Railway logs for module initialization errors:
+```
+[ERROR] Stage X failed: ...
+[ERROR] Failed to initialize module: ...
+```
+
+---
+
+## Success Criteria Summary
+
+✅ **Deployment is SUCCESSFUL when:**
+1. Railway dashboard shows green "Successful" badge
+2. Health check passes on attempt #1-2 (not 24!)
+3. `/api/v1/health` returns 200 OK within 1 second
+4. Server logs show "READY FOR TRAFFIC"
+5. No restart loops for 10+ minutes
+6. Database health check works
+7. Swagger docs load successfully
+
+❌ **Deployment has FAILED if:**
+1. Health checks reach attempt #10+
+2. Server doesn't log "READY FOR TRAFFIC" within 2 minutes
+3. Railway shows "Failed" or continuous restarts
+4. Health endpoint returns 404 or 500
+5. Environment diagnostic shows missing critical vars
+
+---
+
+## Notes for Future Deployments
+
+1. **Always verify environment variables** before deploying
+2. **Test health endpoint locally** if possible (optional)
+3. **Monitor first 5 minutes** after deployment
+4. **Keep emergency bypass route** for production resilience
+5. **Document any Railway-specific configurations**
+6. **Watch for "READY FOR TRAFFIC"** in logs as success indicator
+7. **Test all health endpoints** after successful deployment
+
+---
+
+**Last Updated:** Nov 14, 2025, 11:37 PM
+**Deployment Status:** IN PROGRESS (commit: `889d5ca3`)
+**Next Action:** Monitor Railway dashboard for build completion (~4-5 minutes)
