@@ -76,11 +76,11 @@ export function getCorsConfig(
      * - Cookie-based sessions
      * - HTTP authentication
      * - Client certificates
-     *
+    /**
      * Security Note: Using a dynamic origin function allows credentials to work
      * with all origins while maintaining proper CORS headers
      */
-    credentials: enableCredentials
+    credentials: enableCredentials,
 
     /**
      * methods: Allowed HTTP methods
