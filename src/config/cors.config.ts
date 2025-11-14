@@ -46,10 +46,18 @@ export function getCorsConfig(
    * - Production: Allow all origins (as requested)
    * - Test: Allow all (for integration tests)
    */
-  const getAllowedOrigins = (): string | string[] | boolean => {
-    // Allow all origins in all environments
-    // This enables CORS for both localhost development and production deployment
-    return true;
+  const getAllowedOrigins = (): ((origin: string, callback: (err: Error | null, allow?: boolean) => void) => void) | boolean => {
+    // Use a function to dynamically allow all origins while enabling credentials
+    // This is the correct way to allow all origins with credentials
+    return (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      // Allow all origins dynamically
+      callback(null, true);
+    };
   };
 
   return {
@@ -69,10 +77,10 @@ export function getCorsConfig(
      * - HTTP authentication
      * - Client certificates
      *
-     * Security Note: When credentials=true, origin cannot be '*'
-     * Since we're allowing all origins (origin: true), we must set credentials to false
+     * Security Note: Using a dynamic origin function allows credentials to work
+     * with all origins while maintaining proper CORS headers
      */
-    credentials: false, // Must be false when allowing all origins
+    credentials: enableCredentials
 
     /**
      * methods: Allowed HTTP methods
