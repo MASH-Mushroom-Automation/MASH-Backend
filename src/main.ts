@@ -39,13 +39,34 @@ async function bootstrap() {
   logger.log(`REDIS_HOST: ${process.env.REDIS_HOST || 'NOT SET (optional)'}`);
   logger.log('=== END DIAGNOSTIC ===');
 
-  logger.log('[CONFIG] Stage 1: Creating NestJS application...');
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
-    bufferLogs: true,
-  });
-
-  logger.log('[SUCCESS] Stage 1 complete: Application created');
+  let app: NestExpressApplication;
+  
+  try {
+    logger.log('[CONFIG] Stage 1: Creating NestJS application...');
+    app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+      bufferLogs: true,
+    });
+    logger.log('[SUCCESS] ✅ Stage 1 complete: Application created');
+  } catch (error) {
+    logger.error('=== ❌ FATAL ERROR DURING MODULE CREATION ===');
+    logger.error(`Error Type: ${error.constructor.name}`);
+    logger.error(`Error Message: ${error.message}`);
+    logger.error('Stack Trace:');
+    logger.error(error.stack);
+    logger.error('=== END FATAL ERROR ===');
+    
+    // Log which module might be failing
+    if (error.message.includes('Cannot find module')) {
+      logger.error('⚠️  MISSING MODULE DETECTED - Check if all dependencies are installed');
+    } else if (error.message.includes('Circular dependency')) {
+      logger.error('⚠️  CIRCULAR DEPENDENCY DETECTED - Check module imports');
+    } else if (error.message.includes('inject')) {
+      logger.error('⚠️  DEPENDENCY INJECTION FAILURE - Check service providers');
+    }
+    
+    throw error; // Re-throw to exit process
+  }
   
   // 🔥 CRITICAL: Add emergency health endpoint BEFORE any other config
   // This responds even if database/modules fail to initialize
