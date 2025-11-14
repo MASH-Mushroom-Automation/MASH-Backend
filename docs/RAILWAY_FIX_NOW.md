@@ -2,8 +2,23 @@
 
 **Problem:** Server starting but crashing immediately (10+ restarts)
 **Root Cause:** Application crash during module initialization - NOT health check issue
-**Status:** 🔴 CRITICAL - Crash loop preventing deployment
+**Status:** 🔴 CRITICAL - Code fix deployed, user action required
 **Evidence:** Logs show server starts, then crashes before completing initialization
+**Latest Update:** November 15, 2025, 1:05 AM - Error handling added to diagnose crash
+
+---
+
+## ⚡ URGENT: New Code Deployed
+
+**I've added error handling that will now show the ACTUAL crash error!**
+
+**Two things you need to do:**
+1. **Change NODE_ENV to "production" in Railway** (will likely fix it immediately)
+2. **Check new error logs** (if crashes continue after changing NODE_ENV)
+
+**See: `docs/IMMEDIATE_ACTION_REQUIRED.md` for step-by-step instructions.**
+
+---
 
 ---
 
