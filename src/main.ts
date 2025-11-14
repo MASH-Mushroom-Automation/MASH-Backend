@@ -28,11 +28,16 @@ import { ValidationExceptionFilter } from './common/filters/validation-exception
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
+  const startTime = Date.now();
   const logger = new Logger('Bootstrap');
   logger.log('[STARTUP] Bootstrap function started');
-  logger.log(`[ENV] NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-  logger.log(`[ENV] PORT: ${process.env.PORT || 'not set (default 3000)'}`);
-  logger.log(`[ENV] DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ MISSING'}`);
+  logger.log('=== ENVIRONMENT DIAGNOSTIC ===');
+  logger.log(`NODE_ENV: ${process.env.NODE_ENV || '❌ NOT SET'}`);
+  logger.log(`PORT: ${process.env.PORT || '❌ NOT SET (Railway assigns dynamically)'}`);
+  logger.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ SET (' + process.env.DATABASE_URL.substring(0, 30) + '...)' : '❌ MISSING'}`);
+  logger.log(`JWT_SECRET: ${process.env.JWT_SECRET ? '✅ SET' : '❌ MISSING'}`);
+  logger.log(`REDIS_HOST: ${process.env.REDIS_HOST || 'NOT SET (optional)'}`);
+  logger.log('=== END DIAGNOSTIC ===');
 
   logger.log('[CONFIG] Stage 1: Creating NestJS application...');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -41,6 +46,25 @@ async function bootstrap() {
   });
 
   logger.log('[SUCCESS] Stage 1 complete: Application created');
+  
+  // 🔥 CRITICAL: Add emergency health endpoint BEFORE any other config
+  // This responds even if database/modules fail to initialize
+  app.use('/api/v1/health', (req, res, next) => {
+    if (req.method === 'GET' && req.url === '/') {
+      res.status(200).json({
+        status: 'ok',
+        message: 'MASH Backend API is alive',
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(process.uptime()),
+        env: process.env.NODE_ENV || 'development',
+        emergency: true, // Flag indicating this is the bypass route
+      });
+    } else {
+      next();
+    }
+  });
+  
+  logger.log('[EMERGENCY] Health check bypass route registered at /api/v1/health');
 
   logger.log('[CONFIG] Stage 2: Setting up custom logger...');
   // Use CustomLogger from CommonModule
@@ -209,10 +233,17 @@ async function bootstrap() {
   // Bind to 0.0.0.0 to accept connections from any network interface
   // This is required for cloud platforms like Render, Railway, etc.
   try {
-    const startTime = Date.now();
     await app.listen(port, '0.0.0.0');
-    const listenTime = Date.now() - startTime;
-    logger.log(`[SUCCESS] Stage 9 complete: Server listening on port ${port} (took ${listenTime}ms)`);
+    const totalStartupTime = Date.now() - startTime;
+    
+    logger.log('[SUCCESS] Stage 9 complete: Server listening');
+    logger.log('=== SERVER STARTUP COMPLETE ===');
+    logger.log(`🚀 Application listening on port ${port}`);
+    logger.log(`🏥 Health check: http://0.0.0.0:${port}/api/v1/health`);
+    logger.log(`📚 Swagger docs: http://0.0.0.0:${port}/api/docs`);
+    logger.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.log(`⏱️  Startup time: ${totalStartupTime}ms`);
+    logger.log('=== READY FOR TRAFFIC ===');
   } catch (error) {
     logger.error('[ERROR] Stage 9 failed - Could not bind to port:', error);
     throw error;
