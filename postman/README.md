@@ -1,7 +1,70 @@
 Postman collection for MASH-backend
 
-Files
-- `MASH-backend.postman_collection.json` — Postman collection you can import into Postman or run with Newman.
+## 📦 Available Collections
+
+### Core Collections
+- `MASH-backend.postman_collection.json` — Legacy complete collection
+- `00-Master-Complete-API-Collection.postman_collection.json` — Master collection with all endpoints
+
+### Feature-Specific Collections
+- `01-Authentication-API.postman_collection.json` — Auth endpoints (register, login, JWT)
+- `02-System-Administration-Monitoring-API.postman_collection.json` — Admin & monitoring
+- `03-Categories-API.postman_collection.json` — Product categories
+- `04-Orders-API.postman_collection.json` — Order management
+- `05-Products-API.postman_collection.json` — Product CRUD
+- `06-Sellers-Buyers-API.postman_collection.json` — User management
+- `07-IoT-Device-Management-API.postman_collection.json` — IoT devices
+- `08-CMS-API.postman_collection.json` — Content management
+- `09-Payment-Gateway-API.postman_collection.json` — Payment processing
+- `10-Admin-Dashboard-API.postman_collection.json` — Dashboard analytics
+- `11-Marketing-Affiliate-API.postman_collection.json` — Marketing features
+- `12-Support-OTP-API.postman_collection.json` — Support & OTP
+- `13-User-Profile-Management-API.postman_collection.json` — User profiles
+- `14-Import-Export-API.postman_collection.json` — Data import/export
+- **`15-Cart-API.postman_collection.json`** — 🆕 **Shopping Cart System** (NEW!)
+- `99-Complete-Auth-Flow-Testing.postman_collection.json` — Auth flow tests
+
+### 🛒 NEW: Cart API Collection
+
+The **Cart API collection** (`15-Cart-API.postman_collection.json`) includes comprehensive tests for:
+
+**Guest Cart Operations:**
+- Get/create guest cart
+- Add items to cart
+- Update item quantities
+- Remove items
+- Clear entire cart
+- Get cart summary
+
+**Authenticated User Cart:**
+- Get user cart
+- Merge guest cart to user cart (on login)
+
+**Validation & Checkout:**
+- Validate cart before checkout
+- Estimate shipping costs
+- Complete checkout process
+
+**Analytics (Admin):**
+- Get cart overview
+- Track abandoned carts
+
+**Error Scenarios:**
+- Out of stock handling
+- Invalid product errors
+- Empty cart checkout
+
+**Quick Start:**
+1. Import `15-Cart-API.postman_collection.json`
+2. Set `baseUrl` to `http://localhost:3000/api/v1`
+3. Generate session ID: `[guid]::NewGuid().ToString()`
+4. Set `guestSessionId` in environment
+5. Run collection!
+
+For detailed cart testing, see: `docs/CART_TESTING_GUIDE.md`
+
+### Environment File
+- `MASH-backend.postman_environment.json` — Environment variables for all collections
 
 Quick steps (PowerShell)
 
