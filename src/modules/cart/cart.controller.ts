@@ -57,12 +57,56 @@ export class CartController {
   @ApiOperation({
     summary: 'Get current cart',
     description:
-      'Retrieve the active cart for authenticated user or guest session',
+      'Retrieve the active cart for authenticated user or guest session. If cart doesn\'t exist, a new one will be created automatically. Supports both authenticated users (via JWT token) and guest users (via session cookie or X-Session-Id header).',
+    externalDocs: {
+      description: 'Cart System Documentation',
+      url: '/docs/CART_SYSTEM_IMPLEMENTATION_PLAN.md',
+    },
   })
   @ApiResponse({
     status: 200,
-    description: 'Cart retrieved successfully',
+    description: 'Cart retrieved successfully. Returns cart with all items, totals, and metadata.',
     type: CartResponseDto,
+    schema: {
+      example: {
+        id: 'clxxx123456789',
+        userId: 'cluser123456',
+        sessionId: null,
+        status: 'ACTIVE',
+        subtotal: 59.98,
+        tax: 7.20,
+        shipping: 150.00,
+        discount: 0,
+        total: 217.18,
+        currency: 'PHP',
+        itemCount: 2,
+        items: [
+          {
+            id: 'clitem123',
+            productId: 'clprod123',
+            quantity: 2,
+            price: 29.99,
+            originalPrice: 29.99,
+            subtotal: 59.98,
+            discount: 0,
+            total: 59.98,
+            isAvailable: true,
+            product: {
+              id: 'clprod123',
+              name: 'Organic Oyster Mushrooms',
+              slug: 'organic-oyster-mushrooms',
+              images: ['https://cdn.example.com/mushroom.jpg'],
+              stock: 98,
+              price: 29.99,
+              isActive: true,
+            },
+          },
+        ],
+        lastActivityAt: '2025-11-15T14:30:00Z',
+        createdAt: '2025-11-15T10:00:00Z',
+        updatedAt: '2025-11-15T14:30:00Z',
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Cart not found' })
   async getCart(@Req() req: Request): Promise<CartResponseDto> {
@@ -105,16 +149,46 @@ export class CartController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Add item to cart',
-    description: 'Add a product to the cart with specified quantity',
+    description: 'Add a product to the cart with specified quantity. Performs real-time stock validation, price locking, and handles duplicate items by merging quantities. Supports guest and authenticated users.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Item added to cart successfully',
+    description: 'Item added to cart successfully. Returns updated cart with all items and recalculated totals.',
     type: CartResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Invalid product or quantity' })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  @ApiResponse({ status: 409, description: 'Insufficient stock' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid product, quantity exceeds limits, or product is inactive',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Quantity exceeds maximum allowed (100)',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Product with ID clxxx123 not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Insufficient stock available',
+    schema: {
+      example: {
+        statusCode: 409,
+        message: 'Insufficient stock. Available: 5, Requested: 10',
+        error: 'Conflict',
+      },
+    },
+  })
   async addItem(
     @Body() dto: AddToCartDto,
     @Req() req: Request,
@@ -299,14 +373,44 @@ export class CartController {
   @ApiOperation({
     summary: 'Merge guest cart into user cart',
     description:
-      'Merge items from guest cart (identified by session ID) into authenticated user cart. Called automatically after login.',
+      'Intelligently merge items from guest cart (identified by session ID cookie or X-Session-Id header) into authenticated user cart. Handles duplicate items by combining quantities (respecting stock limits), validates product availability, and marks guest cart as MERGED. Should be called automatically by frontend after successful login/signup. Guest cart items that are out of stock or inactive will be skipped.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Guest cart merged successfully',
+    description: 'Guest cart merged successfully. Returns user cart with merged items and updated totals.',
     type: CartResponseDto,
+    schema: {
+      example: {
+        id: 'cluser_cart_123',
+        userId: 'cluser123',
+        sessionId: null,
+        status: 'ACTIVE',
+        itemCount: 3,
+        subtotal: 89.97,
+        tax: 10.80,
+        total: 100.77,
+        items: [
+          {
+            id: 'clitem123',
+            productId: 'clprod123',
+            quantity: 3,
+            note: 'Merged from guest cart (qty 2 + 1)',
+          },
+        ],
+      },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT authentication required',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        error: 'Unauthorized',
+      },
+    },
+  })
   async mergeGuestCart(@Req() req: Request): Promise<CartResponseDto> {
     const userId = req.user?.['id'];
     const guestSessionId =
