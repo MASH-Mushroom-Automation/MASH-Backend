@@ -137,32 +137,113 @@ export class AuthService {
   }
 
   private async createUser(userData: ClerkUserData) {
+    // Extract Google OAuth data if present (Clerk SSO)
+    const externalAccounts = (userData as any).external_accounts || [];
+    const googleAccount = externalAccounts.find((acc: any) => acc.provider === 'google');
+
+    const userEmail = userData.email_addresses[0]?.email_address ?? '';
+    const isEmailVerified =
+      (userData.email_addresses[0] as any)?.verification?.status === 'verified' || !!googleAccount;
+
+    // Check if user already exists (by email or clerkId)
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: userEmail }, { clerkId: userData.id }],
+      },
+    });
+
+    if (existingUser) {
+      // Update existing user with Clerk data
+      const updatedUser = await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          clerkId: userData.id,
+          email: userEmail,
+          emailVerified: isEmailVerified,
+          username: userData.username ?? existingUser.username,
+          firstName: userData.first_name ?? existingUser.firstName,
+          lastName: userData.last_name ?? existingUser.lastName,
+          imageUrl: userData.image_url ?? existingUser.imageUrl,
+          // Add Google ID if user signed up with Google
+          googleId: googleAccount?.provider_user_id || existingUser.googleId,
+          // Update oauthProvider array
+          oauthProvider: googleAccount
+            ? Array.from(new Set([...(existingUser.oauthProvider || []), 'google']))
+            : existingUser.oauthProvider,
+        },
+      });
+
+      this.logger.log(`✅ Updated existing user: ${updatedUser.email}`);
+      return { message: 'User updated', userId: updatedUser.id };
+    }
+
+    // Create new user
     const user = await this.prisma.user.create({
       data: {
         clerkId: userData.id,
-        email: userData.email_addresses[0]?.email_address ?? '',
+        email: userEmail,
+        emailVerified: isEmailVerified,
         username: userData.username ?? null,
         firstName: userData.first_name ?? null,
         lastName: userData.last_name ?? null,
         imageUrl: userData.image_url ?? null,
+        // Add Google ID if user signed up with Google
+        googleId: googleAccount?.provider_user_id || null,
+        // Set oauthProvider array
+        oauthProvider: googleAccount ? ['google'] : [],
+        role: 'USER', // Default role
       },
     });
+
+    this.logger.log(`✅ Created new user: ${user.email}`);
+
+    // Send welcome email
+    try {
+      const dashboardUrl = `${process.env.FRONTEND_URL}/dashboard`;
+      await this.emailService.sendWelcomeEmail(user.email, user.firstName || 'User', dashboardUrl);
+    } catch (error) {
+      this.logger.error(`❌ Failed to send welcome email: ${error.message}`);
+    }
 
     return { message: 'User created successfully', userId: user.id };
   }
 
   private async updateUser(userData: ClerkUserData) {
+    // Extract Google OAuth data if present (Clerk SSO)
+    const externalAccounts = (userData as any).external_accounts || [];
+    const googleAccount = externalAccounts.find((acc: any) => acc.provider === 'google');
+
+    const userEmail = userData.email_addresses[0]?.email_address;
+    const isEmailVerified =
+      (userData.email_addresses[0] as any)?.verification?.status === 'verified' || !!googleAccount;
+
+    // Fetch existing user to merge oauthProvider array
+    const existingUser = await this.prisma.user.findUnique({
+      where: { clerkId: userData.id },
+      select: { oauthProvider: true },
+    });
+
+    const updatedOAuthProviders = googleAccount && existingUser
+      ? Array.from(new Set([...(existingUser.oauthProvider || []), 'google']))
+      : existingUser?.oauthProvider;
+
     const user = await this.prisma.user.update({
       where: { clerkId: userData.id },
       data: {
-        email: userData.email_addresses[0]?.email_address ?? undefined,
+        email: userEmail ?? undefined,
+        emailVerified: isEmailVerified,
         username: userData.username ?? undefined,
         firstName: userData.first_name ?? undefined,
         lastName: userData.last_name ?? undefined,
         imageUrl: userData.image_url ?? undefined,
+        // Update Google ID if changed
+        googleId: googleAccount?.provider_user_id || undefined,
+        // Update oauthProvider array
+        oauthProvider: updatedOAuthProviders,
       },
     });
 
+    this.logger.log(`✅ Updated user: ${user.email}`);
     return { message: 'User updated successfully', userId: user.id };
   }
 
@@ -1763,4 +1844,5 @@ export class AuthService {
       },
     };
   }
+
 }

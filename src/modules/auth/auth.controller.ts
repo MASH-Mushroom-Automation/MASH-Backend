@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   UseGuards,
   Request,
@@ -31,6 +32,7 @@ import { ForgotPasswordDto, ResetPasswordDto, VerifyResetCodeDto, ResendPassword
 import { LoginDto } from './dto/login.dto';
 import { OAuthCallbackDto, OAuthInitiateDto } from './dto/oauth.dto';
 import { GoogleLoginDto, FacebookLoginDto, LinkGoogleAccountDto, LinkFacebookAccountDto } from '../oauth/dto/oauth-login.dto';
+import { LinkGoogleAccountDto as GoogleLinkDto, GoogleLinkResponseDto, GoogleUnlinkResponseDto } from './dto/google-link.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuditLog } from '../../common/decorators/audit-log.decorator';
@@ -2084,4 +2086,5 @@ Returns information about user's linked OAuth providers and authentication optio
   async getOAuthStatus(@Request() req: AuthenticatedRequest) {
     return this.authService.getOAuthStatus(req.user.id);
   }
+
 }
