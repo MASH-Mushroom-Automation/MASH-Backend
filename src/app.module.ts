@@ -59,7 +59,6 @@ import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics.interceptor';
-import { CartModule } from './modules/cart/cart.module';
 
 @Module({
   imports: [
@@ -139,8 +138,6 @@ import { CartModule } from './modules/cart/cart.module';
 
     // API Gateway Module (Issue #32 - API Gateway & Rate Limiting Backend)
     GatewayModule,
-
-    CartModule,
 
     // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
     // WebSocket module for real-time communication

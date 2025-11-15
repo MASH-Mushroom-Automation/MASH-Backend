@@ -37,8 +37,7 @@ export class HealthController {
 
   /**
    * Application Health Check
-   * Basic endpoint to verify API is running (does NOT check database)
-   * This is used by Railway/Docker health checks and should respond quickly
+   * Basic endpoint to verify API is running
    *
    * @returns Simple health status
    *
@@ -49,21 +48,16 @@ export class HealthController {
    *   "status": "ok",
    *   "message": "MASH Backend API is running",
    *   "timestamp": "2025-10-07T10:30:00.000Z",
-   *   "version": "1.0.0",
-   *   "uptime": 3600
+   *   "version": "1.0.0"
    * }
    */
   @Get()
-  checkHealth() {
-    // IMPORTANT: This endpoint should NOT await database connection
-    // It's designed for rapid health checks by load balancers and orchestrators
+  async checkHealth() {
     return {
       status: 'ok',
       message: 'MASH Backend API is running',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      uptime: Math.floor(process.uptime()),
-      env: process.env.NODE_ENV || 'development',
     };
   }
 

@@ -56,6 +56,7 @@ model User {
   apiKeys                     ApiKey[]
   apiUsageLogs                ApiUsageLog[]
   apiVersionUsage             ApiVersionUsage[]
+  carts                       Cart[]
   devices                     Device[]
   importExportJobs            ImportExportJob[]      @relation("ImportExportJobsCreated")
   notificationTemplates       NotificationTemplate[] @relation("NotificationTemplateCreator")
@@ -69,7 +70,6 @@ model User {
   sessions                    Session[]
   userNotifications           UserNotification[]     @relation("UserNotifications")
   userRoleAssignments         UserRoleAssignment[]
-  carts                       Cart[]
 
   @@index([createdAt])
   @@index([isActive, role])
@@ -201,7 +201,7 @@ model Product {
   costPrice      Decimal?    @db.Decimal(10, 2)
   stock          Int         @default(0)
   minStock       Int         @default(0)
-  maxCartQty     Int?
+  maxCartQty     Int?        @default(100)
   weight         Float?
   dimensions     Json?
   images         Json[]
@@ -216,8 +216,8 @@ model Product {
   updatedAt      DateTime    @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean     @default(false)
-  orderItems     OrderItem[]
   cartItems      CartItem[]
+  orderItems     OrderItem[]
 
   @@index([isActive, isFeatured, createdAt(sort: Desc)])
   @@index([slug, isActive])
@@ -245,6 +245,58 @@ model Category {
   @@index([parentId, isActive])
   @@index([createdAt])
   @@map("categories")
+}
+
+model Cart {
+  id             String     @id @default(cuid())
+  userId         String?
+  sessionId      String?
+  status         CartStatus @default(ACTIVE)
+  subtotal       Decimal    @default(0) @db.Decimal(10, 2)
+  tax            Decimal    @default(0) @db.Decimal(10, 2)
+  shipping       Decimal    @default(0) @db.Decimal(10, 2)
+  discount       Decimal    @default(0) @db.Decimal(10, 2)
+  total          Decimal    @default(0) @db.Decimal(10, 2)
+  metadata       Json?
+  lastActivityAt DateTime   @default(now())
+  expiresAt      DateTime?
+  abandonedAt    DateTime?
+  convertedAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          CartItem[]
+
+  @@index([userId, status])
+  @@index([sessionId, status])
+  @@index([status, lastActivityAt])
+  @@index([createdAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id              String   @id @default(cuid())
+  cartId          String
+  productId       String
+  quantity        Int
+  price           Decimal  @db.Decimal(10, 2)
+  originalPrice   Decimal  @db.Decimal(10, 2)
+  subtotal          Decimal  @db.Decimal(10, 2)
+  discount          Decimal  @default(0) @db.Decimal(10, 2)
+  total             Decimal  @db.Decimal(10, 2)
+  isAvailable       Boolean  @default(true)
+  unavailableReason String?
+  productSnapshot   Json?
+  customization   Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  cart            Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
 }
 
 model Order {
@@ -1067,6 +1119,14 @@ enum DeviceStatus {
   ERROR
 }
 
+enum CartStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+  EXPIRED
+  MERGED
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -1277,71 +1337,4 @@ enum DeviceHealthStatus {
   CRITICAL
   OFFLINE
   MAINTENANCE
-}
-
-enum CartStatus {
-  ACTIVE
-  COMPLETED
-  ABANDONED
-  EXPIRED
-  MERGED
-}
-
-model Cart {
-  id              String      @id @default(cuid())
-  userId          String?
-  sessionId       String?
-  status          CartStatus  @default(ACTIVE)
-  subtotal        Decimal     @default(0) @db.Decimal(10, 2)
-  tax             Decimal     @default(0) @db.Decimal(10, 2)
-  shipping        Decimal     @default(0) @db.Decimal(10, 2)
-  discount        Decimal     @default(0) @db.Decimal(10, 2)
-  total           Decimal     @default(0) @db.Decimal(10, 2)
-  currency        String      @default("PHP")
-  expiresAt       DateTime?
-  convertedAt     DateTime?
-  abandonedAt     DateTime?
-  lastActivityAt  DateTime    @default(now())
-  metadata        Json?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  user            User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items           CartItem[]
-  
-  @@unique([userId])
-  @@unique([sessionId])
-  @@index([userId, status])
-  @@index([sessionId, status])
-  @@index([status, expiresAt])
-  @@index([status, lastActivityAt])
-  @@index([abandonedAt])
-  @@map("carts")
-}
-
-model CartItem {
-  id                String      @id @default(cuid())
-  cartId            String
-  productId         String
-  quantity          Int         @default(1)
-  price             Decimal     @db.Decimal(10, 2)
-  originalPrice     Decimal?    @db.Decimal(10, 2)
-  subtotal          Decimal     @db.Decimal(10, 2)
-  discount          Decimal     @default(0) @db.Decimal(10, 2)
-  total             Decimal     @db.Decimal(10, 2)
-  productSnapshot   Json?
-  customization     Json?
-  isAvailable       Boolean     @default(true)
-  unavailableReason String?
-  addedAt           DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  
-  cart              Cart        @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product           Product     @relation(fields: [productId], references: [id])
-  
-  @@unique([cartId, productId])
-  @@index([cartId])
-  @@index([productId])
-  @@index([cartId, isAvailable])
-  @@map("cart_items")
 }
