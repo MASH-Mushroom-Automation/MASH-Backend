@@ -7,7 +7,7 @@
 
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bull';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../../database/prisma.service';
 import { FileStorageService } from './file-storage.service';
 import { ValidationService } from './validation.service';

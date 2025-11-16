@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import type { Queue } from 'bull';
+import type { Queue } from 'bullmq';
 
 export interface EmailNotificationJob {
   to: string[];
@@ -200,7 +200,7 @@ export class NotificationQueueService {
       throw new Error('Unauthorized: clearAllQueues requires admin privileges in production');
     }
 
-    await Promise.all([this.emailQueue.empty(), this.smsQueue.empty(), this.pushQueue.empty()]);
+    await Promise.all([this.emailQueue.drain(), this.smsQueue.drain(), this.pushQueue.drain()]);
     this.logger.log('All queues cleared');
   }
 }
