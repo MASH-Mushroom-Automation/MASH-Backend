@@ -13,6 +13,7 @@
     "start:dev": "nest build && nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "heroku-postbuild": "npm run build && npx prisma generate",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "lint:check": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "jest",
@@ -50,8 +51,7 @@
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@elastic/elasticsearch": "^8.19.1",
     "@nestjs/axios": "^4.0.1",
-    "@nestjs/bull": "^10.2.3",
-    "@nestjs/bull-shared": "^11.0.4",
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.7",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^11.1.7",
@@ -177,6 +177,10 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.4",
     "typescript-eslint": "^8.46.1"
+  },
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
