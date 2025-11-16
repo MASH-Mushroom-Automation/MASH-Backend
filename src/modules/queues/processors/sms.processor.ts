@@ -1,19 +1,19 @@
-import { Process, Processor } from '@nestjs/bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import type { Job } from 'bull';
 // import * as twilio from 'twilio';
 import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { SmsNotificationJob } from '../services/notification-queue.service';
 
-// 🔧 TEMPORARILY DISABLED - Processor causes conflicts when Bull is initialized elsewhere
-// @Processor('sms-notifications')
-export class SmsProcessor {
+@Processor('sms-notifications')
+export class SmsProcessor extends WorkerHost {
   private readonly logger = new Logger(SmsProcessor.name);
   private twilioClient: any; // Will be typed as twilio.Twilio when configured
   private isConfigured: boolean = false;
 
   constructor(private prisma: PrismaService) {
+    super();
     // Check if Twilio is configured
     this.isConfigured = !!(
       process.env.TWILIO_ACCOUNT_SID &&
@@ -37,8 +37,7 @@ export class SmsProcessor {
     }
   }
 
-  @Process('send-sms')
-  async handleSmsJob(job: Job<SmsNotificationJob>) {
+  async process(job: Job<SmsNotificationJob, any, string>): Promise<any> {
     const { to, body, alertId, userId, priority } = job.data;
 
     this.logger.log(`📱 Processing SMS job ${job.id} for: ${to}`);

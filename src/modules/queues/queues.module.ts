@@ -1,8 +1,8 @@
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
-import { BullAdapter } from '@bull-board/api/bullAdapter';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { NotificationQueueService } from './services/notification-queue.service';
 import { EmailProcessor } from './processors/email.processor';
 import { SmsProcessor } from './processors/sms.processor';
@@ -13,7 +13,7 @@ import { DatabaseModule } from '../../database/database.module';
   imports: [
     DatabaseModule,
     BullModule.forRoot({
-      redis: {
+      connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD || undefined,
@@ -31,28 +31,28 @@ import { DatabaseModule } from '../../database/database.module';
     }),
     BullBoardModule.forFeature({
       name: 'email-notifications',
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
       name: 'sms-notifications',
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
       name: 'push-notifications',
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
     // Import/Export queues (Issue #30)
     BullBoardModule.forFeature({
       name: 'import',
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
       name: 'export',
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
       name: 'cleanup',
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
   ],
   providers: [NotificationQueueService, EmailProcessor, SmsProcessor, PushProcessor],

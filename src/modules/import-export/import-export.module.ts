@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '../../database/database.module';
 import { FileStorageService } from './services/file-storage.service';
@@ -26,38 +26,9 @@ import { ExportController } from './controllers/export.controller';
     DatabaseModule, // Add DatabaseModule for Prisma access
     // Register Bull queues for background job processing
     BullModule.registerQueue(
-      {
-        name: 'import',
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 1000,
-          },
-          removeOnComplete: false,
-          removeOnFail: false,
-        },
-      },
-      {
-        name: 'export',
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 1000,
-          },
-          removeOnComplete: false,
-          removeOnFail: false,
-        },
-      },
-      {
-        name: 'cleanup',
-        defaultJobOptions: {
-          attempts: 2,
-          removeOnComplete: true,
-          removeOnFail: false,
-        },
-      },
+      { name: 'import' },
+      { name: 'export' },
+      { name: 'cleanup' },
     ),
   ],
   controllers: [ImportController, ExportController],
