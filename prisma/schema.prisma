@@ -300,35 +300,101 @@ model CartItem {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String      @unique
-  userId          String
-  status          OrderStatus @default(PENDING)
-  subtotal        Decimal     @db.Decimal(10, 2)
-  tax             Decimal     @default(0) @db.Decimal(10, 2)
-  shipping        Decimal     @default(0) @db.Decimal(10, 2)
-  discount        Decimal     @default(0) @db.Decimal(10, 2)
-  total           Decimal     @db.Decimal(10, 2)
-  currency        String      @default("PHP")
-  notes           String?
-  shippingAddress Json
-  billingAddress  Json
-  trackingNumber  String?
-  shippedAt       DateTime?
-  deliveredAt     DateTime?
-  cancelledAt     DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  orderItems      OrderItem[]
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments        Payment[]
+  id                  String               @id @default(cuid())
+  orderNumber         String               @unique
+  userId              String
+  status              OrderStatus          @default(PENDING)
+  previousStatus      OrderStatus?
+  statusUpdatedAt     DateTime?
+  subtotal            Decimal              @db.Decimal(10, 2)
+  shippingCost        Decimal              @default(0) @db.Decimal(10, 2)
+  taxAmount           Decimal              @default(0) @db.Decimal(10, 2)
+  discountAmount      Decimal              @default(0) @db.Decimal(10, 2)
+  totalAmount         Decimal              @db.Decimal(10, 2)
+  currency            String               @default("PHP")
+  notes               String?
+  shippingAddress     Json
+  billingAddress      Json
+  shippingProvider    String?
+  trackingNumber      String?
+  estimatedDelivery   DateTime?
+  actualDelivery      DateTime?
+  paymentStatus       String?
+  confirmedAt         DateTime?
+  cancelledAt         DateTime?
+  completedAt         DateTime?
+  metadata            Json?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  orderItems          OrderItem[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments            Payment[]
+  statusHistory       OrderStatusHistory[]
+  fulfillment         OrderFulfillment?
+  returns             OrderReturn[]
 
-  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([userId, status])
   @@index([status, createdAt(sort: Desc)])
   @@index([orderNumber])
   @@index([createdAt])
-  @@index([deliveredAt])
+  @@index([actualDelivery])
   @@map("orders")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(cuid())
+  orderId     String
+  fromStatus  OrderStatus
+  toStatus    OrderStatus
+  notes       String?
+  changedBy   String?
+  changedAt   DateTime    @default(now())
+  metadata    Json?
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, changedAt(sort: Desc)])
+  @@map("order_status_history")
+}
+
+model OrderFulfillment {
+  id            String    @id @default(cuid())
+  orderId       String    @unique
+  warehouseId   String?
+  pickerId      String?
+  packerId      String?
+  pickedAt      DateTime?
+  packedAt      DateTime?
+  shippedAt     DateTime?
+  carrier       String?
+  trackingUrl   String?
+  labelUrl      String?
+  weight        Decimal?  @db.Decimal(10, 2)
+  dimensions    Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_fulfillment")
+}
+
+model OrderReturn {
+  id            String    @id @default(cuid())
+  orderId       String
+  reason        String
+  description   String
+  status        String    @default("PENDING_APPROVAL")
+  refundAmount  Decimal   @db.Decimal(10, 2)
+  refundMethod  String?
+  refundedAt    DateTime?
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@map("order_returns")
 }
 
 model OrderItem {

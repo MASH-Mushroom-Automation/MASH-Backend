@@ -1,126 +1,111 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsString,
-  IsNumber,
   IsEnum,
+  IsNumber,
   IsArray,
-  IsOptional,
   ValidateNested,
+  IsOptional,
   Min,
-  IsObject,
+  Max,
+  IsUUID,
+  ArrayMinSize,
+  ArrayMaxSize,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-export class OrderItemDto {
-  @ApiProperty({ description: 'Product ID' })
-  @IsNotEmpty()
-  @IsString()
-  productId: string;
-
-  @ApiProperty({ description: 'Quantity', minimum: 1 })
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
-  quantity: number;
-
-  @ApiProperty({ description: 'Price at time of order', minimum: 0 })
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  price: number;
-}
-
-export class ShippingAddressDto {
-  @ApiProperty({ description: 'Street address' })
-  @IsNotEmpty()
-  @IsString()
-  street: string;
-
-  @ApiProperty({ description: 'City' })
-  @IsNotEmpty()
-  @IsString()
-  city: string;
-
-  @ApiProperty({ description: 'State/Province' })
-  @IsNotEmpty()
-  @IsString()
-  state: string;
-
-  @ApiProperty({ description: 'ZIP/Postal code' })
-  @IsNotEmpty()
-  @IsString()
-  zipCode: string;
-
-  @ApiProperty({ description: 'Country' })
-  @IsNotEmpty()
-  @IsString()
-  country: string;
-}
-
-export enum PaymentMethod {
-  CREDIT_CARD = 'CREDIT_CARD',
-  DEBIT_CARD = 'DEBIT_CARD',
-  PAYPAL = 'PAYPAL',
-  GCASH = 'GCASH',
-  MAYA = 'MAYA',
-  BANK_TRANSFER = 'BANK_TRANSFER',
-}
+import { CreateOrderItemDto } from './create-order-item.dto';
 
 export class CreateOrderDto {
-  @ApiProperty({ description: 'User ID' })
-  @IsNotEmpty()
-  @IsString()
+  @ApiProperty({
+    description: 'User ID placing the order',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsNotEmpty({ message: 'User ID is required' })
+  @IsUUID('4', { message: 'Invalid user ID format' })
   userId: string;
 
-  @ApiProperty({ description: 'Order items', type: [OrderItemDto] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => OrderItemDto)
-  items: OrderItemDto[];
-
-  @ApiProperty({ description: 'Shipping address', type: ShippingAddressDto })
-  @IsObject()
-  @ValidateNested()
-  @Type(() => ShippingAddressDto)
-  shippingAddress: ShippingAddressDto;
-
-  @ApiPropertyOptional({
-    description: 'Billing address (defaults to shipping)',
+  @ApiProperty({
+    description: 'Array of order items',
+    type: [CreateOrderItemDto],
+    example: [
+      {
+        productId: '123e4567-e89b-12d3-a456-426614174001',
+        quantity: 2,
+        price: 299.99,
+      },
+    ],
   })
-  @IsOptional()
-  @IsObject()
-  @ValidateNested()
-  @Type(() => ShippingAddressDto)
-  billingAddress?: ShippingAddressDto;
+  @IsNotEmpty({ message: 'Order items are required' })
+  @IsArray({ message: 'Order items must be an array' })
+  @ValidateNested({ each: true })
+  @Type(() => CreateOrderItemDto)
+  @ArrayMinSize(1, { message: 'Order must have at least 1 item' })
+  @ArrayMaxSize(50, { message: 'Order cannot have more than 50 items' })
+  items: CreateOrderItemDto[];
 
   @ApiProperty({
-    description: 'Payment method',
-    enum: PaymentMethod,
+    description: 'Shipping address ID',
+    example: '123e4567-e89b-12d3-a456-426614174002',
   })
-  @IsEnum(PaymentMethod)
-  paymentMethod: PaymentMethod;
+  @IsNotEmpty({ message: 'Shipping address is required' })
+  @IsUUID('4', { message: 'Invalid address ID format' })
+  shippingAddressId: string;
 
-  @ApiPropertyOptional({ description: 'Order notes' })
+  @ApiPropertyOptional({
+    description: 'Billing address ID (defaults to shipping address)',
+    example: '123e4567-e89b-12d3-a456-426614174003',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'Invalid billing address ID format' })
+  billingAddressId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Payment method ID',
+    example: '123e4567-e89b-12d3-a456-426614174004',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'Invalid payment method ID format' })
+  paymentMethodId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Coupon code for discount',
+    example: 'SUMMER2025',
+    maxLength: 50,
+  })
   @IsOptional()
   @IsString()
+  @Matches(/^[A-Z0-9-_]+$/i, {
+    message: 'Invalid coupon code format',
+  })
+  couponCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'Special instructions or notes for the order',
+    example: 'Please deliver before 5 PM',
+    maxLength: 500,
+  })
+  @IsOptional()
+  @IsString()
+  @Max(500, { message: 'Notes cannot exceed 500 characters' })
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'Shipping cost', minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Preferred shipping provider',
+    enum: ['LALAMOVE', 'LBC', 'JNT', 'NINJAVAN', 'GRAB_EXPRESS'],
+    example: 'LALAMOVE',
+  })
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  shipping?: number;
+  @IsEnum(['LALAMOVE', 'LBC', 'JNT', 'NINJAVAN', 'GRAB_EXPRESS'], {
+    message: 'Invalid shipping provider',
+  })
+  shippingProvider?: string;
 
-  @ApiPropertyOptional({ description: 'Tax amount', minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Additional metadata for the order',
+    example: { source: 'mobile-app', campaign: 'flash-sale' },
+  })
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tax?: number;
-
-  @ApiPropertyOptional({ description: 'Discount amount', minimum: 0 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  discount?: number;
+  metadata?: Record<string, any>;
 }
