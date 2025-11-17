@@ -26,7 +26,10 @@ class StopResponseDto {
   @ApiProperty({ example: 'stop_abc123' })
   stopId: string;
 
-  @ApiProperty({ type: 'object', example: { lat: '14.8140', lng: '121.0452' } })
+  @ApiProperty({ 
+    example: { lat: '14.8140', lng: '121.0452' },
+    description: 'Stop coordinates'
+  })
   coordinates: { lat: string; lng: string };
 
   @ApiProperty({ example: 'San Jose Del Monte, Bulacan' })

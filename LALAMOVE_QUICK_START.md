@@ -1,484 +1,518 @@
-# Lalamove Integration - Quick Start Guide
+# Lalamove Quick Start Guide
 
-## 🚀 Quick Start (5 Minutes)
+Get your Lalamove integration running in 5 minutes!
 
-### 1. Environment Setup
+---
 
-Add to `.env`:
+## 🚀 Prerequisites
+
+Before you begin, ensure you have:
+
+- [x] Node.js 18+ installed
+- [x] PostgreSQL database running (or Neon connection)
+- [x] Redis instance (Upstash or local) **with available quota**
+- [x] Lalamove sandbox credentials
+- [x] Postman installed (for API testing)
+
+---
+
+## 📋 Step 1: Environment Setup
+
+### 1.1 Update Environment Variables
+
+Open your `.env` file and add/verify these variables:
 
 ```bash
-LALAMOVE_BASE_URL=https://rest.sandbox.lalamove.com
-LALAMOVE_API_KEY=your_api_key_here
-LALAMOVE_SECRET=your_secret_key_here
-LALAMOVE_WEBHOOK_URL=https://your-domain.com/api/v1/lalamove/webhook
+# Lalamove Configuration
+LALAMOVE_API_KEY=pk_test_8611e4fa8a2f51f6664d26aded0e5d2b
+LALAMOVE_API_SECRET=sk_test_your_secret_key_here
+LALAMOVE_HOST=https://rest.sandbox.lalamove.com
+LALAMOVE_MARKET=PH
+LALAMOVE_WEBHOOK_PATH=/api/v1/lalamove/webhook
+
+# Database (already configured)
+DATABASE_URL=postgresql://...
+
+# Redis (check quota!)
+REDIS_URL=rediss://...
 ```
 
-### 2. Start Server
+### 1.2 Verify Database Connection
 
 ```bash
+npx prisma db push
+npx prisma generate
+```
+
+**Expected Output**:
+```
+✔ Generated Prisma Client (v6.18.0)
+```
+
+---
+
+## 🔧 Step 2: Resolve Redis Quota Issue
+
+### Option A: Upgrade Upstash Plan (Recommended for Production)
+1. Go to https://console.upstash.com
+2. Select your Redis database
+3. Click "Upgrade" → Choose paid plan
+4. Quota will reset immediately
+
+### Option B: Use Local Redis (Recommended for Development)
+```bash
+# Install Redis locally
+# Windows: https://github.com/microsoftarchive/redis/releases
+# Download Redis-x64-3.0.504.msi
+
+# Update .env
+REDIS_URL=redis://localhost:6379
+```
+
+### Option C: Create New Upstash Instance
+1. Go to https://console.upstash.com
+2. Create new Redis database
+3. Copy new connection URL
+4. Update `REDIS_URL` in `.env`
+
+### Option D: Temporarily Disable Redis (Testing Only)
+**⚠️ Warning**: Notifications won't be queued
+
+Edit `src/app.module.ts`:
+```typescript
+// Comment out BullModule.forRoot
+/*
+BullModule.forRoot({
+  redis: process.env.REDIS_URL,
+}),
+*/
+```
+
+---
+
+## 🏃 Step 3: Start the Server
+
+### 3.1 Install Dependencies (if needed)
+```bash
+npm install --legacy-peer-deps
+```
+
+### 3.2 Build and Start
+```bash
+npm run build
 npm run start:dev
 ```
 
-### 3. Access Swagger Docs
+### 3.3 Verify Server is Running
 
-Open: `http://localhost:3000/api#/lalamove`
+**Expected Output**:
+```
+[Nest] 12345  - 11/18/2025, 2:30:00 PM     LOG [NestApplication] Nest application successfully started
+[Nest] 12345  - 11/18/2025, 2:30:00 PM     LOG [Bootstrap] 🚀 Server running on http://localhost:3000
+[Nest] 12345  - 11/18/2025, 2:30:00 PM     LOG [Bootstrap] 📚 Swagger docs available at http://localhost:3000/api
+```
+
+**Check Health Endpoint**:
+```bash
+curl http://localhost:3000/health
+```
+
+**Expected Response**:
+```json
+{
+  "status": "ok",
+  "info": { "database": { "status": "up" } }
+}
+```
 
 ---
 
-## 📖 API Endpoints
+## 📖 Step 4: Explore Swagger Documentation
 
-### 1. Create Quotation
+1. Open browser: http://localhost:3000/api
+2. Find the **Lalamove** section
+3. Review 10 available endpoints:
+   - `GET /api/v1/lalamove/city-info`
+   - `POST /api/v1/lalamove/quotations`
+   - `GET /api/v1/lalamove/quotations/{id}`
+   - `POST /api/v1/lalamove/orders`
+   - `GET /api/v1/lalamove/orders/{id}`
+   - `GET /api/v1/lalamove/orders/{orderId}/drivers/{driverId}`
+   - `POST /api/v1/lalamove/orders/{id}/priority-fee`
+   - `DELETE /api/v1/lalamove/orders/{id}`
+   - `POST /api/v1/lalamove/webhook`
+   - `POST /api/v1/lalamove/webhook/setup`
 
-```http
+---
+
+## 🔐 Step 5: Get Authentication Token
+
+### 5.1 Login or Register
+
+**Option A: Use Existing Account**
+```bash
+POST http://localhost:3000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "your-email@example.com",
+  "password": "your-password"
+}
+```
+
+**Option B: Register New Account**
+```bash
+POST http://localhost:3000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!",
+  "name": "Test User"
+}
+```
+
+### 5.2 Copy Access Token
+
+**Response**:
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": { ... }
+}
+```
+
+**Save the `accessToken`** - you'll need it for all Lalamove endpoints!
+
+---
+
+## 🧪 Step 6: Test with Postman
+
+### 6.1 Import Collection
+
+1. Open Postman
+2. Click **Import** button
+3. Select **File** → Browse to `postman/MASH-Lalamove-PH.postman_collection.json`
+4. Click **Import**
+
+### 6.2 Import Environment
+
+1. Click **Environments** in sidebar
+2. Click **Import** → Browse to `postman/PH.postman_environment.json`
+3. Click **Import**
+4. Select **PH** environment from dropdown
+
+### 6.3 Configure Environment Variables
+
+Click the **eye icon** → Edit **PH** environment:
+
+```
+baseUrl: http://localhost:3000
+api_key: pk_test_8611e4fa8a2f51f6664d26aded0e5d2b
+api_secret: sk_test_your_secret_key_here
+token: <paste-your-jwt-token-here>
+```
+
+### 6.4 Test Endpoints
+
+**Test 1: Get City Info** (No auth required)
+```
+GET {{baseUrl}}/api/v1/lalamove/city-info
+```
+**Expected**: 200 OK with Manila city data
+
+**Test 2: Create Immediate Quotation**
+```
+POST {{baseUrl}}/api/v1/lalamove/quotations
+Authorization: Bearer {{token}}
+Body: See collection → "Create Immediate Quotation"
+```
+**Expected**: 201 Created with quotationId
+
+**Test 3: Get Quotation**
+```
+GET {{baseUrl}}/api/v1/lalamove/quotations/{{quotationId}}
+Authorization: Bearer {{token}}
+```
+**Expected**: 200 OK with price breakdown
+
+**Test 4: Create Order**
+```
+POST {{baseUrl}}/api/v1/lalamove/orders
+Authorization: Bearer {{token}}
+Body: {
+  "quotationId": "{{quotationId}}",
+  "sender": { ... },
+  "recipients": [ ... ]
+}
+```
+**Expected**: 201 Created with orderId and shareLink
+
+**Test 5: Get Order**
+```
+GET {{baseUrl}}/api/v1/lalamove/orders/{{orderId}}
+Authorization: Bearer {{token}}
+```
+**Expected**: 200 OK with order status
+
+---
+
+## 🔔 Step 7: Test Webhook Integration
+
+### 7.1 Setup Webhook URL (Admin Only)
+
+**Get Admin Token** (if you don't have one):
+```sql
+-- Update user role in database
+UPDATE users SET role = 'SUPER_ADMIN' WHERE email = 'your-email@example.com';
+```
+
+**Setup Webhook**:
+```bash
+POST http://localhost:3000/api/v1/lalamove/webhook/setup
+Authorization: Bearer {{admin-token}}
+Content-Type: application/json
+
+{
+  "webhookUrl": "https://your-public-url.com/api/v1/lalamove/webhook"
+}
+```
+
+### 7.2 Test Webhook Locally with ngrok
+
+1. **Install ngrok**: https://ngrok.com/download
+
+2. **Start ngrok tunnel**:
+```bash
+ngrok http 3000
+```
+
+3. **Copy HTTPS URL** (e.g., `https://abc123.ngrok.io`)
+
+4. **Update webhook URL**:
+```bash
+POST http://localhost:3000/api/v1/lalamove/webhook/setup
+Authorization: Bearer {{admin-token}}
+
+{
+  "webhookUrl": "https://abc123.ngrok.io/api/v1/lalamove/webhook"
+}
+```
+
+### 7.3 Simulate Webhook Event
+
+Use Postman collection → "Webhook Events" folder:
+
+```bash
+POST http://localhost:3000/api/v1/lalamove/webhook
+x-lalamove-signature: <generated-signature>
+x-lalamove-timestamp: <current-timestamp>
+Content-Type: application/json
+
+{
+  "event": "DRIVER_ASSIGNED",
+  "orderId": "{{orderId}}",
+  "driver": { ... }
+}
+```
+
+**Check Database**:
+```sql
+SELECT * FROM lalamove_orders WHERE "orderId" = 'your-order-id';
+```
+
+**Check Notifications**:
+- Email sent to user
+- SMS sent to user phone
+- Push notification queued
+
+---
+
+## 📊 Step 8: Monitor & Debug
+
+### 8.1 Check Application Logs
+
+```bash
+# Development logs
+npm run start:dev
+```
+
+**Look for**:
+- `[LalamoveService] Creating quotation...`
+- `[WebhookService] Processing webhook event: DRIVER_ASSIGNED`
+- `[CommunicationHubService] Sending multi-channel notification`
+
+### 8.2 Check Database
+
+```bash
+npx prisma studio
+```
+
+**Tables to inspect**:
+- `lalamove_quotations` - All quotations
+- `lalamove_orders` - All orders
+- `audit_logs` - Webhook events
+
+### 8.3 Check Redis Queues (if enabled)
+
+```bash
+# Install Bull Board (optional)
+npm install @bull-board/express @bull-board/api
+
+# Access at http://localhost:3000/admin/queues
+```
+
+---
+
+## 🎯 Common Use Cases
+
+### Use Case 1: Order Same-Day Delivery
+
+```bash
+# Step 1: Create quotation (immediate)
 POST /api/v1/lalamove/quotations
-Authorization: Bearer {jwt_token}
-Content-Type: application/json
-
 {
-  "orderId": "mash-order-123",
   "serviceType": "MOTORCYCLE",
   "stops": [
     {
-      "coordinates": {
-        "lat": "14.5995",
-        "lng": "120.9842"
-      },
-      "address": "SM Mall of Asia, Pasay City"
+      "location": { "lat": "14.5995", "lng": "120.9842" },
+      "addresses": { "en_PH": { "displayString": "Manila" } }
     },
     {
-      "coordinates": {
-        "lat": "14.5547",
-        "lng": "121.0244"
-      },
-      "address": "Bonifacio Global City, Taguig"
-    }
-  ],
-  "item": {
-    "quantity": "1",
-    "weight": "LESS_THAN_3_KG",
-    "categories": ["FOOD_DELIVERY"],
-    "handlingInstructions": ["KEEP_UPRIGHT"]
-  },
-  "scheduleAt": "2024-12-25T14:00:00+08:00"  // Optional: minimum 2 hours from now
-}
-```
-
-**Response**:
-```json
-{
-  "quotationId": "PH_QT_abc123",
-  "serviceType": "MOTORCYCLE",
-  "priceBreakdown": {
-    "base": "50.00",
-    "total": "50.00",
-    "currency": "PHP"
-  },
-  "distance": {
-    "value": "5.2",
-    "unit": "km"
-  },
-  "expiresAt": "2024-12-25T09:35:00+08:00",
-  "stops": [...]
-}
-```
-
----
-
-### 2. Create Order
-
-```http
-POST /api/v1/lalamove/orders
-Authorization: Bearer {jwt_token}
-Content-Type: application/json
-
-{
-  "quotationId": "PH_QT_abc123",
-  "orderId": "mash-order-123",
-  "sender": {
-    "stopId": "stop-1",
-    "name": "John Doe",
-    "phone": "+639171234567"
-  },
-  "recipients": [
-    {
-      "stopId": "stop-2",
-      "name": "Jane Smith",
-      "phone": "+639179876543",
-      "remarks": "Please call upon arrival"
-    }
-  ],
-  "isPODEnabled": true,
-  "metadata": {
-    "orderNumber": "ORD-2024-001"
-  }
-}
-```
-
-**Response**:
-```json
-{
-  "orderId": "PH_ORD_xyz789",
-  "quotationId": "PH_QT_abc123",
-  "status": "ASSIGNING_DRIVER",
-  "driverId": null,
-  "shareLink": "https://www.lalamove.com/track/PH_ORD_xyz789",
-  "priceBreakdown": {
-    "base": "50.00",
-    "total": "50.00",
-    "currency": "PHP"
-  }
-}
-```
-
----
-
-### 3. Get Order Status
-
-```http
-GET /api/v1/lalamove/orders/{orderId}
-Authorization: Bearer {jwt_token}
-```
-
-**Response**:
-```json
-{
-  "orderId": "PH_ORD_xyz789",
-  "status": "ON_GOING",
-  "driverId": "driver-123",
-  "shareLink": "https://www.lalamove.com/track/PH_ORD_xyz789",
-  "stops": [
-    {
-      "stopId": "stop-1",
-      "status": "PICKED_UP",
-      "name": "John Doe",
-      "phone": "+639171234567"
-    },
-    {
-      "stopId": "stop-2",
-      "status": "PENDING",
-      "name": "Jane Smith",
-      "phone": "+639179876543"
+      "location": { "lat": "14.6042", "lng": "121.0224" },
+      "addresses": { "en_PH": { "displayString": "Makati" } }
     }
   ]
 }
-```
 
----
-
-### 4. Get Driver Info
-
-```http
-GET /api/v1/lalamove/orders/{orderId}/driver
-Authorization: Bearer {jwt_token}
-```
-
-**Response**:
-```json
+# Step 2: Create order
+POST /api/v1/lalamove/orders
 {
-  "driverId": "driver-123",
-  "name": "Pedro Santos",
-  "phone": "+639178889999",
-  "photo": "https://lalamove.com/photos/driver-123.jpg",
-  "plateNumber": "ABC-1234",
-  "coordinates": {
-    "lat": "14.5750",
-    "lng": "121.0000"
-  }
+  "quotationId": "<from-step-1>",
+  "sender": { "name": "John", "phone": "+639123456789" },
+  "recipients": [{ "name": "Jane", "phone": "+639987654321" }]
+}
+
+# Step 3: Track order
+GET /api/v1/lalamove/orders/{{orderId}}
+```
+
+### Use Case 2: Schedule Future Delivery
+
+```bash
+# Create quotation with scheduleAt (2+ hours ahead)
+POST /api/v1/lalamove/quotations
+{
+  "serviceType": "SEDAN",
+  "scheduleAt": "2025-11-19T10:00:00+08:00",
+  "stops": [ ... ]
 }
 ```
 
----
+### Use Case 3: Add Priority Fee
 
-### 5. Add Priority Fee (Tip)
-
-```http
-POST /api/v1/lalamove/orders/{orderId}/priority-fee
-Authorization: Bearer {jwt_token}
-Content-Type: application/json
-
+```bash
+# After creating order, add priority fee
+POST /api/v1/lalamove/orders/{{orderId}}/priority-fee
 {
-  "priorityFee": "20"
+  "priorityFee": 50
 }
 ```
 
----
+### Use Case 4: Cancel Order
 
-### 6. Cancel Order
-
-```http
-DELETE /api/v1/lalamove/orders/{orderId}
-Authorization: Bearer {jwt_token}
-```
-
-**Response**: 204 No Content
-
----
-
-## 🔔 Webhook Events
-
-Lalamove sends webhook events to: `POST /api/v1/lalamove/webhook`
-
-### Event Types
-
-| Event | Description | Status Update |
-|-------|-------------|---------------|
-| `ORDER.ASSIGNING_DRIVER` | System is finding a driver | `ASSIGNING_DRIVER` |
-| `ORDER.ONGOING` | Driver assigned and on the way | `ON_GOING` |
-| `ORDER.PICKED_UP` | Driver picked up the item | `PICKED_UP` |
-| `ORDER.COMPLETED` | Delivery completed with POD | `COMPLETED` |
-| `ORDER.CANCELED` | Order cancelled | `CANCELED` |
-| `ORDER.REJECTED` | Order rejected by system | `REJECTED` |
-| `ORDER.EXPIRED` | Order expired (no driver found) | `EXPIRED` |
-| `DRIVER.LOCATION` | Real-time driver location update | - |
-
-### Webhook Payload Example
-
-```json
-{
-  "eventType": "ORDER.ONGOING",
-  "orderId": "PH_ORD_xyz789",
-  "timestamp": "2024-12-25T09:45:00+08:00",
-  "data": {
-    "status": "ON_GOING",
-    "driver": {
-      "id": "driver-123",
-      "name": "Pedro Santos",
-      "phone": "+639178889999",
-      "photo": "https://lalamove.com/photos/driver-123.jpg",
-      "plateNumber": "ABC-1234"
-    }
-  }
-}
+```bash
+# Cancel within 5-minute cancellation window
+DELETE /api/v1/lalamove/orders/{{orderId}}
 ```
 
 ---
 
-## 🔐 Authentication
+## ⚠️ Troubleshooting
 
-### HMAC SHA-256 Signature
+### Issue 1: Server Won't Start (Redis Quota)
 
-All API requests to Lalamove require HMAC signature:
+**Error**: `ReplyError: ERR max requests limit exceeded`
 
-**Header**: `Authorization: hmac {apiKey}:{timestamp}:{signature}`
+**Solution**: See [Step 2: Resolve Redis Quota Issue](#-step-2-resolve-redis-quota-issue)
 
-**Signature Generation**:
+### Issue 2: Unauthorized (401)
+
+**Error**: `"message": "Unauthorized"`
+
+**Solution**: 
+1. Get fresh JWT token from `/api/v1/auth/login`
+2. Add `Authorization: Bearer <token>` header
+3. Check token hasn't expired (24h default)
+
+### Issue 3: Quotation Expired
+
+**Error**: `"message": "Quotation has expired"`
+
+**Solution**: Quotations expire after 5 minutes. Create new quotation.
+
+### Issue 4: Invalid Signature (Webhook)
+
+**Error**: `"message": "Invalid webhook signature"`
+
+**Solution**:
+1. Check `LALAMOVE_API_SECRET` in `.env`
+2. Verify timestamp is within 5 minutes
+3. Use correct HMAC SHA-256 algorithm
+
+### Issue 5: Database Not Synced
+
+**Error**: `Unknown field: lalamove_quotations`
+
+**Solution**:
+```bash
+npx prisma generate
+npx prisma db push
 ```
-rawSignature = timestamp + '\r\n' + method + '\r\n' + path + '\r\n' + '\r\n' + body
-signature = HMAC-SHA256(rawSignature, secret)
-```
-
-**Example**:
-```
-timestamp: 1703491200000
-method: POST
-path: /v3/quotations
-body: {"serviceType":"MOTORCYCLE",...}
-
-rawSignature = "1703491200000\r\nPOST\r\n/v3/quotations\r\n\r\n{...}"
-signature = hmac_sha256(rawSignature, secret)
-```
-
-**Handled automatically by `LalamoveApiService`**
-
----
-
-## 📊 Service Types & Pricing
-
-| Service Type | Description | Typical Use Case | Base Price Range |
-|--------------|-------------|------------------|------------------|
-| `MOTORCYCLE` | Fast, small items | Documents, food, small parcels | ₱50-100 |
-| `SEDAN` | Medium items | Groceries, packages | ₱100-200 |
-| `MPV` | Large items | Electronics, multiple boxes | ₱200-350 |
-| `VAN` | Bulk items | Furniture, large orders | ₱350-500 |
-
-*Prices vary by distance and demand*
-
----
-
-## 📦 Item Configuration
-
-### Item Weights
-
-```typescript
-'LESS_THAN_3_KG'    // < 3kg
-'3_TO_5_KG'         // 3-5kg
-'5_TO_10_KG'        // 5-10kg
-'10_TO_15_KG'       // 10-15kg
-'15_TO_20_KG'       // 15-20kg
-```
-
-### Item Categories
-
-```typescript
-'FOOD_DELIVERY'     // Food & beverages
-'DOCUMENT'          // Documents, papers
-'PARCEL'            // General parcels
-'FLOWERS'           // Flowers, gifts
-'CAKE'              // Cakes, pastries
-'KEYS'              // Keys, small items
-'ELECTRONICS'       // Electronics
-'OTHERS'            // Other items
-```
-
-### Handling Instructions
-
-```typescript
-'KEEP_UPRIGHT'      // Keep package upright
-'FRAGILE'           // Handle with care
-'FROZEN'            // Keep frozen
-'REFRIGERATED'      // Keep cool
-```
-
----
-
-## 🔍 Order Lifecycle
-
-```
-1. CREATE QUOTATION
-   └─> Get price estimate and distance
-       └─> Quotation expires in 5 minutes
-
-2. CREATE ORDER (from quotation)
-   └─> Status: ASSIGNING_DRIVER
-       └─> System finds available driver
-
-3. DRIVER ASSIGNED
-   └─> Status: ON_GOING
-       └─> Driver picks up item
-
-4. ITEM PICKED UP
-   └─> Status: PICKED_UP
-       └─> Driver en route to destination
-
-5. DELIVERY COMPLETED
-   └─> Status: COMPLETED
-       └─> POD (Proof of Delivery) captured
-```
-
----
-
-## 🧪 Testing with Postman
-
-### Import Collection
-
-1. Open Postman
-2. Import `postman/MASH-Lalamove-PH.postman_collection.json`
-3. Import `postman/PH.postman_environment.json`
-4. Set environment variables:
-   - `BASE_URL`: `http://localhost:3000`
-   - `LALAMOVE_BASE_URL`: `https://rest.sandbox.lalamove.com`
-   - `LALAMOVE_API_KEY`: Your sandbox API key
-   - `LALAMOVE_SECRET`: Your sandbox secret
-   - `JWT_TOKEN`: Your JWT token
-
-### Test Sequence
-
-1. **Get City Info** - Verify API connectivity
-2. **Create Immediate Quotation** - Get instant price
-3. **Create Scheduled Quotation** - Schedule for later
-4. **Get Quotation** - Retrieve quotation details
-5. **Create Order** - Create delivery from quotation
-6. **Get Order** - Check order status
-7. **Get Driver** - Get driver info (after assignment)
-8. **Add Priority Fee** - Add tip to order
-9. **Cancel Order** - Cancel delivery
-10. **Webhook Test** - Simulate webhook event
-
----
-
-## 🚨 Error Handling
-
-### Common Errors
-
-| Status | Error | Cause | Solution |
-|--------|-------|-------|----------|
-| 400 | `Quotation expired` | Quotation > 5 min old | Create new quotation |
-| 400 | `Quotation already used` | Order already created | Create new quotation |
-| 400 | `Invalid scheduled time` | < 2 hours from now | Schedule later |
-| 401 | `Invalid signature` | Wrong HMAC signature | Check API key & secret |
-| 404 | `Order not found` | Invalid order ID | Check order ID |
-| 404 | `Driver not assigned` | Driver not yet assigned | Wait for assignment |
-
----
-
-## 💡 Best Practices
-
-### 1. Quotation Management
-- ✅ Create quotation immediately before order
-- ✅ Check `expiresAt` before creating order
-- ✅ Handle expired quotations gracefully
-- ❌ Don't reuse old quotations
-
-### 2. Order Creation
-- ✅ Validate MASH order exists first
-- ✅ Use E.164 phone format (+639171234567)
-- ✅ Enable POD for proof of delivery
-- ✅ Add meaningful metadata
-- ❌ Don't create orders without quotations
-
-### 3. Scheduled Deliveries
-- ✅ Schedule minimum 2 hours ahead
-- ✅ Use ISO 8601 format with timezone
-- ✅ Account for peak hours
-- ❌ Don't schedule same-day during rush hour
-
-### 4. Webhooks
-- ✅ Verify webhook signatures
-- ✅ Handle duplicate events (idempotency)
-- ✅ Respond quickly (< 5 seconds)
-- ✅ Process async (queue for background)
-- ❌ Don't block webhook response
-
-### 5. Error Handling
-- ✅ Retry failed requests (exponential backoff)
-- ✅ Log all API interactions
-- ✅ Notify users of order issues
-- ✅ Handle network timeouts gracefully
-
----
-
-## 🔧 Troubleshooting
-
-### Issue: "Invalid HMAC signature"
-**Cause**: Wrong API key or secret  
-**Fix**: Check `.env` file for correct credentials
-
-### Issue: "Quotation expired"
-**Cause**: Quotation > 5 minutes old  
-**Fix**: Create new quotation before order
-
-### Issue: "Driver not assigned"
-**Cause**: Requesting driver info too early  
-**Fix**: Wait for `ORDER.ONGOING` webhook before fetching driver
-
-### Issue: "Webhook signature invalid"
-**Cause**: Wrong secret or timestamp expired  
-**Fix**: Check `LALAMOVE_SECRET` and ensure webhook sent within 5 minutes
-
-### Issue: "Cannot find module @prisma/client"
-**Cause**: Prisma client not generated  
-**Fix**: Run `npx prisma generate`
 
 ---
 
 ## 📚 Additional Resources
 
-- **Full Plan**: `LALAMOVE_INTEGRATION_PLAN.md`
-- **Implementation Status**: `LALAMOVE_IMPLEMENTATION_STATUS.md`
+### API Documentation
+- **Swagger UI**: http://localhost:3000/api
+- **Lalamove Docs**: https://developers.lalamove.com/
 - **Postman Collection**: `postman/MASH-Lalamove-PH.postman_collection.json`
-- **Lalamove API Docs**: [https://developers.lalamove.com](https://developers.lalamove.com)
-- **Swagger UI**: `http://localhost:3000/api#/lalamove`
+
+### Project Documentation
+- **Integration Plan**: `LALAMOVE_INTEGRATION_PLAN.md`
+- **Implementation Status**: `LALAMOVE_IMPLEMENTATION_STATUS.md`
+- **Database Schema**: `prisma/schema.prisma`
+
+### Source Code
+- **Module**: `src/modules/lalamove/`
+- **Services**: `src/modules/lalamove/services/`
+- **DTOs**: `src/modules/lalamove/dto/`
+- **Interfaces**: `src/modules/lalamove/interfaces/`
 
 ---
 
-## 📞 Support
+## 🎉 Success Checklist
 
-For issues or questions:
-1. Check Swagger documentation: `http://localhost:3000/api`
-2. Review logs: `logs/combined.log`
-3. Test with Postman collection
-4. Check Lalamove dashboard: [https://www.lalamove.com/ph/en/business](https://www.lalamove.com/ph/en/business)
+- [ ] Server starts without errors
+- [ ] Swagger docs accessible at `/api`
+- [ ] Login returns JWT token
+- [ ] GET /city-info returns Manila data
+- [ ] POST /quotations creates quotation
+- [ ] POST /orders creates order
+- [ ] Webhook events update database
+- [ ] Notifications sent via email/SMS/push
+- [ ] Database persists data correctly
+- [ ] All Postman tests pass
 
 ---
 
-**Happy Delivering! 🚚📦**
+## 💬 Need Help?
+
+**GitHub Issues**: https://github.com/MASH-Mushroom-Automation/MASH-Backend/issues  
+**Developer**: Kenneth  
+**Sprint**: Issue #131
+
+---
+
+**🚀 Ready to go? Start with Step 1!**

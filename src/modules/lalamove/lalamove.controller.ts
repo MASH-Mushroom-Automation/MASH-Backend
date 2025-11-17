@@ -57,22 +57,9 @@ export class LalamoveController {
   @Get('city-info')
   @ApiOperation({ 
     summary: 'Get city information',
-    description: 'Retrieve available cities, service types, and special_requests for Philippines market'
+    description: 'Retrieve available cities, service types, and special requests for Philippines market'
   })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'City information retrieved successfully',
-    schema: {
-      example: {
-        cities: [
-          { locode: 'PH_MNL', name: 'Metro Manila' },
-          { locode: 'PH_CEB', name: 'Cebu' }
-        ],
-        service_types: ['MOTORCYCLE', 'SEDAN', 'MPV', 'VAN'],
-        special_requests: ['COD', 'FRAGILE']
-      }
-    }
-  })
+  @ApiResponse({ status: 200, description: 'City information retrieved successfully' })
   @ApiBearerAuth()
   async getCityInfo() {
     return this.lalamoveService.getCityInfo();
@@ -86,37 +73,19 @@ export class LalamoveController {
     summary: 'Create quotation',
     description: 'Create a delivery quotation (immediate or scheduled). Quotations expire in 5 minutes.'
   })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Quotation created successfully',
-    type: QuotationResponseDto 
-  })
+  @ApiResponse({ status: 201, description: 'Quotation created successfully', type: QuotationResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiBearerAuth()
-  async createQuotation(
-    @Body() createQuotationDto: CreateQuotationDto,
-  ): Promise<QuotationResponseDto> {
+  async createQuotation(@Body() createQuotationDto: CreateQuotationDto): Promise<QuotationResponseDto> {
     return this.lalamoveService.createQuotation(createQuotationDto);
   }
 
   @Get('quotations/:quotationId')
-  @ApiOperation({ 
-    summary: 'Get quotation details',
-    description: 'Retrieve details of an existing quotation by ID'
-  })
+  @ApiOperation({ summary: 'Get quotation details' })
   @ApiParam({ name: 'quotationId', description: 'Lalamove quotation ID' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Quotation details retrieved successfully',
-    type: QuotationResponseDto 
-  })
-  @ApiResponse({ status: 404, description: 'Quotation not found' })
-  @ApiResponse({ status: 400, description: 'Quotation expired' })
+  @ApiResponse({ status: 200, description: 'Quotation details retrieved', type: QuotationResponseDto })
   @ApiBearerAuth()
-  async getQuotation(
-    @Param('quotationId') quotationId: string,
-  ): Promise<QuotationResponseDto> {
+  async getQuotation(@Param('quotationId') quotationId: string): Promise<QuotationResponseDto> {
     return this.lalamoveService.getQuotation(quotationId);
   }
 
@@ -125,60 +94,45 @@ export class LalamoveController {
   @Post('orders')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ 
-    summary: 'Create order',
-    description: 'Create a delivery order from an existing quotation. Assigns a driver and starts delivery.'
+    summary: 'Create delivery order',
+    description: 'Create order from quotation. Quotation must be valid (not expired).'
   })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Order created successfully',
-    type: OrderResponseDto 
-  })
-  @ApiResponse({ status: 400, description: 'Invalid request data or quotation expired' })
-  @ApiResponse({ status: 404, description: 'Quotation or MASH order not found' })
+  @ApiResponse({ status: 201, description: 'Order created successfully', type: OrderResponseDto })
   @ApiBearerAuth()
-  async createOrder(
-    @Body() createOrderDto: CreateOrderDto,
-  ): Promise<OrderResponseDto> {
+  async createOrder(@Body() createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
     return this.lalamoveService.createOrder(createOrderDto);
   }
 
   @Get('orders/:orderId')
-  @ApiOperation({ 
-    summary: 'Get order details',
-    description: 'Retrieve current status and details of a delivery order'
-  })
+  @ApiOperation({ summary: 'Get order details and status' })
   @ApiParam({ name: 'orderId', description: 'Lalamove order ID' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Order details retrieved successfully',
-    type: OrderResponseDto 
-  })
-  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 200, description: 'Order details retrieved', type: OrderResponseDto })
   @ApiBearerAuth()
-  async getOrder(
-    @Param('orderId') orderId: string,
-  ): Promise<OrderResponseDto> {
+  async getOrder(@Param('orderId') orderId: string): Promise<OrderResponseDto> {
     return this.lalamoveService.getOrder(orderId);
   }
 
-  // ==================== DRIVER ====================
-
-  @Get('orders/:orderId/driver')
-  @ApiOperation({ 
-    summary: 'Get driver details',
-    description: 'Retrieve assigned driver information and current location'
-  })
+  @Delete('orders/:orderId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Cancel order' })
   @ApiParam({ name: 'orderId', description: 'Lalamove order ID' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Driver details retrieved successfully',
-    type: DriverResponseDto 
-  })
-  @ApiResponse({ status: 404, description: 'Order not found' })
-  @ApiResponse({ status: 400, description: 'Driver not yet assigned' })
+  @ApiResponse({ status: 204, description: 'Order cancelled successfully' })
+  @ApiBearerAuth()
+  async cancelOrder(@Param('orderId') orderId: string): Promise<void> {
+    return this.lalamoveService.cancelOrder(orderId);
+  }
+
+  // ==================== DRIVER INFO ====================
+
+  @Get('orders/:orderId/drivers/:driverId')
+  @ApiOperation({ summary: 'Get driver details and location' })
+  @ApiParam({ name: 'orderId', description: 'Lalamove order ID' })
+  @ApiParam({ name: 'driverId', description: 'Driver ID' })
+  @ApiResponse({ status: 200, description: 'Driver details retrieved', type: DriverResponseDto })
   @ApiBearerAuth()
   async getDriver(
     @Param('orderId') orderId: string,
+    @Param('driverId') driverId: string,
   ): Promise<DriverResponseDto> {
     return this.lalamoveService.getDriver(orderId);
   }
@@ -186,83 +140,37 @@ export class LalamoveController {
   // ==================== PRIORITY FEE ====================
 
   @Post('orders/:orderId/priority-fee')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: 'Add priority fee (tip)',
-    description: 'Add a tip/priority fee to an existing order to prioritize delivery'
-  })
+  @ApiOperation({ summary: 'Add priority fee (tip)' })
   @ApiParam({ name: 'orderId', description: 'Lalamove order ID' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Priority fee added successfully',
-    type: OrderResponseDto 
-  })
-  @ApiResponse({ status: 404, description: 'Order not found' })
-  @ApiResponse({ status: 400, description: 'Invalid priority fee amount' })
+  @ApiResponse({ status: 200, description: 'Priority fee added', type: OrderResponseDto })
   @ApiBearerAuth()
   async addPriorityFee(
     @Param('orderId') orderId: string,
-    @Body() addPriorityFeeDto: AddPriorityFeeDto,
+    @Body() dto: AddPriorityFeeDto,
   ): Promise<OrderResponseDto> {
-    return this.lalamoveService.addPriorityFee(orderId, addPriorityFeeDto.priorityFee);
+    return this.lalamoveService.addPriorityFee(orderId, dto);
   }
 
-  // ==================== CANCEL ORDER ====================
-
-  @Delete('orders/:orderId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ 
-    summary: 'Cancel order',
-    description: 'Cancel an existing delivery order. May incur cancellation fees.'
-  })
-  @ApiParam({ name: 'orderId', description: 'Lalamove order ID' })
-  @ApiResponse({ status: 204, description: 'Order cancelled successfully' })
-  @ApiResponse({ status: 404, description: 'Order not found' })
-  @ApiResponse({ status: 400, description: 'Order cannot be cancelled' })
-  @ApiBearerAuth()
-  async cancelOrder(@Param('orderId') orderId: string): Promise<void> {
-    return this.lalamoveService.cancelOrder(orderId);
-  }
-
-  // ==================== WEBHOOK ====================
+  // ==================== WEBHOOKS ====================
 
   @Post('webhook')
   @Public()
   @UseGuards(WebhookSignatureGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: 'Receive webhook events',
-    description: 'Endpoint for Lalamove to send delivery status updates. Requires valid HMAC signature.'
-  })
+  @ApiOperation({ summary: 'Webhook endpoint for Lalamove events' })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid webhook signature' })
-  async handleWebhook(@Body() webhookEvent: WebhookEventDto): Promise<void> {
-    this.logger.log(`📨 Webhook received: ${webhookEvent.eventType}`);
-    await this.webhookService.handleWebhookEvent(webhookEvent);
+  async handleWebhook(@Body() webhookEvent: WebhookEventDto): Promise<{ success: boolean }> {
+    await this.webhookService.processWebhookEvent(webhookEvent as any);
+    await this.webhookService.logWebhookEvent(webhookEvent as any, 'SUCCESS');
+    return { success: true };
   }
-
-  // ==================== ADMIN: WEBHOOK SETUP ====================
 
   @Post('webhook/setup')
   @Roles('ADMIN', 'SUPER_ADMIN')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: 'Setup webhook URL (Admin only)',
-    description: 'Configure the webhook URL in Lalamove dashboard. Requires ADMIN role.'
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Webhook URL configured successfully',
-    schema: {
-      example: {
-        webhookUrl: 'https://api.mashbackend.com/api/v1/lalamove/webhook',
-        status: 'active'
-      }
-    }
-  })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiOperation({ summary: 'Setup webhook URL' })
+  @ApiResponse({ status: 200, description: 'Webhook configured' })
   @ApiBearerAuth()
-  async setupWebhook(@Body() setupWebhookDto: SetupWebhookDto) {
-    return this.lalamoveService.setupWebhook(setupWebhookDto.webhookUrl);
+  async setupWebhook(@Body() dto: SetupWebhookDto) {
+    return this.lalamoveService.setupWebhook(dto.webhookUrl);
   }
 }

@@ -300,30 +300,28 @@ model CartItem {
 }
 
 model Order {
-  id                String              @id @default(cuid())
-  orderNumber       String              @unique
-  userId            String
-  status            OrderStatus         @default(PENDING)
-  subtotal          Decimal             @db.Decimal(10, 2)
-  tax               Decimal             @default(0) @db.Decimal(10, 2)
-  shipping          Decimal             @default(0) @db.Decimal(10, 2)
-  discount          Decimal             @default(0) @db.Decimal(10, 2)
-  total             Decimal             @db.Decimal(10, 2)
-  currency          String              @default("PHP")
-  notes             String?
-  shippingAddress   Json
-  billingAddress    Json
-  trackingNumber    String?
-  shippedAt         DateTime?
-  deliveredAt       DateTime?
-  cancelledAt       DateTime?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  orderItems        OrderItem[]
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments          Payment[]
-  lalamoveQuotation LalamoveQuotation?
-  lalamoveOrder     LalamoveOrder?
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  userId          String
+  status          OrderStatus @default(PENDING)
+  subtotal        Decimal     @db.Decimal(10, 2)
+  tax             Decimal     @default(0) @db.Decimal(10, 2)
+  shipping        Decimal     @default(0) @db.Decimal(10, 2)
+  discount        Decimal     @default(0) @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+  currency        String      @default("PHP")
+  notes           String?
+  shippingAddress Json
+  billingAddress  Json
+  trackingNumber  String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments        Payment[]
 
   @@index([userId, status, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
@@ -1341,114 +1339,59 @@ enum DeviceHealthStatus {
   MAINTENANCE
 }
 
-enum LalamoveOrderStatus {
-  ASSIGNING_DRIVER
-  ON_GOING
-  PICKED_UP
-  COMPLETED
-  CANCELED
-  REJECTED
-  EXPIRED
-}
-
-// ============================================
+// ============================================================================
 // LALAMOVE DELIVERY INTEGRATION MODELS
-// ============================================
+// ============================================================================
 
-// Lalamove Quotation Records
 model LalamoveQuotation {
-  id           String    @id @default(cuid())
-  quotationId  String    @unique // Lalamove quotation ID
-  orderId      String?   @unique // Link to MASH order
-  order        Order?    @relation(fields: [orderId], references: [id])
-  
-  serviceType  String    // MOTORCYCLE, SEDAN, MPV, VAN
-  language     String    @default("en_PH")
-  
-  // Pricing
-  totalPrice   Decimal   @db.Decimal(10, 2)
-  currency     String    @default("PHP")
-  priceBreakdown Json    // Full price breakdown from Lalamove
-  
-  // Route
-  distance     Decimal   @db.Decimal(10, 2)
-  distanceUnit String    @default("km")
-  stops        Json      // Array of stops with coordinates
-  
-  // Schedule
-  scheduleAt   DateTime?
-  expiresAt    DateTime
-  
-  // Status
-  isExpired    Boolean   @default(false)
-  isUsed       Boolean   @default(false) // Converted to order
-  
-  // Metadata
-  metadata     Json?
-  
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
-  @@index([orderId])
+  id            String   @id @default(cuid())
+  quotationId   String   @unique
+  serviceType   String
+  totalPrice    Float
+  currency      String   @default("PHP")
+  distance      Float
+  distanceUnit  String   @default("km")
+  stops         Json
+  isScheduled   Boolean  @default(false)
+  scheduleAt    DateTime?
+  expiresAt     DateTime
+  status        String   @default("ACTIVE") // ACTIVE, EXPIRED, USED
+  userId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@index([quotationId])
-  @@index([expiresAt])
-  @@index([isUsed, isExpired])
+  @@index([status])
+  @@index([userId])
+  @@index([createdAt])
   @@map("lalamove_quotations")
 }
 
-// Lalamove Order Records
 model LalamoveOrder {
-  id              String              @id @default(cuid())
-  orderId         String              @unique // Lalamove order ID
-  mashOrderId     String              @unique // Link to MASH order
-  mashOrder       Order               @relation(fields: [mashOrderId], references: [id])
-  
-  quotationId     String              // Original quotation ID
-  
-  // Status tracking
-  status          LalamoveOrderStatus @default(ASSIGNING_DRIVER)
-  statusHistory   Json[]              @default([]) // Array of status changes with timestamps
-  
-  // Driver info
-  driverId        String?
-  driverName      String?
-  driverPhone     String?
-  driverPhoto     String?
-  plateNumber     String?
-  
-  // Tracking
-  shareLink       String?             // Public tracking link
-  currentLocation Json?               // Latest driver coordinates
-  
-  // Stops
-  sender          Json                // Pharmacy/sender details
-  recipients      Json[]              @default([]) // Customer/recipient details
-  
-  // Pricing
-  totalPrice      Decimal             @db.Decimal(10, 2)
-  priorityFee     Decimal?            @db.Decimal(10, 2)
-  priceBreakdown  Json
-  
-  // POD (Proof of Delivery)
-  isPODEnabled    Boolean             @default(true)
-  podImages       Json[]              @default([]) // Array of POD image URLs
-  
-  // Schedule
-  scheduleAt      DateTime?
-  pickedUpAt      DateTime?
-  deliveredAt     DateTime?
-  cancelledAt     DateTime?
-  
-  // Metadata
-  metadata        Json?
-  webhookEvents   Json[]              @default([]) // All webhook events received
-  
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
-  @@index([mashOrderId])
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  quotationId    String
+  status         String
+  driverId       String?
+  shareLink      String
+  totalPrice     Float
+  currency       String    @default("PHP")
+  distance       Float
+  distanceUnit   String    @default("km")
+  stops          Json
+  isPODEnabled   Boolean   @default(true)
+  podStatus      String?
+  podImage       String?
+  podSignature   String?
+  orderReference String?
+  userId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   @@index([orderId])
+  @@index([quotationId])
   @@index([status])
+  @@index([userId])
   @@index([driverId])
   @@index([createdAt])
   @@map("lalamove_orders")

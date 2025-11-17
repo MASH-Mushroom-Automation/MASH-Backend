@@ -1,13 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEnum, IsArray, ValidateNested, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, IsArray, ValidateNested, IsBoolean, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
-import {
-  LALAMOVE_SERVICE_TYPES,
-  LALAMOVE_ITEM_WEIGHTS,
-  LALAMOVE_ITEM_CATEGORIES,
-  LALAMOVE_HANDLING_INSTRUCTIONS,
-} from '../constants/lalamove.constants';
 
+/**
+ * Coordinates DTO
+ */
 export class CoordinatesDto {
   @ApiProperty({ example: '14.8140', description: 'Latitude' })
   @IsString()
@@ -18,93 +15,128 @@ export class CoordinatesDto {
   lng: string;
 }
 
+/**
+ * Item DTO for quotation
+ */
+export class ItemDto {
+  @ApiProperty({ example: '5', description: 'Item quantity' })
+  @IsString()
+  quantity: string;
+
+  @ApiProperty({ example: '1.5', description: 'Weight in kg' })
+  @IsString()
+  weight: string;
+
+  @ApiProperty({ 
+    example: ['L', 'W', 'H'], 
+    description: 'Item categories (e.g., FOOD, DOCUMENTS, PARCELS)',
+    required: false 
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  categories?: string[];
+
+  @ApiProperty({ 
+    example: ['FRAGILE'], 
+    description: 'Special handling instructions',
+    required: false 
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  handlingInstructions?: string[];
+}
+
+/**
+ * Stop DTO for quotation
+ */
 export class StopDto {
-  @ApiProperty({ type: CoordinatesDto })
+  @ApiProperty({ 
+    type: CoordinatesDto,
+    description: 'Stop coordinates (lat/lng)' 
+  })
   @ValidateNested()
   @Type(() => CoordinatesDto)
   coordinates: CoordinatesDto;
 
-  @ApiProperty({ example: 'San Jose Del Monte, Bulacan' })
+  @ApiProperty({ 
+    example: 'San Jose Del Monte, Bulacan', 
+    description: 'Full address of the stop' 
+  })
   @IsString()
   address: string;
 }
 
-export class ItemDto {
-  @ApiProperty({ example: '1', description: 'Number of items' })
-  @IsString()
-  quantity: string;
-
-  @ApiProperty({
-    enum: Object.values(LALAMOVE_ITEM_WEIGHTS),
-    example: 'LESS_THAN_3_KG',
-    description: 'Item weight category',
-  })
-  @IsEnum(LALAMOVE_ITEM_WEIGHTS)
-  weight: string;
-
-  @ApiProperty({
-    example: ['FOOD_DELIVERY'],
-    description: 'Item categories',
-    isArray: true,
-    enum: Object.values(LALAMOVE_ITEM_CATEGORIES),
-  })
-  @IsArray()
-  @IsString({ each: true })
-  categories: string[];
-
-  @ApiProperty({
-    example: ['KEEP_UPRIGHT'],
-    description: 'Handling instructions',
-    isArray: true,
-    enum: Object.values(LALAMOVE_HANDLING_INSTRUCTIONS),
-    required: false,
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  handlingInstructions?: string[];
-}
-
+/**
+ * Create Quotation DTO
+ */
 export class CreateQuotationDto {
-  @ApiProperty({
-    enum: Object.values(LALAMOVE_SERVICE_TYPES),
-    example: 'MOTORCYCLE',
-    description: 'Vehicle service type',
+  @ApiProperty({ 
+    example: 'MOTORCYCLE', 
+    description: 'Service type (MOTORCYCLE, SEDAN, MPV, VAN, PICKUP, TRUCK_330, TRUCK_550)',
+    enum: ['MOTORCYCLE', 'SEDAN', 'MPV', 'VAN', 'PICKUP', 'TRUCK_330', 'TRUCK_550']
   })
-  @IsEnum(LALAMOVE_SERVICE_TYPES)
+  @IsString()
+  @IsEnum(['MOTORCYCLE', 'SEDAN', 'MPV', 'VAN', 'PICKUP', 'TRUCK_330', 'TRUCK_550'])
   serviceType: string;
 
-  @ApiProperty({
+  @ApiProperty({ 
     type: [StopDto],
-    description: 'Pickup and delivery stops (min 2, max 10)',
-    minItems: 2,
-    maxItems: 10,
+    description: 'List of stops (minimum 2: pickup and dropoff)',
+    minItems: 2
   })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => StopDto)
   stops: StopDto[];
 
-  @ApiProperty({ type: ItemDto, description: 'Item details' })
-  @ValidateNested()
-  @Type(() => ItemDto)
-  item: ItemDto;
-
-  @ApiProperty({
-    example: 'ORDER-12345',
-    description: 'Optional MASH order ID to link quotation',
-    required: false,
+  @ApiProperty({ 
+    example: 'en_PH', 
+    description: 'Language preference',
+    default: 'en_PH',
+    required: false
   })
-  @IsOptional()
   @IsString()
-  orderId?: string;
+  @IsOptional()
+  language?: string;
 
-  @ApiProperty({
-    example: '2025-11-18T12:00:00.000Z',
-    description: 'Schedule time for delivery (ISO 8601 format, at least 2 hours from now)',
-    required: false,
+  @ApiProperty({ 
+    example: false, 
+    description: 'Whether this is a scheduled delivery',
+    default: false,
+    required: false
   })
+  @IsBoolean()
   @IsOptional()
-  @IsString()
+  isScheduled?: boolean;
+
+  @ApiProperty({ 
+    example: '2025-11-18T14:00:00.000Z', 
+    description: 'Scheduled pickup time (required if isScheduled is true)',
+    required: false
+  })
+  @IsDateString()
+  @IsOptional()
   scheduleAt?: string;
+
+  @ApiProperty({ 
+    type: [ItemDto],
+    description: 'Items to be delivered',
+    required: false
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemDto)
+  @IsOptional()
+  items?: ItemDto[];
+
+  @ApiProperty({ 
+    example: 'Please handle with care', 
+    description: 'Special instructions for the driver',
+    required: false
+  })
+  @IsString()
+  @IsOptional()
+  specialRequests?: string;
 }

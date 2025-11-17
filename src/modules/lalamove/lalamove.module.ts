@@ -7,23 +7,19 @@ import { LalamoveApiService } from './services/lalamove-api.service';
 import { WebhookService } from './services/webhook.service';
 import { WebhookSignatureGuard } from './guards/webhook-signature.guard';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * LalamoveModule
- * Provides Lalamove delivery integration functionality
+ * Handles Lalamove delivery integration for Philippines market
  * 
  * Features:
- * - Quotation creation (immediate and scheduled)
+ * - Quotation management
  * - Order creation and tracking
- * - Driver information and location
- * - Webhook handling for real-time updates
- * - HMAC SHA-256 authentication
- * - Proof of Delivery (POD) support
- * 
- * Dependencies:
- * - HttpModule for API calls
- * - ConfigModule for environment variables
- * - PrismaService for database operations
+ * - Driver information
+ * - Priority fee management
+ * - Webhook notifications
+ * - Integration with NotificationService
  */
 @Module({
   imports: [
@@ -32,6 +28,7 @@ import { PrismaService } from '../../database/prisma.service';
       maxRedirects: 5,
     }),
     ConfigModule,
+    NotificationsModule, // Import for webhook notifications
   ],
   controllers: [LalamoveController],
   providers: [
@@ -41,6 +38,6 @@ import { PrismaService } from '../../database/prisma.service';
     WebhookSignatureGuard,
     PrismaService,
   ],
-  exports: [LalamoveService, LalamoveApiService],
+  exports: [LalamoveService, LalamoveApiService, WebhookService],
 })
 export class LalamoveModule {}

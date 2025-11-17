@@ -1,32 +1,49 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-class DriverCoordinatesDto {
-  @ApiProperty({ example: '14.8140' })
-  lat: string;
-
-  @ApiProperty({ example: '121.0452' })
-  lng: string;
-
-  @ApiProperty({ example: '2025-11-18T10:30:00.000Z' })
-  updatedAt: string;
-}
-
+/**
+ * Driver information response DTO
+ */
 export class DriverResponseDto {
-  @ApiProperty({ example: 'DRV_456789' })
+  @ApiProperty({ example: 'DRV_123456', description: 'Driver ID' })
   driverId: string;
 
-  @ApiProperty({ example: 'Juan Dela Cruz' })
+  @ApiProperty({ example: 'Juan Dela Cruz', description: 'Driver name' })
   name: string;
 
-  @ApiProperty({ example: '+639123456789' })
+  @ApiProperty({ example: '+639123456789', description: 'Driver phone number' })
   phone: string;
 
-  @ApiProperty({ example: 'ABC-1234' })
-  plateNumber: string;
-
-  @ApiProperty({ example: 'https://lalamove.com/driver/photo.jpg', required: false })
+  @ApiProperty({ 
+    example: 'https://lalamove.com/driver-photo.jpg', 
+    description: 'Driver photo URL',
+    required: false
+  })
   photo?: string;
 
-  @ApiProperty({ type: DriverCoordinatesDto, required: false })
-  coordinates?: DriverCoordinatesDto;
+  @ApiProperty({ example: 'ABC-1234', description: 'Vehicle plate number' })
+  plateNumber: string;
+
+  @ApiProperty({ 
+    example: { lat: '14.8140', lng: '121.0452' },
+    description: 'Current driver location',
+    required: false
+  })
+  location?: {
+    lat: string;
+    lng: string;
+  };
+
+  @ApiProperty({ 
+    example: 4.8, 
+    description: 'Driver rating (0-5)',
+    required: false
+  })
+  rating?: number;
+
+  @ApiProperty({ 
+    example: 250, 
+    description: 'Total completed deliveries',
+    required: false
+  })
+  totalDeliveries?: number;
 }

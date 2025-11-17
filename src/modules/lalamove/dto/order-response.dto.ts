@@ -26,7 +26,10 @@ class OrderStopDto {
   @ApiProperty({ example: 'stop_abc123' })
   stopId: string;
 
-  @ApiProperty({ type: 'object', example: { lat: '14.8140', lng: '121.0452' } })
+  @ApiProperty({ 
+    example: { lat: '14.8140', lng: '121.0452' },
+    description: 'Stop coordinates'
+  })
   coordinates: { lat: string; lng: string };
 
   @ApiProperty({ example: 'San Jose Del Monte, Bulacan' })
@@ -58,6 +61,9 @@ export class OrderResponseDto {
   @ApiProperty({ example: '2025-11-18T12:00:00.000Z', required: false })
   scheduleAt?: string;
 
-  @ApiProperty({ type: 'object', example: { value: '12.5', unit: 'km' } })
+  @ApiProperty({ 
+    example: { value: '12.5', unit: 'km' },
+    description: 'Distance information'
+  })
   distance: { value: string; unit: string };
 }

@@ -1,213 +1,269 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { WebhookEventDto } from '../dto/webhook-event.dto';
+import { CommunicationHubService } from '../../notifications/services/communication-hub.service';
+import {
+  LalamoveWebhookPayload,
+  LalamoveWebhookEventType,
+  WebhookNotificationData,
+} from '../interfaces/lalamove-webhook.interface';
+import { WEBHOOK_EVENTS } from '../constants/lalamove.constants';
 
 /**
  * WebhookService
  * Handles Lalamove webhook events and notifications
+ * Integrated with NotificationService for multi-channel alerts
  */
 @Injectable()
 export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly communicationHub: CommunicationHubService,
+  ) {}
 
   /**
    * Process webhook event from Lalamove
    */
-  async handleWebhookEvent(event: WebhookEventDto): Promise<void> {
-    this.logger.log(`📨 Received webhook: ${event.eventType} for order ${event.orderId}`);
+  async processWebhookEvent(payload: LalamoveWebhookPayload): Promise<void> {
+    this.logger.log(`Processing webhook event: ${payload.eventType} for order ${payload.orderId}`);
 
     try {
-      // Store webhook event
-      await this.storeWebhookEvent(event);
+      // Update order in database
+      await this.updateOrderStatus(payload);
 
-      // Update order status based on event type
-      await this.updateOrderStatus(event);
+      // Send notifications to user
+      await this.sendNotifications(payload);
 
-      // Send notifications to relevant parties
-      await this.sendNotifications(event);
-
-      this.logger.log(`✅ Webhook processed: ${event.eventType}`);
+      this.logger.log(`Webhook event processed successfully: ${payload.eventType}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to process webhook: ${error.message}`, error.stack);
+      this.logger.error(`Failed to process webhook event: ${error.message}`, error.stack);
       throw error;
     }
   }
 
   /**
-   * Store webhook event in database
+   * Update order status in database
    */
-  private async storeWebhookEvent(event: WebhookEventDto): Promise<void> {
+  private async updateOrderStatus(payload: LalamoveWebhookPayload): Promise<void> {
+    const updateData: any = {
+      status: payload.data.status || 'UNKNOWN',
+      updatedAt: new Date(),
+    };
+
+    // Update driver ID if assigned
+    if (payload.data.driverId) {
+      updateData.driverId = payload.data.driverId;
+    }
+
+    // Update POD information if available
+    if (payload.data.POD || payload.data.proofOfDelivery) {
+      updateData.podStatus = payload.data.POD?.status || 'UPLOADED';
+      updateData.podImage = payload.data.POD?.image || payload.data.proofOfDelivery?.images?.[0];
+      updateData.podSignature = payload.data.POD?.signature;
+    }
+
     await this.prisma.lalamoveOrder.update({
-      where: { orderId: event.orderId },
-      data: {
-        webhookEvents: {
-          push: {
-            eventType: event.eventType,
-            timestamp: event.timestamp,
-            data: event.data,
-            receivedAt: new Date().toISOString(),
-          },
-        },
-        statusHistory: {
-          push: {
-            status: event.data.status || event.eventType,
-            timestamp: event.timestamp,
-            data: event.data,
-          },
-        },
-      },
+      where: { orderId: payload.orderId },
+      data: updateData,
     });
+
+    this.logger.debug(`Order ${payload.orderId} updated with status: ${updateData.status}`);
   }
 
   /**
-   * Update order status based on webhook event
+   * Send multi-channel notifications via CommunicationHubService
    */
-  private async updateOrderStatus(event: WebhookEventDto): Promise<void> {
-    const updateData: any = {};
-
-    switch (event.eventType) {
-      case 'ORDER.ASSIGNING_DRIVER':
-        updateData.status = 'ASSIGNING_DRIVER';
-        break;
-
-      case 'ORDER.ONGOING':
-        updateData.status = 'ON_GOING';
-        // Extract driver info from event data
-        if (event.data.driver) {
-          updateData.driverId = event.data.driver.id;
-          updateData.driverName = event.data.driver.name;
-          updateData.driverPhone = event.data.driver.phone;
-          updateData.driverPhoto = event.data.driver.photo;
-          updateData.plateNumber = event.data.driver.plateNumber;
-        }
-        break;
-
-      case 'ORDER.PICKED_UP':
-        updateData.status = 'PICKED_UP';
-        updateData.pickedUpAt = new Date(event.timestamp);
-        break;
-
-      case 'ORDER.COMPLETED':
-        updateData.status = 'COMPLETED';
-        updateData.deliveredAt = new Date(event.timestamp);
-        // Extract POD images if available
-        if (event.data.proofOfDelivery?.images) {
-          updateData.podImages = event.data.proofOfDelivery.images;
-        }
-        break;
-
-      case 'ORDER.CANCELED':
-        updateData.status = 'CANCELED';
-        updateData.cancelledAt = new Date(event.timestamp);
-        break;
-
-      case 'ORDER.REJECTED':
-        updateData.status = 'REJECTED';
-        break;
-
-      case 'ORDER.EXPIRED':
-        updateData.status = 'EXPIRED';
-        break;
-
-      case 'DRIVER.LOCATION':
-        // Update driver location
-        if (event.data.coordinates) {
-          updateData.currentLocation = event.data.coordinates;
-        }
-        break;
-
-      default:
-        this.logger.warn(`Unknown webhook event type: ${event.eventType}`);
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      await this.prisma.lalamoveOrder.update({
-        where: { orderId: event.orderId },
-        data: updateData,
-      });
-    }
-  }
-
-  /**
-   * Send notifications to relevant parties
-   */
-  private async sendNotifications(event: WebhookEventDto): Promise<void> {
+  private async sendNotifications(payload: LalamoveWebhookPayload): Promise<void> {
     try {
-      // Get order and MASH order details
-      const lalamoveOrder = await this.prisma.lalamoveOrder.findUnique({
-        where: { orderId: event.orderId },
-        include: {
-          mashOrder: {
-            include: {
-              user: true,
-            },
-          },
-        },
+      // Get order details to find user
+      const order = await this.prisma.lalamoveOrder.findUnique({
+        where: { orderId: payload.orderId },
+        select: { userId: true, orderReference: true },
       });
 
-      if (!lalamoveOrder?.mashOrder) {
-        this.logger.warn(`MASH order not found for Lalamove order ${event.orderId}`);
+      if (!order?.userId) {
+        this.logger.warn(`No user found for order ${payload.orderId}, skipping notifications`);
         return;
       }
 
-      const { mashOrder } = lalamoveOrder;
+      // Build notification data
+      const notificationData = this.buildNotificationData(payload, order.orderReference);
 
-      // Prepare notification based on event type
-      let notificationTitle = '';
-      let notificationBody = '';
+      // Send via CommunicationHubService (email, SMS, push)
+      await this.communicationHub.sendCommunication({
+        userId: order.userId,
+        message: {
+          title: notificationData.title,
+          body: notificationData.message,
+          data: notificationData.metadata,
+          priority: notificationData.priority,
+        },
+        channels: this.getNotificationChannels(payload.eventType),
+      });
 
-      switch (event.eventType) {
-        case 'ORDER.ONGOING':
-          notificationTitle = '🚗 Driver Assigned!';
-          notificationBody = `Your order #${mashOrder.orderNumber} is on the way. Driver: ${lalamoveOrder.driverName}`;
-          break;
-
-        case 'ORDER.PICKED_UP':
-          notificationTitle = '📦 Order Picked Up!';
-          notificationBody = `Your order #${mashOrder.orderNumber} has been picked up and is on its way to you.`;
-          break;
-
-        case 'ORDER.COMPLETED':
-          notificationTitle = '✅ Order Delivered!';
-          notificationBody = `Your order #${mashOrder.orderNumber} has been successfully delivered. Thank you!`;
-          break;
-
-        case 'ORDER.CANCELED':
-          notificationTitle = '❌ Order Canceled';
-          notificationBody = `Your delivery for order #${mashOrder.orderNumber} has been canceled.`;
-          break;
-
-        default:
-          // Skip notification for other events
-          return;
-      }
-
-      // TODO: Integrate with NotificationService
-      // await this.notificationService.sendPushNotification({
-      //   userId: mashOrder.userId,
-      //   title: notificationTitle,
-      //   body: notificationBody,
-      //   data: {
-      //     orderId: mashOrder.id,
-      //     lalamoveOrderId: event.orderId,
-      //     type: 'delivery_update',
-      //   },
-      // });
-
-      // TODO: Send email notification
-      // await this.emailService.sendOrderStatusEmail({
-      //   to: mashOrder.user.email,
-      //   orderNumber: mashOrder.orderNumber,
-      //   status: event.eventType,
-      //   trackingLink: lalamoveOrder.shareLink,
-      // });
-
-      this.logger.log(`📧 Notification sent to user ${mashOrder.userId}`);
+      this.logger.log(`Notifications sent for order ${payload.orderId}`);
     } catch (error) {
       this.logger.error(`Failed to send notifications: ${error.message}`);
-      // Don't throw - notifications are non-critical
+      // Don't throw - notification failure shouldn't break webhook processing
+    }
+  }
+
+  /**
+   * Build notification data based on event type
+   */
+  private buildNotificationData(
+    payload: LalamoveWebhookPayload,
+    orderReference?: string,
+  ): WebhookNotificationData {
+    const orderRef = orderReference ? ` (Ref: ${orderReference})` : '';
+
+    switch (payload.eventType) {
+      case WEBHOOK_EVENTS.DRIVER_ASSIGNED:
+        return {
+          orderId: payload.orderId,
+          eventType: payload.eventType,
+          title: '🚗 Driver Assigned!',
+          message: `Your delivery driver has been assigned. Driver: ${payload.data.driver?.name || 'Unknown'}${orderRef}`,
+          priority: 'high',
+          metadata: {
+            driverId: payload.data.driverId,
+            driverName: payload.data.driver?.name,
+            driverPhone: payload.data.driver?.phone,
+            plateNumber: payload.data.driver?.plateNumber,
+          },
+        };
+
+      case WEBHOOK_EVENTS.PICKED_UP:
+        return {
+          orderId: payload.orderId,
+          eventType: payload.eventType,
+          title: '📦 Order Picked Up!',
+          message: `Your order has been picked up and is on the way${orderRef}`,
+          priority: 'high',
+          metadata: {
+            driverId: payload.data.driverId,
+            coordinates: payload.data.coordinates,
+          },
+        };
+
+      case WEBHOOK_EVENTS.COMPLETED:
+        return {
+          orderId: payload.orderId,
+          eventType: payload.eventType,
+          title: '✅ Delivery Completed!',
+          message: `Your order has been successfully delivered${orderRef}`,
+          priority: 'normal',
+          metadata: {
+            POD: payload.data.POD,
+            proofOfDelivery: payload.data.proofOfDelivery,
+          },
+        };
+
+      case WEBHOOK_EVENTS.CANCELED:
+        return {
+          orderId: payload.orderId,
+          eventType: payload.eventType,
+          title: '❌ Order Canceled',
+          message: `Your delivery order has been canceled. Reason: ${payload.data.cancellationReason || 'Not specified'}${orderRef}`,
+          priority: 'urgent',
+          metadata: {
+            cancellationReason: payload.data.cancellationReason,
+          },
+        };
+
+      case WEBHOOK_EVENTS.DRIVER_LOCATION_UPDATED:
+        return {
+          orderId: payload.orderId,
+          eventType: payload.eventType,
+          title: '📍 Driver Location Updated',
+          message: `Your driver is on the way${orderRef}`,
+          priority: 'normal',
+          metadata: {
+            coordinates: payload.data.coordinates,
+            driverId: payload.data.driverId,
+          },
+        };
+
+      case WEBHOOK_EVENTS.POD_UPLOADED:
+        return {
+          orderId: payload.orderId,
+          eventType: payload.eventType,
+          title: '📸 Proof of Delivery Available',
+          message: `Proof of delivery has been uploaded for your order${orderRef}`,
+          priority: 'normal',
+          metadata: {
+            POD: payload.data.POD,
+            proofOfDelivery: payload.data.proofOfDelivery,
+          },
+        };
+
+      default:
+        return {
+          orderId: payload.orderId,
+          eventType: payload.eventType,
+          title: '🔔 Order Status Update',
+          message: `Your order status has been updated: ${payload.data.status}${orderRef}`,
+          priority: 'normal',
+          metadata: payload.data,
+        };
+    }
+  }
+
+  /**
+   * Determine notification channels based on event type
+   */
+  private getNotificationChannels(eventType: LalamoveWebhookEventType): ('email' | 'push' | 'sms')[] {
+    switch (eventType) {
+      case WEBHOOK_EVENTS.DRIVER_ASSIGNED:
+      case WEBHOOK_EVENTS.PICKED_UP:
+      case WEBHOOK_EVENTS.COMPLETED:
+        // Critical events - all channels
+        return ['email', 'push', 'sms'];
+
+      case WEBHOOK_EVENTS.CANCELED:
+        // Urgent events - email and push
+        return ['email', 'push'];
+
+      case WEBHOOK_EVENTS.DRIVER_LOCATION_UPDATED:
+      case WEBHOOK_EVENTS.POD_UPLOADED:
+        // Info events - push only
+        return ['push'];
+
+      default:
+        // Default - push notifications
+        return ['push'];
+    }
+  }
+
+  /**
+   * Log webhook event for audit trail
+   */
+  async logWebhookEvent(
+    payload: LalamoveWebhookPayload,
+    status: 'SUCCESS' | 'FAILED',
+    error?: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action: `LALAMOVE_WEBHOOK_${payload.eventType}`,
+          entity: 'LALAMOVE_ORDER',
+          entityId: payload.orderId,
+          newValues: JSON.parse(
+            JSON.stringify({
+              payload: payload,
+              status,
+              error,
+              timestamp: payload.timestamp,
+            }),
+          ),
+        },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to log webhook event: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
     }
   }
 }
