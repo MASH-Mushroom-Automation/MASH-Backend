@@ -9,7 +9,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { OrderStateMachineService } from '../state-machine/order-state-machine.service';
 import { PrometheusService } from '../../../monitoring/prometheus/prometheus.service';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
-import { OrderStatus, CartStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { CalculateOrderResponseDto } from '../dto/calculate-order.dto';
 
@@ -40,7 +40,7 @@ export class OrderWorkflowService {
    */
   async createFromCart(userId: string, shippingAddress?: any): Promise<any> {
     return this.tracer.startActiveSpan('createFromCart', async span => {
-      
+      const timer = this.prometheus.startTimer('order_creation_duration_seconds');
 
       try {
         span.setAttributes({
@@ -75,7 +75,7 @@ export class OrderWorkflowService {
         span.addEvent('Product availability validated');
 
         // 3. Calculate pricing
-        const pricing = this.calculateCartPricing(cart);
+        const pricing = this.calculatePricing(cart);
         span.setAttributes({
           'order.subtotal': pricing.subtotal,
           'order.total': pricing.total,
@@ -98,8 +98,8 @@ export class OrderWorkflowService {
         span.addEvent('Cart cleared');
 
         // 7. Record metrics
-        this.prometheus.ordersTotal.labels(OrderStatus.PENDING, 'unknown').inc();
-        
+        this.prometheus.incrementCounter('orders_created_total', { source: 'cart' });
+        timer();
 
         span.setStatus({ code: SpanStatusCode.OK });
         this.logger.log(`Order ${orderNumber} created successfully from cart ${cart.id}`);
@@ -108,8 +108,10 @@ export class OrderWorkflowService {
       } catch (error) {
         span.recordException(error);
         span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
-        
-        
+        this.prometheus.incrementCounter('order_creation_errors_total', {
+          error: error.constructor.name,
+        });
+        timer();
         throw error;
       }
     });
@@ -120,7 +122,7 @@ export class OrderWorkflowService {
    */
   async createDirect(createOrderDto: CreateOrderDto, currentUser: any): Promise<any> {
     return this.tracer.startActiveSpan('createDirect', async span => {
-      
+      const timer = this.prometheus.startTimer('order_creation_duration_seconds');
 
       try {
         span.setAttributes({
@@ -156,8 +158,8 @@ export class OrderWorkflowService {
         );
 
         // 6. Record metrics
-        this.prometheus.ordersTotal.labels(OrderStatus.PENDING, 'unknown').inc();
-        
+        this.prometheus.incrementCounter('orders_created_total', { source: 'direct' });
+        timer();
 
         span.setStatus({ code: SpanStatusCode.OK });
         this.logger.log(`Order ${orderNumber} created successfully (direct)`);
@@ -166,15 +168,17 @@ export class OrderWorkflowService {
       } catch (error) {
         span.recordException(error);
         span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
-        
-        
+        this.prometheus.incrementCounter('order_creation_errors_total', {
+          error: error.constructor.name,
+        });
+        timer();
         throw error;
       }
     });
   }
 
   /**
-   * Calculate order pricing before creation (public API method)
+   * Calculate order pricing before creation
    */
   async calculatePricing(items: any[]): Promise<CalculateOrderResponseDto> {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -200,13 +204,13 @@ export class OrderWorkflowService {
       total,
       currency: 'PHP',
       breakdown: {
-        subtotalBreakdown: {
-          items: subtotal,
-        },
-        taxBreakdown: {
-          vat: taxAmount,
-        },
-        discountBreakdown: {},
+        items: items.map(item => ({
+          productId: item.productId,
+          productName: item.product?.name || 'Unknown',
+          quantity: item.quantity,
+          unitPrice: item.price,
+          total: item.price * item.quantity,
+        })),
       },
     };
   }
@@ -289,9 +293,9 @@ export class OrderWorkflowService {
   }
 
   /**
-   * Calculate pricing from cart (internal method)
+   * Calculate pricing from cart
    */
-  private calculateCartPricing(cart: any): any {
+  private calculatePricing(cart: any): any {
     const subtotal = cart.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
@@ -415,8 +419,8 @@ export class OrderWorkflowService {
       await prisma.orderStatusHistory.create({
         data: {
           orderId: order.id,
-          fromStatus: OrderStatus.PENDING,
-          toStatus: OrderStatus.PENDING,
+          status: OrderStatus.PENDING,
+          previousStatus: null,
           changedBy: cart.userId,
           notes: 'Order created from cart',
         },
@@ -447,9 +451,9 @@ export class OrderWorkflowService {
           shippingCost: pricing.shippingCost,
           taxAmount: pricing.taxAmount,
           discountAmount: pricing.discountAmount,
-          shippingAddress: dto.shippingAddressId || null,
-          billingAddress: dto.billingAddressId || null,
-          
+          shippingAddress: dto.shippingAddress || null,
+          billingAddress: dto.billingAddress || null,
+          paymentMethod: dto.paymentMethod,
           metadata: {
             source: 'direct',
             createdBy: currentUser.id,
@@ -496,8 +500,8 @@ export class OrderWorkflowService {
       await prisma.orderStatusHistory.create({
         data: {
           orderId: order.id,
-          fromStatus: OrderStatus.PENDING,
-          toStatus: OrderStatus.PENDING,
+          status: OrderStatus.PENDING,
+          previousStatus: null,
           changedBy: currentUser.id,
           notes: 'Order created directly',
         },
@@ -514,7 +518,7 @@ export class OrderWorkflowService {
     await this.prisma.cart.update({
       where: { id: cartId },
       data: {
-        status: CartStatus.COMPLETED,
+        status: 'CONVERTED',
         items: {
           deleteMany: {},
         },

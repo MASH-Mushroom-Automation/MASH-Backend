@@ -85,7 +85,7 @@ export class OrderPricingService {
     shippingAddress?: any,
     couponCode?: string,
   ): Promise<PricingBreakdown> {
-    const timer = this.prometheus.startTimer('order_pricing_calculation_duration_seconds');
+    
 
     try {
       // 1. Fetch product details if prices not provided
@@ -113,8 +113,8 @@ export class OrderPricingService {
       // 6. Calculate total
       const total = subtotal + taxAmount + shipping.cost - discountAmount;
 
-      this.prometheus.incrementCounter('order_pricing_calculations_total');
-      timer();
+      
+      
 
       const breakdown: PricingBreakdown = {
         subtotal,
@@ -147,7 +147,7 @@ export class OrderPricingService {
       return breakdown;
     } catch (error) {
       this.logger.error('Pricing calculation failed', error);
-      timer();
+      
       throw error;
     }
   }
