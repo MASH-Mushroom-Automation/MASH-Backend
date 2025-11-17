@@ -43,31 +43,31 @@ export class LalamoveService {
     // Call Lalamove API
     const response = await this.lalamoveApi.createQuotation({
       serviceType: dto.serviceType,
-      language: 'en_PH',
+      language: dto.language || 'en_PH',
       stops: dto.stops.map((stop) => ({
         coordinates: stop.coordinates,
         address: stop.address,
       })),
-      item: dto.item,
+      items: dto.items,
+      isScheduled: dto.isScheduled,
       scheduleAt: dto.scheduleAt,
+      specialRequests: dto.specialRequests,
     });
 
     // Save to database
     await this.prisma.lalamoveQuotation.create({
       data: {
         quotationId: response.quotationId,
-        orderId: dto.orderId,
         serviceType: response.serviceType,
-        language: 'en_PH',
         totalPrice: parseFloat(response.priceBreakdown.total),
         currency: response.priceBreakdown.currency,
-        priceBreakdown: response.priceBreakdown as any,
         distance: parseFloat(response.distance.value),
         distanceUnit: response.distance.unit,
         stops: response.stops as any,
+        isScheduled: dto.isScheduled || false,
         scheduleAt: dto.scheduleAt ? new Date(dto.scheduleAt) : null,
         expiresAt: new Date(response.expiresAt),
-        metadata: dto.orderId ? { orderId: dto.orderId } : null,
+        status: 'ACTIVE',
       },
     });
 
@@ -92,7 +92,7 @@ export class LalamoveService {
     if (new Date() > dbQuotation.expiresAt) {
       await this.prisma.lalamoveQuotation.update({
         where: { quotationId },
-        data: { isExpired: true },
+        data: { status: 'EXPIRED' },
       });
       throw new BadRequestException('Quotation has expired');
     }
@@ -116,68 +116,56 @@ export class LalamoveService {
       throw new NotFoundException(`Quotation ${dto.quotationId} not found`);
     }
 
-    if (quotation.isExpired || new Date() > quotation.expiresAt) {
+    if (quotation.status === 'EXPIRED' || new Date() > quotation.expiresAt) {
       throw new BadRequestException('Quotation has expired. Please create a new quotation.');
     }
 
-    if (quotation.isUsed) {
+    if (quotation.status === 'USED') {
       throw new BadRequestException('Quotation has already been used');
-    }
-
-    // Validate MASH order exists
-    const mashOrder = await this.prisma.order.findUnique({
-      where: { id: dto.orderId },
-      include: { user: true },
-    });
-
-    if (!mashOrder) {
-      throw new NotFoundException(`Order ${dto.orderId} not found`);
     }
 
     // Create order via Lalamove API
     const response = await this.lalamoveApi.createOrder({
       quotationId: dto.quotationId,
-      sender: dto.sender,
-      recipients: dto.recipients,
-      isPODEnabled: dto.isPODEnabled,
-      partner: 'J5Pharmacy',
-      metadata: {
-        mashOrderId: dto.orderId,
-        mashOrderNumber: mashOrder.orderNumber,
-        ...dto.metadata,
+      sender: {
+        stopId: dto.sender.stopId,
+        name: dto.sender.name,
+        phone: dto.sender.phone,
+        remarks: dto.sender.remarks,
       },
+      recipients: dto.recipients.map(r => ({
+        stopId: r.stopId,
+        name: r.name,
+        phone: r.phone,
+        remarks: r.remarks,
+      })),
+      isPODEnabled: dto.isPODEnabled,
+      orderReference: dto.orderReference,
+      specialRequests: dto.specialRequests,
     });
 
     // Save order to database
     await this.prisma.lalamoveOrder.create({
       data: {
         orderId: response.orderId,
-        mashOrderId: dto.orderId,
         quotationId: dto.quotationId,
-        status: response.status as any,
-        statusHistory: [
-          {
-            status: response.status,
-            timestamp: new Date().toISOString(),
-            data: { source: 'order_created' },
-          },
-        ],
+        status: response.status,
         driverId: response.driverId,
         shareLink: response.shareLink,
-        sender: dto.sender as any,
-        recipients: dto.recipients as any,
         totalPrice: parseFloat(response.priceBreakdown.total),
-        priceBreakdown: response.priceBreakdown as any,
+        currency: response.priceBreakdown.currency,
+        distance: parseFloat(response.distance.value),
+        distanceUnit: response.distance.unit,
+        stops: response.stops as any,
         isPODEnabled: dto.isPODEnabled ?? true,
-        scheduleAt: quotation.scheduleAt,
-        metadata: dto.metadata as any,
+        orderReference: dto.orderReference,
       },
     });
 
     // Mark quotation as used
     await this.prisma.lalamoveQuotation.update({
       where: { quotationId: dto.quotationId },
-      data: { isUsed: true },
+      data: { status: 'USED' },
     });
 
     this.logger.log(`✅ Order created: ${response.orderId}`);
@@ -215,33 +203,20 @@ export class LalamoveService {
 
     const response = await this.lalamoveApi.getDriver(orderId, order.driverId);
     
-    // Update driver info in database
-    await this.prisma.lalamoveOrder.update({
-      where: { orderId },
-      data: {
-        driverName: response.name,
-        driverPhone: response.phone,
-        driverPhoto: response.photo,
-        plateNumber: response.plateNumber,
-        currentLocation: response.coordinates as any,
-      },
-    });
-
     return response as DriverResponseDto;
   }
 
   /**
    * Add priority fee to order
    */
-  async addPriorityFee(orderId: string, priorityFee: string): Promise<OrderResponseDto> {
-    const response = await this.lalamoveApi.addPriorityFee(orderId, priorityFee);
+  async addPriorityFee(orderId: string, dto: AddPriorityFeeDto): Promise<OrderResponseDto> {
+    const response = await this.lalamoveApi.addPriorityFee(orderId, { amount: dto.amount });
     
     // Update database
     await this.prisma.lalamoveOrder.update({
       where: { orderId },
       data: {
-        priorityFee: parseFloat(priorityFee),
-        priceBreakdown: response.priceBreakdown as any,
+        totalPrice: parseFloat(response.priceBreakdown.total),
       },
     });
 
@@ -259,14 +234,7 @@ export class LalamoveService {
       where: { orderId },
       data: {
         status: 'CANCELED',
-        cancelledAt: new Date(),
-        statusHistory: {
-          push: {
-            status: 'CANCELED',
-            timestamp: new Date().toISOString(),
-            data: { source: 'manual_cancellation' },
-          },
-        },
+        updatedAt: new Date(),
       },
     });
 
@@ -277,7 +245,7 @@ export class LalamoveService {
    * Setup webhook
    */
   async setupWebhook(webhookUrl: string): Promise<any> {
-    return this.lalamoveApi.setupWebhook(webhookUrl);
+    return this.lalamoveApi.setupWebhook({ url: webhookUrl });
   }
 
   /**
