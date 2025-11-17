@@ -194,11 +194,9 @@ export class OrderWorkflowService {
     return {
       subtotal,
       taxAmount,
-      taxRate,
       shippingCost,
       discountAmount,
-      total,
-      currency: 'PHP',
+      totalAmount: total,
       breakdown: {
         subtotalBreakdown: {
           items: subtotal,
@@ -358,12 +356,13 @@ export class OrderWorkflowService {
   ): Promise<any> {
     return this.prisma.$transaction(async prisma => {
       // 1. Create order
-      const order = await prisma.order.create({
+      const order = await (prisma.order.create as any)({
         data: {
           orderNumber,
           userId: cart.userId,
           status: OrderStatus.PENDING,
           paymentStatus: 'PENDING',
+          subtotal: pricing.subtotal,
           totalAmount: pricing.total,
           shippingCost: pricing.shippingCost,
           taxAmount: pricing.taxAmount,
@@ -443,13 +442,13 @@ export class OrderWorkflowService {
           userId: dto.userId,
           status: OrderStatus.PENDING,
           paymentStatus: 'PENDING',
+          subtotal: pricing.subtotal,
           totalAmount: pricing.total,
           shippingCost: pricing.shippingCost,
           taxAmount: pricing.taxAmount,
           discountAmount: pricing.discountAmount,
-          shippingAddress: dto.shippingAddressId || null,
-          billingAddress: dto.billingAddressId || null,
-          
+          shippingAddress: { addressId: dto.shippingAddressId } as any,
+          billingAddress: dto.billingAddressId ? ({ addressId: dto.billingAddressId } as any) : null,
           metadata: {
             source: 'direct',
             createdBy: currentUser.id,
