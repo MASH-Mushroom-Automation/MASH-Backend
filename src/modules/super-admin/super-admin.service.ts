@@ -24,7 +24,7 @@ export class SuperAdminService {
           status: OrderStatus.CONFIRMED, // ← Fixed
           createdAt: { gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) },
         },
-        select: { createdAt: true, total: true },
+        select: { createdAt: true, totalAmount: true },
       })
       .then(orders => {
         const buckets: Record<string, number> = {};
@@ -36,7 +36,7 @@ export class SuperAdminService {
         }
         for (const o of orders) {
           const key = new Date(o.createdAt).toISOString().slice(0, 10);
-          buckets[key] = (buckets[key] || 0) + Number(o.total || 0);
+          buckets[key] = (buckets[key] || 0) + Number(o.totalAmount || 0);
         }
         const labels = Object.keys(buckets).sort();
         const values = labels.map(k => buckets[k]);

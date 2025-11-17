@@ -105,7 +105,7 @@ export class BatchProcessorService {
       this.prisma.order.count({ where }),
       this.prisma.order.aggregate({
         where,
-        _sum: { total: true },
+        _sum: { totalAmount: true },
       }),
       this.prisma.user.count({ where }),
       this.prisma.orderItem.groupBy({
@@ -136,7 +136,7 @@ export class BatchProcessorService {
       period: { startDate, endDate },
       metrics: {
         totalOrders: orders,
-        totalRevenue: Number(revenue._sum.total) || 0,
+        totalRevenue: Number(revenue._sum.totalAmount) || 0,
         newUsers,
         deviceActivity,
         topProducts,

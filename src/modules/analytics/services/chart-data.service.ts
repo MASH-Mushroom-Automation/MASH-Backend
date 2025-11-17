@@ -347,10 +347,10 @@ export class ChartDataService {
             createdAt: { gte: start, lte: end },
             status: { in: ['DELIVERED'] },
           },
-          _sum: { total: true },
+          _sum: { totalAmount: true },
         });
 
-        return Number(result._sum?.total || 0);
+        return Number(result._sum?.totalAmount || 0);
       }),
     );
   }
@@ -537,14 +537,14 @@ export class ChartDataService {
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
       _count: true,
-      _sum: { total: true },
+      _sum: { totalAmount: true },
     });
 
     return {
       labels: orders.map(o => o.status),
       values:
         metric === 'revenue'
-          ? orders.map(o => Number(o._sum?.total || 0))
+          ? orders.map(o => Number(o._sum?.totalAmount || 0))
           : orders.map(o => o._count),
     };
   }

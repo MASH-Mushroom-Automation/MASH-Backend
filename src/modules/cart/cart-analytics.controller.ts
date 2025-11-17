@@ -101,7 +101,7 @@ export class CartAnalyticsController {
         status: 'ACTIVE',
       },
       _avg: {
-        totalAmount: true,
+        total: true,
       },
     });
 
@@ -232,7 +232,7 @@ export class CartAnalyticsController {
 
     // Calculate totals
     const totalShippingRevenue = carts.reduce(
-      (sum, cart) => sum + cart.shippingCostCostCost.toNumber(),
+      (sum, cart) => sum + cart.shipping.toNumber(),
       0,
     );
 
@@ -250,7 +250,7 @@ export class CartAnalyticsController {
       const method = (cart.metadata as any)?.shippingMethod || 'STANDARD';
       if (methodBreakdown[method]) {
         methodBreakdown[method].count++;
-        methodBreakdown[method].revenue += cart.shippingCostCostCost.toNumber();
+        methodBreakdown[method].revenue += cart.shipping.toNumber();
       }
     });
 
@@ -346,7 +346,7 @@ export class CartAnalyticsController {
       },
       select: {
         tax: true,
-        subtotalAmount: true,
+        subtotal: true,
         metadata: true,
       },
     });
@@ -463,10 +463,10 @@ export class CartAnalyticsController {
     const cartAggregations = await this.prisma.cart.aggregate({
       where: { status: 'ACTIVE' },
       _sum: {
-        totalAmount: true,
+        total: true,
       },
       _avg: {
-        totalAmount: true,
+        total: true,
       },
     });
 
@@ -524,7 +524,7 @@ export class CartAnalyticsController {
       authenticatedCarts,
       totalItems,
       totalValue: cartAggregations._sum.total?.toNumber() || 0,
-      averageCartValue: cartAggregations._avg.total?.toNumber() || 0,
+            averageCartValue: cartAggregations._avg.total?.toNumber() || 0,
       averageItemsPerCart: totalActiveCarts > 0 ? totalItems / totalActiveCarts : 0,
       cartsWithItems,
       emptyCarts,

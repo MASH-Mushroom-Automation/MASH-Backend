@@ -68,7 +68,7 @@ export class DrillDownService {
         productId: true,
         quantity: true,
         price: true,
-        totalAmount: true,
+        total: true,
       },
     });
 
@@ -185,7 +185,7 @@ export class DrillDownService {
             id: true,
             quantity: true,
             price: true,
-            totalAmount: true,
+            total: true,
           },
         },
       },
@@ -297,7 +297,7 @@ export class DrillDownService {
             id: true,
             quantity: true,
             price: true,
-            totalAmount: true,
+            total: true,
             product: {
               select: {
                 id: true,
@@ -340,7 +340,7 @@ export class DrillDownService {
     });
 
     // Calculate user metrics
-    const totalSpent = orderDetails.reduce((sum, o) => sum + o.order.totalAmount, 0);
+    const totalSpent = orderDetails.reduce((sum, o) => sum + o.order.total, 0);
     const avgOrderValue = orderDetails.length > 0 ? totalSpent / orderDetails.length : 0;
     const totalItems = orderDetails.reduce((sum, o) => sum + o.items.totalQuantity, 0);
 

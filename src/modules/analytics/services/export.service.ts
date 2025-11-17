@@ -171,7 +171,7 @@ export class ExportService {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     });
-    return orders.map(o => ({ ...o, total: Number(o.total) }));
+    return orders.map(o => ({ ...o, total: Number(o.totalAmount) }));
   }
 
   private async fetchRevenueData(filters: any): Promise<any[]> {
@@ -179,7 +179,7 @@ export class ExportService {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     });
-    return orders.map(o => ({ ...o, total: Number(o.total) }));
+    return orders.map(o => ({ ...o, total: Number(o.totalAmount) }));
   }
 
   private async fetchUsersData(filters: any): Promise<any[]> {

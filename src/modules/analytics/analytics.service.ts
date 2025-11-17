@@ -100,7 +100,7 @@ export class AnalyticsService {
 
     const result = {
       totalOrders,
-      totalRevenue: Number(totalRevenue._sum.total) || 0,
+      totalRevenue: Number(totalRevenue._sum.totalAmount) || 0,
       totalUsers,
       totalDevices: deviceStats._count,
       activeDevices,
@@ -165,13 +165,13 @@ export class AnalyticsService {
     const trends = await this.getOrderTrendsGrouped(where, query.interval || TimeInterval.DAILY);
 
     const result = {
-      totalSales: Number(salesData._sum.total) || 0,
-      averageOrderValue: Number(salesData._avg.total) || 0,
+      totalSales: Number(salesData._sum.totalAmount) || 0,
+      averageOrderValue: Number(salesData._avg.totalAmount) || 0,
       orderCount: salesData._count,
       ordersByStatus: ordersByStatus.map(status => ({
         status: status.status,
         count: status._count,
-        total: Number(status._sum.total) || 0,
+        total: Number(status._sum.totalAmount) || 0,
       })),
       trends,
     };
@@ -213,7 +213,7 @@ export class AnalyticsService {
       where,
       _sum: {
         quantity: true,
-        totalAmount: true,
+        total: true,
       },
       _count: true,
     });
@@ -411,10 +411,10 @@ export class AnalyticsService {
     ]);
 
     const result = {
-      totalRevenue: Number(revenueData._sum.total) || 0,
+      totalRevenue: Number(revenueData._sum.totalAmount) || 0,
       revenueByStatus: revenueByStatus.map(status => ({
         status: status.status,
-        revenue: Number(status._sum.total) || 0,
+        revenue: Number(status._sum.totalAmount) || 0,
       })),
       trends,
     };
@@ -656,7 +656,7 @@ export class AnalyticsService {
     ]);
 
     return {
-      revenue: Number(revenue._sum.total) || 0,
+      revenue: Number(revenue._sum.totalAmount) || 0,
       orders,
       users,
       month: date.getMonth() + 1,

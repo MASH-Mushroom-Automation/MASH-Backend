@@ -40,7 +40,7 @@ export class AdminService {
 
     const totalRevenue = await this.prisma.order.aggregate({
       where: { status: 'COMPLETED' as any },
-      _sum: { total: true },
+      _sum: { totalAmount: true },
     });
 
     return {
@@ -61,7 +61,7 @@ export class AdminService {
         total: totalProducts,
       },
       revenue: {
-        total: totalRevenue._sum?.total || 0,
+        total: totalRevenue._sum?.totalAmount || 0,
       },
     };
   }
@@ -389,13 +389,13 @@ export class AdminService {
       this.prisma.order.groupBy({
         by: ['status'],
         _count: { id: true },
-        _sum: { total: true },
+        _sum: { totalAmount: true },
         where,
       }),
       this.prisma.order.aggregate({
         where: { ...where, status: 'COMPLETED' as any },
-        _sum: { total: true },
-        _avg: { total: true },
+        _sum: { totalAmount: true },
+        _avg: { totalAmount: true },
         _count: { id: true },
       }),
       this.prisma.user.count({ where }),
@@ -412,8 +412,8 @@ export class AdminService {
         total: orderStats.reduce((sum, stat) => sum + (stat._count?.id || 0), 0),
       },
       revenue: {
-        total: revenueStats._sum?.total || 0,
-        average: revenueStats._avg?.total || 0,
+        total: revenueStats._sum?.totalAmount || 0,
+        average: revenueStats._avg?.totalAmount || 0,
         completedOrders: revenueStats._count?.id || 0,
       },
       users: {
@@ -512,8 +512,8 @@ export class AdminService {
       case 'revenue':
         const revenueData = await this.prisma.order.aggregate({
           where: { status: 'COMPLETED' as any },
-          _sum: { total: true },
-          _avg: { total: true },
+          _sum: { totalAmount: true },
+          _avg: { totalAmount: true },
           _count: { id: true },
         });
         return {

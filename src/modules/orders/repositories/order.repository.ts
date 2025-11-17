@@ -224,7 +224,7 @@ export class OrderRepository {
     }
 
     if (filters.status) {
-      where.status = filters.status;
+      where.status = filters.status as any;
     }
 
     if (filters.shippingProvider) {

@@ -329,15 +329,15 @@ export class ReportBuilderService {
         createdAt: { gte: new Date(start), lte: new Date(end) },
         status: { in: ['DELIVERED'] },
       },
-      _sum: { total: true },
+      _sum: { totalAmount: true },
       _count: true,
-      _avg: { total: true },
+      _avg: { totalAmount: true },
     });
 
     return {
-      totalRevenue: Number(revenue._sum.total || 0),
+      totalRevenue: Number(revenue._sum.totalAmount || 0),
       totalOrders: revenue._count,
-      averageOrderValue: Number(revenue._avg.total || 0),
+      averageOrderValue: Number(revenue._avg.totalAmount || 0),
       period: { start, end },
     };
   }
@@ -354,14 +354,14 @@ export class ReportBuilderService {
         createdAt: { gte: new Date(start), lte: new Date(end) },
       },
       _count: true,
-      _sum: { total: true },
+      _sum: { totalAmount: true },
     });
 
     return {
       ordersByStatus: orders.map(group => ({
         status: group.status,
         count: group._count,
-        totalRevenue: Number(group._sum.total || 0),
+        totalRevenue: Number(group._sum.totalAmount || 0),
       })),
     };
   }

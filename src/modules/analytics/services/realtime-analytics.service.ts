@@ -26,7 +26,7 @@ export class RealtimeAnalyticsService {
       }),
       this.prisma.order.aggregate({
         where: { createdAt: { gte: today } },
-        _sum: { total: true },
+        _sum: { totalAmount: true },
       }),
       this.prisma.session.count({
         where: { expiresAt: { gt: now } },
@@ -41,7 +41,7 @@ export class RealtimeAnalyticsService {
 
     const metrics = {
       todayOrders,
-      todayRevenue: Number(todayRevenue._sum.total) || 0,
+      todayRevenue: Number(todayRevenue._sum.totalAmount) || 0,
       activeUsers,
       onlineDevices,
       timestamp: now.toISOString(),

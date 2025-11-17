@@ -157,8 +157,8 @@ export class OrdersService {
             taxAmount: new Prisma.Decimal(taxAmount),
             discountAmount: new Prisma.Decimal(discountAmount),
             totalAmount: new Prisma.Decimal(totalAmount),
-            shippingAddressId: createOrderDto.shippingAddressId,
-            billingAddressId: createOrderDto.billingAddressId || createOrderDto.shippingAddressId,
+            shippingAddress: {}, // TODO: Fetch address data from Address model using shippingAddressId
+            billingAddress: {}, // TODO: Fetch address data from Address model using billingAddressId
             notes: createOrderDto.notes,
             orderItems: {
               create: createOrderDto.items.map(item => ({
@@ -172,7 +172,7 @@ export class OrdersService {
               create: {
                 userId: createOrderDto.userId,
                 amount: new Prisma.Decimal(totalAmount),
-                method: createOrderDto.paymentMethodId || 'PENDING',
+                method: (createOrderDto.paymentMethodId as any) || 'COD',
                 status: 'PENDING',
               },
             },
@@ -318,11 +318,11 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    const { userId, ...updateData } = updateOrderDto;
+    const updateData = updateOrderDto;
     const data: any = { ...updateData };
-    if (data.shipping !== undefined) data.shipping = new Prisma.Decimal(data.shipping);
-    if (data.tax !== undefined) data.tax = new Prisma.Decimal(data.tax);
-    if (data.discount !== undefined) data.discount = new Prisma.Decimal(data.discount);
+    if (data.shippingCost !== undefined) data.shippingCost = new Prisma.Decimal(data.shippingCost);
+    if (data.taxAmount !== undefined) data.taxAmount = new Prisma.Decimal(data.taxAmount);
+    if (data.discountAmount !== undefined) data.discountAmount = new Prisma.Decimal(data.discountAmount);
 
     return this.prisma.order.update({
       where: { id },
@@ -369,10 +369,10 @@ export class OrdersService {
       notes: updateStatusDto.notes || order.notes,
     };
 
-    if (updateStatusDto.status === OrderStatus.SHIPPED) {
-      updateData.shippedAt = new Date();
-    } else if (updateStatusDto.status === OrderStatus.DELIVERED) {
-      updateData.deliveredAt = new Date();
+    if (updateStatusDto.status === OrderStatus.CONFIRMED) {
+      updateData.confirmedAt = new Date();
+    } else if (updateStatusDto.status === 'COMPLETED' as any) {
+      updateData.completedAt = new Date();
     } else if (updateStatusDto.status === OrderStatus.CANCELLED) {
       updateData.cancelledAt = new Date();
     }
@@ -483,13 +483,13 @@ export class OrdersService {
       estimatedDelivery: null,
       statusHistory: [
         { status: OrderStatus.PENDING, timestamp: order.createdAt },
-        order.shippedAt && {
-          status: OrderStatus.SHIPPED,
-          timestamp: order.shippedAt,
+        order.confirmedAt && {
+          status: OrderStatus.CONFIRMED,
+          timestamp: order.confirmedAt,
         },
-        order.deliveredAt && {
-          status: OrderStatus.DELIVERED,
-          timestamp: order.deliveredAt,
+        order.completedAt && {
+          status: 'COMPLETED' as any,
+          timestamp: order.completedAt,
         },
         order.cancelledAt && {
           status: OrderStatus.CANCELLED,
@@ -541,9 +541,9 @@ export class OrdersService {
         total: item.total.toNumber(),
       })),
       subtotal: order.subtotal.toNumber(),
-      shipping: order.shipping.toNumber(),
-      tax: order.tax.toNumber(),
-      discount: order.discount.toNumber(),
+      shipping: order.shippingCost.toNumber(),
+      tax: order.taxAmount.toNumber(),
+      discount: order.discountAmount.toNumber(),
       total: order.totalAmount.toNumber(),
       paymentMethod: payment?.method,
       paymentStatus: payment?.status,
@@ -564,7 +564,7 @@ export class OrdersService {
             ...where,
             payments: { some: { status: 'PAID' } },
           },
-          _sum: { total: true },
+          _sum: { totalAmount: true },
         }),
         this.prisma.order.count({
           where: { ...where, status: OrderStatus.PENDING },
@@ -577,7 +577,7 @@ export class OrdersService {
         }),
       ]);
 
-    const revenueTotal = totalRevenue._sum.total?.toNumber() || 0;
+    const revenueTotal = totalRevenue._sum.totalAmount?.toNumber() || 0;
 
     return {
       totalOrders,
@@ -743,10 +743,10 @@ export class OrdersService {
                 userId,
                 status: OrderStatus.PENDING,
                 subtotal: cart.subtotal,
-                tax: cart.tax,
-                shipping: cart.shipping,
-                discount: cart.discount,
-                total: cart.total,
+                taxAmount: cart.tax,
+                shippingCost: cart.shipping,
+                discountAmount: cart.discount,
+                totalAmount: cart.total,
                 shippingAddress: cart.metadata?.['shippingAddress'] || {},
                 billingAddress: cart.metadata?.['billingAddress'] || {},
                 notes: cart.metadata?.['notes'] as string,

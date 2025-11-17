@@ -563,7 +563,7 @@ export class CartController {
     if (updatedCart) {
       this.prometheusService.recordCartCheckout(
         dto.paymentMethod,
-        updatedCart.totalAmount.toNumber(),
+        updatedCart.total.toNumber(),
       );
     }
 
