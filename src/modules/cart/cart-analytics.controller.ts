@@ -232,7 +232,7 @@ export class CartAnalyticsController {
 
     // Calculate totals
     const totalShippingRevenue = carts.reduce(
-      (sum, cart) => sum + cart.shippingCostCost.toNumber(),
+      (sum, cart) => sum + cart.shippingCostCostCost.toNumber(),
       0,
     );
 
@@ -250,7 +250,7 @@ export class CartAnalyticsController {
       const method = (cart.metadata as any)?.shippingMethod || 'STANDARD';
       if (methodBreakdown[method]) {
         methodBreakdown[method].count++;
-        methodBreakdown[method].revenue += cart.shippingCostCost.toNumber();
+        methodBreakdown[method].revenue += cart.shippingCostCostCost.toNumber();
       }
     });
 
