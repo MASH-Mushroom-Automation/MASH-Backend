@@ -15,8 +15,12 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { Prisma } from '@prisma/client';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
-
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
+import { OrderWorkflowService } from './services/order-workflow.service';
+import { OrderValidationService } from './services/order-validation.service';
+import { OrderPricingService } from './services/order-pricing.service';
+import { OrderStateMachineService } from './state-machine/order-state-machine.service';
+import { OrderRepository } from './repositories/order.repository';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -25,6 +29,11 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private prometheusService: PrometheusService,
+    private workflowService: OrderWorkflowService,
+    private validationService: OrderValidationService,
+    private pricingService: OrderPricingService,
+    private stateMachine: OrderStateMachineService,
+    private repository: OrderRepository,
   ) {}
 
   // 1. List all orders with filtering
