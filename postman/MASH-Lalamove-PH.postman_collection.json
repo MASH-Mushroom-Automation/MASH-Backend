@@ -1,0 +1,814 @@
+{
+  "info": {
+    "name": "MASH - Lalamove PH Integration",
+    "description": "Complete Postman collection for testing Lalamove API integration with MASH e-commerce system. This collection includes all endpoints needed for delivery integration in the Philippines market.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "mash"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// HMAC Signature Generation for Lalamove API",
+          "const SECRET = pm.environment.get('secret');",
+          "const API_KEY = pm.environment.get('apikey');",
+          "const time = new Date().getTime().toString();",
+          "",
+          "// SPECIAL HANDLING FOR SCHEDULED QUOTATION (Test 3)",
+          "// Generate scheduleAt timestamp BEFORE HMAC signature calculation",
+          "const requestName = pm.info.requestName || '';",
+          "if (requestName.includes('Scheduled') || requestName.includes('3.')) {",
+          "    const now = new Date();",
+          "    const scheduleAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);",
+          "    const scheduleAtISO = scheduleAt.toISOString();",
+          "    pm.environment.set('scheduleAt', scheduleAtISO);",
+          "    console.log('=== Scheduled Order Time Generation ===');",
+          "    console.log('Schedule At (UTC):', scheduleAtISO);",
+          "    console.log('Current Time (UTC):', now.toISOString());",
+          "}",
+          "",
+          "// Get request details",
+          "const method = pm.request.method;",
+          "",
+          "// Build path from request URL (handle both resolved and unresolved variables)",
+          "let path = '';",
+          "try {",
+          "    // Try to get the path from the URL object",
+          "    const urlObj = pm.request.url;",
+          "    if (urlObj.path && Array.isArray(urlObj.path)) {",
+          "        // Path is an array like ['v3', 'cities', '{{quotationId}}']",
+          "        // CRITICAL: Resolve variables in path segments",
+          "        const resolvedPath = urlObj.path.map(segment => pm.variables.replaceIn(segment));",
+          "        path = '/' + resolvedPath.join('/');",
+          "    } else {",
+          "        // Fallback: parse from string and resolve variables",
+          "        const urlString = pm.request.url.toString();",
+          "        const resolvedUrl = pm.variables.replaceIn(urlString);",
+          "        const parsedUrl = new URL(resolvedUrl);",
+          "        path = parsedUrl.pathname;",
+          "    }",
+          "} catch (e) {",
+          "    console.error('Error parsing URL:', e);",
+          "    // Last resort: manually construct from path segments and resolve variables",
+          "    if (pm.request.url.path) {",
+          "        const resolvedPath = pm.request.url.path.map(segment => pm.variables.replaceIn(segment));",
+          "        path = '/' + resolvedPath.join('/');",
+          "    }",
+          "}",
+          "",
+          "// Get body if exists and resolve Postman variables",
+          "let body = '';",
+          "if (pm.request.body && pm.request.body.mode === 'raw') {",
+          "    // Get the raw body",
+          "    let rawBody = pm.request.body.raw || '';",
+          "    ",
+          "    // Resolve all Postman variables in the body",
+          "    // This replaces {{variableName}} with actual values from environment",
+          "    body = pm.variables.replaceIn(rawBody);",
+          "}",
+          "",
+          "// Create raw signature string - CRITICAL: Use exact format with \\r\\n",
+          "const rawSignature = `${time}\\r\\n${method}\\r\\n${path}\\r\\n\\r\\n${body}`;",
+          "",
+          "// Generate HMAC SHA256 signature",
+          "const signature = CryptoJS.HmacSHA256(rawSignature, SECRET).toString();",
+          "",
+          "// Create authorization token",
+          "const token = `${API_KEY}:${time}:${signature}`;",
+          "",
+          "// Set authorization header",
+          "pm.request.headers.add({",
+          "    key: 'Authorization',",
+          "    value: `hmac ${token}`",
+          "});",
+          "",
+          "// Set Market header (critical for Lalamove API)",
+          "pm.request.headers.add({",
+          "    key: 'Market',",
+          "    value: pm.environment.get('market')",
+          "});",
+          "",
+          "// Set timestamp for reference",
+          "pm.environment.set('timestamp', time);",
+          "",
+          "console.log('=== HMAC Signature Debug ===');",
+          "console.log('Timestamp:', time);",
+          "console.log('Method:', method);",
+          "console.log('Path:', path);",
+          "console.log('Body (first 200 chars):', body.substring(0, 200));",
+          "console.log('Body Length:', body.length);",
+          "console.log('Raw Signature String (escaped):', rawSignature.replace(/\\r/g, '\\\\r').replace(/\\n/g, '\\\\n').substring(0, 300));",
+          "console.log('Secret (first 10 chars):', SECRET.substring(0, 10) + '...');",
+          "console.log('Signature:', signature);",
+          "console.log('API Key:', API_KEY);",
+          "console.log('Authorization:', `hmac ${token}`);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Get City Info (Philippines)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has data array', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('data');",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});",
+              "",
+              "// Log available services",
+              "const response = pm.response.json();",
+              "console.log('=== Available Services in Philippines ===');",
+              "response.data.forEach(city => {",
+              "    console.log(`City: ${city.name} (${city.locode})`);",
+              "    city.services.forEach(service => {",
+              "        console.log(`  - ${service.key}: ${service.description}`);",
+              "        if (service.specialRequests && service.specialRequests.length > 0) {",
+              "            console.log('    Special Requests:');",
+              "            service.specialRequests.forEach(sr => {",
+              "                console.log(`      * ${sr.name}: ${sr.description}`);",
+              "            });",
+              "        }",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/v3/cities",
+          "host": ["{{host}}"],
+          "path": ["v3", "cities"]
+        },
+        "description": "Retrieve information about available cities, vehicle types, and special requests in the Philippines market. This is essential for understanding what services are available for your delivery integration."
+      }
+    },
+    {
+      "name": "2. Get Quotation (Immediate)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response has quotationId', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('quotationId');",
+              "    ",
+              "    // Save quotationId for next requests",
+              "    pm.environment.set('quotationId', jsonData.data.quotationId);",
+              "    ",
+              "    // Save stop IDs",
+              "    if (jsonData.data.stops && jsonData.data.stops.length >= 2) {",
+              "        pm.environment.set('senderStopId', jsonData.data.stops[0].stopId);",
+              "        pm.environment.set('recipientStopId', jsonData.data.stops[1].stopId);",
+              "    }",
+              "});",
+              "",
+              "pm.test('Price breakdown exists', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('priceBreakdown');",
+              "    pm.expect(jsonData.data.priceBreakdown).to.have.property('total');",
+              "    pm.expect(jsonData.data.priceBreakdown).to.have.property('currency');",
+              "});",
+              "",
+              "// Log quotation details",
+              "const response = pm.response.json();",
+              "console.log('=== Quotation Created ===');",
+              "console.log('Quotation ID:', response.data.quotationId);",
+              "console.log('Service Type:', response.data.serviceType);",
+              "console.log('Total Price:', response.data.priceBreakdown.total, response.data.priceBreakdown.currency);",
+              "console.log('Expires At:', response.data.expiresAt);",
+              "console.log('Distance:', response.data.distance.value, response.data.distance.unit);",
+              "console.log('Sender Stop ID:', response.data.stops[0].stopId);",
+              "console.log('Recipient Stop ID:', response.data.stops[1].stopId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"data\": {\n    \"serviceType\": \"MOTORCYCLE\",\n    \"language\": \"en_PH\",\n    \"stops\": [\n      {\n        \"coordinates\": {\n          \"lat\": \"{{pharmacyLat}}\",\n          \"lng\": \"{{pharmacyLng}}\"\n        },\n        \"address\": \"{{pharmacyAddress}}\"\n      },\n      {\n        \"coordinates\": {\n          \"lat\": \"{{testCustomerLat}}\",\n          \"lng\": \"{{testCustomerLng}}\"\n        },\n        \"address\": \"{{testCustomerAddress}}\"\n      }\n    ],\n    \"item\": {\n      \"quantity\": \"1\",\n      \"weight\": \"LESS_THAN_3_KG\",\n      \"categories\": [\"FOOD_DELIVERY\"],\n      \"handlingInstructions\": [\"KEEP_UPRIGHT\"]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/v3/quotations",
+          "host": ["{{host}}"],
+          "path": ["v3", "quotations"]
+        },
+        "description": "Request an immediate delivery quotation from J5 Pharmacy (San Jose Del Monte, Bulacan) to a test customer address (Quezon City). This will return a price estimate that's valid for 5 minutes."
+      }
+    },
+    {
+      "name": "3. Get Quotation (Scheduled)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// NOTE: scheduleAt is now generated in the collection-level pre-request script",
+              "// This ensures the variable is available before HMAC signature calculation",
+              "// The collection script detects this is Test 3 and generates scheduleAt automatically"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Quotation has scheduleAt', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('scheduleAt');",
+              "});",
+              "",
+              "const response = pm.response.json();",
+              "console.log('=== Scheduled Quotation ===');",
+              "console.log('Quotation ID:', response.data.quotationId);",
+              "console.log('Scheduled At:', response.data.scheduleAt);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"data\": {\n    \"scheduleAt\": \"{{scheduleAt}}\",\n    \"serviceType\": \"MOTORCYCLE\",\n    \"language\": \"en_PH\",\n    \"stops\": [\n      {\n        \"coordinates\": {\n          \"lat\": \"{{pharmacyLat}}\",\n          \"lng\": \"{{pharmacyLng}}\"\n        },\n        \"address\": \"{{pharmacyAddress}}\"\n      },\n      {\n        \"coordinates\": {\n          \"lat\": \"{{testCustomerLat}}\",\n          \"lng\": \"{{testCustomerLng}}\"\n        },\n        \"address\": \"{{testCustomerAddress}}\"\n      }\n    ],\n    \"item\": {\n      \"quantity\": \"1\",\n      \"weight\": \"LESS_THAN_3_KG\",\n      \"categories\": [\"FOOD_DELIVERY\"],\n      \"handlingInstructions\": [\"KEEP_UPRIGHT\"]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/v3/quotations",
+          "host": ["{{host}}"],
+          "path": ["v3", "quotations"]
+        },
+        "description": "Request a scheduled delivery quotation (2 hours from now). Use this when customers want to schedule delivery for a specific time."
+      }
+    },
+    {
+      "name": "4. Get Quotation Details",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Quotation details match', function () {",
+              "    const jsonData = pm.response.json();",
+              "    const savedQuotationId = pm.environment.get('quotationId');",
+              "    pm.expect(jsonData.data.quotationId).to.equal(savedQuotationId);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/v3/quotations/{{quotationId}}",
+          "host": ["{{host}}"],
+          "path": ["v3", "quotations", "{{quotationId}}"]
+        },
+        "description": "Retrieve details of a previously created quotation. Use this to verify quotation information before placing an order."
+      }
+    },
+    {
+      "name": "5. Place Order",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Order created with orderId', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('orderId');",
+              "    ",
+              "    // Save orderId and driverId",
+              "    pm.environment.set('orderId', jsonData.data.orderId);",
+              "    if (jsonData.data.driverId) {",
+              "        pm.environment.set('driverId', jsonData.data.driverId);",
+              "    }",
+              "});",
+              "",
+              "pm.test('Order status is valid', function () {",
+              "    const jsonData = pm.response.json();",
+              "    const validStatuses = ['ASSIGNING_DRIVER', 'ON_GOING', 'PICKED_UP', 'COMPLETED'];",
+              "    pm.expect(validStatuses).to.include(jsonData.data.status);",
+              "});",
+              "",
+              "// Log order details",
+              "const response = pm.response.json();",
+              "console.log('=== Order Placed Successfully ===');",
+              "console.log('Order ID:', response.data.orderId);",
+              "console.log('Status:', response.data.status);",
+              "console.log('Driver ID:', response.data.driverId || 'Not assigned yet');",
+              "console.log('Share Link:', response.data.shareLink);",
+              "console.log('Total Price:', response.data.priceBreakdown.total, response.data.priceBreakdown.currency);",
+              "",
+              "if (response.data.status === 'ASSIGNING_DRIVER') {",
+              "    console.log('⏳ Waiting for driver assignment...');",
+              "    console.log('💡 Run \"Get Order Details\" after a few minutes to check driver assignment');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"data\": {\n    \"quotationId\": \"{{quotationId}}\",\n    \"sender\": {\n      \"stopId\": \"{{senderStopId}}\",\n      \"name\": \"{{pharmacyName}}\",\n      \"phone\": \"{{pharmacyPhone}}\"\n    },\n    \"recipients\": [\n      {\n        \"stopId\": \"{{recipientStopId}}\",\n        \"name\": \"{{testCustomerName}}\",\n        \"phone\": \"{{testCustomerPhone}}\",\n        \"remarks\": \"Order #TEST001\\nMedicines (3 items)\\nPlease handle with care\\nCall upon arrival\"\n      }\n    ],\n    \"isPODEnabled\": true,\n    \"partner\": \"J5Pharmacy\",\n    \"metadata\": {\n      \"orderId\": \"TEST001\",\n      \"orderDate\": \"2025-11-17\",\n      \"pharmacyBranch\": \"San Jose Del Monte\",\n      \"itemCount\": \"3\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/v3/orders",
+          "host": ["{{host}}"],
+          "path": ["v3", "orders"]
+        },
+        "description": "Place a delivery order using the quotation created in the previous step. This will match the order with a driver. Make sure to run this within 5 minutes of creating the quotation."
+      }
+    },
+    {
+      "name": "6. Get Order Details",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Order details returned', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('orderId');",
+              "    pm.expect(jsonData.data).to.have.property('status');",
+              "    ",
+              "    // Update driverId if assigned",
+              "    if (jsonData.data.driverId && jsonData.data.driverId !== '') {",
+              "        pm.environment.set('driverId', jsonData.data.driverId);",
+              "    }",
+              "});",
+              "",
+              "// Log order status",
+              "const response = pm.response.json();",
+              "console.log('=== Order Status ===');",
+              "console.log('Order ID:', response.data.orderId);",
+              "console.log('Status:', response.data.status);",
+              "console.log('Driver ID:', response.data.driverId || 'Not assigned yet');",
+              "console.log('Share Link:', response.data.shareLink);",
+              "",
+              "// Log POD status if available",
+              "if (response.data.stops) {",
+              "    response.data.stops.forEach((stop, index) => {",
+              "        if (stop.POD) {",
+              "            console.log(`Stop ${index + 1} POD Status:`, stop.POD.status);",
+              "            if (stop.POD.image) {",
+              "                console.log(`Stop ${index + 1} POD Image:`, stop.POD.image);",
+              "            }",
+              "        }",
+              "    });",
+              "}",
+              "",
+              "// Status guide",
+              "const statusGuide = {",
+              "    'ASSIGNING_DRIVER': '⏳ Finding a driver...',",
+              "    'ON_GOING': '🚗 Driver on the way to pickup',",
+              "    'PICKED_UP': '📦 Order picked up, delivering now',",
+              "    'COMPLETED': '✅ Delivered successfully!',",
+              "    'CANCELED': '❌ Order cancelled',",
+              "    'REJECTED': '⚠️ No driver available',",
+              "    'EXPIRED': '⏰ Order expired'",
+              "};",
+              "console.log('Status Meaning:', statusGuide[response.data.status] || response.data.status);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/v3/orders/{{orderId}}",
+          "host": ["{{host}}"],
+          "path": ["v3", "orders", "{{orderId}}"]
+        },
+        "description": "Retrieve current status and details of an order. Use this to track delivery progress and check if a driver has been assigned."
+      }
+    },
+    {
+      "name": "7. Get Driver Details",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    pm.test('Driver details returned', function () {",
+              "        const jsonData = pm.response.json();",
+              "        pm.expect(jsonData.data).to.have.property('driverId');",
+              "        pm.expect(jsonData.data).to.have.property('name');",
+              "        pm.expect(jsonData.data).to.have.property('phone');",
+              "    });",
+              "    ",
+              "    const response = pm.response.json();",
+              "    console.log('=== Driver Information ===');",
+              "    console.log('Driver ID:', response.data.driverId);",
+              "    console.log('Name:', response.data.name);",
+              "    console.log('Phone:', response.data.phone);",
+              "    console.log('Plate Number:', response.data.plateNumber);",
+              "    console.log('Photo URL:', response.data.photo);",
+              "    if (response.data.coordinates) {",
+              "        console.log('Location:', `${response.data.coordinates.lat}, ${response.data.coordinates.lng}`);",
+              "        console.log('Last Updated:', response.data.coordinates.updatedAt);",
+              "    }",
+              "} else if (pm.response.code === 403) {",
+              "    console.log('⚠️ Driver details not available yet');",
+              "    console.log('Driver info is available:');",
+              "    console.log('- 1 hour before scheduled time, OR');",
+              "    console.log('- When driver arrives at pickup location');",
+              "} else if (pm.response.code === 404) {",
+              "    console.log('⚠️ EXPECTED IN SANDBOX: Driver not found');",
+              "    console.log('');",
+              "    console.log('Sandbox Limitations:');",
+              "    console.log('- Simulated drivers may not provide real-time location');",
+              "    console.log('- Driver details may not be available immediately');",
+              "    console.log('- This endpoint works correctly in PRODUCTION');",
+              "    console.log('');",
+              "    console.log('✅ This test is OPTIONAL for sandbox validation');",
+              "    console.log('💡 Skip this test and proceed to Test 8');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/v3/orders/{{orderId}}/drivers/{{driverId}}",
+          "host": ["{{host}}"],
+          "path": ["v3", "orders", "{{orderId}}", "drivers", "{{driverId}}"]
+        },
+        "description": "Get driver information including name, phone, vehicle details, and real-time location. Note: This is only available 1 hour before scheduled time or when driver arrives at pickup."
+      }
+    },
+    {
+      "name": "8. Add Priority Fee",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    pm.test('Priority fee added', function () {",
+              "        const jsonData = pm.response.json();",
+              "        pm.expect(jsonData.data.priceBreakdown).to.have.property('priorityFee');",
+              "    });",
+              "    ",
+              "    const response = pm.response.json();",
+              "    console.log('=== Priority Fee Added ===');",
+              "    console.log('Priority Fee:', response.data.priceBreakdown.priorityFee);",
+              "    console.log('New Total:', response.data.priceBreakdown.total, response.data.priceBreakdown.currency);",
+              "} else if (pm.response.code === 422) {",
+              "    console.log('⚠️ Cannot add priority fee at this stage');",
+              "    console.log('Priority fee can only be added before driver accepts the order');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"data\": {\n    \"priorityFee\": \"20\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/v3/orders/{{orderId}}/priority-fee",
+          "host": ["{{host}}"],
+          "path": ["v3", "orders", "{{orderId}}", "priority-fee"]
+        },
+        "description": "Add a priority fee (tip) to encourage faster driver acceptance. Can only be added before driver accepts the order (ASSIGNING_DRIVER status)."
+      }
+    },
+    {
+      "name": "9. Cancel Order",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 204) {",
+              "    pm.test('Order cancelled successfully', function () {",
+              "        pm.response.to.have.status(204);",
+              "    });",
+              "    console.log('✅ Order cancelled successfully');",
+              "} else if (pm.response.code === 409) {",
+              "    console.log('⚠️ Cannot cancel order');",
+              "    console.log('Order can only be cancelled:');",
+              "    console.log('- When status is ASSIGNING_DRIVER, OR');",
+              "    console.log('- Within 5 minutes of driver matching');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/v3/orders/{{orderId}}",
+          "host": ["{{host}}"],
+          "path": ["v3", "orders", "{{orderId}}"]
+        },
+        "description": "Cancel an order. Note: Orders can only be cancelled when status is ASSIGNING_DRIVER or within 5 minutes of driver matching."
+      }
+    },
+    {
+      "name": "10. Setup Webhook",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Note: Replace this with your actual webhook URL",
+              "// For local testing, use ngrok: ngrok http 3000",
+              "// Then use the ngrok URL here",
+              "console.log('⚠️ IMPORTANT: Update webhook URL before running this request');",
+              "console.log('');",
+              "console.log('For local testing with ngrok:');",
+              "console.log('1. Download: https://ngrok.com/download');",
+              "console.log('2. Run: ngrok http 3000');",
+              "console.log('3. Copy the https URL (e.g., https://abc123.ngrok-free.app)');",
+              "console.log('4. Update Body tab: YOUR_NGROK_URL/api/lalamove/webhook');",
+              "console.log('');",
+              "console.log('Alternative: Configure webhook in Partner Portal');",
+              "console.log('- Go to Partner Portal > Developers > Webhook');",
+              "console.log('- Enter your webhook URL');",
+              "console.log('- Select webhook version');",
+              "console.log('');",
+              "console.log('⚠️ SANDBOX LIMITATION:');",
+              "console.log('- Webhook may not work reliably in sandbox');",
+              "console.log('- Test this in PRODUCTION environment');",
+              "console.log('✅ This test is OPTIONAL for sandbox validation');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    pm.test('Webhook configured', function () {",
+              "        const jsonData = pm.response.json();",
+              "        pm.expect(jsonData.data).to.have.property('url');",
+              "    });",
+              "    ",
+              "    const response = pm.response.json();",
+              "    console.log('✅ Webhook configured successfully');",
+              "    console.log('Webhook URL:', response.data.url);",
+              "    console.log('');",
+              "    console.log('Webhook will receive events for:');",
+              "    console.log('- ORDER_STATUS_CHANGED');",
+              "    console.log('- DRIVER_ASSIGNED');",
+              "    console.log('- ORDER_AMOUNT_CHANGED');",
+              "    console.log('- ORDER_REPLACED');",
+              "    console.log('- WALLET_BALANCE_CHANGED');",
+              "    console.log('- ORDER_EDITED');",
+              "} else if (pm.response.code === 422) {",
+              "    console.log('⚠️ Invalid webhook URL - This is EXPECTED');",
+              "    console.log('');",
+              "    console.log('Why this fails:');",
+              "    console.log('- You need a PUBLIC https URL');",
+              "    console.log('- localhost URLs will NOT work');",
+              "    console.log('- URL must return 200 OK when Lalamove tests it');",
+              "    console.log('');",
+              "    console.log('Solutions:');",
+              "    console.log('1. Use ngrok to create public URL for localhost');",
+              "    console.log('2. Deploy webhook endpoint to Vercel/production');",
+              "    console.log('3. Configure webhook later via Partner Portal');",
+              "    console.log('');",
+              "    console.log('✅ Skip this test for now - setup webhook when deploying');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Market",
+            "value": "{{market}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Request-ID",
+            "value": "{{$guid}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"data\": {\n    \"url\": \"https://YOUR_NGROK_URL.ngrok-free.app/api/lalamove/webhook\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/v3/webhook",
+          "host": ["{{host}}"],
+          "path": ["v3", "webhook"]
+        },
+        "description": "Configure webhook URL to receive real-time order status updates. For local testing, use ngrok to create a public URL that tunnels to your localhost:3000."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "version",
+      "value": "1.0.0",
+      "type": "string"
+    }
+  ]
+}
