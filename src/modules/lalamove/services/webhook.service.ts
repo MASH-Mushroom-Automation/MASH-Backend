@@ -239,22 +239,31 @@ export class WebhookService {
   /**
    * Log webhook event for audit trail
    */
-  async logWebhookEvent(payload: LalamoveWebhookPayload, status: 'SUCCESS' | 'FAILED', error?: string): Promise<void> {
+  async logWebhookEvent(
+    payload: LalamoveWebhookPayload,
+    status: 'SUCCESS' | 'FAILED',
+    error?: string,
+  ): Promise<void> {
     try {
       await this.prisma.auditLog.create({
         data: {
           action: `LALAMOVE_WEBHOOK_${payload.eventType}`,
+          entity: 'LALAMOVE_ORDER',
           entityId: payload.orderId,
-          metadata: {
-            payload: payload,
-            status,
-            error,
-            timestamp: payload.timestamp,
-          },
+          newValues: JSON.parse(
+            JSON.stringify({
+              payload: payload,
+              status,
+              error,
+              timestamp: payload.timestamp,
+            }),
+          ),
         },
       });
-    } catch (error) {
-      this.logger.error(`Failed to log webhook event: ${error.message}`);
+    } catch (err) {
+      this.logger.error(
+        `Failed to log webhook event: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
     }
   }
 }

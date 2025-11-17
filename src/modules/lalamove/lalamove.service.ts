@@ -6,7 +6,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { QuotationResponseDto } from './dto/quotation-response.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
 import { DriverResponseDto } from './dto/driver-response.dto';
-import { QUOTATION_EXPIRY_MINUTES } from './constants/lalamove.constants';
+import { AddPriorityFeeDto } from './dto/add-priority-fee.dto';
 
 /**
  * LalamoveService
