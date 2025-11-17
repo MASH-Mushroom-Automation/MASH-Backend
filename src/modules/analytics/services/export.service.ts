@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { ExportConfigDto, ExportFormat, ExportResponseDto } from '../dto/export-config.dto';
@@ -128,7 +128,7 @@ export class ExportService {
           id: true,
           orderNumber: true,
           status: true,
-          total: true,
+          totalAmount: true,
           createdAt: true,
           userId: true,
         },
@@ -138,7 +138,7 @@ export class ExportService {
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
-        total: Number(order.total),
+        total: Number(order.totalAmount),
         createdAt: order.createdAt,
         userId: order.userId,
       }));

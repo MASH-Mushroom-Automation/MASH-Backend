@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { OrderStatus } from '@prisma/client';
@@ -68,7 +68,7 @@ export class DrillDownService {
         productId: true,
         quantity: true,
         price: true,
-        total: true,
+        totalAmount: true,
       },
     });
 
@@ -167,7 +167,7 @@ export class DrillDownService {
         id: true,
         orderNumber: true,
         status: true,
-        total: true,
+        totalAmount: true,
         createdAt: true,
         user: {
           select: {
@@ -185,7 +185,7 @@ export class DrillDownService {
             id: true,
             quantity: true,
             price: true,
-            total: true,
+            totalAmount: true,
           },
         },
       },
@@ -205,7 +205,7 @@ export class DrillDownService {
           id: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
-          total: Number(order.total),
+          total: Number(order.totalAmount),
           createdAt: order.createdAt,
         },
         customer: {
@@ -290,14 +290,14 @@ export class DrillDownService {
         id: true,
         orderNumber: true,
         status: true,
-        total: true,
+        totalAmount: true,
         createdAt: true,
         orderItems: {
           select: {
             id: true,
             quantity: true,
             price: true,
-            total: true,
+            totalAmount: true,
             product: {
               select: {
                 id: true,
@@ -322,7 +322,7 @@ export class DrillDownService {
           id: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
-          total: Number(order.total),
+          total: Number(order.totalAmount),
           createdAt: order.createdAt,
         },
         items: {
@@ -340,7 +340,7 @@ export class DrillDownService {
     });
 
     // Calculate user metrics
-    const totalSpent = orderDetails.reduce((sum, o) => sum + o.order.total, 0);
+    const totalSpent = orderDetails.reduce((sum, o) => sum + o.order.totalAmount, 0);
     const avgOrderValue = orderDetails.length > 0 ? totalSpent / orderDetails.length : 0;
     const totalItems = orderDetails.reduce((sum, o) => sum + o.items.totalQuantity, 0);
 

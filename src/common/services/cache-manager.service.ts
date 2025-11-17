@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CacheManagerService - Advanced cache management with warming, statistics, and monitoring
  *
  * Features:

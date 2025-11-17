@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+﻿import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 import { DateRangeQueryDto, TimeInterval } from './dto/date-range-query.dto';
@@ -64,7 +64,7 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where,
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.prisma.user.count({
@@ -145,10 +145,10 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          total: true,
+          totalAmount: true,
         },
         _avg: {
-          total: true,
+          totalAmount: true,
         },
         _count: true,
       }),
@@ -157,7 +157,7 @@ export class AnalyticsService {
         where,
         _count: true,
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
     ]);
@@ -213,7 +213,7 @@ export class AnalyticsService {
       where,
       _sum: {
         quantity: true,
-        total: true,
+        totalAmount: true,
       },
       _count: true,
     });
@@ -397,14 +397,14 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.prisma.order.groupBy({
         by: ['status'],
         where,
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.getOrderTrendsGrouped(where, query.interval || TimeInterval.MONTHLY),
@@ -634,7 +634,7 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.prisma.order.count({
@@ -669,7 +669,7 @@ export class AnalyticsService {
       where,
       select: {
         createdAt: true,
-        total: true,
+        totalAmount: true,
         status: true,
       },
     });
@@ -687,7 +687,7 @@ export class AnalyticsService {
         };
       }
       grouped[date].count += 1;
-      grouped[date].revenue += Number(order.total);
+      grouped[date].revenue += Number(order.totalAmount);
       if (order.status === OrderStatus.DELIVERED) {
         grouped[date].completedOrders += 1;
       }

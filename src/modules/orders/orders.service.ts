@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -138,13 +138,14 @@ export class OrdersService {
           (sum, item) => sum + item.price * item.quantity,
           0,
         );
-        const shipping = createOrderDto.shipping || 0;
-        const tax = createOrderDto.tax || 0;
-        const discount = createOrderDto.discount || 0;
-        const total = subtotal + shipping + tax - discount;
+        // TODO: Calculate shipping, tax, and discount from pricing service
+        const shippingCost = 0; // Will be calculated by pricing service
+        const taxAmount = subtotal * 0.12; // 12% VAT
+        const discountAmount = 0; // Will be calculated from coupon
+        const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
         const orderNumber = this.generateOrderNumber();
 
-        span.setAttribute('order.total_amount', total);
+        span.setAttribute('order.totalAmount_amount', totalAmount);
 
         const order = await this.prisma.order.create({
           data: {
@@ -152,13 +153,12 @@ export class OrdersService {
             userId: createOrderDto.userId,
             status: OrderStatus.PENDING,
             subtotal: new Prisma.Decimal(subtotal),
-            shipping: new Prisma.Decimal(shipping),
-            tax: new Prisma.Decimal(tax),
-            discount: new Prisma.Decimal(discount),
-            total: new Prisma.Decimal(total),
-            shippingAddress: createOrderDto.shippingAddress as unknown as Prisma.InputJsonValue,
-            billingAddress: (createOrderDto.billingAddress ||
-              createOrderDto.shippingAddress) as unknown as Prisma.InputJsonValue,
+            shippingCost: new Prisma.Decimal(shippingCost),
+            taxAmount: new Prisma.Decimal(taxAmount),
+            discountAmount: new Prisma.Decimal(discountAmount),
+            totalAmount: new Prisma.Decimal(totalAmount),
+            shippingAddressId: createOrderDto.shippingAddressId,
+            billingAddressId: createOrderDto.billingAddressId || createOrderDto.shippingAddressId,
             notes: createOrderDto.notes,
             orderItems: {
               create: createOrderDto.items.map(item => ({
@@ -171,8 +171,8 @@ export class OrdersService {
             payments: {
               create: {
                 userId: createOrderDto.userId,
-                amount: new Prisma.Decimal(total),
-                method: createOrderDto.paymentMethod,
+                amount: new Prisma.Decimal(totalAmount),
+                method: createOrderDto.paymentMethodId || 'PENDING',
                 status: 'PENDING',
               },
             },
@@ -212,7 +212,7 @@ export class OrdersService {
         );
         span.addEvent('Updated product stock in transaction');
 
-        this.prometheusService.recordOrder(order.status, order.payments[0]?.method, total);
+        this.prometheusService.recordOrder(order.status, order.payments[0]?.method, totalAmount);
 
         span.setStatus({ code: SpanStatusCode.OK });
         return order;
@@ -544,7 +544,7 @@ export class OrdersService {
       shipping: order.shipping.toNumber(),
       tax: order.tax.toNumber(),
       discount: order.discount.toNumber(),
-      total: order.total.toNumber(),
+      total: order.totalAmount.toNumber(),
       paymentMethod: payment?.method,
       paymentStatus: payment?.status,
     };
@@ -812,12 +812,12 @@ export class OrdersService {
           span.addEvent('Created order and updated stock');
           span.setAttribute('order.id', order.id);
           span.setAttribute('order.number', orderNumber);
-          span.setAttribute('order.total', order.total.toNumber());
+          span.setAttribute('order.totalAmount', order.totalAmount.toNumber());
 
           // Record metrics (commented out until method is implemented)
           // this.prometheusService.recordOrderCreated(
           //   order.id,
-          //   order.total.toNumber(),
+          //   order.totalAmount.toNumber(),
           //   paymentMethod,
           // );
 

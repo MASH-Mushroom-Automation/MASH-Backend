@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { CreateReportDto, ReportConfiguration } from '../dto/create-report.dto';
@@ -307,12 +307,12 @@ export class ReportBuilderService {
 
     return {
       totalSales: sales.length,
-      totalRevenue: sales.reduce((sum, order) => sum + Number(order.total), 0),
+      totalRevenue: sales.reduce((sum, order) => sum + Number(order.totalAmount), 0),
       sales: sales.map(order => ({
         orderId: order.id,
         date: order.createdAt,
         customer: order.user?.email || 'N/A',
-        amount: Number(order.total),
+        amount: Number(order.totalAmount),
         items: order.orderItems?.length || 0,
       })),
     };

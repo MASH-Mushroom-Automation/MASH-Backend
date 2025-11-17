@@ -32,10 +32,10 @@ export class OrderRepository {
 
     try {
       // Try cache first
-      const cached = await this.redis.get(cacheKey);
+      const cached = await this.redis.get<Order>(cacheKey);
       if (cached) {
         this.logger.debug(`Cache hit for order ${id}`);
-        return JSON.parse(cached);
+        return cached;
       }
     } catch (error) {
       this.logger.warn(`Redis get failed for ${cacheKey}:`, error);
@@ -66,9 +66,9 @@ export class OrderRepository {
     const cacheKey = this.getCacheKey('order_number', orderNumber);
 
     try {
-      const cached = await this.redis.get(cacheKey);
+      const cached = await this.redis.get<Order>(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return cached;
       }
     } catch (error) {
       this.logger.warn(`Redis get failed for ${cacheKey}:`, error);
@@ -285,7 +285,6 @@ export class OrderRepository {
             select: {
               id: true,
               name: true,
-              imageUrl: true,
               slug: true,
             },
           },
@@ -300,7 +299,6 @@ export class OrderRepository {
           email: true,
           firstName: true,
           lastName: true,
-          phone: true,
         },
       };
     }
@@ -364,8 +362,8 @@ export class OrderRepository {
   private async invalidateOrderCache(id: string, orderNumber: string): Promise<void> {
     try {
       await Promise.all([
-        this.redis.del(this.getCacheKey('order', id)),
-        this.redis.del(this.getCacheKey('order_number', orderNumber)),
+        this.redis.delete(this.getCacheKey('order', id)),
+        this.redis.delete(this.getCacheKey('order_number', orderNumber)),
       ]);
     } catch (error) {
       this.logger.warn(`Failed to invalidate order cache: ${error}`);
@@ -379,10 +377,7 @@ export class OrderRepository {
     try {
       // Pattern-based deletion for all user order list caches
       const pattern = this.getCacheKey('user', userId) + '*';
-      const keys = await this.redis.keys(pattern);
-      if (keys.length > 0) {
-        await this.redis.del(...keys);
-      }
+      await this.redis.deletePattern(pattern);
     } catch (error) {
       this.logger.warn(`Failed to invalidate user orders cache: ${error}`);
     }

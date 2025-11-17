@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 
@@ -63,7 +63,7 @@ export class RealtimeAnalyticsService {
       where: { createdAt: { gte: last24Hours } },
       select: {
         id: true,
-        total: true,
+        totalAmount: true,
         status: true,
         createdAt: true,
       },
@@ -74,7 +74,7 @@ export class RealtimeAnalyticsService {
     const data = {
       recentOrders,
       count: recentOrders.length,
-      totalValue: recentOrders.reduce((sum, order) => sum + Number(order.total), 0),
+      totalValue: recentOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0),
       timestamp: now.toISOString(),
     };
 

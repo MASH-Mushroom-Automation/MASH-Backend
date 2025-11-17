@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -563,7 +563,7 @@ export class CartController {
     if (updatedCart) {
       this.prometheusService.recordCartCheckout(
         dto.paymentMethod,
-        updatedCart.total.toNumber(),
+        updatedCart.totalAmount.toNumber(),
       );
     }
 

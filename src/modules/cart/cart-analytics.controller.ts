@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Query,
@@ -101,7 +101,7 @@ export class CartAnalyticsController {
         status: 'ACTIVE',
       },
       _avg: {
-        total: true,
+        totalAmount: true,
       },
     });
 
@@ -232,7 +232,7 @@ export class CartAnalyticsController {
 
     // Calculate totals
     const totalShippingRevenue = carts.reduce(
-      (sum, cart) => sum + cart.shipping.toNumber(),
+      (sum, cart) => sum + cart.shippingCostCost.toNumber(),
       0,
     );
 
@@ -250,7 +250,7 @@ export class CartAnalyticsController {
       const method = (cart.metadata as any)?.shippingMethod || 'STANDARD';
       if (methodBreakdown[method]) {
         methodBreakdown[method].count++;
-        methodBreakdown[method].revenue += cart.shipping.toNumber();
+        methodBreakdown[method].revenue += cart.shippingCostCost.toNumber();
       }
     });
 
@@ -346,7 +346,7 @@ export class CartAnalyticsController {
       },
       select: {
         tax: true,
-        subtotal: true,
+        subtotalAmount: true,
         metadata: true,
       },
     });
@@ -463,10 +463,10 @@ export class CartAnalyticsController {
     const cartAggregations = await this.prisma.cart.aggregate({
       where: { status: 'ACTIVE' },
       _sum: {
-        total: true,
+        totalAmount: true,
       },
       _avg: {
-        total: true,
+        totalAmount: true,
       },
     });
 
