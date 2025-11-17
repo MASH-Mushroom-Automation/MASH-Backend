@@ -209,7 +209,7 @@ export class LalamoveService {
   /**
    * Add priority fee to order
    */
-  async addPriorityFee(orderId: string, dto: AddPriorityFeeDto): Promise<OrderResponseDto> {
+  async addPriorityFee(orderId: string, dto: AddPriorityFeeDto): Promise<any> {
     const response = await this.lalamoveApi.addPriorityFee(orderId, { amount: dto.amount });
     
     // Update database
@@ -220,7 +220,7 @@ export class LalamoveService {
       },
     });
 
-    return response as OrderResponseDto;
+    return response;
   }
 
   /**

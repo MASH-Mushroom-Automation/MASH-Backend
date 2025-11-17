@@ -1338,3 +1338,61 @@ enum DeviceHealthStatus {
   OFFLINE
   MAINTENANCE
 }
+
+// ============================================================================
+// LALAMOVE DELIVERY INTEGRATION MODELS
+// ============================================================================
+
+model LalamoveQuotation {
+  id            String   @id @default(cuid())
+  quotationId   String   @unique
+  serviceType   String
+  totalPrice    Float
+  currency      String   @default("PHP")
+  distance      Float
+  distanceUnit  String   @default("km")
+  stops         Json
+  isScheduled   Boolean  @default(false)
+  scheduleAt    DateTime?
+  expiresAt     DateTime
+  status        String   @default("ACTIVE") // ACTIVE, EXPIRED, USED
+  userId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([quotationId])
+  @@index([status])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("lalamove_quotations")
+}
+
+model LalamoveOrder {
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  quotationId    String
+  status         String
+  driverId       String?
+  shareLink      String
+  totalPrice     Float
+  currency       String    @default("PHP")
+  distance       Float
+  distanceUnit   String    @default("km")
+  stops          Json
+  isPODEnabled   Boolean   @default(true)
+  podStatus      String?
+  podImage       String?
+  podSignature   String?
+  orderReference String?
+  userId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([quotationId])
+  @@index([status])
+  @@index([userId])
+  @@index([driverId])
+  @@index([createdAt])
+  @@map("lalamove_orders")
+}

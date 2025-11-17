@@ -134,7 +134,7 @@ export class LalamoveController {
     @Param('orderId') orderId: string,
     @Param('driverId') driverId: string,
   ): Promise<DriverResponseDto> {
-    return this.lalamoveService.getDriver(orderId, driverId);
+    return this.lalamoveService.getDriver(orderId);
   }
 
   // ==================== PRIORITY FEE ====================
@@ -148,7 +148,7 @@ export class LalamoveController {
     @Param('orderId') orderId: string,
     @Body() dto: AddPriorityFeeDto,
   ): Promise<OrderResponseDto> {
-    return this.lalamoveService.addPriorityFee(orderId, dto.priorityFee);
+    return this.lalamoveService.addPriorityFee(orderId, dto);
   }
 
   // ==================== WEBHOOKS ====================
@@ -160,7 +160,8 @@ export class LalamoveController {
   @ApiOperation({ summary: 'Webhook endpoint for Lalamove events' })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
   async handleWebhook(@Body() webhookEvent: WebhookEventDto): Promise<{ success: boolean }> {
-    await this.webhookService.handleWebhookEvent(webhookEvent);
+    await this.webhookService.processWebhookEvent(webhookEvent as any);
+    await this.webhookService.logWebhookEvent(webhookEvent as any, 'SUCCESS');
     return { success: true };
   }
 

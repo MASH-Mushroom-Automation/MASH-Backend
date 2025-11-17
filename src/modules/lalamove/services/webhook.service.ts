@@ -244,10 +244,9 @@ export class WebhookService {
       await this.prisma.auditLog.create({
         data: {
           action: `LALAMOVE_WEBHOOK_${payload.eventType}`,
-          entityType: 'LALAMOVE_ORDER',
           entityId: payload.orderId,
-          changes: payload,
           metadata: {
+            payload: payload,
             status,
             error,
             timestamp: payload.timestamp,
