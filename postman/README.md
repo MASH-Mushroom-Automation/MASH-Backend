@@ -22,6 +22,7 @@ Postman collection for MASH-backend
 - `13-User-Profile-Management-API.postman_collection.json` — User profiles
 - `14-Import-Export-API.postman_collection.json` — Data import/export
 - **`15-Cart-API.postman_collection.json`** — 🆕 **Shopping Cart System** (NEW!)
+- **`MASH-Lalamove-PH.postman_collection.json`** — 🚚 **Lalamove Delivery Integration** (NEW!)
 - `99-Complete-Auth-Flow-Testing.postman_collection.json` — Auth flow tests
 
 ### 🛒 NEW: Cart API Collection
@@ -48,6 +49,46 @@ The **Cart API collection** (`15-Cart-API.postman_collection.json`) includes com
 **Analytics (Admin):**
 - Get cart overview
 - Track abandoned carts
+
+### 🚚 NEW: Lalamove Delivery Integration
+
+The **Lalamove API collection** (`MASH-Lalamove-PH.postman_collection.json`) includes comprehensive delivery integration for Philippines market:
+
+**Quotation Management:**
+- Get city info (Manila, Cebu, Luzon regions)
+- Create immediate quotation
+- Create scheduled quotation (2+ hours ahead)
+- Get quotation details
+- View price breakdown and distance
+
+**Order Management:**
+- Create order from quotation
+- Get order details and tracking
+- Get driver information (name, phone, location, photo)
+- Add priority fee (PHP 20-500)
+- Cancel order (within 5-minute window)
+
+**Webhook Integration:**
+- Receive real-time order updates
+- Driver assigned notifications
+- Pickup and delivery confirmations
+- Location tracking updates
+- Proof of delivery (POD) photos
+
+**Setup & Configuration:**
+- Setup production webhook URL (Admin only)
+- Configure webhook events
+
+**Environment File:**
+- `PH.postman_environment.json` — Sandbox environment with API credentials
+
+**Features:**
+- Multi-channel notifications (Email, SMS, Push)
+- HMAC SHA-256 signature verification
+- Automatic signature generation in pre-request scripts
+- Support for 7 vehicle types (Motorcycle, Sedan, MPV, Van, Pickup, Trucks)
+- Real-time driver tracking
+- POD (Proof of Delivery) support
 
 **Error Scenarios:**
 - Out of stock handling
