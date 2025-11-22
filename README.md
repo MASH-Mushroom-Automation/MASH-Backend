@@ -97,6 +97,48 @@ curl http://localhost:3000/api/v1/health
 
 See [docs/monitoring/README.md](./docs/monitoring/README.md) for complete details.
 
+## 📧 Email Service Setup (Railway Deployment)
+
+### Quick Start - SMTP Relay for Railway
+
+Railway blocks SMTP ports (587, 465), so we use an ngrok tunnel relay:
+
+```bash
+# Windows - Run this in project root
+start-smtp-relay.bat
+
+# Or PowerShell
+.\start-smtp-relay.ps1
+```
+
+This will:
+1. ✅ Start SMTP relay server on `localhost:2525`
+2. ✅ Start ngrok tunnel (Asia Pacific region)
+3. ✅ Open ngrok dashboard to get your HTTPS URL
+
+### Configure Railway
+
+1. Copy your ngrok HTTPS URL (e.g., `https://abc123.ngrok-free.app`)
+2. Add to Railway environment variables:
+   ```env
+   SMTP_RELAY_ENABLED=true
+   SMTP_RELAY_URL=https://abc123.ngrok-free.app
+   ```
+3. Deploy to Railway
+
+### Documentation
+
+- **Complete Setup Guide**: [docs/NGROK_SMTP_SETUP_GUIDE.md](docs/NGROK_SMTP_SETUP_GUIDE.md)
+- **Relay Server Details**: [smtp-relay-server/README.md](smtp-relay-server/README.md)
+
+### Email Provider Priority (Automatic Failover)
+
+1. **SMTP Relay** (Railway) - Priority 1 ✅
+2. **SendGrid API** (Cloud) - Priority 5 ⏸️ TODO
+3. **Direct SMTP** (Local) - Priority 10 ✅
+
+---
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

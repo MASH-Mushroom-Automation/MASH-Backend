@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
 import { EmailTemplateService, EmailTemplateType } from './email-template.service';
+import axios from 'axios';
 
 export interface SendEmailOptions {
   to: string;
@@ -12,6 +13,7 @@ export interface SendEmailOptions {
 }
 
 export enum EmailProvider {
+  RELAY = 'relay', // ngrok SMTP relay (Railway production)
   SMTP = 'smtp',
   SENDGRID = 'sendgrid',
   // Add more providers as needed
@@ -35,28 +37,43 @@ export class EmailService {
   }
 
   private initializeProviders() {
-    // Initialize SMTP provider (always available as fallback)
-    this.providers.push({
-      name: EmailProvider.SMTP,
-      enabled: true,
-      priority: 10,
-      transporter: this.createSMTPTransporter(),
-    });
+    // 1. SMTP Relay (ngrok) - Highest priority for Railway
+    if (process.env.SMTP_RELAY_ENABLED === 'true' && process.env.SMTP_RELAY_URL) {
+      this.providers.push({
+        name: EmailProvider.RELAY,
+        enabled: true,
+        priority: 1, // Highest priority
+      });
+      this.logger.log('✅ SMTP Relay provider enabled (ngrok tunnel)');
+      this.logger.log(`   URL: ${process.env.SMTP_RELAY_URL}`);
+    }
 
-    // Initialize SendGrid provider if configured
+    // 2. SendGrid API - Cloud-native alternative
     if (process.env.SENDGRID_API_KEY) {
       this.providers.push({
         name: EmailProvider.SENDGRID,
         enabled: true,
-        priority: 1, // Higher priority than SMTP
+        priority: 5,
         // transporter: this.createSendGridTransporter(), // TODO: Implement when SendGrid package is installed
       });
+      this.logger.log('✅ SendGrid provider enabled');
     }
+
+    // 3. Direct SMTP - Fallback for local development (fails on Railway)
+    this.providers.push({
+      name: EmailProvider.SMTP,
+      enabled: true,
+      priority: 10, // Lowest priority
+      transporter: this.createSMTPTransporter(),
+    });
 
     // Sort providers by priority (lower number = higher priority)
     this.providers.sort((a, b) => a.priority - b.priority);
 
-    this.logger.log(`Initialized ${this.providers.length} email providers`);
+    this.logger.log(`📧 Initialized ${this.providers.length} email provider(s)`);
+    this.providers.forEach(p => {
+      this.logger.log(`   - ${p.name.toUpperCase()} (priority: ${p.priority})`);
+    });
   }
 
   private createSMTPTransporter(): Transporter {
@@ -180,6 +197,57 @@ export class EmailService {
   }
 
   /**
+   * Send email via ngrok SMTP relay (Railway production)
+   */
+  private async sendViaRelay(to: string, subject: string, html: string, text: string): Promise<void> {
+    if (!process.env.SMTP_RELAY_URL) {
+      throw new Error('SMTP_RELAY_URL not configured');
+    }
+
+    const relayUrl = `${process.env.SMTP_RELAY_URL}${process.env.SMTP_RELAY_ENDPOINT || '/send-email'}`;
+
+    try {
+      this.logger.log(`📧 Sending email via ngrok relay: ${relayUrl}`);
+
+      const response = await axios.post(
+        relayUrl,
+        {
+          to,
+          subject,
+          html,
+          text,
+          from: process.env.EMAIL_FROM,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(process.env.SMTP_RELAY_API_KEY && {
+              Authorization: `Bearer ${process.env.SMTP_RELAY_API_KEY}`,
+            }),
+          },
+          timeout: 30000, // 30 seconds
+        },
+      );
+
+      if (response.data.success) {
+        this.logger.log(`✅ Email sent successfully via relay: ${response.data.messageId}`);
+      } else {
+        throw new Error(response.data.error || 'Unknown relay error');
+      }
+    } catch (error) {
+      this.logger.error(`❌ SMTP Relay error: ${error.message}`);
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNREFUSED') {
+          this.logger.error('   Relay server not reachable. Is ngrok tunnel running?');
+        } else if (error.code === 'ETIMEDOUT') {
+          this.logger.error('   Relay request timeout. Check network connection.');
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Send an email using a template with provider failover
    */
   async sendTemplatedEmail(options: SendEmailOptions): Promise<void> {
@@ -201,26 +269,40 @@ export class EmailService {
       // Use provided subject or template subject
       const emailSubject = options.subject || subject;
 
-      // Send using the selected provider
-      if (provider.name === EmailProvider.SMTP && provider.transporter) {
-        const info = await provider.transporter.sendMail({
-          from: process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>',
-          to: options.to,
-          subject: emailSubject,
-          text: text,
-          html: html,
-        });
+      // Send using the selected provider with failover
+      let lastError: Error | null = null;
+      
+      for (const currentProvider of this.providers) {
+        if (!currentProvider.enabled) continue;
 
-        this.logger.log(
-          `Email sent successfully to ${options.to} via ${provider.name}: ${info.messageId}`,
-        );
-      } else if (provider.name === EmailProvider.SENDGRID) {
-        // TODO: Implement SendGrid sending
-        this.logger.log(`SendGrid sending not yet implemented for ${options.to}`);
-        throw new Error('SendGrid provider not yet implemented');
-      } else {
-        throw new Error(`Unsupported provider: ${provider.name}`);
+        try {
+          if (currentProvider.name === EmailProvider.RELAY) {
+            await this.sendViaRelay(options.to, emailSubject, html, text);
+            this.logger.log(`✅ Email sent to ${options.to} via RELAY`);
+            return; // Success - exit
+          } else if (currentProvider.name === EmailProvider.SMTP && currentProvider.transporter) {
+            const info = await currentProvider.transporter.sendMail({
+              from: process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>',
+              to: options.to,
+              subject: emailSubject,
+              text: text,
+              html: html,
+            });
+            this.logger.log(`✅ Email sent to ${options.to} via SMTP: ${info.messageId}`);
+            return; // Success - exit
+          } else if (currentProvider.name === EmailProvider.SENDGRID) {
+            // TODO: Implement SendGrid sending
+            throw new Error('SendGrid provider not yet implemented');
+          }
+        } catch (error) {
+          lastError = error as Error;
+          this.logger.error(`❌ Failed with ${currentProvider.name}: ${lastError.message}`);
+          // Continue to next provider
+        }
       }
+
+      // All providers failed
+      throw new Error(`All email providers failed. Last error: ${lastError?.message || 'Unknown'}`);
     } catch (error) {
       this.logger.error(`Failed to send email to ${options.to}:`, error);
       throw error;
