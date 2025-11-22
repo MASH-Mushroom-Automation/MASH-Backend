@@ -21,8 +21,8 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { GetUser } from '../auth/decorators/get-user.decorator';
-import { ThrottleEndpoint } from '../common/decorators/throttle.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ThrottleEndpoint } from '../../common/decorators/throttle-endpoint.decorator';
 import { PaymentService } from './payment.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
@@ -62,7 +62,7 @@ export class PaymentController {
   @ApiResponse({ status: 404, description: 'Order not found' })
   async createPaymentIntent(
     @Body() dto: CreatePaymentIntentDto,
-    @GetUser('id') userId: string,
+      @CurrentUser('id') userId: string,
   ): Promise<PaymentIntentResponseDto> {
     return this.paymentService.createPaymentIntent(dto, userId);
   }
@@ -205,7 +205,7 @@ export class PaymentController {
     status: 200,
     description: 'Payments retrieved successfully',
   })
-  async getMyPayments(@GetUser('id') userId: string) {
+  async getMyPayments(@CurrentUser('id') userId: string) {
     return this.paymentService.getUserPayments(userId);
   }
 
@@ -214,7 +214,7 @@ export class PaymentController {
    */
   @Post('webhooks/paymongo')
   @HttpCode(HttpStatus.OK)
-  @ThrottleEndpoint('WEBHOOK')
+  @ThrottleEndpoint('UNRESTRICTED')
   @ApiOperation({
     summary: 'PayMongo webhook',
     description: 'Handle PayMongo webhook events',
@@ -237,7 +237,7 @@ export class PaymentController {
    */
   @Post('webhooks/gcash')
   @HttpCode(HttpStatus.OK)
-  @ThrottleEndpoint('WEBHOOK')
+  @ThrottleEndpoint('UNRESTRICTED')
   @ApiOperation({
     summary: 'GCash webhook',
     description: 'Handle GCash webhook events',
@@ -260,7 +260,7 @@ export class PaymentController {
    */
   @Post('webhooks/maya')
   @HttpCode(HttpStatus.OK)
-  @ThrottleEndpoint('WEBHOOK')
+  @ThrottleEndpoint('UNRESTRICTED')
   @ApiOperation({
     summary: 'Maya webhook',
     description: 'Handle Maya webhook events',

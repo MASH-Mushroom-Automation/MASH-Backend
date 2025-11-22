@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../../database/prisma.service';
-import { PrometheusService } from '../../../monitoring/prometheus.service';
+import { PrismaService } from '../../database/prisma.service';
+import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 import {
   IPaymentProvider,
   CreatePaymentIntentRequest,
