@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -118,7 +118,7 @@ export class OrdersService {
           throw new ForbiddenException('You can only create orders for yourself');
         }
 
-        // ✅ FIX: Batch fetch all products (eliminates N+1 query)
+        // ? FIX: Batch fetch all products (eliminates N+1 query)
         const productIds = createOrderDto.items.map(item => item.productId);
         const products = await this.prisma.product.findMany({
           where: { id: { in: productIds } },
@@ -206,7 +206,7 @@ export class OrdersService {
         span.addEvent('Created order in DB');
         span.setAttribute('order.id', order.id);
 
-        // ✅ FIX: Batch stock updates in transaction (eliminates N+1 query)
+        // ? FIX: Batch stock updates in transaction (eliminates N+1 query)
         await this.prisma.$transaction(
           createOrderDto.items.map(item =>
             this.prisma.product.update({
@@ -237,7 +237,7 @@ export class OrdersService {
 
   // 3. Get user's orders
   /**
-   * ✅ CACHED: 10 minutes TTL
+   * ? CACHED: 10 minutes TTL
    * Hot path - user order history cached for performance
    */
   @Cacheable({ key: 'orders:user', ttl: 600, tags: ['orders', 'orders:user'] })
@@ -573,7 +573,7 @@ export class OrdersService {
             ...where,
             payments: { some: { status: 'PAID' } },
           },
-          _sum: { totalAmount: true },
+          _sum: { total: true },
         }),
         this.prisma.order.count({
           where: { ...where, status: OrderStatus.PENDING },
@@ -586,7 +586,7 @@ export class OrdersService {
         }),
       ]);
 
-    const revenueTotal = totalRevenue._sum.totalAmount?.toNumber() || 0;
+    const revenueTotal = totalRevenue._sum.total?.toNumber() || 0;
 
     return {
       totalOrders,

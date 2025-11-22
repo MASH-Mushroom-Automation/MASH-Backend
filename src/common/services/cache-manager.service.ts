@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CacheManagerService - Advanced cache management with warming, statistics, and monitoring
  *
  * Features:
@@ -85,7 +85,7 @@ export class CacheManagerService implements OnModuleInit {
    * Initialize cache on module startup
    */
   async onModuleInit() {
-    this.logger.log('🚀 Initializing Cache Manager...');
+    this.logger.log('?? Initializing Cache Manager...');
 
     // Warm cache on startup (async, don't block startup)
     // Use setTimeout to defer execution until after module initialization completes
@@ -96,7 +96,7 @@ export class CacheManagerService implements OnModuleInit {
     }, 1000); // Wait 1 second after module init
 
     // Start monitoring
-    this.logger.log('✅ Cache Manager initialized successfully');
+    this.logger.log('? Cache Manager initialized successfully');
   }
 
   /**
@@ -113,7 +113,7 @@ export class CacheManagerService implements OnModuleInit {
       ...config,
     };
 
-    this.logger.log('🔥 Starting cache warming...');
+    this.logger.log('?? Starting cache warming...');
     const startTime = Date.now();
 
     try {
@@ -164,7 +164,7 @@ export class CacheManagerService implements OnModuleInit {
       await Promise.all(warmingTasks);
 
       const duration = Date.now() - startTime;
-      this.logger.log(`✅ Cache warming completed successfully in ${duration}ms`);
+      this.logger.log(`? Cache warming completed successfully in ${duration}ms`);
     } catch (error) {
       this.logger.error('Cache warming failed', error);
       this.trackError('Cache warming failed');
@@ -188,7 +188,7 @@ export class CacheManagerService implements OnModuleInit {
         ['system', 'config'],
       );
 
-      this.logger.debug(`✅ Warmed system config (${config.length} items)`);
+      this.logger.debug(`? Warmed system config (${config.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm system config', error);
       // Non-fatal: system can start without cached config
@@ -212,7 +212,7 @@ export class CacheManagerService implements OnModuleInit {
         ['categories', 'categories:list'],
       );
 
-      this.logger.debug(`✅ Warmed categories (${categories.length} items)`);
+      this.logger.debug(`? Warmed categories (${categories.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm categories', error);
       // Non-fatal: categories can load on-demand
@@ -237,7 +237,7 @@ export class CacheManagerService implements OnModuleInit {
         ['products', 'products:list'],
       );
 
-      this.logger.debug(`✅ Warmed featured products (${products.length} items)`);
+      this.logger.debug(`? Warmed featured products (${products.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm featured products', error);
       // Non-fatal: products can load on-demand
@@ -304,7 +304,7 @@ export class CacheManagerService implements OnModuleInit {
         ['analytics', 'analytics:products'],
       );
 
-      this.logger.debug(`✅ Warmed top products analytics (${topProducts.length} items)`);
+      this.logger.debug(`? Warmed top products analytics (${topProducts.length} items)`);
     } catch (error) {
       this.logger.error('Failed to warm top products', error);
       // Non-fatal: analytics can load on-demand
@@ -319,7 +319,7 @@ export class CacheManagerService implements OnModuleInit {
       const [totalOrders, totalRevenue, totalUsers, deviceStats] = await Promise.all([
         this.prisma.order.count(),
         this.prisma.order.aggregate({
-          _sum: { totalAmount: true },
+          _sum: { total: true },
         }),
         this.prisma.user.count(),
         this.prisma.device.aggregate({
@@ -329,7 +329,7 @@ export class CacheManagerService implements OnModuleInit {
 
       const stats = {
         totalOrders,
-        totalRevenue: Number(totalRevenue._sum.totalAmount) || 0,
+        totalRevenue: Number(totalRevenue._sum.total) || 0,
         totalUsers,
         totalDevices: deviceStats._count,
       };
@@ -341,7 +341,7 @@ export class CacheManagerService implements OnModuleInit {
         ['analytics', 'analytics:dashboard'],
       );
 
-      this.logger.debug('✅ Warmed dashboard statistics');
+      this.logger.debug('? Warmed dashboard statistics');
     } catch (error) {
       this.logger.error('Failed to warm dashboard statistics', error);
       // Non-fatal: dashboard stats can load on-demand
@@ -508,7 +508,7 @@ export class CacheManagerService implements OnModuleInit {
       keyHitCount: new Map(),
       recentErrors: [],
     };
-    this.logger.log('✅ Cache statistics reset');
+    this.logger.log('? Cache statistics reset');
   }
 
   /**
@@ -520,12 +520,12 @@ export class CacheManagerService implements OnModuleInit {
       const health = await this.getCacheHealth();
 
       if (health.status === 'unhealthy') {
-        this.logger.error(`🚨 Cache health is UNHEALTHY: ${health.alerts.join(', ')}`);
+        this.logger.error(`?? Cache health is UNHEALTHY: ${health.alerts.join(', ')}`);
       } else if (health.status === 'degraded') {
-        this.logger.warn(`⚠️  Cache health is DEGRADED: ${health.alerts.join(', ')}`);
+        this.logger.warn(`??  Cache health is DEGRADED: ${health.alerts.join(', ')}`);
       } else {
         this.logger.debug(
-          `✅ Cache health is HEALTHY (hit rate: ${health.hitRate.toFixed(2)}%, avg response: ${health.averageResponseTime.toFixed(2)}ms)`,
+          `? Cache health is HEALTHY (hit rate: ${health.hitRate.toFixed(2)}%, avg response: ${health.averageResponseTime.toFixed(2)}ms)`,
         );
       }
     } catch (error) {
@@ -539,7 +539,7 @@ export class CacheManagerService implements OnModuleInit {
    */
   @Cron(CronExpression.EVERY_30_MINUTES)
   async periodicCacheWarming(): Promise<void> {
-    this.logger.debug('🔥 Running periodic cache warming...');
+    this.logger.debug('?? Running periodic cache warming...');
     await this.warmCache({
       categories: true,
       featuredProducts: true,

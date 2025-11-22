@@ -1,4 +1,4 @@
-ï»¿import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import {
@@ -347,10 +347,10 @@ export class ChartDataService {
             createdAt: { gte: start, lte: end },
             status: { in: ['DELIVERED'] },
           },
-          _sum: { totalAmount: true },
+          _sum: { total: true },
         });
 
-        return Number(result._sum?.totalAmount || 0);
+        return Number(result._sum?.total || 0);
       }),
     );
   }
@@ -444,7 +444,7 @@ export class ChartDataService {
           status: { in: ['DELIVERED'] },
         },
       },
-      _sum: { total: true }, // Sum line totals (price Ã— quantity), not unit price
+      _sum: { total: true }, // Sum line totals (price × quantity), not unit price
     });
 
     return Number(result._sum?.total || 0);
@@ -537,14 +537,14 @@ export class ChartDataService {
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
       _count: true,
-      _sum: { totalAmount: true },
+      _sum: { total: true },
     });
 
     return {
       labels: orders.map(o => o.status),
       values:
         metric === 'revenue'
-          ? orders.map(o => Number(o._sum?.totalAmount || 0))
+          ? orders.map(o => Number(o._sum?.total || 0))
           : orders.map(o => o._count),
     };
   }
@@ -564,7 +564,7 @@ export class ChartDataService {
           status: { in: ['DELIVERED'] },
         },
       },
-      _sum: { quantity: true, total: true }, // Include total (price Ã— quantity) for revenue
+      _sum: { quantity: true, total: true }, // Include total (price × quantity) for revenue
       orderBy: { _sum: { quantity: 'desc' } },
       take: 10,
     });

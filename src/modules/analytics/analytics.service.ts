@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 import { DateRangeQueryDto, TimeInterval } from './dto/date-range-query.dto';
@@ -50,7 +50,7 @@ export class AnalyticsService {
       };
     }
 
-    // ✅ Task 3.3: Parallelize ALL independent queries (7 concurrent queries)
+    // ? Task 3.3: Parallelize ALL independent queries (7 concurrent queries)
     const [
       totalOrders,
       totalRevenue,
@@ -64,7 +64,7 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where,
         _sum: {
-          totalAmount: true,
+          total: true,
         },
       }),
       this.prisma.user.count({
@@ -100,7 +100,7 @@ export class AnalyticsService {
 
     const result = {
       totalOrders,
-      totalRevenue: Number(totalRevenue._sum.totalAmount) || 0,
+      totalRevenue: Number(totalRevenue._sum.total) || 0,
       totalUsers,
       totalDevices: deviceStats._count,
       activeDevices,
@@ -145,10 +145,10 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          totalAmount: true,
+          total: true,
         },
         _avg: {
-          totalAmount: true,
+          total: true,
         },
         _count: true,
       }),
@@ -157,7 +157,7 @@ export class AnalyticsService {
         where,
         _count: true,
         _sum: {
-          totalAmount: true,
+          total: true,
         },
       }),
     ]);
@@ -165,13 +165,13 @@ export class AnalyticsService {
     const trends = await this.getOrderTrendsGrouped(where, query.interval || TimeInterval.DAILY);
 
     const result = {
-      totalSales: Number(salesData._sum.totalAmount) || 0,
-      averageOrderValue: Number(salesData._avg.totalAmount) || 0,
+      totalSales: Number(salesData._sum.total) || 0,
+      averageOrderValue: Number(salesData._avg.total) || 0,
       orderCount: salesData._count,
       ordersByStatus: ordersByStatus.map(status => ({
         status: status.status,
         count: status._count,
-        total: Number(status._sum.totalAmount) || 0,
+        total: Number(status._sum.total) || 0,
       })),
       trends,
     };
@@ -389,7 +389,7 @@ export class AnalyticsService {
       };
     }
 
-    // ✅ Task 3.3: Parallelize all 3 independent queries
+    // ? Task 3.3: Parallelize all 3 independent queries
     const [revenueData, revenueByStatus, trends] = await Promise.all([
       this.prisma.order.aggregate({
         where: {
@@ -397,24 +397,24 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          totalAmount: true,
+          total: true,
         },
       }),
       this.prisma.order.groupBy({
         by: ['status'],
         where,
         _sum: {
-          totalAmount: true,
+          total: true,
         },
       }),
       this.getOrderTrendsGrouped(where, query.interval || TimeInterval.MONTHLY),
     ]);
 
     const result = {
-      totalRevenue: Number(revenueData._sum.totalAmount) || 0,
+      totalRevenue: Number(revenueData._sum.total) || 0,
       revenueByStatus: revenueByStatus.map(status => ({
         status: status.status,
-        revenue: Number(status._sum.totalAmount) || 0,
+        revenue: Number(status._sum.total) || 0,
       })),
       trends,
     };
@@ -582,7 +582,7 @@ export class AnalyticsService {
 
     const { startDate, endDate } = query;
 
-    // ✅ Task 3.3: Parallelize independent queries
+    // ? Task 3.3: Parallelize independent queries
     const [categories, products] = await Promise.all([
       this.prisma.category.findMany({
         where: { isActive: true },
@@ -634,7 +634,7 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          totalAmount: true,
+          total: true,
         },
       }),
       this.prisma.order.count({
@@ -656,7 +656,7 @@ export class AnalyticsService {
     ]);
 
     return {
-      revenue: Number(revenue._sum.totalAmount) || 0,
+      revenue: Number(revenue._sum.total) || 0,
       orders,
       users,
       month: date.getMonth() + 1,

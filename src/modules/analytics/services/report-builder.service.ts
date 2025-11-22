@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { CreateReportDto, ReportConfiguration } from '../dto/create-report.dto';
@@ -329,15 +329,15 @@ export class ReportBuilderService {
         createdAt: { gte: new Date(start), lte: new Date(end) },
         status: { in: ['DELIVERED'] },
       },
-      _sum: { totalAmount: true },
+      _sum: { total: true },
       _count: true,
-      _avg: { totalAmount: true },
+      _avg: { total: true },
     });
 
     return {
-      totalRevenue: Number(revenue._sum.totalAmount || 0),
+      totalRevenue: Number(revenue._sum.total || 0),
       totalOrders: revenue._count,
-      averageOrderValue: Number(revenue._avg.totalAmount || 0),
+      averageOrderValue: Number(revenue._avg.total || 0),
       period: { start, end },
     };
   }
@@ -354,14 +354,14 @@ export class ReportBuilderService {
         createdAt: { gte: new Date(start), lte: new Date(end) },
       },
       _count: true,
-      _sum: { totalAmount: true },
+      _sum: { total: true },
     });
 
     return {
       ordersByStatus: orders.map(group => ({
         status: group.status,
         count: group._count,
-        totalRevenue: Number(group._sum.totalAmount || 0),
+        totalRevenue: Number(group._sum.total || 0),
       })),
     };
   }
