@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -78,7 +78,7 @@ export class OrderWorkflowService {
         const pricing = this.calculateCartPricing(cart);
         span.setAttributes({
           'order.subtotal': pricing.subtotal,
-          'order.total': pricing.total,
+          'order.totalAmount': pricing.total,
         });
 
         // 4. Generate order number
@@ -140,7 +140,7 @@ export class OrderWorkflowService {
         const pricing = this.calculateDirectPricing(createOrderDto);
         span.setAttributes({
           'order.subtotal': pricing.subtotal,
-          'order.total': pricing.total,
+          'order.totalAmount': pricing.total,
         });
 
         // 4. Generate order number
@@ -443,10 +443,10 @@ export class OrderWorkflowService {
           status: OrderStatus.PENDING,
           // paymentStatus: 'PENDING', // Field doesn't exist in Order schema
           subtotal: pricing.subtotal,
-          total: pricing.total,
-          shipping: pricing.shippingCost,
-          tax: pricing.taxAmount,
-          discount: pricing.discountAmount,
+          totalAmount: pricing.total,
+          shippingCost: pricing.shippingCost,
+          taxAmount: pricing.taxAmount,
+          discountAmount: pricing.discountAmount,
           shippingAddress: { addressId: dto.shippingAddressId } as any,
           billingAddress: dto.billingAddressId ? ({ addressId: dto.billingAddressId } as any) : null,
           // metadata: {

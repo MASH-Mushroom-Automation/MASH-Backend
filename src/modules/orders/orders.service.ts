@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -162,10 +162,10 @@ export class OrdersService {
             userId: createOrderDto.userId,
             status: OrderStatus.PENDING,
             subtotal: new Prisma.Decimal(subtotal),
-            shipping: new Prisma.Decimal(shippingCost),
-            tax: new Prisma.Decimal(taxAmount),
-            discount: new Prisma.Decimal(discountAmount),
-            total: new Prisma.Decimal(totalAmount),
+            shippingCost: new Prisma.Decimal(shippingCost),
+            taxAmount: new Prisma.Decimal(taxAmount),
+            discountAmount: new Prisma.Decimal(discountAmount),
+            totalAmount: new Prisma.Decimal(totalAmount),
             shippingAddress: {}, // TODO: Fetch address data from Address model using shippingAddressId
             billingAddress: {}, // TODO: Fetch address data from Address model using billingAddressId
             notes: createOrderDto.notes,
@@ -550,10 +550,10 @@ export class OrdersService {
         total: item.total.toNumber(),
       })),
       subtotal: order.subtotal.toNumber(),
-      shipping: order.shipping?.toNumber() || 0,
-      tax: order.tax?.toNumber() || 0,
-      discount: order.discount?.toNumber() || 0,
-      total: order.total?.toNumber() || 0,
+      shipping: order.shippingCost?.toNumber() || 0,
+      tax: order.taxAmount?.toNumber() || 0,
+      discount: order.discountAmount?.toNumber() || 0,
+      total: order.totalAmount?.toNumber() || 0,
       paymentMethod: payment?.method,
       paymentStatus: payment?.status,
     };
@@ -573,7 +573,7 @@ export class OrdersService {
             ...where,
             payments: { some: { status: 'PAID' } },
           },
-          _sum: { total: true },
+          _sum: { totalAmount: true },
         }),
         this.prisma.order.count({
           where: { ...where, status: OrderStatus.PENDING },
@@ -586,7 +586,7 @@ export class OrdersService {
         }),
       ]);
 
-    const revenueTotal = totalRevenue._sum.total?.toNumber() || 0;
+    const revenueTotal = totalRevenue._sum.totalAmount?.toNumber() || 0;
 
     return {
       totalOrders,
@@ -752,10 +752,10 @@ export class OrdersService {
                 userId,
                 status: OrderStatus.PENDING,
                 subtotal: cart.subtotal,
-                tax: cart.tax,
-                shipping: cart.shipping,
-                discount: cart.discount,
-                total: cart.total,
+                taxAmount: cart.tax,
+                shippingCost: cart.shipping,
+                discountAmount: cart.discount,
+                totalAmount: cart.total,
                 shippingAddress: cart.metadata?.['shippingAddress'] || {},
                 billingAddress: cart.metadata?.['billingAddress'] || {},
                 notes: cart.metadata?.['notes'] as string,
@@ -821,7 +821,7 @@ export class OrdersService {
           span.addEvent('Created order and updated stock');
           span.setAttribute('order.id', order.id);
           span.setAttribute('order.number', orderNumber);
-          span.setAttribute('order.total', order.total?.toNumber() || 0);
+          span.setAttribute('order.totalAmount', order.totalAmount?.toNumber() || 0);
 
           // Record metrics (commented out until method is implemented)
           // this.prometheusService.recordOrderCreated(

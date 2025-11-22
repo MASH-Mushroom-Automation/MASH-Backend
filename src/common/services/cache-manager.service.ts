@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CacheManagerService - Advanced cache management with warming, statistics, and monitoring
  *
  * Features:
@@ -319,7 +319,7 @@ export class CacheManagerService implements OnModuleInit {
       const [totalOrders, totalRevenue, totalUsers, deviceStats] = await Promise.all([
         this.prisma.order.count(),
         this.prisma.order.aggregate({
-          _sum: { total: true },
+          _sum: { totalAmount: true },
         }),
         this.prisma.user.count(),
         this.prisma.device.aggregate({
@@ -329,7 +329,7 @@ export class CacheManagerService implements OnModuleInit {
 
       const stats = {
         totalOrders,
-        totalRevenue: Number(totalRevenue._sum.total) || 0,
+        totalRevenue: Number(totalRevenue._sum.totalAmount) || 0,
         totalUsers,
         totalDevices: deviceStats._count,
       };

@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+﻿import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
 import { DateRangeQueryDto, TimeInterval } from './dto/date-range-query.dto';
@@ -64,7 +64,7 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where,
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.prisma.user.count({
@@ -100,7 +100,7 @@ export class AnalyticsService {
 
     const result = {
       totalOrders,
-      totalRevenue: Number(totalRevenue._sum.total) || 0,
+      totalRevenue: Number(totalRevenue._sum.totalAmount) || 0,
       totalUsers,
       totalDevices: deviceStats._count,
       activeDevices,
@@ -145,10 +145,10 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          total: true,
+          totalAmount: true,
         },
         _avg: {
-          total: true,
+          totalAmount: true,
         },
         _count: true,
       }),
@@ -157,7 +157,7 @@ export class AnalyticsService {
         where,
         _count: true,
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
     ]);
@@ -165,13 +165,13 @@ export class AnalyticsService {
     const trends = await this.getOrderTrendsGrouped(where, query.interval || TimeInterval.DAILY);
 
     const result = {
-      totalSales: Number(salesData._sum.total) || 0,
-      averageOrderValue: Number(salesData._avg.total) || 0,
+      totalSales: Number(salesData._sum.totalAmount) || 0,
+      averageOrderValue: Number(salesData._avg.totalAmount) || 0,
       orderCount: salesData._count,
       ordersByStatus: ordersByStatus.map(status => ({
         status: status.status,
         count: status._count,
-        total: Number(status._sum.total) || 0,
+        total: Number(status._sum.totalAmount) || 0,
       })),
       trends,
     };
@@ -208,18 +208,18 @@ export class AnalyticsService {
       };
     }
 
-    const orderItems = await this.prisma.orderItem.groupBy({
+    const orderItems: any = await this.prisma.orderItem.groupBy({
       by: ['productId'],
       where,
       _sum: {
         quantity: true,
-        total: true,
+        total: true, // OrderItem uses 'total' not 'totalAmount'
       },
       _count: true,
     });
 
     const result = {
-      products: orderItems.map(item => ({
+      products: orderItems.map((item: any) => ({
         productId: item.productId,
         totalQuantity: item._sum.quantity || 0,
         totalRevenue: Number(item._sum.total) || 0,
@@ -397,24 +397,24 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.prisma.order.groupBy({
         by: ['status'],
         where,
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.getOrderTrendsGrouped(where, query.interval || TimeInterval.MONTHLY),
     ]);
 
     const result = {
-      totalRevenue: Number(revenueData._sum.total) || 0,
+      totalRevenue: Number(revenueData._sum.totalAmount) || 0,
       revenueByStatus: revenueByStatus.map(status => ({
         status: status.status,
-        revenue: Number(status._sum.total) || 0,
+        revenue: Number(status._sum.totalAmount) || 0,
       })),
       trends,
     };
@@ -634,7 +634,7 @@ export class AnalyticsService {
           status: OrderStatus.DELIVERED,
         },
         _sum: {
-          total: true,
+          totalAmount: true,
         },
       }),
       this.prisma.order.count({
@@ -656,7 +656,7 @@ export class AnalyticsService {
     ]);
 
     return {
-      revenue: Number(revenue._sum.total) || 0,
+      revenue: Number(revenue._sum.totalAmount) || 0,
       orders,
       users,
       month: date.getMonth() + 1,
@@ -669,7 +669,7 @@ export class AnalyticsService {
       where,
       select: {
         createdAt: true,
-        total: true,
+        totalAmount: true,
         status: true,
       },
     });
@@ -687,7 +687,7 @@ export class AnalyticsService {
         };
       }
       grouped[date].count += 1;
-      grouped[date].revenue += Number(order.total);
+      grouped[date].revenue += Number(order.totalAmount);
       if (order.status === OrderStatus.DELIVERED) {
         grouped[date].completedOrders += 1;
       }

@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { OrderStatus } from '@prisma/client';
@@ -135,7 +135,7 @@ export class ComparisonService {
       },
       select: {
         userId: true,
-        total: true,
+        totalAmount: true,
         createdAt: true,
       },
     });
@@ -371,19 +371,19 @@ export class ComparisonService {
         createdAt: { gte: start, lte: end },
       },
       select: {
-        total: true,
+        totalAmount: true,
         createdAt: true,
       },
     });
 
-    const total = orders.reduce((sum, o) => sum + Number(o.total), 0);
+    const total = orders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
       total: Math.round(total * 100) / 100,
       average: Math.round((total / days) * 100) / 100,
       count: orders.length,
-      daily: this.aggregateByDay(orders.map(o => ({ date: o.createdAt, value: Number(o.total) }))),
+      daily: this.aggregateByDay(orders.map(o => ({ date: o.createdAt, value: Number(o.totalAmount) }))),
     };
   }
 
@@ -496,7 +496,7 @@ export class ComparisonService {
       const userCount = cohort.users.length;
       const orderCount = cohort.orders.length;
       const activeUsers = new Set(cohort.orders.map((o: any) => o.userId)).size;
-      const totalRevenue = cohort.orders.reduce((sum: number, o: any) => sum + Number(o.total), 0);
+      const totalRevenue = cohort.orders.reduce((sum: number, o: any) => sum + Number(o.totalAmount), 0);
 
       return {
         cohort: cohort.cohort,

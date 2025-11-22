@@ -1,0 +1,735 @@
+﻿
+> MASH-Backend@0.0.1 build
+> nest build
+
+node.exe : [96msrc/common/services/cache-manager.service.ts[0m:[93m322[0m:[93m19[0m - [91merror[0m[90m TS2353: 
+[0mObject literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([96msrc/common...gateInputType'.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[7m322[0m           _sum: { totalAmount: true },
+[7m   [0m [91m                  ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/common/services/cache-manager.service.ts[0m:[93m332[0m:[93m48[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; total?: 
+Decimal; }'.
+
+[7m332[0m         totalRevenue: Number(totalRevenue._sum.totalAmount) || 0,
+[7m   [0m [91m                                               ~~~~~~~~~~~[0m
+[96msrc/modules/admin/admin.service.ts[0m:[93m43[0m:[93m15[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m43[0m       _sum: { totalAmount: true },
+[7m  [0m [91m              ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/admin/admin.service.ts[0m:[93m389[0m:[93m7[0m - [91merror[0m[90m TS2615: [0mType of property 'AND' 
+circularly references itself in mapped type '{ [K in keyof { AND?: OrderScalarWhereWithAggregatesInput | 
+OrderScalarWhereWithAggregatesInput[]; OR?: OrderScalarWhereWithAggregatesInput[]; ... 19 more ...; updatedAt?: string | ... 1 
+more ... | DateTimeWithAggregatesFilter<...>; }]: Or<...> extends 1 ? { ...; }[K] extends infer TK ? GetHavingFields<...> : 
+never ...'.
+
+[7m389[0m       this.prisma.order.groupBy({
+[7m   [0m [91m      ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m390[0m         by: ['status'],
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m393[0m         where,
+[7m   [0m [91m~~~~~~~~~~~~~~[0m
+[7m394[0m       }),
+[7m   [0m [91m~~~~~~~~[0m
+[96msrc/modules/admin/admin.service.ts[0m:[93m389[0m:[93m7[0m - [91merror[0m[90m TS2615: [0mType of property 'NOT' 
+circularly references itself in mapped type '{ [K in keyof { AND?: OrderScalarWhereWithAggregatesInput | 
+OrderScalarWhereWithAggregatesInput[]; OR?: OrderScalarWhereWithAggregatesInput[]; ... 19 more ...; updatedAt?: string | ... 1 
+more ... | DateTimeWithAggregatesFilter<...>; }]: Or<...> extends 1 ? { ...; }[K] extends infer TK ? GetHavingFields<...> : 
+never ...'.
+
+[7m389[0m       this.prisma.order.groupBy({
+[7m   [0m [91m      ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m390[0m         by: ['status'],
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m393[0m         where,
+[7m   [0m [91m~~~~~~~~~~~~~~[0m
+[7m394[0m       }),
+[7m   [0m [91m~~~~~~~~[0m
+[96msrc/modules/admin/admin.service.ts[0m:[93m389[0m:[93m7[0m - [91merror[0m[90m TS2615: [0mType of property 'OR' 
+circularly references itself in mapped type '{ [K in keyof { AND?: OrderScalarWhereWithAggregatesInput | 
+OrderScalarWhereWithAggregatesInput[]; OR?: OrderScalarWhereWithAggregatesInput[]; ... 19 more ...; updatedAt?: string | ... 1 
+more ... | DateTimeWithAggregatesFilter<...>; }]: Or<...> extends 1 ? { ...; }[K] extends infer TK ? GetHavingFields<...> : 
+never ...'.
+
+[7m389[0m       this.prisma.order.groupBy({
+[7m   [0m [91m      ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m390[0m         by: ['status'],
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m393[0m         where,
+[7m   [0m [91m~~~~~~~~~~~~~~[0m
+[7m394[0m       }),
+[7m   [0m [91m~~~~~~~~[0m
+[96msrc/modules/admin/admin.service.ts[0m:[93m397[0m:[93m17[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m397[0m         _sum: { totalAmount: true },
+[7m   [0m [91m                ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/admin/admin.service.ts[0m:[93m398[0m:[93m17[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'totalAmount' does not exist in type 'OrderAvgAggregateInputType'.
+
+[7m398[0m         _avg: { totalAmount: true },
+[7m   [0m [91m                ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19963[0m:[93m5[0m
+    [7m19963[0m     _avg?: OrderAvgAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_avg' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/admin/admin.service.ts[0m:[93m515[0m:[93m19[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m515[0m           _sum: { totalAmount: true },
+[7m   [0m [91m                  ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/admin/admin.service.ts[0m:[93m516[0m:[93m19[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'totalAmount' does not exist in type 'OrderAvgAggregateInputType'.
+
+[7m516[0m           _avg: { totalAmount: true },
+[7m   [0m [91m                  ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19963[0m:[93m5[0m
+    [7m19963[0m     _avg?: OrderAvgAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_avg' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m67[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may 
+only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m67[0m           totalAmount: true,
+[7m  [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m103[0m:[93m46[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; total?: 
+Decimal; }'.
+
+[7m103[0m       totalRevenue: Number(totalRevenue._sum.totalAmount) || 0,
+[7m   [0m [91m                                             ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m148[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m148[0m           totalAmount: true,
+[7m   [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m151[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'totalAmount' does not exist in type 'OrderAvgAggregateInputType'.
+
+[7m151[0m           totalAmount: true,
+[7m   [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19963[0m:[93m5[0m
+    [7m19963[0m     _avg?: OrderAvgAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_avg' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m211[0m:[93m30[0m - [91merror[0m[90m TS2615: [0mType of property 
+'AND' circularly references itself in mapped type '{ [K in keyof { AND?: OrderItemScalarWhereWithAggregatesInput | 
+OrderItemScalarWhereWithAggregatesInput[]; ... 7 more ...; total?: string | ... 3 more ... | DecimalWithAggregatesFilter<...>; 
+}]: Or<...> extends 1 ? { ...; }[K] extends infer TK ? GetHavingFields<...> : never : {} extends FieldPaths<...> ? never : K; }'.
+
+[7m211[0m     const orderItems = await this.prisma.orderItem.groupBy({
+[7m   [0m [91m                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m212[0m       by: ['productId'],
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m218[0m       _count: true,
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~[0m
+[7m219[0m     });
+[7m   [0m [91m~~~~~~[0m
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m211[0m:[93m30[0m - [91merror[0m[90m TS2615: [0mType of property 
+'NOT' circularly references itself in mapped type '{ [K in keyof { AND?: OrderItemScalarWhereWithAggregatesInput | 
+OrderItemScalarWhereWithAggregatesInput[]; ... 7 more ...; total?: string | ... 3 more ... | DecimalWithAggregatesFilter<...>; 
+}]: Or<...> extends 1 ? { ...; }[K] extends infer TK ? GetHavingFields<...> : never : {} extends FieldPaths<...> ? never : K; }'.
+
+[7m211[0m     const orderItems = await this.prisma.orderItem.groupBy({
+[7m   [0m [91m                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m212[0m       by: ['productId'],
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m218[0m       _count: true,
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~[0m
+[7m219[0m     });
+[7m   [0m [91m~~~~~~[0m
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m211[0m:[93m30[0m - [91merror[0m[90m TS2615: [0mType of property 
+'OR' circularly references itself in mapped type '{ [K in keyof { AND?: OrderItemScalarWhereWithAggregatesInput | 
+OrderItemScalarWhereWithAggregatesInput[]; ... 7 more ...; total?: string | ... 3 more ... | DecimalWithAggregatesFilter<...>; 
+}]: Or<...> extends 1 ? { ...; }[K] extends infer TK ? GetHavingFields<...> : never : {} extends FieldPaths<...> ? never : K; }'.
+
+[7m211[0m     const orderItems = await this.prisma.orderItem.groupBy({
+[7m   [0m [91m                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m212[0m       by: ['productId'],
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m218[0m       _count: true,
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~[0m
+[7m219[0m     });
+[7m   [0m [91m~~~~~~[0m
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m400[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m400[0m           totalAmount: true,
+[7m   [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m637[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m637[0m           totalAmount: true,
+[7m   [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m659[0m:[93m36[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; total?: 
+Decimal; }'.
+
+[7m659[0m       revenue: Number(revenue._sum.totalAmount) || 0,
+[7m   [0m [91m                                   ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m672[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject literal may 
+only specify known properties, and 'totalAmount' does not exist in type 'OrderSelect<DefaultArgs>'.
+
+[7m672[0m         totalAmount: true,
+[7m   [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20789[0m:[93m5[0m
+    [7m20789[0m     select?: OrderSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderScalarFieldEnum | 
+OrderScalarFieldEnum[]; }'
+[96msrc/modules/analytics/analytics.service.ts[0m:[93m690[0m:[93m45[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m690[0m       grouped[date].revenue += Number(order.totalAmount);
+[7m   [0m [91m                                            ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/batch-processor.service.ts[0m:[93m108[0m:[93m17[0m - [91merror[0m[90m TS2353: 
+[0mObject literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m108[0m         _sum: { totalAmount: true },
+[7m   [0m [91m                ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/services/batch-processor.service.ts[0m:[93m139[0m:[93m43[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; 
+total?: Decimal; }'.
+
+[7m139[0m         totalRevenue: Number(revenue._sum.totalAmount) || 0,
+[7m   [0m [91m                                          ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/chart-data.service.ts[0m:[93m350[0m:[93m19[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m350[0m           _sum: { totalAmount: true },
+[7m   [0m [91m                  ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/services/chart-data.service.ts[0m:[93m447[0m:[93m15[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderItemSumAggregateInputType'.
+
+[7m447[0m       _sum: { totalAmount: true }, // Sum line totals (price ∩┐╜ quantity), not unit price
+[7m   [0m [91m              ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m21231[0m:[93m5[0m
+    [7m21231[0m     _sum?: OrderItemSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderItemAggregateArgs<DefaultArgs>, 
+OrderItemAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/services/comparison.service.ts[0m:[93m138[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSelect<DefaultArgs>'.
+
+[7m138[0m         totalAmount: true,
+[7m   [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20789[0m:[93m5[0m
+    [7m20789[0m     select?: OrderSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderScalarFieldEnum | 
+OrderScalarFieldEnum[]; }'
+[96msrc/modules/analytics/services/comparison.service.ts[0m:[93m374[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSelect<DefaultArgs>'.
+
+[7m374[0m         totalAmount: true,
+[7m   [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20789[0m:[93m5[0m
+    [7m20789[0m     select?: OrderSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderScalarFieldEnum | 
+OrderScalarFieldEnum[]; }'
+[96msrc/modules/analytics/services/comparison.service.ts[0m:[93m379[0m:[93m60[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmountAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; 
+userId: string; subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m379[0m     const total = orders.reduce((sum, o) => sum + Number(o.totalAmountAmount), 0);
+[7m   [0m [91m                                                           ~~~~~~~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/comparison.service.ts[0m:[93m386[0m:[93m88[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmountAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; 
+userId: string; subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m386[0m       daily: this.aggregateByDay(orders.map(o => ({ date: o.createdAt, value: Number(o.totalAmountAmount) }))),
+[7m   [0m [91m                                                                                       ~~~~~~~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m71[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderItemSelect<DefaultArgs>'.
+
+[7m71[0m         totalAmount: true,
+[7m  [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m21958[0m:[93m5[0m
+    [7m21958[0m     select?: OrderItemSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderItemSelect<DefaultArgs>; 
+omit?: OrderItemOmit<DefaultArgs>; include?: OrderItemInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderItemScalarFieldEnum 
+| OrderItemScalarFieldEnum[]; }'
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m188[0m:[93m13[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderItemSelect<DefaultArgs>'.
+
+[7m188[0m             totalAmount: true,
+[7m   [0m [91m            ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m199[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 
+'orderItems' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m199[0m       const productItems = order.orderItems;
+[7m   [0m [91m                                 ~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m208[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m208[0m           total: Number(order.totalAmount),
+[7m   [0m [91m                              ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m212[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 
+'user' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; subtotal: 
+Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m212[0m           id: order.user?.id || '',
+[7m   [0m [91m                    ~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m213[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 
+'user' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; subtotal: 
+Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m213[0m           email: order.user?.email || '',
+[7m   [0m [91m                       ~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m214[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 
+'user' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; subtotal: 
+Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m214[0m           name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`,
+[7m   [0m [91m                         ~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m214[0m:[93m57[0m - [91merror[0m[90m TS2339: [0mProperty 
+'user' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; subtotal: 
+Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m214[0m           name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`,
+[7m   [0m [91m                                                        ~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m300[0m:[93m13[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderItemSelect<DefaultArgs>'.
+
+[7m300[0m             totalAmount: true,
+[7m   [0m [91m            ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m317[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 
+'orderItems' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m317[0m       const itemCount = order.orderItems.length;
+[7m   [0m [91m                              ~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m318[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 
+'orderItems' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m318[0m       const totalQuantity = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
+[7m   [0m [91m                                  ~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m325[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m325[0m           total: Number(order.totalAmount),
+[7m   [0m [91m                              ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m331[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 
+'orderItems' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m331[0m           products: order.orderItems.map(item => ({
+[7m   [0m [91m                          ~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/drilldown.service.ts[0m:[93m343[0m:[93m70[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ id: string; orderNumber: string; status: OrderStatus; total: number; createdAt: Date; }'.
+
+[7m343[0m     const totalSpent = orderDetails.reduce((sum, o) => sum + o.order.totalAmount, 0);
+[7m   [0m [91m                                                                     ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/export.service.ts[0m:[93m131[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSelect<DefaultArgs>'.
+
+[7m131[0m           totalAmount: true,
+[7m   [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20789[0m:[93m5[0m
+    [7m20789[0m     select?: OrderSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderScalarFieldEnum | 
+OrderScalarFieldEnum[]; }'
+[96msrc/modules/analytics/services/export.service.ts[0m:[93m141[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m141[0m         total: Number(order.totalAmount),
+[7m   [0m [91m                            ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/export.service.ts[0m:[93m174[0m:[93m53[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m174[0m     return orders.map(o => ({ ...o, total: Number(o.totalAmount) }));
+[7m   [0m [91m                                                    ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/export.service.ts[0m:[93m182[0m:[93m53[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; 
+subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m182[0m     return orders.map(o => ({ ...o, total: Number(o.totalAmount) }));
+[7m   [0m [91m                                                    ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/forecast.service.ts[0m:[93m45[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSelect<DefaultArgs>'.
+
+[7m45[0m         totalAmount: true,
+[7m  [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20789[0m:[93m5[0m
+    [7m20789[0m     select?: OrderSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderScalarFieldEnum | 
+OrderScalarFieldEnum[]; }'
+[96msrc/modules/analytics/services/forecast.service.ts[0m:[93m187[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSelect<DefaultArgs>'.
+
+[7m187[0m           totalAmount: true,
+[7m   [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20789[0m:[93m5[0m
+    [7m20789[0m     select?: OrderSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderScalarFieldEnum | 
+OrderScalarFieldEnum[]; }'
+[96msrc/modules/analytics/services/realtime-analytics.service.ts[0m:[93m29[0m:[93m17[0m - [91merror[0m[90m TS2353: 
+[0mObject literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m29[0m         _sum: { totalAmount: true },
+[7m  [0m [91m                ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/services/realtime-analytics.service.ts[0m:[93m44[0m:[93m46[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmountAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: 
+Decimal; total?: Decimal; }'.
+
+[7m44[0m       todayRevenue: Number(todayRevenue._sum.totalAmountAmount) || 0,
+[7m  [0m [91m                                             ~~~~~~~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/realtime-analytics.service.ts[0m:[93m66[0m:[93m9[0m - [91merror[0m[90m TS2353: 
+[0mObject literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSelect<DefaultArgs>'.
+
+[7m66[0m         totalAmount: true,
+[7m  [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20789[0m:[93m5[0m
+    [7m20789[0m     select?: OrderSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; ... 5 more ...; distinct?: OrderScalarFieldEnum | 
+OrderScalarFieldEnum[]; }'
+[96msrc/modules/analytics/services/realtime-analytics.service.ts[0m:[93m77[0m:[93m74[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmountAmount' does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; 
+userId: string; subtotal: Decimal; tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m77[0m       totalValue: recentOrders.reduce((sum, order) => sum + Number(order.totalAmountAmount), 0),
+[7m  [0m [91m                                                                         ~~~~~~~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/report-builder.service.ts[0m:[93m310[0m:[93m69[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmountAmount' does not exist on type '{ user: { role: UserRole; id: string; clerkId: string; email: string; 
+username: string; firstName: string; lastName: string; imageUrl: string; phoneNumber: string; isActive: boolean; lastLoginAt: 
+Date; ... 25 more ...; passwordResetCodeUsed: boolean; }; orderItems: ({ ...; } & { ...; })[]; } & { ...; }'.
+
+[7m310[0m       totalRevenue: sales.reduce((sum, order) => sum + Number(order.totalAmountAmount), 0),
+[7m   [0m [91m                                                                    ~~~~~~~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/report-builder.service.ts[0m:[93m315[0m:[93m30[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmountAmount' does not exist on type '{ user: { role: UserRole; id: string; clerkId: string; email: string; 
+username: string; firstName: string; lastName: string; imageUrl: string; phoneNumber: string; isActive: boolean; lastLoginAt: 
+Date; ... 25 more ...; passwordResetCodeUsed: boolean; }; orderItems: ({ ...; } & { ...; })[]; } & { ...; }'.
+
+[7m315[0m         amount: Number(order.totalAmountAmount),
+[7m   [0m [91m                             ~~~~~~~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/report-builder.service.ts[0m:[93m332[0m:[93m15[0m - [91merror[0m[90m TS2353: 
+[0mObject literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m332[0m       _sum: { totalAmount: true },
+[7m   [0m [91m              ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/services/report-builder.service.ts[0m:[93m334[0m:[93m15[0m - [91merror[0m[90m TS2353: 
+[0mObject literal may only specify known properties, and 'totalAmount' does not exist in type 'OrderAvgAggregateInputType'.
+
+[7m334[0m       _avg: { totalAmount: true },
+[7m   [0m [91m              ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19963[0m:[93m5[0m
+    [7m19963[0m     _avg?: OrderAvgAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_avg' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/analytics/services/report-builder.service.ts[0m:[93m338[0m:[93m41[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; 
+total?: Decimal; }'.
+
+[7m338[0m       totalRevenue: Number(revenue._sum.totalAmount || 0),
+[7m   [0m [91m                                        ~~~~~~~~~~~[0m
+[96msrc/modules/analytics/services/report-builder.service.ts[0m:[93m340[0m:[93m46[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; 
+total?: Decimal; }'.
+
+[7m340[0m       averageOrderValue: Number(revenue._avg.totalAmount || 0),
+[7m   [0m [91m                                             ~~~~~~~~~~~[0m
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m104[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'totalAmount' does not exist in type 'CartAvgAggregateInputType'.
+
+[7m104[0m         totalAmount: true,
+[7m   [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m17411[0m:[93m5[0m
+    [7m17411[0m     _avg?: CartAvgAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_avg' which is declared here on type 'Subset<CartAggregateArgs<DefaultArgs>, 
+CartAggregateArgs<DefaultArgs>>'
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m150[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; total?: 
+Decimal; }'.
+
+[7m150[0m       averageCartValue: avgValue._avg.totalAmount?.toNumber() || 0,
+[7m   [0m [91m                                      ~~~~~~~~~~~[0m
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m228[0m:[93m9[0m - [91merror[0m[90m TS2561: [0mObject literal 
+may only specify known properties, but 'shippingCost' does not exist in type 'CartSelect<DefaultArgs>'. Did you mean to write 
+'shipping'?
+
+[7m228[0m         shippingCost: true,
+[7m   [0m [91m        ~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m18212[0m:[93m5[0m
+    [7m18212[0m     select?: CartSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: CartSelect<DefaultArgs>; omit?: 
+CartOmit<DefaultArgs>; include?: CartInclude<DefaultArgs>; ... 5 more ...; distinct?: CartScalarFieldEnum | 
+CartScalarFieldEnum[]; }'
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m348[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'taxAmount' does not exist in type 'CartSelect<DefaultArgs>'.
+
+[7m348[0m         taxAmount: true,
+[7m   [0m [91m        ~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m18212[0m:[93m5[0m
+    [7m18212[0m     select?: CartSelect<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'select' which is declared here on type '{ select?: CartSelect<DefaultArgs>; omit?: 
+CartOmit<DefaultArgs>; include?: CartInclude<DefaultArgs>; ... 5 more ...; distinct?: CartScalarFieldEnum | 
+CartScalarFieldEnum[]; }'
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m466[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'totalAmount' does not exist in type 'CartSumAggregateInputType'.
+
+[7m466[0m         totalAmount: true,
+[7m   [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m17417[0m:[93m5[0m
+    [7m17417[0m     _sum?: CartSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<CartAggregateArgs<DefaultArgs>, 
+CartAggregateArgs<DefaultArgs>>'
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m469[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject literal 
+may only specify known properties, and 'totalAmount' does not exist in type 'CartAvgAggregateInputType'.
+
+[7m469[0m         totalAmount: true,
+[7m   [0m [91m        ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m17411[0m:[93m5[0m
+    [7m17411[0m     _avg?: CartAvgAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_avg' which is declared here on type 'Subset<CartAggregateArgs<DefaultArgs>, 
+CartAggregateArgs<DefaultArgs>>'
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m526[0m:[93m41[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; total?: 
+Decimal; }'.
+
+[7m526[0m       totalValue: cartAggregations._sum.totalAmount?.toNumber() || 0,
+[7m   [0m [91m                                        ~~~~~~~~~~~[0m
+[96msrc/modules/cart/cart-analytics.controller.ts[0m:[93m527[0m:[93m53[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; total?: 
+Decimal; }'.
+
+[7m527[0m             averageCartValue: cartAggregations._avg.totalAmount?.toNumber() || 0,
+[7m   [0m [91m                                                    ~~~~~~~~~~~[0m
+[96msrc/modules/cart/cart.service.ts[0m:[93m842[0m:[93m7[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'taxAmount' does not exist in type 'CartResponseDto'.
+
+[7m842[0m       taxAmount: cart.tax,
+[7m   [0m [91m      ~~~~~~~~~[0m
+Found 82 error(s).
+
+[96msrc/modules/health/indicators/disk.health.ts[0m:[93m18[0m:[93m56[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ total: number; used: number; free: number; }'.
+
+[7m18[0m       const usagePercentage = diskInfo.used / diskInfo.totalAmount;
+[7m  [0m [91m                                                       ~~~~~~~~~~~[0m
+[96msrc/modules/health/indicators/disk.health.ts[0m:[93m22[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ total: number; used: number; free: number; }'.
+
+[7m22[0m         total: `${Math.round(diskInfo.totalAmount / 1024 / 1024 / 1024)}GB`,
+[7m  [0m [91m                                      ~~~~~~~~~~~[0m
+[96msrc/modules/orders/orders.service.ts[0m:[93m165[0m:[93m13[0m - [91merror[0m[90m TS2561: [0mObject literal may only 
+specify known properties, but 'shippingCost' does not exist in type '(Without<OrderCreateInput, OrderUncheckedCreateInput> & 
+OrderUncheckedCreateInput) | (Without<...> & OrderCreateInput)'. Did you mean to write 'shipping'?
+
+[7m165[0m             shippingCost: new Prisma.Decimal(shippingCost),
+[7m   [0m [91m            ~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20848[0m:[93m5[0m
+    [7m20848[0m     data: XOR<OrderCreateInput, OrderUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; data: (Without<...> & OrderUncheckedCreateInput) | (Without<...> & 
+OrderCreateInput); }'
+[96msrc/modules/orders/orders.service.ts[0m:[93m556[0m:[93m20[0m - [91merror[0m[90m TS2339: [0mProperty 'totalAmount' 
+does not exist on type '{ user: { role: UserRole; id: string; clerkId: string; email: string; username: string; firstName: 
+string; lastName: string; imageUrl: string; phoneNumber: string; isActive: boolean; lastLoginAt: Date; ... 25 more ...; 
+passwordResetCodeUsed: boolean; }; payments: { ...; }[]; orderItems: ({ ...; } & { ...; })[]; } & ...'.
+
+[7m556[0m       total: order.totalAmount?.toNumber() || 0,
+[7m   [0m [91m                   ~~~~~~~~~~~[0m
+[96msrc/modules/orders/orders.service.ts[0m:[93m576[0m:[93m19[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'totalAmount' does not exist in type 'OrderSumAggregateInputType'.
+
+[7m576[0m           _sum: { totalAmount: true },
+[7m   [0m [91m                  ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19969[0m:[93m5[0m
+    [7m19969[0m     _sum?: OrderSumAggregateInputType
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property '_sum' which is declared here on type 'Subset<OrderAggregateArgs<DefaultArgs>, 
+OrderAggregateArgs<DefaultArgs>>'
+[96msrc/modules/orders/orders.service.ts[0m:[93m589[0m:[93m44[0m - [91merror[0m[90m TS2339: [0mProperty 'totalAmount' 
+does not exist on type '{ subtotal?: Decimal; tax?: Decimal; shipping?: Decimal; discount?: Decimal; total?: Decimal; }'.
+
+[7m589[0m     const revenueTotal = totalRevenue._sum.totalAmount?.toNumber() || 0;
+[7m   [0m [91m                                           ~~~~~~~~~~~[0m
+[96msrc/modules/orders/orders.service.ts[0m:[93m755[0m:[93m17[0m - [91merror[0m[90m TS2353: [0mObject literal may only 
+specify known properties, and 'taxAmount' does not exist in type '(Without<OrderCreateInput, OrderUncheckedCreateInput> & 
+OrderUncheckedCreateInput) | (Without<...> & OrderCreateInput)'.
+
+[7m755[0m                 taxAmount: cart.tax,
+[7m   [0m [91m                ~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20848[0m:[93m5[0m
+    [7m20848[0m     data: XOR<OrderCreateInput, OrderUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; data: (Without<...> & OrderUncheckedCreateInput) | (Without<...> & 
+OrderCreateInput); }'
+[96msrc/modules/orders/orders.service.ts[0m:[93m824[0m:[93m56[0m - [91merror[0m[90m TS2339: [0mProperty 'totalAmount' 
+does not exist on type '{ status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; userId: string; subtotal: Decimal; 
+tax: Decimal; shipping: Decimal; ... 10 more ...; cancelledAt: Date; }'.
+
+[7m824[0m           span.setAttribute('order.totalAmount', order.totalAmount?.toNumber() || 0);
+[7m   [0m [91m                                                       ~~~~~~~~~~~[0m
+[96msrc/modules/orders/repositories/order.repository.ts[0m:[93m250[0m:[93m13[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type 'OrderWhereInput'.
+
+[7m250[0m       where.totalAmount = {};
+[7m   [0m [91m            ~~~~~~~~~~~[0m
+[96msrc/modules/orders/repositories/order.repository.ts[0m:[93m252[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type 'OrderWhereInput'.
+
+[7m252[0m         (where.totalAmount as any).gte = filters.minAmount;
+[7m   [0m [91m               ~~~~~~~~~~~[0m
+[96msrc/modules/orders/repositories/order.repository.ts[0m:[93m255[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type 'OrderWhereInput'.
+
+[7m255[0m         (where.totalAmount as any).lte = filters.maxAmount;
+[7m   [0m [91m               ~~~~~~~~~~~[0m
+[96msrc/modules/orders/services/order-workflow.service.ts[0m:[93m446[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'totalAmount' does not exist in type '(Without<OrderCreateInput, 
+OrderUncheckedCreateInput> & OrderUncheckedCreateInput) | (Without<...> & OrderCreateInput)'.
+
+[7m446[0m           totalAmount: pricing.total,
+[7m   [0m [91m          ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m20848[0m:[93m5[0m
+    [7m20848[0m     data: XOR<OrderCreateInput, OrderUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: OrderSelect<DefaultArgs>; omit?: 
+OrderOmit<DefaultArgs>; include?: OrderInclude<DefaultArgs>; data: (Without<...> & OrderUncheckedCreateInput) | (Without<...> & 
+OrderCreateInput); }'
+[96msrc/modules/super-admin/super-admin.service.ts[0m:[93m39[0m:[93m57[0m - [91merror[0m[90m TS2339: [0mProperty 
+'totalAmount' does not exist on type '{ createdAt: Date; total: Decimal; }'.
+
+[7m39[0m           buckets[key] = (buckets[key] || 0) + Number(o.totalAmount || 0);
+[7m  [0m [91m                                                        ~~~~~~~~~~~[0m
+

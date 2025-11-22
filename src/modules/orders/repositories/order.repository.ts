@@ -247,12 +247,12 @@ export class OrderRepository {
 
     // Amount filters
     if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
-      where.total = {};
+      where.totalAmount = {};
       if (filters.minAmount !== undefined) {
-        (where.total as any).gte = filters.minAmount;
+        (where.totalAmount as any).gte = filters.minAmount;
       }
       if (filters.maxAmount !== undefined) {
-        (where.total as any).lte = filters.maxAmount;
+        (where.totalAmount as any).lte = filters.maxAmount;
       }
     }
 
