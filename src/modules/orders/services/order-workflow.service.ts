@@ -411,15 +411,15 @@ export class OrderWorkflowService {
       }
 
       // 3. Create initial status history
-      await prisma.orderStatusHistory.create({
-        data: {
-          orderId: order.id,
-          fromStatus: OrderStatus.PENDING,
-          toStatus: OrderStatus.PENDING,
-          changedBy: cart.userId,
-          notes: 'Order created from cart',
-        },
-      });
+      // await prisma.orderStatusHistory.create({
+      //   data: {
+      //     orderId: order.id,
+      //     fromStatus: OrderStatus.PENDING,
+      //     toStatus: OrderStatus.PENDING,
+      //     changedBy: cart.userId,
+      //     notes: 'Order created from cart',
+      //   },
+      // });
 
       return order;
     });
@@ -441,18 +441,18 @@ export class OrderWorkflowService {
           orderNumber,
           userId: dto.userId,
           status: OrderStatus.PENDING,
-          paymentStatus: 'PENDING',
+          // paymentStatus: 'PENDING', // Field doesn't exist in Order schema
           subtotal: pricing.subtotal,
-          totalAmount: pricing.total,
-          shippingCost: pricing.shippingCost,
-          taxAmount: pricing.taxAmount,
-          discountAmount: pricing.discountAmount,
+          total: pricing.total,
+          shipping: pricing.shippingCost,
+          tax: pricing.taxAmount,
+          discount: pricing.discountAmount,
           shippingAddress: { addressId: dto.shippingAddressId } as any,
           billingAddress: dto.billingAddressId ? ({ addressId: dto.billingAddressId } as any) : null,
-          metadata: {
-            source: 'direct',
-            createdBy: currentUser.id,
-          },
+          // metadata: {
+          //   source: 'direct',
+          //   createdBy: currentUser.id,
+          // },
           orderItems: {
             create: dto.items.map(item => ({
               productId: item.productId,
@@ -492,15 +492,15 @@ export class OrderWorkflowService {
       }
 
       // 3. Create initial status history
-      await prisma.orderStatusHistory.create({
-        data: {
-          orderId: order.id,
-          fromStatus: OrderStatus.PENDING,
-          toStatus: OrderStatus.PENDING,
-          changedBy: currentUser.id,
-          notes: 'Order created directly',
-        },
-      });
+      // await prisma.orderStatusHistory.create({
+      //   data: {
+      //     orderId: order.id,
+      //     fromStatus: OrderStatus.PENDING,
+      //     toStatus: OrderStatus.PENDING,
+      //     changedBy: currentUser.id,
+      //     notes: 'Order created directly',
+      //   },
+      // });
 
       return order;
     });

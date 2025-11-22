@@ -63,7 +63,7 @@ export class RealtimeAnalyticsService {
       where: { createdAt: { gte: last24Hours } },
       select: {
         id: true,
-        totalAmount: true,
+        total: true,
         status: true,
         createdAt: true,
       },
@@ -74,7 +74,7 @@ export class RealtimeAnalyticsService {
     const data = {
       recentOrders,
       count: recentOrders.length,
-      totalValue: recentOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0),
+      totalValue: recentOrders.reduce((sum, order) => sum + Number(order.total), 0),
       timestamp: now.toISOString(),
     };
 

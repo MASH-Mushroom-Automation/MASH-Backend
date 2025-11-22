@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { ExportConfigDto, ExportFormat, ExportResponseDto } from '../dto/export-config.dto';
@@ -128,7 +128,7 @@ export class ExportService {
           id: true,
           orderNumber: true,
           status: true,
-          totalAmount: true,
+          total: true,
           createdAt: true,
           userId: true,
         },
@@ -138,7 +138,7 @@ export class ExportService {
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
-        total: Number(order.totalAmount),
+        total: Number(order.total),
         createdAt: order.createdAt,
         userId: order.userId,
       }));
@@ -171,7 +171,7 @@ export class ExportService {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     });
-    return orders.map(o => ({ ...o, total: Number(o.totalAmount) }));
+    return orders.map(o => ({ ...o, total: Number(o.total) }));
   }
 
   private async fetchRevenueData(filters: any): Promise<any[]> {
@@ -179,7 +179,7 @@ export class ExportService {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     });
-    return orders.map(o => ({ ...o, total: Number(o.totalAmount) }));
+    return orders.map(o => ({ ...o, total: Number(o.total) }));
   }
 
   private async fetchUsersData(filters: any): Promise<any[]> {

@@ -669,7 +669,7 @@ export class AnalyticsService {
       where,
       select: {
         createdAt: true,
-        totalAmount: true,
+        total: true,
         status: true,
       },
     });
@@ -687,7 +687,7 @@ export class AnalyticsService {
         };
       }
       grouped[date].count += 1;
-      grouped[date].revenue += Number(order.totalAmount);
+      grouped[date].revenue += Number(order.total);
       if (order.status === OrderStatus.DELIVERED) {
         grouped[date].completedOrders += 1;
       }

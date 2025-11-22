@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { OrderStatus } from '@prisma/client';
@@ -167,7 +167,7 @@ export class DrillDownService {
         id: true,
         orderNumber: true,
         status: true,
-        totalAmount: true,
+        total: true,
         createdAt: true,
         user: {
           select: {
@@ -205,13 +205,13 @@ export class DrillDownService {
           id: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
-          total: Number(order.totalAmount),
+          total: Number(order.total),
           createdAt: order.createdAt,
         },
         customer: {
-          id: order.user.id,
-          email: order.user.email,
-          name: `${order.user.firstName} ${order.user.lastName}`,
+          id: order.user?.id || '',
+          email: order.user?.email || '',
+          name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`,
         },
         productDetails: {
           quantity: productQuantity,
@@ -290,7 +290,7 @@ export class DrillDownService {
         id: true,
         orderNumber: true,
         status: true,
-        totalAmount: true,
+        total: true,
         createdAt: true,
         orderItems: {
           select: {
@@ -322,7 +322,7 @@ export class DrillDownService {
           id: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
-          total: Number(order.totalAmount),
+          total: Number(order.total),
           createdAt: order.createdAt,
         },
         items: {

@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { OrderStatus } from '@prisma/client';
@@ -42,7 +42,7 @@ export class ForecastService {
         createdAt: { gte: startDate },
       },
       select: {
-        totalAmount: true,
+        total: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'asc' },
@@ -184,7 +184,7 @@ export class ForecastService {
           createdAt: { gte: startDate },
         },
         select: {
-          totalAmount: true,
+          total: true,
           createdAt: true,
         },
       });

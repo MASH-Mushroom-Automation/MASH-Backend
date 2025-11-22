@@ -307,12 +307,12 @@ export class ReportBuilderService {
 
     return {
       totalSales: sales.length,
-      totalRevenue: sales.reduce((sum, order) => sum + Number(order.totalAmount), 0),
+      totalRevenue: sales.reduce((sum, order) => sum + Number(order.total), 0),
       sales: sales.map(order => ({
         orderId: order.id,
         date: order.createdAt,
         customer: order.user?.email || 'N/A',
-        amount: Number(order.totalAmount),
+        amount: Number(order.total),
         items: order.orderItems?.length || 0,
       })),
     };

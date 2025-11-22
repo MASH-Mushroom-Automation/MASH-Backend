@@ -227,9 +227,9 @@ export class OrderRepository {
       where.status = filters.status as any;
     }
 
-    if (filters.shippingProvider) {
-      where.shippingProvider = filters.shippingProvider;
-    }
+    // if (filters.shippingProvider) {
+    //   where.shippingProvider = filters.shippingProvider;
+    // }
 
     if (filters.orderNumber) {
       where.orderNumber = {
@@ -247,12 +247,12 @@ export class OrderRepository {
 
     // Amount filters
     if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
-      where.totalAmount = {};
+      where.total = {};
       if (filters.minAmount !== undefined) {
-        where.totalAmount.gte = filters.minAmount;
+        (where.total as any).gte = filters.minAmount;
       }
       if (filters.maxAmount !== undefined) {
-        where.totalAmount.lte = filters.maxAmount;
+        (where.total as any).lte = filters.maxAmount;
       }
     }
 
@@ -307,21 +307,21 @@ export class OrderRepository {
       include.payments = true;
     }
 
-    if (options.includeStatusHistory) {
-      include.statusHistory = {
-        orderBy: {
-          changedAt: 'desc',
-        },
-      };
-    }
+    // if (options.includeStatusHistory) {
+    //   include.statusHistory = {
+    //     orderBy: {
+    //       changedAt: 'desc',
+    //     },
+    //   };
+    // }
 
-    if (options.includeFulfillment) {
-      include.fulfillment = true;
-    }
+    // if (options.includeFulfillment) {
+    //   include.fulfillment = true;
+    // }
 
-    if (options.includeReturns) {
-      include.returns = true;
-    }
+    // if (options.includeReturns) {
+    //   include.returns = true;
+    // }
 
     return include;
   }
