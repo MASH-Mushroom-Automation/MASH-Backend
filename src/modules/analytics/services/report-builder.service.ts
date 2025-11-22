@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
 import { CreateReportDto, ReportConfiguration } from '../dto/create-report.dto';
@@ -307,12 +307,12 @@ export class ReportBuilderService {
 
     return {
       totalSales: sales.length,
-      totalRevenue: sales.reduce((sum, order) => sum + Number(order.total), 0),
+      totalRevenue: sales.reduce((sum, order) => sum + Number(order.totalAmount), 0),
       sales: sales.map(order => ({
         orderId: order.id,
         date: order.createdAt,
         customer: order.user?.email || 'N/A',
-        amount: Number(order.total),
+        amount: Number(order.totalAmount),
         items: order.orderItems?.length || 0,
       })),
     };
@@ -329,15 +329,15 @@ export class ReportBuilderService {
         createdAt: { gte: new Date(start), lte: new Date(end) },
         status: { in: ['DELIVERED'] },
       },
-      _sum: { total: true },
+      _sum: { totalAmount: true },
       _count: true,
-      _avg: { total: true },
+      _avg: { totalAmount: true },
     });
 
     return {
-      totalRevenue: Number(revenue._sum.total || 0),
+      totalRevenue: Number(revenue._sum.totalAmount || 0),
       totalOrders: revenue._count,
-      averageOrderValue: Number(revenue._avg.total || 0),
+      averageOrderValue: Number(revenue._avg.totalAmount || 0),
       period: { start, end },
     };
   }
@@ -354,14 +354,14 @@ export class ReportBuilderService {
         createdAt: { gte: new Date(start), lte: new Date(end) },
       },
       _count: true,
-      _sum: { total: true },
+      _sum: { totalAmount: true },
     });
 
     return {
       ordersByStatus: orders.map(group => ({
         status: group.status,
         count: group._count,
-        totalRevenue: Number(group._sum.total || 0),
+        totalRevenue: Number(group._sum.totalAmount || 0),
       })),
     };
   }

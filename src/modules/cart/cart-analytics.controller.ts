@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Query,
@@ -524,7 +524,7 @@ export class CartAnalyticsController {
       authenticatedCarts,
       totalItems,
       totalValue: cartAggregations._sum.total?.toNumber() || 0,
-      averageCartValue: cartAggregations._avg.total?.toNumber() || 0,
+            averageCartValue: cartAggregations._avg.total?.toNumber() || 0,
       averageItemsPerCart: totalActiveCarts > 0 ? totalItems / totalActiveCarts : 0,
       cartsWithItems,
       emptyCarts,

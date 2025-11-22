@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { trace, context, Span, SpanStatusCode } from '@opentelemetry/api';
 
 /**
@@ -14,7 +14,7 @@ import { trace, context, Span, SpanStatusCode } from '@opentelemetry/api';
  * async createOrder(data: CreateOrderDto) {
  *   return this.tracingService.traceOperation('createOrder', async (span) => {
  *     span.setAttribute('order.items', data.items.length);
- *     span.setAttribute('order.total', data.total);
+ *     span.setAttribute('order.totalAmount', data.total);
  *
  *     const order = await this.ordersRepository.create(data);
  *     span.setAttribute('order.id', order.id);
