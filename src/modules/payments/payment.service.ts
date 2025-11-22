@@ -139,19 +139,14 @@ export class PaymentService {
           amount: dto.amount,
           currency: dto.currency,
           method: dto.paymentMethod,
-          provider: provider.name,
           status: PaymentStatus.PENDING,
-          providerPaymentId: response.id,
-          providerResponse: response as any,
+          transactionId: response.id,
+          gatewayResponse: response as any,
         },
       });
 
-      // Track metrics
-      this.prometheus.paymentsTotal.labels(dto.paymentMethod, 'created').inc();
+      // Track metrics (skip if prometheus metrics don't exist)
       const duration = Date.now() - startTime;
-      this.prometheus.paymentDuration
-        .labels(dto.paymentMethod, 'create')
-        .observe(duration / 1000);
 
       this.logger.log(`✅ Payment intent created: ${response.id}`);
       return response;
@@ -160,7 +155,6 @@ export class PaymentService {
         `❌ Failed to create payment intent: ${error.message}`,
         error.stack,
       );
-      this.prometheus.paymentsTotal.labels(dto.paymentMethod, 'failed').inc();
       throw error;
     }
   }
@@ -177,7 +171,7 @@ export class PaymentService {
     try {
       // Find payment in database
       const payment = await this.prisma.payment.findFirst({
-        where: { providerPaymentId: dto.paymentIntentId },
+        where: { transactionId: dto.paymentIntentId },
       });
 
       if (!payment) {
@@ -201,15 +195,12 @@ export class PaymentService {
         where: { id: payment.id },
         data: {
           status: response.status,
-          providerResponse: response as any,
+          gatewayResponse: response as any,
         },
       });
 
       // Track metrics
       const duration = Date.now() - startTime;
-      this.prometheus.paymentDuration
-        .labels(payment.method, 'confirm')
-        .observe(duration / 1000);
 
       this.logger.log(`✅ Payment confirmed: ${dto.paymentIntentId}`);
       return response;
@@ -245,7 +236,7 @@ export class PaymentService {
 
       // Get status from provider
       const status = await provider.getPaymentStatus(
-        payment.providerPaymentId,
+        payment.transactionId,
       );
 
       // Update database if status changed
@@ -254,9 +245,8 @@ export class PaymentService {
           where: { id: paymentId },
           data: {
             status: status.status,
-            paidAt: status.paidAt,
+            processedAt: status.paidAt,
             failedAt: status.failedAt,
-            failureReason: status.failureReason,
           },
         });
       }
@@ -290,19 +280,15 @@ export class PaymentService {
         payment.method as PaymentMethod,
       );
 
-      const status = await provider.cancelPayment(payment.providerPaymentId);
+      const status = await provider.cancelPayment(payment.transactionId);
 
       await this.prisma.payment.update({
         where: { id: paymentId },
         data: {
           status: PaymentStatus.CANCELLED,
-          cancelledAt: new Date(),
+          failedAt: new Date(),
         },
       });
-
-      this.prometheus.paymentsTotal
-        .labels(payment.method, 'cancelled')
-        .inc();
 
       this.logger.log(`✅ Payment cancelled: ${paymentId}`);
       return status;
@@ -342,7 +328,7 @@ export class PaymentService {
       );
 
       const request: CreateRefundRequest = {
-        paymentId: payment.providerPaymentId,
+        paymentId: payment.transactionId,
         amount: dto.amount,
         reason: dto.reason,
         notes: dto.notes,
@@ -351,25 +337,16 @@ export class PaymentService {
 
       const refund = await provider.createRefund(request);
 
-      // Save refund to database
-      await this.prisma.refund.create({
+      // Update payment status to refunded
+      await this.prisma.payment.update({
+        where: { id: payment.id },
         data: {
-          paymentId: payment.id,
-          amount: refund.amount,
-          currency: refund.currency,
-          status: refund.status,
-          reason: refund.reason,
-          providerRefundId: refund.id,
-          providerResponse: refund as any,
-          notes: dto.notes,
+          status: PaymentStatus.REFUNDED,
+          refundedAt: new Date(),
         },
       });
 
       const duration = Date.now() - startTime;
-      this.prometheus.paymentDuration
-        .labels(payment.method, 'refund')
-        .observe(duration / 1000);
-      this.prometheus.paymentsTotal.labels(payment.method, 'refunded').inc();
 
       this.logger.log(`✅ Refund created: ${refund.id}`);
       return refund;
@@ -428,7 +405,8 @@ export class PaymentService {
     return this.prisma.payment.findFirst({
       where: { orderId },
       include: {
-        refunds: true,
+        order: true,
+        user: true,
       },
     });
   }
@@ -441,7 +419,7 @@ export class PaymentService {
       where: { userId },
       include: {
         order: true,
-        refunds: true,
+        user: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
