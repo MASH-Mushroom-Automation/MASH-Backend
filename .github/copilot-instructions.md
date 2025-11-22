@@ -2,6 +2,13 @@
 
 **NestJS 10 + Prisma 5 + PostgreSQL 15 | E-commerce + IoT Platform**
 
+## 🚀 Deployment Info
+
+- **Production**: `https://mash-space.up.railway.app` (Railway)
+- **Old URL**: `https://mash-backend-api-production.up.railway.app` (being migrated)
+- **Redis**: Internal Railway Redis (`redis.railway.internal:6379`)
+- **Database**: Neon PostgreSQL (us-east-1)
+
 ## Critical Setup (Windows)
 
 ```bash
