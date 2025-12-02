@@ -47,7 +47,17 @@ datasources:
     editable: true
     version: 1
 
-# Optional: Loki for logs (if you add logging later)
+  # Loki - Log aggregation data source
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki
+    editable: true
+    jsonData:
+      maxLines: 1000
+      timeout: 60s
+    version: 1
 # Uncomment when you set up Loki for centralized logging
 #  - name: Loki
 #    type: loki
