@@ -6,9 +6,9 @@
  * progress tracking, and error handling.
  */
 
-import { Processor, Process, OnQueueActive, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
 import { PrismaService } from '../../../database/prisma.service';
 import { RedisService } from '../../../database/redis.service';
 import { FileStorageService } from '../services/file-storage.service';
@@ -41,10 +41,8 @@ interface ProcessingProgress {
   }>;
 }
 
-// 🔧 TEMPORARILY DISABLED - Processor causes conflicts with Bull auto-discovery
-// Re-enable when QueuesModule is properly configured
-// @Processor('import')
-export class ImportProcessor {
+@Processor('import')
+export class ImportProcessor extends WorkerHost {
   private readonly logger = new Logger(ImportProcessor.name);
 
   constructor(
@@ -56,19 +54,21 @@ export class ImportProcessor {
     private readonly userValidator: UserImportValidator,
     private readonly orderValidator: OrderImportValidator,
     private readonly gateway: ImportExportGateway,
-  ) {}
+  ) {
+    super();
+  }
 
-  @OnQueueActive()
+  @OnWorkerEvent('active')
   onActive(job: Job<ImportJobData>) {
     this.logger.log(`Processing job ${job.id} (Import: ${job.data.jobId})`);
   }
 
-  @OnQueueCompleted()
+  @OnWorkerEvent('completed')
   onCompleted(job: Job<ImportJobData>) {
     this.logger.log(`Job ${job.id} completed (Import: ${job.data.jobId})`);
   }
 
-  @OnQueueFailed()
+  @OnWorkerEvent('failed')
   onFailed(job: Job<ImportJobData>, error: Error) {
     this.logger.error(
       `Job ${job.id} failed (Import: ${job.data.jobId}): ${error.message}`,
@@ -76,8 +76,7 @@ export class ImportProcessor {
     );
   }
 
-  @Process('process-import')
-  async processImport(job: Job<ImportJobData>): Promise<void> {
+  async process(job: Job<ImportJobData, any, string>): Promise<void> {
     const { jobId, entityType, fileKey, fileFormat, validRecordsCount, options } = job.data;
     const startTime = Date.now();
 

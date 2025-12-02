@@ -4,9 +4,10 @@ import { DevicesGateway } from './devices.gateway';
 import { DevicesController } from './devices.controller';
 import { IoTDevicesController } from './iot-devices.controller';
 import { MqttService } from './mqtt.service';
+import { DeviceStatusTask } from './tasks/device-status.task';
 
 @Module({
-  providers: [DevicesService, MqttService, DevicesGateway], // PrismaService provided globally by DatabaseModule
+  providers: [DevicesService, MqttService, DevicesGateway, DeviceStatusTask], // PrismaService provided globally by DatabaseModule
   controllers: [DevicesController, IoTDevicesController],
   exports: [DevicesService, MqttService],
 })

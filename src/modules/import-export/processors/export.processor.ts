@@ -1,16 +1,14 @@
-import { Processor, Process, OnQueueActive, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
 import { PrismaService } from '../../../database/prisma.service';
 import { RedisService } from '../../../database/redis.service';
 import { FileStorageService } from '../services/file-storage.service';
 import { FileParserFactory } from '../parsers/file-parser.factory';
 import { ImportExportGateway } from '../gateways/import-export.gateway';
 
-// 🔧 TEMPORARILY DISABLED - Processor causes conflicts with Bull auto-discovery
-// Re-enable when QueuesModule is properly configured
-// @Processor('export')
-export class ExportProcessor {
+@Processor('export')
+export class ExportProcessor extends WorkerHost {
   private readonly logger = new Logger(ExportProcessor.name);
 
   constructor(
@@ -19,10 +17,11 @@ export class ExportProcessor {
     private fileStorage: FileStorageService,
     private fileParserFactory: FileParserFactory,
     private gateway: ImportExportGateway,
-  ) {}
+  ) {
+    super();
+  }
 
-  @Process('process-export')
-  async handleExport(job: Job) {
+  async process(job: Job<any, any, string>): Promise<any> {
     const { jobId, entityType, fileFormat, filters, options } = job.data;
 
     this.logger.log(
@@ -422,17 +421,17 @@ export class ExportProcessor {
     }
   }
 
-  @OnQueueActive()
+  @OnWorkerEvent('active')
   onActive(job: Job) {
     this.logger.debug(`Processing job ${job.id} of type ${job.name}`);
   }
 
-  @OnQueueCompleted()
+  @OnWorkerEvent('completed')
   onComplete(job: Job) {
     this.logger.log(`Completed job ${job.id} of type ${job.name}`);
   }
 
-  @OnQueueFailed()
+  @OnWorkerEvent('failed')
   onError(job: Job, error: Error) {
     this.logger.error(`Failed job ${job.id} of type ${job.name}: ${error.message}`, error.stack);
   }

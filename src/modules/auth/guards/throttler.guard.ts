@@ -163,22 +163,24 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const userId = request.user?.id || request.user?.userId;
     const role = userRole || 'GUEST';
     const ip = request.ip || 'unknown';
-
-    // 0. Check whitelist (bypass rate limiting for trusted clients)
     const identifier = userId || ip;
-    const isWhitelisted = await this.isWhitelisted(identifier);
-    if (isWhitelisted) {
-      this.logger.debug(`Whitelisted identifier ${identifier} bypassing rate limits`);
-      response.setHeader('X-RateLimit-Whitelisted', 'true');
-      return true; // Bypass all rate limiting
-    }
 
-    // 0.5. Check for custom rate limit override (NEW: Dynamic Rate Limiting)
-    // The checkLimit method will internally check for overrides and apply the appropriate strategy
-    const endpoint = request.url;
-    const method = request.method;
+    // Wrap ALL database-dependent operations in try-catch to handle connection failures gracefully
+    try {
+      // 0. Check whitelist (bypass rate limiting for trusted clients)
+      const isWhitelisted = await this.isWhitelisted(identifier);
+      if (isWhitelisted) {
+        this.logger.debug(`Whitelisted identifier ${identifier} bypassing rate limits`);
+        response.setHeader('X-RateLimit-Whitelisted', 'true');
+        return true; // Bypass all rate limiting
+      }
 
-    const rateLimitResult = await this.dynamicRateLimit.checkLimit(userId, endpoint, method);
+      // 0.5. Check for custom rate limit override (NEW: Dynamic Rate Limiting)
+      // The checkLimit method will internally check for overrides and apply the appropriate strategy
+      const endpoint = request.url;
+      const method = request.method;
+
+      const rateLimitResult = await this.dynamicRateLimit.checkLimit(userId, endpoint, method);
 
     // Check if an override was applied (indicated by metadata.strategy presence)
     const hasOverride = !!rateLimitResult.metadata?.strategy;
@@ -335,19 +337,29 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     // @ts-expect-error - ThrottlerRequest type mismatch (NestJS internal)
     const result = await super.handleRequest(requestProps);
 
-    // Add rate limit headers to response
-    if (response && effectiveLimit) {
-      response.setHeader(RATE_LIMIT_HEADERS.LIMIT, effectiveLimit.toString());
+      // Add rate limit headers to response
+      if (response && effectiveLimit) {
+        response.setHeader(RATE_LIMIT_HEADERS.LIMIT, effectiveLimit.toString());
 
-      // Calculate reset time (current time + TTL)
-      const resetTime = Math.ceil((Date.now() + effectiveTtl) / 1000);
-      response.setHeader(RATE_LIMIT_HEADERS.RESET, resetTime.toString());
+        // Calculate reset time (current time + TTL)
+        const resetTime = Math.ceil((Date.now() + effectiveTtl) / 1000);
+        response.setHeader(RATE_LIMIT_HEADERS.RESET, resetTime.toString());
 
-      // Add custom header showing which limit was applied
-      response.setHeader('X-RateLimit-Source', limitSource);
+        // Add custom header showing which limit was applied
+        response.setHeader('X-RateLimit-Source', limitSource);
+      }
+
+      return result;
+    } catch (dbError) {
+      // If database is unreachable, allow the request to proceed without database-backed rate limiting
+      // This prevents the entire API from being unavailable when the database is down
+      this.logger.error(`Database unavailable in rate limiter: ${dbError.message}. Allowing request to proceed.`);
+      response.setHeader('X-RateLimit-Fallback', 'database-error');
+      response.setHeader('X-RateLimit-Status', 'degraded');
+      
+      // Allow the request - graceful degradation
+      return true;
     }
-
-    return result;
   }
 
   /**
@@ -415,20 +427,27 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
    * @returns true if whitelisted, false otherwise
    */
   private async isWhitelisted(identifier: string): Promise<boolean> {
-    // Check if identifier exists in whitelist set
-    // Using Redis SET for O(1) lookup performance
-    const key = this.WHITELIST_KEY;
+    try {
+      // Check if identifier exists in whitelist set
+      // Using Redis SET for O(1) lookup performance
+      const key = this.WHITELIST_KEY;
 
-    // Get all whitelist members (small set, so this is fine)
-    // In production, you might want to use SISMEMBER for direct lookup
-    const whitelistData = await this.prisma.rateLimitLog.findFirst({
-      where: {
-        identifier: `whitelist:${identifier}`,
-        blocked: false,
-      },
-    });
+      // Get all whitelist members (small set, so this is fine)
+      // In production, you might want to use SISMEMBER for direct lookup
+      const whitelistData = await this.prisma.rateLimitLog.findFirst({
+        where: {
+          identifier: `whitelist:${identifier}`,
+          blocked: false,
+        },
+      });
 
-    return !!whitelistData;
+      return !!whitelistData;
+    } catch (error) {
+      // If database is unreachable, assume not whitelisted but allow the request to proceed
+      // This prevents the entire API from failing when database is down
+      this.logger.warn(`Failed to check whitelist for ${identifier}: ${error.message}`);
+      return false;
+    }
   }
 
   /**

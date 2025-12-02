@@ -18,7 +18,7 @@ import { ProductImportValidator } from '../../validators/product-import.validato
 import { UserImportValidator } from '../../validators/user-import.validator';
 import { OrderImportValidator } from '../../validators/order-import.validator';
 import { Queue } from 'bull';
-import { getQueueToken } from '@nestjs/bull';
+import { getQueueToken } from '@nestjs/bullmq';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { EntityType, JobStatus, FileFormat, JobPriority } from '@prisma/client';
 

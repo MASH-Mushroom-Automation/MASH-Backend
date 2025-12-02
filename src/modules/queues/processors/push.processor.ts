@@ -1,23 +1,22 @@
-import { Process, Processor } from '@nestjs/bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import type { Job } from 'bull';
 import * as admin from 'firebase-admin';
 import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { PushNotificationJob } from '../services/notification-queue.service';
 
-// 🔧 TEMPORARILY DISABLED - Processor causes conflicts when Bull is initialized elsewhere
-// @Processor('push-notifications')
-export class PushProcessor {
+@Processor('push-notifications')
+export class PushProcessor extends WorkerHost {
   private readonly logger = new Logger(PushProcessor.name);
 
   constructor(private prisma: PrismaService) {
+    super();
     // Firebase Admin is already initialized in your app
     this.logger.log('Push notification processor initialized');
   }
 
-  @Process('send-push')
-  async handlePushJob(job: Job<PushNotificationJob>) {
+  async process(job: Job<PushNotificationJob, any, string>): Promise<any> {
     const { token, title, body, data, alertId, userId, priority } = job.data;
 
     this.logger.log(

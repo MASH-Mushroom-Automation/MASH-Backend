@@ -5,8 +5,8 @@ import {
   Logger,
   ForbiddenException,
 } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../../database/prisma.service';
 import { FileStorageService } from './file-storage.service';
 import { StartExportDto } from '../dto/import-export.dto';

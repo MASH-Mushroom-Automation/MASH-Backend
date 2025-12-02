@@ -29,7 +29,7 @@ export class AppController {
           properties: {
             swagger: {
               type: 'string',
-              example: 'https://mash-backend-api.up.railway.app/api/docs',
+              example: 'https://mash-backend-api-production.up.railway.app/api/docs',
             },
             postman: {
               type: 'string',

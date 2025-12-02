@@ -171,7 +171,7 @@ async function bootstrap() {
     )
     // Servers
     .addServer(`http://localhost:${port}`, 'Local Development')
-    .addServer('https://mash-backend-api.up.railway.app', 'Production')
+    .addServer('https://mash-backend-api-production.up.railway.app', 'Production')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {

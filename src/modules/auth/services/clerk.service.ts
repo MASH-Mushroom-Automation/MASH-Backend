@@ -239,10 +239,24 @@ export class ClerkService {
     username?: string;
   }) {
     try {
-      // Check if user already exists
+      // Check if user already exists IN CLERK
       const existingUser = await this.getUserByEmail(data.email);
       if (existingUser) {
-        throw new BadRequestException('User with this email already exists');
+        this.logger.warn(`⚠️ User exists in Clerk but may not exist in database: ${data.email}`);
+        
+        // Attempt to delete orphaned Clerk user (likely from failed previous registration)
+        try {
+          this.logger.log(`🔧 Attempting to clean up potentially orphaned Clerk user: ${existingUser.id}`);
+          await this.clerkClient.users.deleteUser(existingUser.id);
+          this.logger.log(`✅ Deleted orphaned Clerk user: ${existingUser.id}`);
+          
+          // Wait a moment for Clerk to process deletion
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (deleteError) {
+          this.logger.error(`❌ Failed to delete orphaned Clerk user:`, deleteError);
+          // If deletion fails, throw original error - true duplicate
+          throw new BadRequestException('User with this email already exists in authentication system');
+        }
       }
 
       // Create user in Clerk
@@ -265,6 +279,14 @@ export class ClerkService {
       // Handle Clerk-specific errors with detailed messages
       if (error.clerkError && error.errors && error.errors.length > 0) {
         const clerkErrorMessage = error.errors[0].longMessage || error.errors[0].message;
+        
+        // Provide helpful message for duplicate email errors
+        if (clerkErrorMessage.includes('already exists') || clerkErrorMessage.includes('identifier_exists')) {
+          throw new BadRequestException(
+            'Email is already registered. If you believe this is an error, please contact support or try password reset.'
+          );
+        }
+        
         throw new BadRequestException(clerkErrorMessage);
       }
 

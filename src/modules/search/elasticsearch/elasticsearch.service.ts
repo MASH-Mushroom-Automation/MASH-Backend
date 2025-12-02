@@ -75,16 +75,30 @@ export class ElasticsearchService implements OnModuleInit {
   }
 
   /**
-   * Create an index with mappings
+   * Create an index with mappings and settings
    */
-  async createIndex(index: string, mapping: Record<string, any>): Promise<void> {
+  async createIndex(
+    index: string,
+    mapping: Record<string, any>,
+    settings?: Record<string, any>,
+  ): Promise<void> {
     try {
       const exists = await this.client.indices.exists({ index });
 
       if (!exists) {
+        const body: any = {};
+
+        // Add settings if provided (includes analyzers)
+        if (settings) {
+          body.settings = settings;
+        }
+
+        // Add mappings
+        body.mappings = mapping;
+
         await this.client.indices.create({
           index,
-          mappings: mapping,
+          body,
         });
         this.logger.log(`✅ Created index: ${index}`);
       } else {

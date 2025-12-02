@@ -11,71 +11,65 @@ datasource db {
 }
 
 model User {
-  id                      String                 @id @default(cuid())
-  clerkId                 String?                @unique
-  email                   String                 @unique
-  username                String?                @unique
-  firstName               String?
-  lastName                String?
-  imageUrl                String?
-  phoneNumber             String?
-  role                    UserRole               @default(USER)
-  isActive                Boolean                @default(true)
-  lastLoginAt             DateTime?
-  createdAt               DateTime               @default(now())
-  updatedAt               DateTime               @updatedAt
-  preferences             Json?
-  twoFactorBackupCodes    String[]               @default([])
-  twoFactorEnabled        Boolean                @default(false)
-  twoFactorSecret         String?
-  password                String?
-  emailVerified           Boolean                @default(false)
-  emailVerificationToken  String?
-  emailVerificationExpiry DateTime?
-  
-  // === OAUTH/SSO FIELDS (Google & Facebook) ===
-  googleId                String?   @unique // Google user ID (sub claim from JWT)
-  facebookId              String?   @unique // Facebook user ID
-  oauthProvider           String[]  @default([]) // Array: ["google", "facebook"] if both linked
-  oauthAccessToken        String?   // Optional: Store OAuth access token (encrypted)
-  oauthRefreshToken       String?   // Optional: Store OAuth refresh token (encrypted)
-  oauthTokenExpiry        DateTime? // Optional: Track token expiration
-  
-  // 6-Digit Verification Code Fields (Mobile-Friendly)
-  emailVerificationCode        String?   // 6-digit numeric code (e.g., "123456")
-  emailVerificationCodeExpiry  DateTime? // Code expires in 10 minutes
-  emailVerificationCodeUsed    Boolean   @default(false) // Single-use enforcement
-  emailVerificationAttempts    Int       @default(0) // Track failed attempts (max 5)
-  emailVerificationCodeSentAt  DateTime? // Rate limiting timestamp
-  
-  // 6-Digit Password Reset Code Fields (Mobile-Friendly)
-  passwordResetCode            String?   // 6-digit numeric code for password reset
-  passwordResetCodeExpiry      DateTime? // Code expires in 10 minutes
-  passwordResetCodeUsed        Boolean   @default(false) // Single-use enforcement
-  passwordResetAttempts        Int       @default(0) // Track failed attempts (max 5)
-  passwordResetCodeSentAt      DateTime? // Rate limiting timestamp
-  
-  addresses               Address[]
-  alertAcknowledgments    AlertAcknowledgment[]  @relation("AlertAcknowledgmentUser")
-  alertRecipients         AlertRuleRecipient[]   @relation("AlertRecipient")
-  alertRulesCreated       AlertRule[]            @relation("AlertRuleCreator")
-  alertRulesUpdated       AlertRule[]            @relation("AlertRuleUpdater")
-  apiKeys                 ApiKey[]
-  apiUsageLogs            ApiUsageLog[]
-  apiVersionUsage         ApiVersionUsage[]
-  devices                 Device[]
-  importExportJobs        ImportExportJob[]      @relation("ImportExportJobsCreated")
-  notificationTemplates   NotificationTemplate[] @relation("NotificationTemplateCreator")
-  alertNotifications      Notification[]
-  orders                  Order[]
-  payments                Payment[]
-  pushSubscriptions       PushSubscription[]
-  rateLimitOverrides      RateLimitOverride[]
-  requestQueues           RequestQueue[]
-  sensorData              SensorData[]
-  sessions                Session[]
-  userNotifications       UserNotification[]     @relation("UserNotifications")
-  userRoleAssignments     UserRoleAssignment[]
+  id                          String                 @id @default(cuid())
+  clerkId                     String?                @unique
+  email                       String                 @unique
+  username                    String?                @unique
+  firstName                   String?
+  lastName                    String?
+  imageUrl                    String?
+  phoneNumber                 String?
+  role                        UserRole               @default(USER)
+  isActive                    Boolean                @default(true)
+  lastLoginAt                 DateTime?
+  createdAt                   DateTime               @default(now())
+  updatedAt                   DateTime               @updatedAt
+  preferences                 Json?
+  twoFactorBackupCodes        String[]               @default([])
+  twoFactorEnabled            Boolean                @default(false)
+  twoFactorSecret             String?
+  password                    String?
+  emailVerified               Boolean                @default(false)
+  emailVerificationToken      String?
+  emailVerificationExpiry     DateTime?
+  emailVerificationAttempts   Int                    @default(0)
+  emailVerificationCode       String?
+  emailVerificationCodeExpiry DateTime?
+  emailVerificationCodeSentAt DateTime?
+  emailVerificationCodeUsed   Boolean                @default(false)
+  facebookId                  String?                @unique
+  googleId                    String?                @unique
+  oauthAccessToken            String?
+  oauthProvider               String[]               @default([])
+  oauthRefreshToken           String?
+  oauthTokenExpiry            DateTime?
+  passwordResetAttempts       Int                    @default(0)
+  passwordResetCode           String?
+  passwordResetCodeExpiry     DateTime?
+  passwordResetCodeSentAt     DateTime?
+  passwordResetCodeUsed       Boolean                @default(false)
+  addresses                   Address[]
+  alertAcknowledgments        AlertAcknowledgment[]  @relation("AlertAcknowledgmentUser")
+  alertRecipients             AlertRuleRecipient[]   @relation("AlertRecipient")
+  alertRulesCreated           AlertRule[]            @relation("AlertRuleCreator")
+  alertRulesUpdated           AlertRule[]            @relation("AlertRuleUpdater")
+  apiKeys                     ApiKey[]
+  apiUsageLogs                ApiUsageLog[]
+  apiVersionUsage             ApiVersionUsage[]
+  carts                       Cart[]
+  devices                     Device[]
+  importExportJobs            ImportExportJob[]      @relation("ImportExportJobsCreated")
+  notificationTemplates       NotificationTemplate[] @relation("NotificationTemplateCreator")
+  alertNotifications          Notification[]
+  orders                      Order[]
+  payments                    Payment[]
+  pushSubscriptions           PushSubscription[]
+  rateLimitOverrides          RateLimitOverride[]
+  requestQueues               RequestQueue[]
+  sensorData                  SensorData[]
+  sessions                    Session[]
+  userNotifications           UserNotification[]     @relation("UserNotifications")
+  userRoleAssignments         UserRoleAssignment[]
 
   @@index([createdAt])
   @@index([isActive, role])
@@ -83,13 +77,13 @@ model User {
   @@index([email, isActive])
   @@index([emailVerificationToken])
   @@index([email, emailVerified])
-  @@index([email, emailVerificationCode]) // Fast lookup for code-based verification
-  @@index([emailVerificationCode, emailVerificationCodeExpiry]) // Fast expiry checks
-  @@index([email, passwordResetCode]) // Fast lookup for password reset
-  @@index([passwordResetCode, passwordResetCodeExpiry]) // Fast expiry checks for password reset
-  @@index([googleId]) // Fast lookup for Google OAuth users
-  @@index([facebookId]) // Fast lookup for Facebook OAuth users
-  @@index([oauthProvider]) // Fast lookup by OAuth provider
+  @@index([email, emailVerificationCode])
+  @@index([emailVerificationCode, emailVerificationCodeExpiry])
+  @@index([email, passwordResetCode])
+  @@index([passwordResetCode, passwordResetCodeExpiry])
+  @@index([googleId])
+  @@index([facebookId])
+  @@index([oauthProvider])
   @@map("users")
 }
 
@@ -207,6 +201,7 @@ model Product {
   costPrice      Decimal?    @db.Decimal(10, 2)
   stock          Int         @default(0)
   minStock       Int         @default(0)
+  maxCartQty     Int?        @default(100)
   weight         Float?
   dimensions     Json?
   images         Json[]
@@ -221,6 +216,7 @@ model Product {
   updatedAt      DateTime    @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean     @default(false)
+  cartItems      CartItem[]
   orderItems     OrderItem[]
 
   @@index([isActive, isFeatured, createdAt(sort: Desc)])
@@ -249,6 +245,58 @@ model Category {
   @@index([parentId, isActive])
   @@index([createdAt])
   @@map("categories")
+}
+
+model Cart {
+  id             String     @id @default(cuid())
+  userId         String?
+  sessionId      String?
+  status         CartStatus @default(ACTIVE)
+  subtotal       Decimal    @default(0) @db.Decimal(10, 2)
+  tax            Decimal    @default(0) @db.Decimal(10, 2)
+  shipping       Decimal    @default(0) @db.Decimal(10, 2)
+  discount       Decimal    @default(0) @db.Decimal(10, 2)
+  total          Decimal    @default(0) @db.Decimal(10, 2)
+  metadata       Json?
+  lastActivityAt DateTime   @default(now())
+  expiresAt      DateTime?
+  abandonedAt    DateTime?
+  convertedAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          CartItem[]
+
+  @@index([userId, status])
+  @@index([sessionId, status])
+  @@index([status, lastActivityAt])
+  @@index([createdAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id              String   @id @default(cuid())
+  cartId          String
+  productId       String
+  quantity        Int
+  price           Decimal  @db.Decimal(10, 2)
+  originalPrice   Decimal  @db.Decimal(10, 2)
+  subtotal          Decimal  @db.Decimal(10, 2)
+  discount          Decimal  @default(0) @db.Decimal(10, 2)
+  total             Decimal  @db.Decimal(10, 2)
+  isAvailable       Boolean  @default(true)
+  unavailableReason String?
+  productSnapshot   Json?
+  customization   Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  cart            Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
 }
 
 model Order {
@@ -524,6 +572,11 @@ model RateLimitLog {
   @@unique([identifier, endpoint, windowStart])
   @@index([identifier, windowStart])
   @@index([endpoint])
+  // 🚀 PERFORMANCE OPTIMIZATION: Composite indexes for fast lookups (targeting 215ms → <10ms)
+  @@index([identifier, blocked, windowStart], name: "idx_identifier_blocked_window")
+  @@index([identifier, windowStart, windowEnd], name: "idx_identifier_window_range")
+  @@index([endpoint, blocked, windowStart], name: "idx_endpoint_blocked_window")
+  @@index([blocked, createdAt], name: "idx_blocked_created")
   @@map("rate_limit_logs")
 }
 
@@ -1066,6 +1119,14 @@ enum DeviceStatus {
   ERROR
 }
 
+enum CartStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+  EXPIRED
+  MERGED
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -1090,6 +1151,7 @@ enum PaymentMethod {
   GCASH
   MAYA
   BANK_TRANSFER
+  COD
 }
 
 enum NotificationType {
@@ -1275,4 +1337,62 @@ enum DeviceHealthStatus {
   CRITICAL
   OFFLINE
   MAINTENANCE
+}
+
+// ============================================================================
+// LALAMOVE DELIVERY INTEGRATION MODELS
+// ============================================================================
+
+model LalamoveQuotation {
+  id            String   @id @default(cuid())
+  quotationId   String   @unique
+  serviceType   String
+  totalPrice    Float
+  currency      String   @default("PHP")
+  distance      Float
+  distanceUnit  String   @default("km")
+  stops         Json
+  isScheduled   Boolean  @default(false)
+  scheduleAt    DateTime?
+  expiresAt     DateTime
+  status        String   @default("ACTIVE") // ACTIVE, EXPIRED, USED
+  userId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([quotationId])
+  @@index([status])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("lalamove_quotations")
+}
+
+model LalamoveOrder {
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  quotationId    String
+  status         String
+  driverId       String?
+  shareLink      String
+  totalPrice     Float
+  currency       String    @default("PHP")
+  distance       Float
+  distanceUnit   String    @default("km")
+  stops          Json
+  isPODEnabled   Boolean   @default(true)
+  podStatus      String?
+  podImage       String?
+  podSignature   String?
+  orderReference String?
+  userId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([quotationId])
+  @@index([status])
+  @@index([userId])
+  @@index([driverId])
+  @@index([createdAt])
+  @@map("lalamove_orders")
 }
