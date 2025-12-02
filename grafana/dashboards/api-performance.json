@@ -1,295 +1,407 @@
 {
-  "dashboard": {
-    "title": "MASH API Performance Dashboard",
-    "uid": "mash-api-performance",
-    "tags": ["mash", "api", "performance"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "refresh": "10s",
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Request Rate (req/s)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-        "targets": [
-          {
-            "expr": "rate(http_requests_total{job=\"mash-backend\"}[5m])",
-            "legendFormat": "{{method}} {{route}}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Requests/sec",
-              "drawStyle": "line",
-              "fillOpacity": 10,
-              "showPoints": "never"
-            },
-            "unit": "reqps"
-          }
-        }
-      },
-      {
-        "id": 2,
-        "title": "Response Time (P50, P95, P99)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))",
-            "legendFormat": "P50",
-            "refId": "A"
-          },
-          {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))",
-            "legendFormat": "P95",
-            "refId": "B"
-          },
-          {
-            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))",
-            "legendFormat": "P99",
-            "refId": "C"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Latency",
-              "drawStyle": "line",
-              "fillOpacity": 0
-            },
-            "unit": "s"
-          }
-        }
-      },
-      {
-        "id": 3,
-        "title": "HTTP Status Codes",
-        "type": "piechart",
-        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum by (status_code) (rate(http_requests_total{job=\"mash-backend\"}[5m]))",
-            "legendFormat": "{{status_code}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "table",
-            "placement": "right",
-            "values": ["value", "percent"]
-          },
-          "pieType": "donut"
-        }
-      },
-      {
-        "id": 4,
-        "title": "Error Rate (%)",
-        "type": "stat",
-        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum(rate(http_requests_total{job=\"mash-backend\",status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"mash-backend\"}[5m])) * 100",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 1, "color": "yellow" },
-                { "value": 5, "color": "red" }
-              ]
-            },
-            "unit": "percent"
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Top 10 Slowest Endpoints",
-        "type": "table",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-        "targets": [
-          {
-            "expr": "topk(10, histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))) * 1000",
-            "format": "table",
-            "instant": true,
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": { "id": "byName", "options": "Value" },
-              "properties": [
-                { "id": "displayName", "value": "P95 Latency (ms)" },
-                { "id": "unit", "value": "ms" }
-              ]
-            }
-          ]
-        },
-        "transformations": [
-          {
-            "id": "organize",
-            "options": {
-              "excludeByName": {
-                "Time": true,
-                "__name__": true,
-                "job": true
-              },
-              "renameByName": {
-                "method": "Method",
-                "route": "Endpoint"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "id": 6,
-        "title": "Request Rate by Endpoint",
-        "type": "bargauge",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-        "targets": [
-          {
-            "expr": "topk(10, sum by (route, method) (rate(http_requests_total{job=\"mash-backend\"}[5m])))",
-            "legendFormat": "{{method}} {{route}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "orientation": "horizontal",
-          "displayMode": "gradient",
-          "showUnfilled": true
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "continuous-GrYlRd" },
-            "unit": "reqps"
-          }
-        }
-      },
-      {
-        "id": 7,
-        "title": "Response Time Heatmap",
-        "type": "heatmap",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-        "targets": [
-          {
-            "expr": "sum(rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m])) by (le)",
-            "format": "heatmap",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "calculate": true,
-          "calculation": {
-            "xBuckets": {
-              "mode": "size",
-              "value": "1min"
-            }
-          },
-          "color": {
-            "mode": "spectrum",
-            "scheme": "Spectral"
-          }
-        }
-      },
-      {
-        "id": 8,
-        "title": "Cache Hit Rate (%)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-        "targets": [
-          {
-            "expr": "rate(cache_hits_total{job=\"mash-backend\"}[5m]) / (rate(cache_hits_total{job=\"mash-backend\"}[5m]) + rate(cache_misses_total{job=\"mash-backend\"}[5m])) * 100",
-            "legendFormat": "Hit Rate",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "red" },
-                { "value": 70, "color": "yellow" },
-                { "value": 80, "color": "green" }
-              ]
-            },
-            "unit": "percent",
-            "min": 0,
-            "max": 100
-          }
-        }
-      },
-      {
-        "id": 9,
-        "title": "Active Connections",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 24 },
-        "targets": [
-          {
-            "expr": "http_active_connections{job=\"mash-backend\"}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 50, "color": "yellow" },
-                { "value": 100, "color": "red" }
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 10,
-        "title": "Rate Limit Violations",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 24 },
-        "targets": [
-          {
-            "expr": "sum(rate(rate_limit_violations_total{job=\"mash-backend\"}[5m]))",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 10, "color": "yellow" },
-                { "value": 50, "color": "red" }
-              ]
-            },
-            "unit": "ops"
-          }
-        }
-      }
-    ]
-  }
+    "title":  "MASH API Performance Dashboard",
+    "uid":  "mash-api-performance",
+    "tags":  [
+                 "mash",
+                 "api",
+                 "performance"
+             ],
+    "timezone":  "browser",
+    "schemaVersion":  38,
+    "refresh":  "10s",
+    "time":  {
+                 "from":  "now-1h",
+                 "to":  "now"
+             },
+    "panels":  [
+                   {
+                       "id":  1,
+                       "title":  "Request Rate (req/s)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  0
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(http_requests_total{job=\"mash-backend\"}[5m])",
+                                           "legendFormat":  "{{method}} {{route}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Requests/sec",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  10,
+                                                                           "showPoints":  "never"
+                                                                       },
+                                                            "unit":  "reqps"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  2,
+                       "title":  "Response Time (P50, P95, P99)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  0
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))",
+                                           "legendFormat":  "P50",
+                                           "refId":  "A"
+                                       },
+                                       {
+                                           "expr":  "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))",
+                                           "legendFormat":  "P95",
+                                           "refId":  "B"
+                                       },
+                                       {
+                                           "expr":  "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))",
+                                           "legendFormat":  "P99",
+                                           "refId":  "C"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Latency",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0
+                                                                       },
+                                                            "unit":  "s"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  3,
+                       "title":  "HTTP Status Codes",
+                       "type":  "piechart",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  6,
+                                       "x":  0,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum by (status_code) (rate(http_requests_total{job=\"mash-backend\"}[5m]))",
+                                           "legendFormat":  "{{status_code}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "legend":  {
+                                                      "displayMode":  "table",
+                                                      "placement":  "right",
+                                                      "values":  [
+                                                                     "value",
+                                                                     "percent"
+                                                                 ]
+                                                  },
+                                       "pieType":  "donut"
+                                   }
+                   },
+                   {
+                       "id":  4,
+                       "title":  "Error Rate (%)",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  6,
+                                       "x":  6,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(http_requests_total{job=\"mash-backend\",status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"mash-backend\"}[5m])) * 100",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  1,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  5,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "percent"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  5,
+                       "title":  "Top 10 Slowest Endpoints",
+                       "type":  "table",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "topk(10, histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m]))) * 1000",
+                                           "format":  "table",
+                                           "instant":  true,
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "overrides":  [
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byName",
+                                                                                 "options":  "Value"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "displayName",
+                                                                                        "value":  "P95 Latency (ms)"
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "unit",
+                                                                                        "value":  "ms"
+                                                                                    }
+                                                                                ]
+                                                             }
+                                                         ]
+                                       },
+                       "transformations":  [
+                                               {
+                                                   "id":  "organize",
+                                                   "options":  {
+                                                                   "excludeByName":  {
+                                                                                         "Time":  true,
+                                                                                         "__name__":  true,
+                                                                                         "job":  true
+                                                                                     },
+                                                                   "renameByName":  {
+                                                                                        "method":  "Method",
+                                                                                        "route":  "Endpoint"
+                                                                                    }
+                                                               }
+                                               }
+                                           ]
+                   },
+                   {
+                       "id":  6,
+                       "title":  "Request Rate by Endpoint",
+                       "type":  "bargauge",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  16
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "topk(10, sum by (route, method) (rate(http_requests_total{job=\"mash-backend\"}[5m])))",
+                                           "legendFormat":  "{{method}} {{route}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "orientation":  "horizontal",
+                                       "displayMode":  "gradient",
+                                       "showUnfilled":  true
+                                   },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "continuous-GrYlRd"
+                                                                      },
+                                                            "unit":  "reqps"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  7,
+                       "title":  "Response Time Heatmap",
+                       "type":  "heatmap",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  16
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(http_request_duration_seconds_bucket{job=\"mash-backend\"}[5m])) by (le)",
+                                           "format":  "heatmap",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "calculate":  true,
+                                       "calculation":  {
+                                                           "xBuckets":  {
+                                                                            "mode":  "size",
+                                                                            "value":  "1min"
+                                                                        }
+                                                       },
+                                       "color":  {
+                                                     "mode":  "spectrum",
+                                                     "scheme":  "Spectral"
+                                                 }
+                                   }
+                   },
+                   {
+                       "id":  8,
+                       "title":  "Cache Hit Rate (%)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  24
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(cache_hits_total{job=\"mash-backend\"}[5m]) / (rate(cache_hits_total{job=\"mash-backend\"}[5m]) + rate(cache_misses_total{job=\"mash-backend\"}[5m])) * 100",
+                                           "legendFormat":  "Hit Rate",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "red"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  70,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  80,
+                                                                                                 "color":  "green"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "percent",
+                                                            "min":  0,
+                                                            "max":  100
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  9,
+                       "title":  "Active Connections",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  12,
+                                       "y":  24
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "http_active_connections{job=\"mash-backend\"}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  50,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  100,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  10,
+                       "title":  "Rate Limit Violations",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  18,
+                                       "y":  24
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(rate_limit_violations_total{job=\"mash-backend\"}[5m]))",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  10,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  50,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   }
+               ]
 }
