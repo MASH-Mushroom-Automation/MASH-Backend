@@ -37,3 +37,28 @@ export class ResetPasswordDto {
   })
   newPassword: string;
 }
+
+export class VerifyResetCodeDto {
+  @ApiProperty({
+    example: 'john.doe@example.com',
+    description: 'Email address',
+  })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: '123456',
+    description: '6-digit verification code sent to email',
+  })
+  @IsString()
+  code: string;
+}
+
+export class ResendPasswordResetCodeDto {
+  @ApiProperty({
+    example: 'john.doe@example.com',
+    description: 'Email address to resend password reset code',
+  })
+  @IsEmail()
+  email: string;
+}

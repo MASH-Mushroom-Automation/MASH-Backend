@@ -35,7 +35,13 @@ export class CustomValidationPipe implements PipeTransform<any> {
     });
 
     if (errors.length > 0) {
-      throw new BadRequestException(this.formatErrors(errors));
+      // Format errors for better readability
+      const formattedErrors = this.formatErrors(errors);
+      throw new BadRequestException({
+        message: 'Validation failed',
+        errors: formattedErrors.errors,
+        fields: Object.keys(formattedErrors.errors), // List failed fields
+      });
     }
 
     return object;

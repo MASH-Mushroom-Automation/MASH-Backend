@@ -1,19 +1,18 @@
-import { Process, Processor } from '@nestjs/bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import type { Job } from 'bull';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { EmailNotificationJob } from '../services/notification-queue.service';
 
-// 🔧 TEMPORARILY DISABLED - Processor causes "Cannot define the same handler twice" error
-// when Bull is initialized elsewhere (e.g. ImportExportModule)
-// @Processor('email-notifications')
-export class EmailProcessor {
+@Processor('email-notifications')
+export class EmailProcessor extends WorkerHost {
   private readonly logger = new Logger(EmailProcessor.name);
   private transporter: nodemailer.Transporter;
 
   constructor(private prisma: PrismaService) {
+    super();
     // Use your existing Gmail SMTP configuration
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
@@ -35,8 +34,7 @@ export class EmailProcessor {
     });
   }
 
-  @Process('send-email')
-  async handleEmailJob(job: Job<EmailNotificationJob>) {
+  async process(job: Job<EmailNotificationJob, any, string>): Promise<any> {
     const { to, subject, body, html, alertId, userId } = job.data;
 
     this.logger.log(`Processing email job ${job.id} for: ${to.join(', ')}`);

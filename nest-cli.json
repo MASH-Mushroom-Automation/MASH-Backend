@@ -9,6 +9,11 @@
     "tsConfigPath": "tsconfig.build.json",
     "webpack": false,
     "watchAssets": true,
-    "assets": []
+    "assets": [
+      {
+        "include": "modules/notifications/templates/**/*",
+        "outDir": "dist"
+      }
+    ]
   }
 }

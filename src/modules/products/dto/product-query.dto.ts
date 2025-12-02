@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, Min, IsString, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Min, IsString, IsEnum, IsBoolean, IsNumber } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export enum SortOrder {
   ASC = 'asc',
@@ -51,6 +51,15 @@ export class ProductQueryDto {
   categoryId?: string;
 
   @ApiProperty({
+    example: 'Fresh Mushroom',
+    description: 'Filter by category name',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({
     example: 'ACTIVE',
     description: 'Filter by status',
     required: false,
@@ -84,5 +93,31 @@ export class ProductQueryDto {
     required: false,
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
   isFeatured?: boolean;
+
+  @ApiProperty({
+    example: 0,
+    description: 'Minimum price filter',
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  minPrice?: number;
+
+  @ApiProperty({
+    example: 1000,
+    description: 'Maximum price filter',
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  maxPrice?: number;
 }

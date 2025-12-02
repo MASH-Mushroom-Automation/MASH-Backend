@@ -70,6 +70,20 @@ export class PrometheusService implements OnModuleInit {
   public sensorsActive!: Gauge<string>;
 
   // ============================================================================
+  // Cart & E-commerce Metrics (Phase 7)
+  // ============================================================================
+
+  public cartItemsAdded!: Counter<string>;
+  public cartItemsRemoved!: Counter<string>;
+  public cartCheckoutsTotal!: Counter<string>;
+  public cartCheckoutValue!: Summary<string>;
+  public cartAbandonmentTotal!: Counter<string>;
+  public cartActiveCarts!: Gauge<string>;
+  public shippingCalculations!: Counter<string>;
+  public taxCollected!: Counter<string>;
+  public shippingRevenue!: Counter<string>;
+
+  // ============================================================================
   // API Endpoint Metrics
   // ============================================================================
 
@@ -268,6 +282,70 @@ export class PrometheusService implements OnModuleInit {
       registers: [register],
     });
 
+    // Cart & E-commerce Metrics (Phase 7)
+    this.cartItemsAdded = new Counter({
+      name: 'mash_cart_items_added_total',
+      help: 'Total number of items added to carts',
+      labelNames: ['product_id', 'user_type'], // user_type: guest, authenticated
+      registers: [register],
+    });
+
+    this.cartItemsRemoved = new Counter({
+      name: 'mash_cart_items_removed_total',
+      help: 'Total number of items removed from carts',
+      labelNames: ['product_id', 'user_type'],
+      registers: [register],
+    });
+
+    this.cartCheckoutsTotal = new Counter({
+      name: 'mash_cart_checkouts_total',
+      help: 'Total number of successful cart checkouts',
+      labelNames: ['payment_method'],
+      registers: [register],
+    });
+
+    this.cartCheckoutValue = new Summary({
+      name: 'mash_cart_checkout_value_php',
+      help: 'Checkout value in PHP',
+      labelNames: ['payment_method'],
+      registers: [register],
+    });
+
+    this.cartAbandonmentTotal = new Counter({
+      name: 'mash_cart_abandonment_total',
+      help: 'Total number of abandoned carts',
+      labelNames: ['user_type'],
+      registers: [register],
+    });
+
+    this.cartActiveCarts = new Gauge({
+      name: 'mash_cart_active_carts',
+      help: 'Number of currently active carts',
+      labelNames: ['user_type'],
+      registers: [register],
+    });
+
+    this.shippingCalculations = new Counter({
+      name: 'mash_shipping_calculations_total',
+      help: 'Total number of shipping cost calculations',
+      labelNames: ['method', 'region'], // method: STANDARD, EXPRESS, SAME_DAY
+      registers: [register],
+    });
+
+    this.taxCollected = new Counter({
+      name: 'mash_tax_collected_php_total',
+      help: 'Total tax collected in PHP',
+      labelNames: ['region'], // NCR, Province
+      registers: [register],
+    });
+
+    this.shippingRevenue = new Counter({
+      name: 'mash_shipping_revenue_php_total',
+      help: 'Total shipping revenue in PHP',
+      labelNames: ['method'],
+      registers: [register],
+    });
+
     // API Endpoint Metrics
     this.apiEndpointRequests = new Counter({
       name: 'mash_api_endpoint_requests_total',
@@ -417,6 +495,42 @@ export class PrometheusService implements OnModuleInit {
     if (error) {
       this.apiEndpointErrors.labels(module, endpoint, method, error.type).inc();
     }
+  }
+
+  /**
+   * Record cart & e-commerce metrics (Phase 7)
+   */
+  recordCartItemAdded(productId: string, userType: 'guest' | 'authenticated') {
+    this.cartItemsAdded.labels(productId, userType).inc();
+  }
+
+  recordCartItemRemoved(productId: string, userType: 'guest' | 'authenticated') {
+    this.cartItemsRemoved.labels(productId, userType).inc();
+  }
+
+  recordCartCheckout(paymentMethod: string, value: number) {
+    this.cartCheckoutsTotal.labels(paymentMethod).inc();
+    this.cartCheckoutValue.labels(paymentMethod).observe(value);
+  }
+
+  recordCartAbandonment(userType: 'guest' | 'authenticated') {
+    this.cartAbandonmentTotal.labels(userType).inc();
+  }
+
+  updateActiveCarts(userType: 'guest' | 'authenticated', count: number) {
+    this.cartActiveCarts.labels(userType).set(count);
+  }
+
+  recordShippingCalculation(method: 'STANDARD' | 'EXPRESS' | 'SAME_DAY', region: string) {
+    this.shippingCalculations.labels(method, region).inc();
+  }
+
+  recordTaxCollected(region: 'NCR' | 'Province', amount: number) {
+    this.taxCollected.labels(region).inc(amount);
+  }
+
+  recordShippingRevenue(method: 'STANDARD' | 'EXPRESS' | 'SAME_DAY', amount: number) {
+    this.shippingRevenue.labels(method).inc(amount);
   }
 
   /**

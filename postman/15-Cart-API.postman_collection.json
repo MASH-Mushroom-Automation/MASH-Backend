@@ -1,0 +1,900 @@
+{
+	"info": {
+		"_postman_id": "cart-api-collection-2025",
+		"name": "15-Cart-API",
+		"description": "MASH Backend - Shopping Cart API Testing Collection\n\nThis collection covers all cart endpoints including:\n- Guest cart operations\n- Authenticated user cart operations\n- Cart item management (add, update, remove)\n- Cart validation\n- Guest-to-user cart migration\n- Shipping estimation\n- Checkout process\n- Cart analytics (admin)\n\nAuthor: MASH Backend Team\nVersion: 1.0.0\nCreated: November 15, 2025",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Guest Cart Operations",
+			"item": [
+				{
+					"name": "Get or Create Guest Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has cart structure\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('sessionId');",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData).to.have.property('items');",
+									"    pm.expect(jsonData).to.have.property('total');",
+									"});",
+									"",
+									"// Save cart ID for subsequent requests",
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"cartId\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text",
+								"description": "Guest session ID for cart identification"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart"
+							]
+						},
+						"description": "Retrieves the guest cart or creates a new empty cart if none exists. Uses X-Session-Id header for identification."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Item to Guest Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Cart has items\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.items).to.be.an('array');",
+									"    pm.expect(jsonData.items.length).to.be.above(0);",
+									"    pm.expect(jsonData.itemCount).to.be.above(0);",
+									"});",
+									"",
+									"pm.test(\"Item has price locked\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var item = jsonData.items[0];",
+									"    pm.expect(item).to.have.property('price');",
+									"    pm.expect(item).to.have.property('productSnapshot');",
+									"});",
+									"",
+									"// Save first cart item ID",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.items && jsonData.items.length > 0) {",
+									"    pm.environment.set(\"cartItemId\", jsonData.items[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": \"{{testProductId}}\",\n  \"quantity\": 2,\n  \"customization\": {\n    \"note\": \"Handle with care\",\n    \"giftWrap\": false\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/items",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"items"
+							]
+						},
+						"description": "Adds a product to the guest cart with specified quantity. Performs inventory validation and price locking."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Cart Item Quantity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Quantity updated\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var item = jsonData.items.find(i => i.id === pm.environment.get('cartItemId'));",
+									"    pm.expect(item.quantity).to.equal(5);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"quantity\": 5,\n  \"customization\": {\n    \"note\": \"Updated note\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/items/{{cartItemId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"items",
+								"{{cartItemId}}"
+							]
+						},
+						"description": "Updates the quantity of a cart item. Validates stock availability and max quantity limits."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Item from Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Item removed\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var item = jsonData.items.find(i => i.id === pm.environment.get('cartItemId'));",
+									"    pm.expect(item).to.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cart/items/{{cartItemId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"items",
+								"{{cartItemId}}"
+							]
+						},
+						"description": "Removes a specific item from the cart and recalculates totals."
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Entire Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Cart is empty\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.items).to.be.an('array').that.is.empty;",
+									"    pm.expect(jsonData.itemCount).to.equal(0);",
+									"    pm.expect(jsonData.total).to.equal(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart"
+							]
+						},
+						"description": "Removes all items from the cart."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cart Summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Summary has key fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('itemCount');",
+									"    pm.expect(jsonData).to.have.property('total');",
+									"    pm.expect(jsonData).to.have.property('subtotal');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cart/summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"summary"
+							]
+						},
+						"description": "Gets a lightweight summary of the cart without full product details. Useful for cart badge/icon."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing guest carts using session IDs"
+		},
+		{
+			"name": "Authenticated User Cart",
+			"item": [
+				{
+					"name": "Get User Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Cart belongs to user\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('userId');",
+									"    pm.expect(jsonData.sessionId).to.be.null;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart"
+							]
+						},
+						"description": "Gets the authenticated user's cart. Requires JWT token."
+					},
+					"response": []
+				},
+				{
+					"name": "Merge Guest Cart to User Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Cart belongs to user after merge\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.userId).to.not.be.null;",
+									"    pm.expect(jsonData).to.have.property('items');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text",
+								"description": "Guest session ID to merge from"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cart/merge",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"merge"
+							]
+						},
+						"description": "Merges a guest cart into the authenticated user's cart. Called after user login/registration."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints requiring user authentication"
+		},
+		{
+			"name": "Cart Validation & Checkout",
+			"item": [
+				{
+					"name": "Validate Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Validation result returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('isValid');",
+									"    pm.expect(jsonData).to.have.property('issues');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cart/validate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"validate"
+							]
+						},
+						"description": "Validates cart before checkout. Checks stock availability, price changes, and product activation status."
+					},
+					"response": []
+				},
+				{
+					"name": "Estimate Shipping",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Shipping options returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('options');",
+									"    pm.expect(jsonData.options).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"address\": {\n    \"region\": \"NCR\",\n    \"province\": \"Metro Manila\",\n    \"city\": \"Quezon City\",\n    \"barangay\": \"Commonwealth\",\n    \"addressLine1\": \"123 Main Street\",\n    \"postalCode\": \"1121\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/shipping/estimate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"shipping",
+								"estimate"
+							]
+						},
+						"description": "Estimates shipping costs based on cart weight and destination address. Returns available shipping methods."
+					},
+					"response": []
+				},
+				{
+					"name": "Checkout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Order created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('orderId');",
+									"    pm.expect(jsonData).to.have.property('orderNumber');",
+									"});",
+									"",
+									"// Save order ID for subsequent requests",
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"orderId\", jsonData.orderId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paymentMethod\": \"GCASH\",\n  \"shippingAddress\": {\n    \"region\": \"NCR\",\n    \"province\": \"Metro Manila\",\n    \"city\": \"Quezon City\",\n    \"barangay\": \"Commonwealth\",\n    \"addressLine1\": \"123 Main Street\",\n    \"addressLine2\": \"Unit 456\",\n    \"postalCode\": \"1121\",\n    \"contactNumber\": \"+639171234567\"\n  },\n  \"billingAddress\": {\n    \"region\": \"NCR\",\n    \"province\": \"Metro Manila\",\n    \"city\": \"Quezon City\",\n    \"barangay\": \"Commonwealth\",\n    \"addressLine1\": \"123 Main Street\",\n    \"postalCode\": \"1121\",\n    \"contactNumber\": \"+639171234567\"\n  },\n  \"shippingMethod\": \"STANDARD\",\n  \"notes\": \"Please call before delivery\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/checkout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"checkout"
+							]
+						},
+						"description": "Creates an order from the cart. Requires authentication. Validates cart, creates order, deducts inventory, and marks cart as COMPLETED."
+					},
+					"response": []
+				}
+			],
+			"description": "Cart validation and checkout operations"
+		},
+		{
+			"name": "Cart Analytics (Admin)",
+			"item": [
+				{
+					"name": "Get Cart Overview",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Analytics data returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('totalCarts');",
+									"    pm.expect(jsonData).to.have.property('activeCarts');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminAccessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cart/analytics/overview",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"analytics",
+								"overview"
+							]
+						},
+						"description": "Gets cart system overview analytics. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Abandoned Carts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Abandoned carts returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminAccessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cart/analytics/abandoned?days=7",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"analytics",
+								"abandoned"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "7",
+									"description": "Number of days to look back"
+								}
+							]
+						},
+						"description": "Gets list of abandoned carts for recovery campaigns. Requires admin role."
+					},
+					"response": []
+				}
+			],
+			"description": "Admin-only cart analytics endpoints"
+		},
+		{
+			"name": "Error Scenarios",
+			"item": [
+				{
+					"name": "Add Out of Stock Item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 Conflict\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"",
+									"pm.test(\"Error message about stock\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('stock');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": \"{{testProductId}}\",\n  \"quantity\": 9999\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/items",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"items"
+							]
+						},
+						"description": "Attempts to add more items than available stock. Should return 409 Conflict."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Non-Existent Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Error message about product\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('Product');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Id",
+								"value": "{{guestSessionId}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": \"nonexistent-product-id-12345\",\n  \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/items",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"items"
+							]
+						},
+						"description": "Attempts to add a non-existent product. Should return 404 Not Found."
+					},
+					"response": []
+				},
+				{
+					"name": "Checkout Empty Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Error message about empty cart\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('empty');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paymentMethod\": \"GCASH\",\n  \"shippingAddress\": {\n    \"region\": \"NCR\",\n    \"province\": \"Metro Manila\",\n    \"city\": \"Quezon City\",\n    \"barangay\": \"Commonwealth\",\n    \"addressLine1\": \"123 Main Street\",\n    \"postalCode\": \"1121\",\n    \"contactNumber\": \"+639171234567\"\n  },\n  \"shippingMethod\": \"STANDARD\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/checkout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"checkout"
+							]
+						},
+						"description": "Attempts to checkout an empty cart. Should return 400 Bad Request."
+					},
+					"response": []
+				}
+			],
+			"description": "Test cases for error handling and edge cases"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Generate guest session ID if not exists",
+					"if (!pm.environment.get('guestSessionId')) {",
+					"    const uuid = require('uuid');",
+					"    pm.environment.set('guestSessionId', uuid.v4());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "{{baseUrl}}",
+			"type": "string"
+		}
+	]
+}

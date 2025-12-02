@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
 import { PrismaService } from '../../../database/prisma.service';
-import { productMapping } from '../elasticsearch/mappings/product.mapping';
+import { productMapping, productSettings } from '../elasticsearch/mappings/product.mapping';
 
 /**
  * Product Indexer Service
@@ -46,8 +46,8 @@ export class ProductIndexerService implements OnModuleInit {
 
       if (!exists) {
         this.logger.log(`Creating index: ${this.indexName}...`);
-        await this.elasticsearch.createIndex(this.indexName, productMapping);
-        this.logger.log(`✅ Index ${this.indexName} created successfully`);
+        await this.elasticsearch.createIndex(this.indexName, productMapping, productSettings);
+        this.logger.log(`✅ Index ${this.indexName} created successfully with autocomplete analyzer`);
       } else {
         this.logger.log(`✅ Index ${this.indexName} already exists`);
       }

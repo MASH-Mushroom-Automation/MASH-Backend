@@ -10,7 +10,7 @@ export class AppService {
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
     const baseUrl =
       nodeEnv === 'production'
-        ? 'https://mash-backend-api.up.railway.app'
+        ? 'https://mash-backend-api-production.up.railway.app'
         : `http://localhost:${port}`;
 
     return {
