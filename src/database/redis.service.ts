@@ -35,9 +35,9 @@ export class RedisService implements OnModuleDestroy {
     const redisUrl = this.configService.get<string>('REDIS_URL');
 
     if (!redisUrl) {
-      this.logger.warn('⚠️ REDIS_URL not configured - Redis caching disabled');
+      this.logger.warn('[WARN] REDIS_URL not configured - Redis caching disabled');
       this.logger.warn(
-        '📝 App will continue without Redis (cache, rate limiting, sessions disabled)',
+        '[NOTE] App will continue without Redis (cache, rate limiting, sessions disabled)',
       );
       this.client = null;
       return;
@@ -51,7 +51,7 @@ export class RedisService implements OnModuleDestroy {
         retryStrategy: (times: number) => {
           if (times > 3) {
             // Reduce retries to fail fast
-            this.logger.error('❌ Redis: Max retries reached. Continuing without Redis.');
+            this.logger.error('[ERROR] Redis: Max retries reached. Continuing without Redis.');
             this.isConnected = false;
             return null; // Stop retrying
           }
@@ -65,7 +65,7 @@ export class RedisService implements OnModuleDestroy {
       this.client
         .connect()
         .then(() => {
-          this.logger.log('✅ Redis connected successfully');
+          this.logger.log('[SUCCESS] Redis connected successfully');
           this.isConnected = true;
         })
         .catch(error => {
@@ -73,7 +73,7 @@ export class RedisService implements OnModuleDestroy {
         });
 
       this.client.on('connect', () => {
-        this.logger.log('✅ Redis connected successfully');
+        this.logger.log('[SUCCESS] Redis connected successfully');
         this.isConnected = true;
       });
 
@@ -82,15 +82,15 @@ export class RedisService implements OnModuleDestroy {
       });
 
       this.client.on('close', () => {
-        this.logger.warn('⚠️ Redis connection closed');
+        this.logger.warn('[WARN] Redis connection closed');
         this.isConnected = false;
       });
 
       this.client.on('reconnecting', () => {
-        this.logger.log('🔄 Redis reconnecting...');
+        this.logger.log('[RETRY] Redis reconnecting...');
       });
     } catch (error) {
-      this.logger.error('❌ Failed to initialize Redis client:', error);
+      this.logger.error('[ERROR] Failed to initialize Redis client:', error);
       this.client = null;
     }
   }
@@ -106,27 +106,27 @@ export class RedisService implements OnModuleDestroy {
       error.message?.includes('max requests limit exceeded') ||
       error.message?.includes('Usage:')
     ) {
-      this.logger.error('❌ REDIS QUOTA EXCEEDED!');
-      this.logger.error('💰 Your Upstash Redis free tier limit has been reached');
+      this.logger.error('[ERROR] REDIS QUOTA EXCEEDED!');
+      this.logger.error('[INFO] Your Upstash Redis free tier limit has been reached');
       this.logger.error(
-        '📝 Options: 1) Upgrade Upstash plan, 2) Reset database, 3) Continue without Redis',
+        '[NOTE] Options: 1) Upgrade Upstash plan, 2) Reset database, 3) Continue without Redis',
       );
-      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+      this.logger.warn('[WARN] App will continue WITHOUT Redis caching');
 
       // Disconnect to prevent further errors
       if (this.client) {
         this.client.disconnect(false);
       }
     } else if (error.message?.includes('ECONNREFUSED')) {
-      this.logger.error('❌ Redis connection refused (server not reachable)');
-      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+      this.logger.error('[ERROR] Redis connection refused (server not reachable)');
+      this.logger.warn('[WARN] App will continue WITHOUT Redis caching');
     } else if (error.message?.includes('Invalid password')) {
-      this.logger.error('❌ Redis authentication failed (invalid password)');
-      this.logger.error('🔑 Check REDIS_URL and REDIS_PASSWORD in environment');
-      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+      this.logger.error('[ERROR] Redis authentication failed (invalid password)');
+      this.logger.error('[AUTH] Check REDIS_URL and REDIS_PASSWORD in environment');
+      this.logger.warn('[WARN] App will continue WITHOUT Redis caching');
     } else {
-      this.logger.error('❌ Redis connection error:', error.message);
-      this.logger.warn('⚠️ App will continue WITHOUT Redis caching');
+      this.logger.error('[ERROR] Redis connection error:', error.message);
+      this.logger.warn('[WARN] App will continue WITHOUT Redis caching');
     }
   }
 
@@ -353,7 +353,7 @@ export class RedisService implements OnModuleDestroy {
 
   /**
    * Flush all keys from the current database
-   * ⚠️ Use with caution - this deletes ALL cached data
+   * WARNING: Use with caution - this deletes ALL cached data
    */
   async flushAll(): Promise<boolean> {
     if (!this.isAvailable()) {
@@ -362,7 +362,7 @@ export class RedisService implements OnModuleDestroy {
 
     try {
       await this.client.flushdb();
-      this.logger.warn('⚠️ Redis: Flushed all keys');
+      this.logger.warn('[WARN] Redis: Flushed all keys');
       return true;
     } catch (error) {
       this.logger.error(
@@ -386,12 +386,13 @@ export class RedisService implements OnModuleDestroy {
       
       try {
         await this.client.quit();
-        this.logger.log('✅ Redis connection closed gracefully');
+        this.logger.log('[SUCCESS] Redis connection closed gracefully');
       } catch (error) {
-        this.logger.warn('⚠️ Error closing Redis connection:', error);
+        this.logger.warn('[WARN] Error closing Redis connection:', error);
         // Force disconnect if quit fails
         this.client.disconnect(false);
       }
     }
   }
 }
+

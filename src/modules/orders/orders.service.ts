@@ -658,6 +658,185 @@ export class OrdersService {
     });
   }
 
+  /**
+   * Create order from cart (Phase 6 - Cart Integration)
+   * Converts active cart to order, validates stock, deducts inventory
+   * @param userId - User ID
+   * @param cartId - Cart ID to convert
+   * @param paymentMethod - Payment method for the order
+   * @returns Created order
+   */
+  async createOrderFromCart(
+    userId: string,
+    cartId: string,
+    paymentMethod: 'GCASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'COD' | 'BANK_TRANSFER' | 'MAYA' | 'PAYPAL',
+  ) {
+    return this.tracer.startActiveSpan(
+      'OrdersService.createOrderFromCart',
+      async (span) => {
+        try {
+          span.setAttributes({
+            'user.id': userId,
+            'cart.id': cartId,
+            'payment.method': paymentMethod,
+          });
+
+          // 1. Get cart with items
+          const cart = await this.prisma.cart.findUnique({
+            where: { id: cartId, userId, status: 'ACTIVE' },
+            include: {
+              items: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      stock: true,
+                      isActive: true,
+                      price: true,
+                      weight: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          if (!cart) {
+            throw new NotFoundException(
+              'Active cart not found for this user',
+            );
+          }
+
+          if (cart.items.length === 0) {
+            throw new BadRequestException('Cart is empty');
+          }
+
+          span.addEvent('Fetched cart from DB');
+
+          // 2. Validate all items have sufficient stock and are active
+          for (const item of cart.items) {
+            if (!item.product.isActive) {
+              throw new BadRequestException(
+                `Product ${item.product.name} is no longer available`,
+              );
+            }
+
+            if (item.product.stock < item.quantity) {
+              throw new BadRequestException(
+                `Insufficient stock for product ${item.product.name}. Available: ${item.product.stock}, Requested: ${item.quantity}`,
+              );
+            }
+          }
+
+          span.addEvent('Validated cart items');
+
+          // 3. Generate order number
+          const orderNumber = this.generateOrderNumber();
+
+          // 4. Create order with items in transaction
+          const order = await this.prisma.$transaction(async (tx) => {
+            // Create order
+            const newOrder = await tx.order.create({
+              data: {
+                orderNumber,
+                userId,
+                status: OrderStatus.PENDING,
+                subtotal: cart.subtotal,
+                tax: cart.tax,
+                shipping: cart.shipping,
+                discount: cart.discount,
+                total: cart.total,
+                shippingAddress: cart.metadata?.['shippingAddress'] || {},
+                billingAddress: cart.metadata?.['billingAddress'] || {},
+                notes: cart.metadata?.['notes'] as string,
+                orderItems: {
+                  create: cart.items.map((item) => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    price: item.price,
+                    total: item.total,
+                  })),
+                },
+                payments: {
+                  create: {
+                    userId,
+                    amount: cart.total,
+                    method: paymentMethod,
+                    status: 'PENDING',
+                  },
+                },
+              },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                orderItems: {
+                  include: {
+                    product: true,
+                  },
+                },
+                payments: true,
+              },
+            });
+
+            // Deduct stock from products
+            for (const item of cart.items) {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: {
+                  stock: {
+                    decrement: item.quantity,
+                  },
+                },
+              });
+            }
+
+            // Mark cart as COMPLETED
+            await tx.cart.update({
+              where: { id: cartId },
+              data: {
+                status: 'COMPLETED',
+                convertedAt: new Date(),
+              },
+            });
+
+            return newOrder;
+          });
+
+          span.addEvent('Created order and updated stock');
+          span.setAttribute('order.id', order.id);
+          span.setAttribute('order.number', orderNumber);
+          span.setAttribute('order.total', order.total.toNumber());
+
+          // Record metrics (commented out until method is implemented)
+          // this.prometheusService.recordOrderCreated(
+          //   order.id,
+          //   order.total.toNumber(),
+          //   paymentMethod,
+          // );
+
+          span.setStatus({ code: SpanStatusCode.OK });
+          return order;
+        } catch (error) {
+          span.recordException(error);
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: error.message,
+          });
+          throw error;
+        } finally {
+          span.end();
+        }
+      },
+    );
+  }
+
   // Helper: Generate unique order number
   private generateOrderNumber(): string {
     const timestamp = Date.now().toString(36).toUpperCase();

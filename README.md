@@ -79,7 +79,11 @@ docker compose -f docker-compose.dev.yml up -d
 # Jaeger:        http://localhost:16686
 # Alertmanager:  http://localhost:9093
 
-# View metrics and health
+# View metrics and health (production)
+curl https://mash-backend-api-production.up.railway.app/metrics
+curl https://mash-backend-api-production.up.railway.app/api/v1/health
+
+# Or for local development
 curl http://localhost:3000/metrics
 curl http://localhost:3000/api/v1/health
 ```

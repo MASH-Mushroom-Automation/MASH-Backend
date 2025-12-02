@@ -11,7 +11,10 @@ export interface EmailTemplateVariables {
 
 export enum EmailTemplateType {
   VERIFICATION = 'verification',
+  VERIFICATION_CODE = 'verification-code', // NEW: 6-digit code verification
   FORGOT_PASSWORD = 'forgot-password',
+  PASSWORD_RESET_CODE = 'password-reset-code', // NEW: 6-digit password reset code
+  PASSWORD_RESET_CONFIRMATION = 'password-reset-confirmation', // NEW: Password reset confirmation
   PASSWORD_CHANGED = 'password-changed',
   RESEND_VERIFICATION = 'resend-verification',
   ACCOUNT_LOCKED = 'account-locked',
@@ -109,7 +112,7 @@ export class EmailTemplateService {
     if (!variables.appUrl) {
       result = result.replace(
         /{{appUrl}}/g,
-        process.env.APP_URL || 'https://mash-backend-api.up.railway.app',
+        process.env.APP_URL || 'https://mash-backend-api-production.up.railway.app',
       );
     }
 
@@ -165,8 +168,11 @@ export class EmailTemplateService {
    */
   private getSubject(templateType: EmailTemplateType, variables: EmailTemplateVariables): string {
     const subjects: Record<EmailTemplateType, string> = {
-      [EmailTemplateType.VERIFICATION]: 'Verify Your Email - Welcome to MASH! 🍄',
+      [EmailTemplateType.VERIFICATION]: 'Verify Your Email - Welcome to MASH!',
+      [EmailTemplateType.VERIFICATION_CODE]: 'Verify Your Email - MASH', // NEW: 6-digit code subject
       [EmailTemplateType.FORGOT_PASSWORD]: 'Reset Your Password - MASH',
+      [EmailTemplateType.PASSWORD_RESET_CODE]: 'Reset Your Password - MASH', // NEW: 6-digit password reset
+      [EmailTemplateType.PASSWORD_RESET_CONFIRMATION]: 'Password Reset Successful - MASH ✅', // NEW: Reset confirmation
       [EmailTemplateType.PASSWORD_CHANGED]: 'Your Password Has Been Changed - MASH',
       [EmailTemplateType.RESEND_VERIFICATION]: 'Verify Your Email - Action Required',
       [EmailTemplateType.ACCOUNT_LOCKED]: 'Account Security Alert - MASH',
@@ -174,7 +180,7 @@ export class EmailTemplateService {
       [EmailTemplateType.PASSWORD_RESET_SUCCESS]: 'Password Reset Successful - MASH',
       [EmailTemplateType.EMAIL_CHANGED]: 'Email Address Changed - MASH',
       [EmailTemplateType.ACCOUNT_DELETION]: 'Account Deletion Confirmation - MASH',
-      [EmailTemplateType.WELCOME]: 'Welcome to MASH! 🍄',
+      [EmailTemplateType.WELCOME]: 'Welcome to MASH!',
       [EmailTemplateType.DEVICE_OFFLINE]: 'Device Offline Alert - MASH',
       [EmailTemplateType.DEVICE_ERROR]: 'Device Error Alert - MASH',
       [EmailTemplateType.HEALTH_WARNING]: 'Device Health Warning - MASH',

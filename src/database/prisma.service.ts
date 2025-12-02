@@ -82,6 +82,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get auditLog() {
     return this.getClient().auditLog;
   }
+  get cart() {
+    return this.getClient().cart;
+  }
+  get cartItem() {
+    return this.getClient().cartItem;
+  }
   get category() {
     return this.getClient().category;
   }
@@ -114,6 +120,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
   get orderItem() {
     return this.getClient().orderItem;
+  }
+  get lalamoveQuotation() {
+    return this.getClient().lalamoveQuotation;
+  }
+  get lalamoveOrder() {
+    return this.getClient().lalamoveOrder;
   }
   get payment() {
     return this.getClient().payment;

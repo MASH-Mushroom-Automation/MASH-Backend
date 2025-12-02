@@ -9,6 +9,31 @@
  * - Nested seller information
  */
 
+/**
+ * Index settings including autocomplete analyzer
+ */
+export const productSettings = {
+  analysis: {
+    analyzer: {
+      autocomplete: {
+        type: 'custom',
+        tokenizer: 'standard',
+        filter: ['lowercase', 'autocomplete_filter'],
+      },
+    },
+    filter: {
+      autocomplete_filter: {
+        type: 'edge_ngram',
+        min_gram: 2,
+        max_gram: 20,
+      },
+    },
+  },
+};
+
+/**
+ * Index mappings
+ */
 export const productMapping = {
   properties: {
     // Primary identifier

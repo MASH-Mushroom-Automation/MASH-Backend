@@ -4,7 +4,7 @@ import { PrismaService } from '../../../../database/prisma.service';
 import { RedisService } from '../../../../database/redis.service';
 import { FileStorageService } from '../file-storage.service';
 import { Queue } from 'bull';
-import { getQueueToken } from '@nestjs/bull';
+import { getQueueToken } from '@nestjs/bullmq';
 import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('ExportService', () => {

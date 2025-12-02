@@ -16,6 +16,7 @@ import { ClerkAuthGuard } from './guards/clerk-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { OAuthModule } from '../oauth/oauth.module';
 import clerkConfig from '../../config/clerk.config';
 
 @Module({
@@ -23,6 +24,7 @@ import clerkConfig from '../../config/clerk.config';
     ConfigModule.forFeature(clerkConfig),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     NotificationsModule, // Import NotificationsModule for email service
+    OAuthModule, // Import OAuthModule for Google & Facebook OAuth
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

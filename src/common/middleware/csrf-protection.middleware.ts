@@ -62,8 +62,15 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     '/api/v1/metrics',
     '/api/v1/auth/login',
     '/api/v1/auth/register',
-    '/api/v1/auth/forgot-password',
+    '/api/v1/auth/verify-email-code', // 6-digit email verification (public endpoint)
+    '/api/v1/auth/resend-verification-code', // Resend 6-digit verification code (public endpoint)
+    '/api/v1/auth/resend-verification', // Resend verification (converted to 6-digit code)
+    '/api/v1/auth/forgot-password', // Request 6-digit password reset code
+    '/api/v1/auth/verify-reset-code', // Verify password reset code (NEW)
+    '/api/v1/auth/reset-password', // Reset password with 6-digit code (NEW)
+    '/api/v1/auth/resend-password-reset-code', // Resend password reset code (NEW)
     '/api/v1/webhook', // Webhook endpoints (use signature verification instead)
+    '/api/v1/iot/devices', // IoT device endpoints (use API key authentication instead)
   ];
 
   use(req: Request, res: Response, next: NextFunction) {
