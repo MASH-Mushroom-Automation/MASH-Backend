@@ -46,6 +46,7 @@
     "@bull-board/api": "^6.14.0",
     "@bull-board/express": "^6.14.0",
     "@bull-board/nestjs": "^6.14.0",
+    "@bull-board/ui": "^6.14.2",
     "@clerk/backend": "^2.17.1",
     "@clerk/clerk-js": "^5.107.0",
     "@clerk/clerk-sdk-node": "^5.1.6",
