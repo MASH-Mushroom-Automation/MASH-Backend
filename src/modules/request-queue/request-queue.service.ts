@@ -605,4 +605,57 @@ export class RequestQueueService {
       },
     };
   }
+
+  /**
+   * Get a specific role change request by ID with full details
+   * Includes all documents and business information
+   */
+  async getRoleRequestById(requestId: string) {
+    const request = await this.prisma.requestQueue.findUnique({
+      where: { id: requestId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            imageUrl: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Seller application not found');
+    }
+
+    if (request.endpoint !== '/admin/seller-applications') {
+      throw new BadRequestException('This is not a seller application request');
+    }
+
+    const payload = request.payload as any;
+
+    return {
+      success: true,
+      data: {
+        requestId: request.id,
+        user: request.user,
+        currentRole: payload?.currentRole,
+        requestedRole: payload?.requestedRole,
+        documents: payload?.documents || {},
+        businessInfo: payload?.businessInfo || {},
+        status: request.status,
+        queuedAt: request.queuedAt,
+        processedAt: request.processedAt,
+        completedAt: request.completedAt,
+        errorMessage: request.errorMessage,
+        adminNotes: (request.headers as any)?.adminNotes || null,
+        priority: request.priority,
+      },
+    };
+  }
 }

@@ -94,6 +94,64 @@ export class SuperAdminController {
     return this.requestQueueService.getRoleRequestStats();
   }
 
+  @Get('seller-applications/:requestId')
+  @ApiOperation({
+    summary: 'Get seller application details by ID',
+    description: `
+**Get Full Seller Application Details**
+
+Retrieves complete information about a specific seller application including:
+- User information
+- All submitted documents (Gov ID, DTI/SEC, BIR, Bank docs)
+- Business information (name, address, additional info)
+- Application status and timestamps
+- Admin notes (if processed)
+
+Use this endpoint to review applications before approving/rejecting.
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Seller application details retrieved',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          requestId: 'req_123456',
+          user: {
+            id: 'user_123',
+            email: 'john@example.com',
+            firstName: 'John',
+            lastName: 'Doe',
+            role: 'USER',
+          },
+          currentRole: 'USER',
+          requestedRole: 'ADMIN',
+          documents: {
+            governmentId: 'https://s3.bucket.com/gov-id.jpg',
+            businessCertificate: 'https://s3.bucket.com/dti-cert.pdf',
+            birCertificate: 'https://s3.bucket.com/bir-cert.pdf',
+            bankAccountDocumentation: 'https://s3.bucket.com/bank-docs.pdf',
+          },
+          businessInfo: {
+            businessName: 'Manila Mushroom Farm',
+            businessAddress: 'Unit 123, Metro Manila, Philippines',
+            additionalInfo: 'Growing organic mushrooms for 5 years',
+          },
+          status: 'PENDING',
+          queuedAt: '2025-12-04T10:00:00Z',
+          processedAt: null,
+          completedAt: null,
+          priority: 70,
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  async getSellerApplicationById(@Param('requestId') requestId: string) {
+    return this.requestQueueService.getRoleRequestById(requestId);
+  }
+
   @Put('seller-applications/:requestId/approve')
   @ApiOperation({
     summary: 'Approve a seller application',
