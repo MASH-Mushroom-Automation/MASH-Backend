@@ -1,411 +1,368 @@
 {
-  "dashboard": {
-    "id": null,
-    "uid": "mash-monitoring-overview",
-    "title": "MASH Backend - Monitoring Overview",
-    "tags": ["mash", "backend", "monitoring"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "version": 1,
-    "refresh": "5s",
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "panels": [
-      {
-        "id": 1,
-        "title": "HTTP Request Rate",
-        "type": "graph",
-        "gridPos": {
-          "x": 0,
-          "y": 0,
-          "w": 12,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "rate(mash_http_requests_total[5m])",
-            "legendFormat": "{{method}} {{route}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 2,
-        "title": "HTTP Response Time (95th percentile)",
-        "type": "graph",
-        "gridPos": {
-          "x": 12,
-          "y": 0,
-          "w": 12,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(mash_http_response_time_ms_bucket[5m]))",
-            "legendFormat": "{{method}} {{route}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "ms"
-          }
-        }
-      },
-      {
-        "id": 3,
-        "title": "HTTP Error Rate",
-        "type": "graph",
-        "gridPos": {
-          "x": 0,
-          "y": 8,
-          "w": 12,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "rate(mash_http_requests_total{status_code=~\"5..\"}[5m])",
-            "legendFormat": "{{method}} {{route}} - {{status_code}}",
-            "refId": "A"
-          }
-        ],
-        "alert": {
-          "name": "High Error Rate",
-          "conditions": [
-            {
-              "evaluator": {
-                "params": [0.1],
-                "type": "gt"
-              },
-              "operator": {
-                "type": "and"
-              },
-              "query": {
-                "params": ["A", "5m", "now"]
-              },
-              "reducer": {
-                "params": [],
-                "type": "avg"
-              },
-              "type": "query"
-            }
-          ]
-        }
-      },
-      {
-        "id": 4,
-        "title": "Database Query Duration (95th percentile)",
-        "type": "graph",
-        "gridPos": {
-          "x": 12,
-          "y": 8,
-          "w": 12,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(mash_db_query_duration_ms_bucket[5m]))",
-            "legendFormat": "{{operation}}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "ms"
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Cache Hit Rate",
-        "type": "stat",
-        "gridPos": {
-          "x": 0,
-          "y": 16,
-          "w": 6,
-          "h": 4
-        },
-        "targets": [
-          {
-            "expr": "sum(rate(mash_cache_hits_total[5m])) / (sum(rate(mash_cache_hits_total[5m])) + sum(rate(mash_cache_misses_total[5m]))) * 100",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percent",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "value": null,
-                  "color": "red"
-                },
-                {
-                  "value": 70,
-                  "color": "yellow"
-                },
-                {
-                  "value": 90,
-                  "color": "green"
-                }
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 6,
-        "title": "Active Database Connections",
-        "type": "stat",
-        "gridPos": {
-          "x": 6,
-          "y": 16,
-          "w": 6,
-          "h": 4
-        },
-        "targets": [
-          {
-            "expr": "mash_db_pool_active_connections",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "value": null,
-                  "color": "green"
-                },
-                {
-                  "value": 8,
-                  "color": "yellow"
-                },
-                {
-                  "value": 10,
-                  "color": "red"
-                }
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 7,
-        "title": "Memory Usage",
-        "type": "stat",
-        "gridPos": {
-          "x": 12,
-          "y": 16,
-          "w": 6,
-          "h": 4
-        },
-        "targets": [
-          {
-            "expr": "process_resident_memory_bytes / 1024 / 1024",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "mbytes",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "value": null,
-                  "color": "green"
-                },
-                {
-                  "value": 512,
-                  "color": "yellow"
-                },
-                {
-                  "value": 1024,
-                  "color": "red"
-                }
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 8,
-        "title": "CPU Usage",
-        "type": "stat",
-        "gridPos": {
-          "x": 18,
-          "y": 16,
-          "w": 6,
-          "h": 4
-        },
-        "targets": [
-          {
-            "expr": "rate(process_cpu_seconds_total[1m]) * 100",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percent",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "value": null,
-                  "color": "green"
-                },
-                {
-                  "value": 70,
-                  "color": "yellow"
-                },
-                {
-                  "value": 90,
-                  "color": "red"
-                }
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 9,
-        "title": "Active Alerts by Priority",
-        "type": "piechart",
-        "gridPos": {
-          "x": 0,
-          "y": 20,
-          "w": 8,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "sum by (priority) (mash_alerts_active)",
-            "legendFormat": "{{priority}}",
-            "refId": "A"
-          }
-        ]
-      },
-      {
-        "id": 10,
-        "title": "Orders by Status",
-        "type": "timeseries",
-        "gridPos": {
-          "x": 8,
-          "y": 20,
-          "w": 8,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "sum by (status) (mash_orders_total)",
-            "legendFormat": "{{status}}",
-            "refId": "A"
-          }
-        ]
-      },
-      {
-        "id": 11,
-        "title": "Auth Attempts (Success vs Failure)",
-        "type": "timeseries",
-        "gridPos": {
-          "x": 16,
-          "y": 20,
-          "w": 8,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "rate(mash_auth_login_attempts_total{status=\"success\"}[5m])",
-            "legendFormat": "Success",
-            "refId": "A"
-          },
-          {
-            "expr": "rate(mash_auth_login_attempts_total{status=\"failure\"}[5m])",
-            "legendFormat": "Failure",
-            "refId": "B"
-          }
-        ]
-      },
-      {
-        "id": 12,
-        "title": "Rate Limit Violations",
-        "type": "graph",
-        "gridPos": {
-          "x": 0,
-          "y": 28,
-          "w": 12,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "rate(mash_rate_limit_violations_total[5m])",
-            "legendFormat": "{{identifier}}",
-            "refId": "A"
-          }
-        ]
-      },
-      {
-        "id": 13,
-        "title": "Event Loop Lag",
-        "type": "graph",
-        "gridPos": {
-          "x": 12,
-          "y": 28,
-          "w": 12,
-          "h": 8
-        },
-        "targets": [
-          {
-            "expr": "mash_event_loop_lag_ms",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "ms"
-          }
-        },
-        "alert": {
-          "name": "High Event Loop Lag",
-          "conditions": [
-            {
-              "evaluator": {
-                "params": [100],
-                "type": "gt"
-              },
-              "operator": {
-                "type": "and"
-              },
-              "query": {
-                "params": ["A", "5m", "now"]
-              },
-              "reducer": {
-                "params": [],
-                "type": "avg"
-              },
-              "type": "query"
-            }
-          ]
-        }
-      }
-    ]
-  },
-  "overwrite": true
+    "id":  null,
+    "uid":  "mash-monitoring-overview",
+    "title":  "MASH Backend - Monitoring Overview",
+    "tags":  [
+                 "mash",
+                 "backend",
+                 "monitoring"
+             ],
+    "timezone":  "browser",
+    "schemaVersion":  38,
+    "version":  1,
+    "refresh":  "5s",
+    "time":  {
+                 "from":  "now-1h",
+                 "to":  "now"
+             },
+    "panels":  [
+                   {
+                       "id":  1,
+                       "title":  "HTTP Request Rate",
+                       "type":  "graph",
+                       "gridPos":  {
+                                       "x":  0,
+                                       "y":  0,
+                                       "w":  12,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(mash_http_requests_total[5m])",
+                                           "legendFormat":  "{{method}} {{route}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "legend":  {
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom"
+                                                  }
+                                   }
+                   },
+                   {
+                       "id":  2,
+                       "title":  "HTTP Response Time (95th percentile)",
+                       "type":  "graph",
+                       "gridPos":  {
+                                       "x":  12,
+                                       "y":  0,
+                                       "w":  12,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "histogram_quantile(0.95, rate(mash_http_response_time_ms_bucket[5m]))",
+                                           "legendFormat":  "{{method}} {{route}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "legend":  {
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom"
+                                                  }
+                                   },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "ms"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  3,
+                       "title":  "HTTP Error Rate",
+                       "type":  "graph",
+                       "gridPos":  {
+                                       "x":  0,
+                                       "y":  8,
+                                       "w":  12,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(mash_http_requests_total{status_code=~\"5..\"}[5m])",
+                                           "legendFormat":  "{{method}} {{route}} - {{status_code}}",
+                                           "refId":  "A"
+                                       }
+                                   ]
+                   },
+                   {
+                       "id":  4,
+                       "title":  "Database Query Duration (95th percentile)",
+                       "type":  "graph",
+                       "gridPos":  {
+                                       "x":  12,
+                                       "y":  8,
+                                       "w":  12,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "histogram_quantile(0.95, rate(mash_db_query_duration_ms_bucket[5m]))",
+                                           "legendFormat":  "{{operation}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "ms"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  5,
+                       "title":  "Cache Hit Rate",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "x":  0,
+                                       "y":  16,
+                                       "w":  6,
+                                       "h":  4
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(mash_cache_hits_total[5m])) / (sum(rate(mash_cache_hits_total[5m])) + sum(rate(mash_cache_misses_total[5m]))) * 100",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "percent",
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  null,
+                                                                                                 "color":  "red"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  70,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  90,
+                                                                                                 "color":  "green"
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  6,
+                       "title":  "Active Database Connections",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "x":  6,
+                                       "y":  16,
+                                       "w":  6,
+                                       "h":  4
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "mash_db_pool_active_connections",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  null,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  8,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  10,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  7,
+                       "title":  "Memory Usage",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "x":  12,
+                                       "y":  16,
+                                       "w":  6,
+                                       "h":  4
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "process_resident_memory_bytes / 1024 / 1024",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "mbytes",
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  null,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  512,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  1024,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  8,
+                       "title":  "CPU Usage",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "x":  18,
+                                       "y":  16,
+                                       "w":  6,
+                                       "h":  4
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(process_cpu_seconds_total[1m]) * 100",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "percent",
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  null,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  70,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  90,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  9,
+                       "title":  "Active Alerts by Priority",
+                       "type":  "piechart",
+                       "gridPos":  {
+                                       "x":  0,
+                                       "y":  20,
+                                       "w":  8,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum by (priority) (mash_alerts_active)",
+                                           "legendFormat":  "{{priority}}",
+                                           "refId":  "A"
+                                       }
+                                   ]
+                   },
+                   {
+                       "id":  10,
+                       "title":  "Orders by Status",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "x":  8,
+                                       "y":  20,
+                                       "w":  8,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum by (status) (mash_orders_total)",
+                                           "legendFormat":  "{{status}}",
+                                           "refId":  "A"
+                                       }
+                                   ]
+                   },
+                   {
+                       "id":  11,
+                       "title":  "Auth Attempts (Success vs Failure)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "x":  16,
+                                       "y":  20,
+                                       "w":  8,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(mash_auth_login_attempts_total{status=\"success\"}[5m])",
+                                           "legendFormat":  "Success",
+                                           "refId":  "A"
+                                       },
+                                       {
+                                           "expr":  "rate(mash_auth_login_attempts_total{status=\"failure\"}[5m])",
+                                           "legendFormat":  "Failure",
+                                           "refId":  "B"
+                                       }
+                                   ]
+                   },
+                   {
+                       "id":  12,
+                       "title":  "Rate Limit Violations",
+                       "type":  "graph",
+                       "gridPos":  {
+                                       "x":  0,
+                                       "y":  28,
+                                       "w":  12,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(mash_rate_limit_violations_total[5m])",
+                                           "legendFormat":  "{{identifier}}",
+                                           "refId":  "A"
+                                       }
+                                   ]
+                   },
+                   {
+                       "id":  13,
+                       "title":  "Event Loop Lag",
+                       "type":  "graph",
+                       "gridPos":  {
+                                       "x":  12,
+                                       "y":  28,
+                                       "w":  12,
+                                       "h":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "mash_event_loop_lag_ms",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "unit":  "ms"
+                                                        }
+                                       }
+                   }
+               ]
 }

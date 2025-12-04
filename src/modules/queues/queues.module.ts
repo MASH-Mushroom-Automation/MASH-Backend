@@ -27,7 +27,8 @@ import { DatabaseModule } from '../../database/database.module';
     ),
     BullBoardModule.forRoot({
       route: '/admin/queues',
-      adapter: ExpressAdapter,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      adapter: ExpressAdapter as any,
     }),
     BullBoardModule.forFeature({
       name: 'email-notifications',

@@ -1,308 +1,414 @@
 {
-  "dashboard": {
-    "title": "MASH Trace Analytics Dashboard",
-    "uid": "mash-trace-analytics",
-    "tags": ["mash", "tracing", "opentelemetry", "jaeger"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "refresh": "30s",
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Trace Count (traces/min)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-        "targets": [
-          {
-            "expr": "rate(traces_total{job=\"mash-backend\"}[5m]) * 60",
-            "legendFormat": "Total Traces",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Traces/min",
-              "drawStyle": "line",
-              "fillOpacity": 20
-            },
-            "unit": "traces"
-          }
-        }
-      },
-      {
-        "id": 2,
-        "title": "Trace Duration Distribution (P50, P95, P99)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.50, rate(trace_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
-            "legendFormat": "P50",
-            "refId": "A"
-          },
-          {
-            "expr": "histogram_quantile(0.95, rate(trace_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
-            "legendFormat": "P95",
-            "refId": "B"
-          },
-          {
-            "expr": "histogram_quantile(0.99, rate(trace_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
-            "legendFormat": "P99",
-            "refId": "C"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Duration",
-              "drawStyle": "line",
-              "fillOpacity": 0
-            },
-            "unit": "ms"
-          }
-        }
-      },
-      {
-        "id": 3,
-        "title": "Error Traces Count",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum(rate(traces_total{job=\"mash-backend\",status=\"error\"}[5m])) * 60",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 10, "color": "yellow" },
-                { "value": 50, "color": "red" }
-              ]
-            },
-            "unit": "traces"
-          }
-        }
-      },
-      {
-        "id": 4,
-        "title": "Error Rate (%)",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum(rate(traces_total{job=\"mash-backend\",status=\"error\"}[5m])) / sum(rate(traces_total{job=\"mash-backend\"}[5m])) * 100",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 1, "color": "yellow" },
-                { "value": 5, "color": "red" }
-              ]
-            },
-            "unit": "percent"
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Average Spans per Trace",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum(rate(spans_total{job=\"mash-backend\"}[5m])) / sum(rate(traces_total{job=\"mash-backend\"}[5m]))",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "blue" }
-              ]
-            },
-            "unit": "short",
-            "decimals": 1
-          }
-        }
-      },
-      {
-        "id": 6,
-        "title": "Span Rate (spans/s)",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum(rate(spans_total{job=\"mash-backend\"}[5m]))",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "thresholds" },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" }
-              ]
-            },
-            "unit": "ops"
-          }
-        }
-      },
-      {
-        "id": 7,
-        "title": "Top 10 Slowest Operations",
-        "type": "table",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-        "targets": [
-          {
-            "expr": "topk(10, histogram_quantile(0.95, rate(span_duration_seconds_bucket{job=\"mash-backend\"}[5m]))) * 1000",
-            "format": "table",
-            "instant": true,
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": { "id": "byName", "options": "Value" },
-              "properties": [
-                { "id": "displayName", "value": "P95 Duration (ms)" },
-                { "id": "unit", "value": "ms" }
-              ]
-            }
-          ]
-        },
-        "transformations": [
-          {
-            "id": "organize",
-            "options": {
-              "excludeByName": {
-                "Time": true,
-                "__name__": true,
-                "job": true
-              },
-              "renameByName": {
-                "operation_name": "Operation",
-                "service_name": "Service"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "id": 8,
-        "title": "Trace Operations Distribution",
-        "type": "piechart",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-        "targets": [
-          {
-            "expr": "sum by (operation_name) (rate(traces_total{job=\"mash-backend\"}[5m]))",
-            "legendFormat": "{{operation_name}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "table",
-            "placement": "right",
-            "values": ["value", "percent"]
-          },
-          "pieType": "donut"
-        }
-      },
-      {
-        "id": 9,
-        "title": "Database Operation Traces",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-        "targets": [
-          {
-            "expr": "rate(spans_total{job=\"mash-backend\",span_kind=\"db\"}[5m])",
-            "legendFormat": "{{db_operation}} {{db_model}}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "DB Spans/sec",
-              "drawStyle": "line",
-              "fillOpacity": 10
-            },
-            "unit": "ops"
-          }
-        }
-      },
-      {
-        "id": 10,
-        "title": "Cache Operation Traces",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
-        "targets": [
-          {
-            "expr": "rate(spans_total{job=\"mash-backend\",span_kind=\"cache\"}[5m])",
-            "legendFormat": "{{cache_operation}}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Cache Spans/sec",
-              "drawStyle": "line",
-              "fillOpacity": 10
-            },
-            "unit": "ops"
-          }
-        }
-      },
-      {
-        "id": 11,
-        "title": "Service Dependency Graph",
-        "type": "nodeGraph",
-        "gridPos": { "h": 12, "w": 24, "x": 0, "y": 32 },
-        "datasource": "Jaeger",
-        "targets": [
-          {
-            "queryType": "traceql",
-            "query": "{.service.name=\"mash-backend\"}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "edges": {
-            "mainStatUnit": "ms"
-          }
-        }
-      }
-    ]
-  }
+    "title":  "MASH Trace Analytics Dashboard",
+    "uid":  "mash-trace-analytics",
+    "tags":  [
+                 "mash",
+                 "tracing",
+                 "opentelemetry",
+                 "jaeger"
+             ],
+    "timezone":  "browser",
+    "schemaVersion":  38,
+    "refresh":  "30s",
+    "time":  {
+                 "from":  "now-1h",
+                 "to":  "now"
+             },
+    "panels":  [
+                   {
+                       "id":  1,
+                       "title":  "Trace Count (traces/min)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  0
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(traces_total{job=\"mash-backend\"}[5m]) * 60",
+                                           "legendFormat":  "Total Traces",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Traces/min",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  20
+                                                                       },
+                                                            "unit":  "traces"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  2,
+                       "title":  "Trace Duration Distribution (P50, P95, P99)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  0
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "histogram_quantile(0.50, rate(trace_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
+                                           "legendFormat":  "P50",
+                                           "refId":  "A"
+                                       },
+                                       {
+                                           "expr":  "histogram_quantile(0.95, rate(trace_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
+                                           "legendFormat":  "P95",
+                                           "refId":  "B"
+                                       },
+                                       {
+                                           "expr":  "histogram_quantile(0.99, rate(trace_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
+                                           "legendFormat":  "P99",
+                                           "refId":  "C"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Duration",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0
+                                                                       },
+                                                            "unit":  "ms"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  3,
+                       "title":  "Error Traces Count",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  0,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(traces_total{job=\"mash-backend\",status=\"error\"}[5m])) * 60",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  10,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  50,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "traces"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  4,
+                       "title":  "Error Rate (%)",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  6,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(traces_total{job=\"mash-backend\",status=\"error\"}[5m])) / sum(rate(traces_total{job=\"mash-backend\"}[5m])) * 100",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  1,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  5,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "percent"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  5,
+                       "title":  "Average Spans per Trace",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  12,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(spans_total{job=\"mash-backend\"}[5m])) / sum(rate(traces_total{job=\"mash-backend\"}[5m]))",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "blue"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "short",
+                                                            "decimals":  1
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  6,
+                       "title":  "Span Rate (spans/s)",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  18,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(spans_total{job=\"mash-backend\"}[5m]))",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  7,
+                       "title":  "Top 10 Slowest Operations",
+                       "type":  "table",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  16
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "topk(10, histogram_quantile(0.95, rate(span_duration_seconds_bucket{job=\"mash-backend\"}[5m]))) * 1000",
+                                           "format":  "table",
+                                           "instant":  true,
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "overrides":  [
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byName",
+                                                                                 "options":  "Value"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "displayName",
+                                                                                        "value":  "P95 Duration (ms)"
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "unit",
+                                                                                        "value":  "ms"
+                                                                                    }
+                                                                                ]
+                                                             }
+                                                         ]
+                                       },
+                       "transformations":  [
+                                               {
+                                                   "id":  "organize",
+                                                   "options":  {
+                                                                   "excludeByName":  {
+                                                                                         "Time":  true,
+                                                                                         "__name__":  true,
+                                                                                         "job":  true
+                                                                                     },
+                                                                   "renameByName":  {
+                                                                                        "operation_name":  "Operation",
+                                                                                        "service_name":  "Service"
+                                                                                    }
+                                                               }
+                                               }
+                                           ]
+                   },
+                   {
+                       "id":  8,
+                       "title":  "Trace Operations Distribution",
+                       "type":  "piechart",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  16
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum by (operation_name) (rate(traces_total{job=\"mash-backend\"}[5m]))",
+                                           "legendFormat":  "{{operation_name}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "legend":  {
+                                                      "displayMode":  "table",
+                                                      "placement":  "right",
+                                                      "values":  [
+                                                                     "value",
+                                                                     "percent"
+                                                                 ]
+                                                  },
+                                       "pieType":  "donut"
+                                   }
+                   },
+                   {
+                       "id":  9,
+                       "title":  "Database Operation Traces",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  24
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(spans_total{job=\"mash-backend\",span_kind=\"db\"}[5m])",
+                                           "legendFormat":  "{{db_operation}} {{db_model}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "DB Spans/sec",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  10
+                                                                       },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  10,
+                       "title":  "Cache Operation Traces",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  24
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(spans_total{job=\"mash-backend\",span_kind=\"cache\"}[5m])",
+                                           "legendFormat":  "{{cache_operation}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Cache Spans/sec",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  10
+                                                                       },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  11,
+                       "title":  "Service Dependency Graph",
+                       "type":  "nodeGraph",
+                       "gridPos":  {
+                                       "h":  12,
+                                       "w":  24,
+                                       "x":  0,
+                                       "y":  32
+                                   },
+                       "datasource":  "Jaeger",
+                       "targets":  [
+                                       {
+                                           "queryType":  "traceql",
+                                           "query":  "{.service.name=\"mash-backend\"}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "edges":  {
+                                                     "mainStatUnit":  "ms"
+                                                 }
+                                   }
+                   }
+               ]
 }
