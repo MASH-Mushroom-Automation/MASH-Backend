@@ -72,6 +72,7 @@ export class UsersService {
           firstName: true,
           lastName: true,
           role: true,
+          isActive: true,
           imageUrl: true,
           createdAt: true,
         },
