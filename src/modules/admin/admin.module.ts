@@ -4,6 +4,7 @@ import { CacheMonitoringController } from './cache-monitoring.controller';
 import { AdminService } from './admin.service';
 
 @Module({
+  imports: [],
   controllers: [AdminController, CacheMonitoringController],
   providers: [AdminService], // PrismaService provided globally by DatabaseModule
   exports: [AdminService],
