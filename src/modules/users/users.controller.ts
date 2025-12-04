@@ -23,11 +23,13 @@ import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { UserFilterQueryDto } from './dto/user-filter-query.dto';
+import { RequestRoleChangeDto } from './dto/request-role-change.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
 import { FileValidationService } from '../../common/services/file-validation.service';
+import { RequestQueueService } from '../request-queue/request-queue.service';
 
 @ApiTags('users')
 @Controller('users')
@@ -37,6 +39,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly fileValidationService: FileValidationService,
+    private readonly requestQueueService: RequestQueueService,
   ) {}
 
   // 1. GET /users - List users (admin only)
@@ -379,5 +382,120 @@ export class UsersController {
     @Body() updateAddressDto: UpdateAddressDto,
   ) {
     return this.usersService.updateAddress(id, addressId, updateAddressDto);
+  }
+
+  // 16. POST /users/me/apply-as-seller - Apply to become a seller
+  @Post('me/apply-as-seller')
+  @ApiOperation({
+    summary: 'Apply to become a seller (ADMIN) - Submit Required Documents',
+    description: `
+**Apply to Become a Seller on MASH Platform**
+
+This endpoint allows regular users (USER role) to apply to become sellers (ADMIN) on the platform.
+You must submit ALL required documents for verification.
+
+**Required Documents:**
+1. **Government-issued ID** - Valid ID (Passport, Driver's License, National ID)
+2. **DTI Certificate** (for sole proprietors) OR **SEC Certificate** (for corporations/partnerships)
+3. **BIR Certificate of Registration (COR)** with TIN number
+4. **Bank Account Documentation** - For receiving payouts
+
+**Business Information:**
+- Business/Farm name
+- Business address
+- Additional information (optional)
+
+**Process:**
+1. Upload all required documents to your storage (S3, etc.)
+2. Submit document URLs with this request
+3. Super admin reviews your application and documents
+4. If approved, your role changes to ADMIN (seller) automatically
+5. You can then create and sell products on the platform
+
+**After Approval:**
+- ✅ Create and manage your own products
+- ✅ Set your own prices and inventory
+- ✅ Manage IoT devices for farming
+- ✅ View sales analytics and reports
+- ✅ Receive payouts to your registered bank account
+
+**Note:** Only users with USER role can apply. Applications are typically reviewed within 1-3 business days.
+    `,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Seller application submitted successfully',
+    schema: {
+      example: {
+        success: true,
+        message:
+          'Seller application submitted successfully. Our team will review your documents within 1-3 business days.',
+        data: {
+          requestId: 'req_123456',
+          currentRole: 'USER',
+          requestedRole: 'ADMIN',
+          status: 'PENDING',
+          queuedAt: '2025-12-04T10:00:00Z',
+          estimatedProcessingTime: '1-3 business days',
+          documentsSubmitted: {
+            governmentId: true,
+            businessCertificate: true,
+            birCertificate: true,
+            bankAccountDocumentation: true,
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid data, missing documents, or pending application exists',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Only USER role can apply to become a seller',
+  })
+  async applyAsSeller(@Request() req: any, @Body() dto: RequestRoleChangeDto) {
+    return this.requestQueueService.createRoleChangeRequest(req.user.userId, {
+      governmentId: dto.governmentId,
+      businessCertificate: dto.businessCertificate,
+      birCertificate: dto.birCertificate,
+      bankAccountDocumentation: dto.bankAccountDocumentation,
+      businessName: dto.businessName,
+      businessAddress: dto.businessAddress,
+      additionalInfo: dto.additionalInfo,
+    });
+  }
+
+  // 17. GET /users/me/role-request-status - Get role request status
+  @Get('me/role-request-status')
+  @ApiOperation({
+    summary: 'Check status of role change request',
+    description: 'Get the current status of your role change request',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Role request status retrieved',
+    schema: {
+      example: {
+        success: true,
+        hasRequest: true,
+        data: {
+          requestId: 'req_123456',
+          requestedRole: 'GROWER',
+          currentRole: 'USER',
+          status: 'PENDING',
+          queuedAt: '2025-12-04T10:00:00Z',
+          processedAt: null,
+          completedAt: null,
+          errorMessage: null,
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getRoleRequestStatus(@Request() req: any) {
+    return this.requestQueueService.getUserRoleRequestStatus(req.user.userId);
   }
 }
