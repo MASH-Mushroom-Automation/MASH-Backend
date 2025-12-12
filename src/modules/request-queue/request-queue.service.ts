@@ -621,6 +621,8 @@ export class RequestQueueService {
             username: true,
             firstName: true,
             lastName: true,
+
+            phoneNumber: true,
             role: true,
             imageUrl: true,
             createdAt: true,
