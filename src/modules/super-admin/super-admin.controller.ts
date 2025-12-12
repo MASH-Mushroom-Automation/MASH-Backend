@@ -182,9 +182,6 @@ Reviews documents and approves the application, automatically upgrading user to 
     @Request() req: any,
     @Body() dto: ProcessRoleRequestDto,
   ) {
-    if (!dto.approve) {
-      return this.requestQueueService.rejectRoleRequest(requestId, req.user.userId, dto.adminNotes);
-    }
     return this.requestQueueService.approveRoleRequest(requestId, req.user.userId, dto.adminNotes);
   }
 
