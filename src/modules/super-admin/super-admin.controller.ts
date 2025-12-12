@@ -153,72 +153,6 @@ Use this endpoint to review applications before approving/rejecting.
     return this.requestQueueService.getRoleRequestById(requestId);
   }
 
-  @Put('seller-applications/:requestId/approve')
-  @ApiOperation({
-    summary: 'Approve a seller application',
-    description: `
-**Approve Seller Application**
-
-Reviews documents and approves the application, automatically upgrading user to ADMIN role.
-
-**What happens when approved:**
-1. Request status changes to PROCESSING
-2. User's role is updated to ADMIN (seller) in the database
-3. Request status changes to COMPLETED
-4. Super admin info is recorded (who approved and when)
-5. User gains access to seller features immediately
-
-**Required Documents Verified:**
-- Valid government-issued ID
-- DTI/SEC Certificate
-- BIR Certificate with TIN
-- Bank account documentation
-    `,
-  })
-  @ApiResponse({ status: 200, description: 'Seller application approved successfully' })
-  @ApiResponse({ status: 400, description: 'Request already processed or invalid' })
-  @ApiResponse({ status: 404, description: 'Request not found' })
-  async approveSellerApplication(
-    @Param('requestId') requestId: string,
-    @Request() req: any,
-    @Body() dto: ProcessRoleRequestDto,
-  ) {
-    return this.requestQueueService.approveRoleRequest(requestId, req.user.userId, dto.adminNotes);
-  }
-
-  @Put('seller-applications/:requestId/reject')
-  @ApiOperation({
-    summary: 'Reject a seller application',
-    description: `
-**Reject Seller Application**
-
-Rejects the application due to incomplete/invalid documents. User's role remains USER.
-
-**What happens when rejected:**
-1. Request status changes to FAILED
-2. User's role stays as USER
-3. Super admin info is recorded (who rejected and reason)
-4. User can see the rejection reason and reapply with correct documents
-
-**Common Rejection Reasons:**
-- Invalid or expired government ID
-- Missing DTI/SEC Certificate
-- BIR Certificate not matching provided TIN
-- Incomplete bank account documentation
-- Business information doesn't match documents
-    `,
-  })
-  @ApiResponse({ status: 200, description: 'Seller application rejected' })
-  @ApiResponse({ status: 400, description: 'Request already processed' })
-  @ApiResponse({ status: 404, description: 'Request not found' })
-  async rejectSellerApplication(
-    @Param('requestId') requestId: string,
-    @Request() req: any,
-    @Body() dto: ProcessRoleRequestDto,
-  ) {
-    return this.requestQueueService.rejectRoleRequest(requestId, req.user.userId, dto.adminNotes);
-  }
-
   @Put('seller-applications/bulk/approve')
   @ApiOperation({
     summary: 'Bulk approve seller applications',
@@ -287,5 +221,71 @@ Reject multiple seller applications at once. Users remain as USER role.
       req.user.userId,
       dto.adminNotes,
     );
+  }
+
+  @Put('seller-applications/:requestId/approve')
+  @ApiOperation({
+    summary: 'Approve a seller application',
+    description: `
+**Approve Seller Application**
+
+Reviews documents and approves the application, automatically upgrading user to ADMIN role.
+
+**What happens when approved:**
+1. Request status changes to PROCESSING
+2. User's role is updated to ADMIN (seller) in the database
+3. Request status changes to COMPLETED
+4. Super admin info is recorded (who approved and when)
+5. User gains access to seller features immediately
+
+**Required Documents Verified:**
+- Valid government-issued ID
+- DTI/SEC Certificate
+- BIR Certificate with TIN
+- Bank account documentation
+    `,
+  })
+  @ApiResponse({ status: 200, description: 'Seller application approved successfully' })
+  @ApiResponse({ status: 400, description: 'Request already processed or invalid' })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  async approveSellerApplication(
+    @Param('requestId') requestId: string,
+    @Request() req: any,
+    @Body() dto: ProcessRoleRequestDto,
+  ) {
+    return this.requestQueueService.approveRoleRequest(requestId, req.user.userId, dto.adminNotes);
+  }
+
+  @Put('seller-applications/:requestId/reject')
+  @ApiOperation({
+    summary: 'Reject a seller application',
+    description: `
+**Reject Seller Application**
+
+Rejects the application due to incomplete/invalid documents. User's role remains USER.
+
+**What happens when rejected:**
+1. Request status changes to FAILED
+2. User's role stays as USER
+3. Super admin info is recorded (who rejected and reason)
+4. User can see the rejection reason and reapply with correct documents
+
+**Common Rejection Reasons:**
+- Invalid or expired government ID
+- Missing DTI/SEC Certificate
+- BIR Certificate not matching provided TIN
+- Incomplete bank account documentation
+- Business information doesn't match documents
+    `,
+  })
+  @ApiResponse({ status: 200, description: 'Seller application rejected' })
+  @ApiResponse({ status: 400, description: 'Request already processed' })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  async rejectSellerApplication(
+    @Param('requestId') requestId: string,
+    @Request() req: any,
+    @Body() dto: ProcessRoleRequestDto,
+  ) {
+    return this.requestQueueService.rejectRoleRequest(requestId, req.user.userId, dto.adminNotes);
   }
 }
