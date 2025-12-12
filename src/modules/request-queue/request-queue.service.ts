@@ -660,4 +660,81 @@ export class RequestQueueService {
       },
     };
   }
+
+  /**
+   * Bulk approve multiple role change requests
+   */
+  async bulkApproveRequests(requestIds: string[], adminId: string, adminNotes?: string) {
+    const results = [];
+    let approved = 0;
+    let failed = 0;
+
+    for (const requestId of requestIds) {
+      try {
+        const result = await this.approveRoleRequest(requestId, adminId, adminNotes);
+        results.push({
+          requestId,
+          status: 'approved',
+          userId: result.data.user.id,
+        });
+        approved++;
+      } catch (error) {
+        results.push({
+          requestId,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        failed++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Bulk approval completed: ${approved} approved, ${failed} failed`,
+      data: {
+        approved,
+        failed,
+        total: requestIds.length,
+        results,
+      },
+    };
+  }
+
+  /**
+   * Bulk reject multiple role change requests
+   */
+  async bulkRejectRequests(requestIds: string[], adminId: string, adminNotes?: string) {
+    const results = [];
+    let rejected = 0;
+    let failed = 0;
+
+    for (const requestId of requestIds) {
+      try {
+        await this.rejectRoleRequest(requestId, adminId, adminNotes);
+        results.push({
+          requestId,
+          status: 'rejected',
+        });
+        rejected++;
+      } catch (error) {
+        results.push({
+          requestId,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        failed++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Bulk rejection completed: ${rejected} rejected, ${failed} failed`,
+      data: {
+        rejected,
+        failed,
+        total: requestIds.length,
+        results,
+      },
+    };
+  }
 }

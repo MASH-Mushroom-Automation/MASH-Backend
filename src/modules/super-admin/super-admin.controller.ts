@@ -6,6 +6,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RequestQueueService } from '../request-queue/request-queue.service';
 import { ProcessRoleRequestDto } from './dto/process-role-request.dto';
+import { BulkProcessRequestsDto } from './dto/bulk-process-requests.dto';
 
 @ApiTags('Super Admin')
 @Controller('super-admin')
@@ -216,5 +217,75 @@ Rejects the application due to incomplete/invalid documents. User's role remains
     @Body() dto: ProcessRoleRequestDto,
   ) {
     return this.requestQueueService.rejectRoleRequest(requestId, req.user.userId, dto.adminNotes);
+  }
+
+  @Put('seller-applications/bulk/approve')
+  @ApiOperation({
+    summary: 'Bulk approve seller applications',
+    description: `
+**Bulk Approve Multiple Seller Applications**
+
+Approve multiple seller applications at once. Each user will be upgraded to ADMIN role.
+
+**Process:**
+- Processes each request independently
+- Returns success/failure status for each request
+- Continues processing even if some fail
+- Records admin info for successful approvals
+
+**Use Case:** Approve multiple pre-verified applications efficiently
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bulk approval completed',
+    schema: {
+      example: {
+        success: true,
+        message: 'Bulk approval completed: 3 approved, 1 failed',
+        data: {
+          approved: 3,
+          failed: 1,
+          results: [
+            { requestId: 'req_123', status: 'approved', userId: 'user_123' },
+            { requestId: 'req_456', status: 'approved', userId: 'user_456' },
+            { requestId: 'req_789', status: 'failed', error: 'Request already processed' },
+          ],
+        },
+      },
+    },
+  })
+  async bulkApproveApplications(@Request() req: any, @Body() dto: BulkProcessRequestsDto) {
+    return this.requestQueueService.bulkApproveRequests(
+      dto.requestIds,
+      req.user.userId,
+      dto.adminNotes,
+    );
+  }
+
+  @Put('seller-applications/bulk/reject')
+  @ApiOperation({
+    summary: 'Bulk reject seller applications',
+    description: `
+**Bulk Reject Multiple Seller Applications**
+
+Reject multiple seller applications at once. Users remain as USER role.
+
+**Process:**
+- Processes each request independently
+- Returns success/failure status for each request
+- Continues processing even if some fail
+- Records admin info and rejection reason
+
+**Use Case:** Reject multiple incomplete applications efficiently
+    `,
+  })
+  @ApiResponse({ status: 200, description: 'Bulk rejection completed' })
+  async bulkRejectApplications(@Request() req: any, @Body() dto: BulkProcessRequestsDto) {
+    return this.requestQueueService.bulkRejectRequests(
+      dto.requestIds,
+      req.user.userId,
+      dto.adminNotes,
+    );
   }
 }
