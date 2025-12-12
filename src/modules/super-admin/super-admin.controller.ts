@@ -6,6 +6,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RequestQueueService } from '../request-queue/request-queue.service';
 import { ProcessRoleRequestDto } from './dto/process-role-request.dto';
+import { BulkProcessRequestsDto } from './dto/bulk-process-requests.dto';
 
 @ApiTags('Super Admin')
 @Controller('super-admin')
@@ -94,6 +95,134 @@ export class SuperAdminController {
     return this.requestQueueService.getRoleRequestStats();
   }
 
+  @Get('seller-applications/:requestId')
+  @ApiOperation({
+    summary: 'Get seller application details by ID',
+    description: `
+**Get Full Seller Application Details**
+
+Retrieves complete information about a specific seller application including:
+- User information
+- All submitted documents (Gov ID, DTI/SEC, BIR, Bank docs)
+- Business information (name, address, additional info)
+- Application status and timestamps
+- Admin notes (if processed)
+
+Use this endpoint to review applications before approving/rejecting.
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Seller application details retrieved',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          requestId: 'req_123456',
+          user: {
+            id: 'user_123',
+            email: 'john@example.com',
+            firstName: 'John',
+            lastName: 'Doe',
+            role: 'USER',
+          },
+          currentRole: 'USER',
+          requestedRole: 'ADMIN',
+          documents: {
+            governmentId: 'https://s3.bucket.com/gov-id.jpg',
+            businessCertificate: 'https://s3.bucket.com/dti-cert.pdf',
+            birCertificate: 'https://s3.bucket.com/bir-cert.pdf',
+            bankAccountDocumentation: 'https://s3.bucket.com/bank-docs.pdf',
+          },
+          businessInfo: {
+            businessName: 'Manila Mushroom Farm',
+            businessAddress: 'Unit 123, Metro Manila, Philippines',
+            additionalInfo: 'Growing organic mushrooms for 5 years',
+          },
+          status: 'PENDING',
+          queuedAt: '2025-12-04T10:00:00Z',
+          processedAt: null,
+          completedAt: null,
+          priority: 70,
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  async getSellerApplicationById(@Param('requestId') requestId: string) {
+    return this.requestQueueService.getRoleRequestById(requestId);
+  }
+
+  @Put('seller-applications/bulk/approve')
+  @ApiOperation({
+    summary: 'Bulk approve seller applications',
+    description: `
+**Bulk Approve Multiple Seller Applications**
+
+Approve multiple seller applications at once. Each user will be upgraded to ADMIN role.
+
+**Process:**
+- Processes each request independently
+- Returns success/failure status for each request
+- Continues processing even if some fail
+- Records admin info for successful approvals
+
+**Use Case:** Approve multiple pre-verified applications efficiently
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bulk approval completed',
+    schema: {
+      example: {
+        success: true,
+        message: 'Bulk approval completed: 3 approved, 1 failed',
+        data: {
+          approved: 3,
+          failed: 1,
+          results: [
+            { requestId: 'req_123', status: 'approved', userId: 'user_123' },
+            { requestId: 'req_456', status: 'approved', userId: 'user_456' },
+            { requestId: 'req_789', status: 'failed', error: 'Request already processed' },
+          ],
+        },
+      },
+    },
+  })
+  async bulkApproveApplications(@Request() req: any, @Body() dto: BulkProcessRequestsDto) {
+    return this.requestQueueService.bulkApproveRequests(
+      dto.requestIds,
+      req.user.userId,
+      dto.adminNotes,
+    );
+  }
+
+  @Put('seller-applications/bulk/reject')
+  @ApiOperation({
+    summary: 'Bulk reject seller applications',
+    description: `
+**Bulk Reject Multiple Seller Applications**
+
+Reject multiple seller applications at once. Users remain as USER role.
+
+**Process:**
+- Processes each request independently
+- Returns success/failure status for each request
+- Continues processing even if some fail
+- Records admin info and rejection reason
+
+**Use Case:** Reject multiple incomplete applications efficiently
+    `,
+  })
+  @ApiResponse({ status: 200, description: 'Bulk rejection completed' })
+  async bulkRejectApplications(@Request() req: any, @Body() dto: BulkProcessRequestsDto) {
+    return this.requestQueueService.bulkRejectRequests(
+      dto.requestIds,
+      req.user.userId,
+      dto.adminNotes,
+    );
+  }
+
   @Put('seller-applications/:requestId/approve')
   @ApiOperation({
     summary: 'Approve a seller application',
@@ -124,9 +253,6 @@ Reviews documents and approves the application, automatically upgrading user to 
     @Request() req: any,
     @Body() dto: ProcessRoleRequestDto,
   ) {
-    if (!dto.approve) {
-      return this.requestQueueService.rejectRoleRequest(requestId, req.user.userId, dto.adminNotes);
-    }
     return this.requestQueueService.approveRoleRequest(requestId, req.user.userId, dto.adminNotes);
   }
 

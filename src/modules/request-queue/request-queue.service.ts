@@ -605,4 +605,136 @@ export class RequestQueueService {
       },
     };
   }
+
+  /**
+   * Get a specific role change request by ID with full details
+   * Includes all documents and business information
+   */
+  async getRoleRequestById(requestId: string) {
+    const request = await this.prisma.requestQueue.findUnique({
+      where: { id: requestId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+
+            phoneNumber: true,
+            role: true,
+            imageUrl: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Seller application not found');
+    }
+
+    if (request.endpoint !== '/admin/seller-applications') {
+      throw new BadRequestException('This is not a seller application request');
+    }
+
+    const payload = request.payload as any;
+
+    return {
+      success: true,
+      data: {
+        requestId: request.id,
+        user: request.user,
+        currentRole: payload?.currentRole,
+        requestedRole: payload?.requestedRole,
+        documents: payload?.documents || {},
+        businessInfo: payload?.businessInfo || {},
+        status: request.status,
+        queuedAt: request.queuedAt,
+        processedAt: request.processedAt,
+        completedAt: request.completedAt,
+        errorMessage: request.errorMessage,
+        adminNotes: (request.headers as any)?.adminNotes || null,
+        priority: request.priority,
+      },
+    };
+  }
+
+  /**
+   * Bulk approve multiple role change requests
+   */
+  async bulkApproveRequests(requestIds: string[], adminId: string, adminNotes?: string) {
+    const results = [];
+    let approved = 0;
+    let failed = 0;
+
+    for (const requestId of requestIds) {
+      try {
+        const result = await this.approveRoleRequest(requestId, adminId, adminNotes);
+        results.push({
+          requestId,
+          status: 'approved',
+          userId: result.data.user.id,
+        });
+        approved++;
+      } catch (error) {
+        results.push({
+          requestId,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        failed++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Bulk approval completed: ${approved} approved, ${failed} failed`,
+      data: {
+        approved,
+        failed,
+        total: requestIds.length,
+        results,
+      },
+    };
+  }
+
+  /**
+   * Bulk reject multiple role change requests
+   */
+  async bulkRejectRequests(requestIds: string[], adminId: string, adminNotes?: string) {
+    const results = [];
+    let rejected = 0;
+    let failed = 0;
+
+    for (const requestId of requestIds) {
+      try {
+        await this.rejectRoleRequest(requestId, adminId, adminNotes);
+        results.push({
+          requestId,
+          status: 'rejected',
+        });
+        rejected++;
+      } catch (error) {
+        results.push({
+          requestId,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        failed++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Bulk rejection completed: ${rejected} rejected, ${failed} failed`,
+      data: {
+        rejected,
+        failed,
+        total: requestIds.length,
+        results,
+      },
+    };
+  }
 }
