@@ -1,314 +1,438 @@
 {
-  "dashboard": {
-    "title": "MASH Database Performance Dashboard",
-    "uid": "mash-database-performance",
-    "tags": ["mash", "database", "postgres", "prisma"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "refresh": "10s",
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Database Query Rate (queries/s)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-        "targets": [
-          {
-            "expr": "rate(db_queries_total{job=\"mash-backend\"}[5m])",
-            "legendFormat": "{{operation}} {{model}}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Queries/sec",
-              "drawStyle": "line",
-              "fillOpacity": 10
-            },
-            "unit": "ops"
-          }
-        }
-      },
-      {
-        "id": 2,
-        "title": "Query Duration (P50, P95, P99)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.50, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
-            "legendFormat": "P50",
-            "refId": "A"
-          },
-          {
-            "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
-            "legendFormat": "P95",
-            "refId": "B"
-          },
-          {
-            "expr": "histogram_quantile(0.99, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
-            "legendFormat": "P99",
-            "refId": "C"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Duration",
-              "drawStyle": "line",
-              "fillOpacity": 0
-            },
-            "unit": "ms"
-          }
-        }
-      },
-      {
-        "id": 3,
-        "title": "Slow Queries (>100ms)",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum(rate(db_slow_queries_total{job=\"mash-backend\"}[5m]))",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 1, "color": "yellow" },
-                { "value": 10, "color": "red" }
-              ]
-            },
-            "unit": "ops"
-          }
-        }
-      },
-      {
-        "id": 4,
-        "title": "Database Errors",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
-        "targets": [
-          {
-            "expr": "sum(rate(db_errors_total{job=\"mash-backend\"}[5m]))",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 1, "color": "orange" },
-                { "value": 5, "color": "red" }
-              ]
-            },
-            "unit": "ops"
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Connection Pool Usage",
-        "type": "gauge",
-        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
-        "targets": [
-          {
-            "expr": "db_pool_active_connections{job=\"mash-backend\"} / db_pool_max_connections{job=\"mash-backend\"} * 100",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                { "value": 0, "color": "green" },
-                { "value": 70, "color": "yellow" },
-                { "value": 90, "color": "red" }
-              ]
-            },
-            "unit": "percent",
-            "min": 0,
-            "max": 100
-          }
-        },
-        "options": {
-          "showThresholdLabels": true,
-          "showThresholdMarkers": true
-        }
-      },
-      {
-        "id": 6,
-        "title": "Connection Pool Stats",
-        "type": "stat",
-        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
-        "targets": [
-          {
-            "expr": "db_pool_active_connections{job=\"mash-backend\"}",
-            "refId": "A"
-          },
-          {
-            "expr": "db_pool_idle_connections{job=\"mash-backend\"}",
-            "refId": "B"
-          },
-          {
-            "expr": "db_pool_waiting_connections{job=\"mash-backend\"}",
-            "refId": "C"
-          }
-        ],
-        "options": {
-          "graphMode": "none",
-          "orientation": "vertical"
-        },
-        "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": { "id": "byFrameRefID", "options": "A" },
-              "properties": [{ "id": "displayName", "value": "Active" }]
-            },
-            {
-              "matcher": { "id": "byFrameRefID", "options": "B" },
-              "properties": [{ "id": "displayName", "value": "Idle" }]
-            },
-            {
-              "matcher": { "id": "byFrameRefID", "options": "C" },
-              "properties": [{ "id": "displayName", "value": "Waiting" }]
-            }
-          ]
-        }
-      },
-      {
-        "id": 7,
-        "title": "Top 10 Slowest Queries by Model",
-        "type": "table",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-        "targets": [
-          {
-            "expr": "topk(10, histogram_quantile(0.95, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m]))) * 1000",
-            "format": "table",
-            "instant": true,
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": { "id": "byName", "options": "Value" },
-              "properties": [
-                { "id": "displayName", "value": "P95 Duration (ms)" },
-                { "id": "unit", "value": "ms" }
-              ]
-            }
-          ]
-        },
-        "transformations": [
-          {
-            "id": "organize",
-            "options": {
-              "excludeByName": {
-                "Time": true,
-                "__name__": true,
-                "job": true
-              },
-              "renameByName": {
-                "model": "Model",
-                "operation": "Operation"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "id": 8,
-        "title": "Query Operations Distribution",
-        "type": "piechart",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-        "targets": [
-          {
-            "expr": "sum by (operation) (rate(db_queries_total{job=\"mash-backend\"}[5m]))",
-            "legendFormat": "{{operation}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "table",
-            "placement": "right",
-            "values": ["value", "percent"]
-          },
-          "pieType": "pie"
-        }
-      },
-      {
-        "id": 9,
-        "title": "Most Active Tables/Models",
-        "type": "bargauge",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-        "targets": [
-          {
-            "expr": "topk(10, sum by (model) (rate(db_queries_total{job=\"mash-backend\"}[5m])))",
-            "legendFormat": "{{model}}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "orientation": "horizontal",
-          "displayMode": "gradient",
-          "showUnfilled": true
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "continuous-BlYlRd" },
-            "unit": "ops"
-          }
-        }
-      },
-      {
-        "id": 10,
-        "title": "Transaction Rate",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
-        "targets": [
-          {
-            "expr": "rate(db_transactions_total{job=\"mash-backend\"}[5m])",
-            "legendFormat": "{{status}}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": { "mode": "palette-classic" },
-            "custom": {
-              "axisLabel": "Transactions/sec",
-              "drawStyle": "line",
-              "fillOpacity": 10
-            },
-            "unit": "ops"
-          }
-        }
-      }
-    ]
-  }
+    "title":  "MASH Database Performance Dashboard",
+    "uid":  "mash-database-performance",
+    "tags":  [
+                 "mash",
+                 "database",
+                 "postgres",
+                 "prisma"
+             ],
+    "timezone":  "browser",
+    "schemaVersion":  38,
+    "refresh":  "10s",
+    "time":  {
+                 "from":  "now-1h",
+                 "to":  "now"
+             },
+    "panels":  [
+                   {
+                       "id":  1,
+                       "title":  "Database Query Rate (queries/s)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  0
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(db_queries_total{job=\"mash-backend\"}[5m])",
+                                           "legendFormat":  "{{operation}} {{model}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Queries/sec",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  10
+                                                                       },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  2,
+                       "title":  "Query Duration (P50, P95, P99)",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  0
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "histogram_quantile(0.50, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
+                                           "legendFormat":  "P50",
+                                           "refId":  "A"
+                                       },
+                                       {
+                                           "expr":  "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
+                                           "legendFormat":  "P95",
+                                           "refId":  "B"
+                                       },
+                                       {
+                                           "expr":  "histogram_quantile(0.99, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m])) * 1000",
+                                           "legendFormat":  "P99",
+                                           "refId":  "C"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Duration",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0
+                                                                       },
+                                                            "unit":  "ms"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  3,
+                       "title":  "Slow Queries (\u003e100ms)",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  0,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(db_slow_queries_total{job=\"mash-backend\"}[5m]))",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  1,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  10,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  4,
+                       "title":  "Database Errors",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  6,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum(rate(db_errors_total{job=\"mash-backend\"}[5m]))",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  1,
+                                                                                                 "color":  "orange"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  5,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  5,
+                       "title":  "Connection Pool Usage",
+                       "type":  "gauge",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  6,
+                                       "x":  12,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "db_pool_active_connections{job=\"mash-backend\"} / db_pool_max_connections{job=\"mash-backend\"} * 100",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "value":  0,
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  70,
+                                                                                                 "color":  "yellow"
+                                                                                             },
+                                                                                             {
+                                                                                                 "value":  90,
+                                                                                                 "color":  "red"
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "percent",
+                                                            "min":  0,
+                                                            "max":  100
+                                                        }
+                                       },
+                       "options":  {
+                                       "showThresholdLabels":  true,
+                                       "showThresholdMarkers":  true
+                                   }
+                   },
+                   {
+                       "id":  6,
+                       "title":  "Connection Pool Stats",
+                       "type":  "stat",
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  18,
+                                       "y":  8
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "db_pool_active_connections{job=\"mash-backend\"}",
+                                           "refId":  "A"
+                                       },
+                                       {
+                                           "expr":  "db_pool_idle_connections{job=\"mash-backend\"}",
+                                           "refId":  "B"
+                                       },
+                                       {
+                                           "expr":  "db_pool_waiting_connections{job=\"mash-backend\"}",
+                                           "refId":  "C"
+                                       }
+                                   ],
+                       "options":  {
+                                       "graphMode":  "none",
+                                       "orientation":  "vertical"
+                                   },
+                       "fieldConfig":  {
+                                           "overrides":  [
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byFrameRefID",
+                                                                                 "options":  "A"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "displayName",
+                                                                                        "value":  "Active"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byFrameRefID",
+                                                                                 "options":  "B"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "displayName",
+                                                                                        "value":  "Idle"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byFrameRefID",
+                                                                                 "options":  "C"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "displayName",
+                                                                                        "value":  "Waiting"
+                                                                                    }
+                                                                                ]
+                                                             }
+                                                         ]
+                                       }
+                   },
+                   {
+                       "id":  7,
+                       "title":  "Top 10 Slowest Queries by Model",
+                       "type":  "table",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  16
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "topk(10, histogram_quantile(0.95, rate(db_query_duration_seconds_bucket{job=\"mash-backend\"}[5m]))) * 1000",
+                                           "format":  "table",
+                                           "instant":  true,
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "overrides":  [
+                                                             {
+                                                                 "matcher":  {
+                                                                                 "id":  "byName",
+                                                                                 "options":  "Value"
+                                                                             },
+                                                                 "properties":  [
+                                                                                    {
+                                                                                        "id":  "displayName",
+                                                                                        "value":  "P95 Duration (ms)"
+                                                                                    },
+                                                                                    {
+                                                                                        "id":  "unit",
+                                                                                        "value":  "ms"
+                                                                                    }
+                                                                                ]
+                                                             }
+                                                         ]
+                                       },
+                       "transformations":  [
+                                               {
+                                                   "id":  "organize",
+                                                   "options":  {
+                                                                   "excludeByName":  {
+                                                                                         "Time":  true,
+                                                                                         "__name__":  true,
+                                                                                         "job":  true
+                                                                                     },
+                                                                   "renameByName":  {
+                                                                                        "model":  "Model",
+                                                                                        "operation":  "Operation"
+                                                                                    }
+                                                               }
+                                               }
+                                           ]
+                   },
+                   {
+                       "id":  8,
+                       "title":  "Query Operations Distribution",
+                       "type":  "piechart",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  16
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "sum by (operation) (rate(db_queries_total{job=\"mash-backend\"}[5m]))",
+                                           "legendFormat":  "{{operation}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "legend":  {
+                                                      "displayMode":  "table",
+                                                      "placement":  "right",
+                                                      "values":  [
+                                                                     "value",
+                                                                     "percent"
+                                                                 ]
+                                                  },
+                                       "pieType":  "pie"
+                                   }
+                   },
+                   {
+                       "id":  9,
+                       "title":  "Most Active Tables/Models",
+                       "type":  "bargauge",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  24
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "topk(10, sum by (model) (rate(db_queries_total{job=\"mash-backend\"}[5m])))",
+                                           "legendFormat":  "{{model}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "options":  {
+                                       "orientation":  "horizontal",
+                                       "displayMode":  "gradient",
+                                       "showUnfilled":  true
+                                   },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "continuous-BlYlRd"
+                                                                      },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   },
+                   {
+                       "id":  10,
+                       "title":  "Transaction Rate",
+                       "type":  "timeseries",
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  24
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(db_transactions_total{job=\"mash-backend\"}[5m])",
+                                           "legendFormat":  "{{status}}",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Transactions/sec",
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  10
+                                                                       },
+                                                            "unit":  "ops"
+                                                        }
+                                       }
+                   }
+               ]
 }

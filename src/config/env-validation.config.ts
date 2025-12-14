@@ -56,7 +56,7 @@ export const envValidationSchema = Joi.object({
 
   // ==================== CACHING (Redis) ====================
   REDIS_URL: Joi.string()
-    .uri()
+    .uri({ scheme: ['redis', 'rediss'] })
     .optional()
     .allow('')
     .description('Redis connection URL (optional - caching disabled if not provided)'),
@@ -128,7 +128,10 @@ export const envValidationSchema = Joi.object({
   PAYMENT_WEBHOOK_SECRET: Joi.string().allow('').description('Payment webhook secret'),
 
   // ==================== MQTT (IoT Devices) ====================
-  MQTT_BROKER_URL: Joi.string().uri().allow('').description('MQTT broker URL'),
+  MQTT_BROKER_URL: Joi.string()
+    .uri({ scheme: ['mqtt', 'mqtts', 'ws', 'wss', 'tcp'] })
+    .allow('')
+    .description('MQTT broker URL'),
 
   MQTT_USERNAME: Joi.string().allow('').description('MQTT username'),
 

@@ -29,6 +29,10 @@ export class UserResponseDto {
 
   @Expose()
   @ApiProperty()
+  isActive!: boolean;
+
+  @Expose()
+  @ApiProperty()
   imageUrl?: string;
 
   @Expose()
