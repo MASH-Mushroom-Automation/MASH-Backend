@@ -27,12 +27,31 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
-import { VerifyEmailDto, ResendVerificationDto, VerifyEmailCodeDto, ResendVerificationCodeDto } from './dto/verify-email.dto';
-import { ForgotPasswordDto, ResetPasswordDto, VerifyResetCodeDto, ResendPasswordResetCodeDto } from './dto/password-reset.dto';
+import {
+  VerifyEmailDto,
+  ResendVerificationDto,
+  VerifyEmailCodeDto,
+  ResendVerificationCodeDto,
+} from './dto/verify-email.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyResetCodeDto,
+  ResendPasswordResetCodeDto,
+} from './dto/password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { OAuthCallbackDto, OAuthInitiateDto } from './dto/oauth.dto';
-import { GoogleLoginDto, FacebookLoginDto, LinkGoogleAccountDto, LinkFacebookAccountDto } from '../oauth/dto/oauth-login.dto';
-import { LinkGoogleAccountDto as GoogleLinkDto, GoogleLinkResponseDto, GoogleUnlinkResponseDto } from './dto/google-link.dto';
+import {
+  GoogleLoginDto,
+  FacebookLoginDto,
+  LinkGoogleAccountDto,
+  LinkFacebookAccountDto,
+} from '../oauth/dto/oauth-login.dto';
+import {
+  LinkGoogleAccountDto as GoogleLinkDto,
+  GoogleLinkResponseDto,
+  GoogleUnlinkResponseDto,
+} from './dto/google-link.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuditLog } from '../../common/decorators/audit-log.decorator';
@@ -65,7 +84,7 @@ export class AuthController {
    * 📝 STEP 1: USER REGISTRATION
    * ============================
    * Creates a new user account with email verification.
-   * 
+   *
    * Process:
    * 1. Validates user input (email, password strength, name)
    * 2. Checks if email already exists
@@ -75,14 +94,14 @@ export class AuthController {
    * 6. Generates 64-character verification token (24h expiry)
    * 7. Sends verification email via Gmail SMTP
    * 8. Returns success response with verification instructions
-   * 
+   *
    * Security Features:
    * - Rate limited: 3 attempts per minute per IP
    * - Password requirements: 8+ chars, uppercase, lowercase, number, special char
    * - Email validation with DNS check
    * - Duplicate email prevention
    * - CSRF protection
-   * 
+   *
    * Next Step: User must verify email (Step 2) before login
    */
   @Post('register')
@@ -225,7 +244,10 @@ If you didn't create this account, please ignore this email.
         message: {
           oneOf: [
             { type: 'string', example: 'Email already exists' },
-            { type: 'string', example: 'Password must contain uppercase, lowercase, number and special character' },
+            {
+              type: 'string',
+              example: 'Password must contain uppercase, lowercase, number and special character',
+            },
             { type: 'string', example: 'Invalid email format' },
           ],
         },
@@ -265,9 +287,9 @@ If you didn't create this account, please ignore this email.
    * ✉️ STEP 2: EMAIL VERIFICATION
    * ==============================
    * Verifies user email address using the token sent via email.
-   * 
+   *
    * This is a REQUIRED step before users can log in.
-   * 
+   *
    * Process:
    * 1. Validates token format (64-character hex string)
    * 2. Finds user by verification token in database
@@ -276,13 +298,13 @@ If you didn't create this account, please ignore this email.
    * 5. Clears verification token and expiry
    * 6. Updates Clerk metadata to sync verification status
    * 7. Returns success response
-   * 
+   *
    * Security Features:
    * - Rate limited: 5 attempts per minute
    * - One-time use tokens (deleted after verification)
    * - Time-based expiration (24 hours)
    * - Secure random token generation
-   * 
+   *
    * Next Step: User can now login (Step 3)
    */
   @Post('verify-email')
@@ -405,21 +427,21 @@ This endpoint validates the verification token sent to the user's email and mark
    * =====================================================
    * Sends a new 6-digit verification code to user's email.
    * This endpoint now uses the same 6-digit code system as registration.
-   * 
+   *
    * Why 6-Digit Code?
    * - ✅ Mobile-friendly: Easy to type on mobile keyboard
    * - ✅ User stays in app (no deep linking required)
    * - ✅ Faster verification (10 minutes vs 24 hours)
    * - ✅ More secure: Short expiry window
    * - ✅ Familiar UX: Like OTP/2FA systems
-   * 
+   *
    * Security Features:
    * - Rate limited: 1 request per minute (60 seconds cooldown)
    * - Doesn't reveal if email exists (prevents enumeration)
    * - Single-use codes (cannot reuse same code)
    * - Short expiry (10 minutes)
    * - Resets failed attempt counter
-   * 
+   *
    * Process:
    * 1. Validates user exists and is not verified
    * 2. Checks rate limit (1 minute cooldown)
@@ -524,8 +546,8 @@ This endpoint doesn't reveal whether an email exists in the system. It always re
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { 
-          type: 'string', 
+        message: {
+          type: 'string',
           example: 'Email is already verified. You can log in now.',
         },
         error: { type: 'string', example: 'Bad Request' },
@@ -545,14 +567,14 @@ This endpoint doesn't reveal whether an email exists in the system. It always re
    * =================================================
    * Mobile-friendly email verification using 6-digit numeric code.
    * This is the RECOMMENDED method for mobile apps.
-   * 
+   *
    * Why 6-Digit Code?
    * - ✅ Easy to type on mobile keyboard
    * - ✅ User stays in app (no deep linking required)
    * - ✅ Familiar UX (like OTP systems)
    * - ✅ Short expiry (10 minutes) for better security
    * - ✅ Immediate login with JWT token
-   * 
+   *
    * Security Features:
    * - Single-use codes (cannot reuse same code)
    * - 10-minute expiration (vs 24h for tokens)
@@ -652,7 +674,10 @@ Users receive a 6-digit code in their email and enter it directly in the app.
             username: { type: 'string', example: 'john_doe', nullable: true },
             firstName: { type: 'string', example: 'John' },
             lastName: { type: 'string', example: 'Doe' },
-            imageUrl: { type: 'string', example: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=john_doe' },
+            imageUrl: {
+              type: 'string',
+              example: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=john_doe',
+            },
             role: { type: 'string', example: 'USER' },
             emailVerified: { type: 'boolean', example: true },
           },
@@ -692,11 +717,11 @@ Users receive a 6-digit code in their email and enter it directly in the app.
    * 🔄 RESEND 6-DIGIT VERIFICATION CODE
    * ====================================
    * Request a new 6-digit verification code if previous one expired or failed.
-   * 
+   *
    * Rate Limiting:
    * - 3 requests per minute (prevents spam)
    * - 1-minute cooldown between code requests (enforced server-side)
-   * 
+   *
    * What Happens:
    * - Generates new 6-digit code
    * - Resets failed attempt counter
@@ -774,7 +799,10 @@ This endpoint generates a new verification code and sends it to the user's email
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'A new 6-digit verification code has been sent to your email.' },
+        message: {
+          type: 'string',
+          example: 'A new 6-digit verification code has been sent to your email.',
+        },
         expiresIn: { type: 'string', example: '10 minutes' },
         email: { type: 'string', example: 'user@example.com' },
       },
@@ -809,7 +837,10 @@ This endpoint generates a new verification code and sends it to the user's email
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 500 },
-        message: { type: 'string', example: 'Failed to send verification code. Please try again later.' },
+        message: {
+          type: 'string',
+          example: 'Failed to send verification code. Please try again later.',
+        },
         error: { type: 'string', example: 'Internal Server Error' },
       },
     },
@@ -822,9 +853,9 @@ This endpoint generates a new verification code and sends it to the user's email
    * 🔑 STEP 3: USER LOGIN
    * ======================
    * Authenticates user and returns JWT tokens for API access.
-   * 
+   *
    * This endpoint requires email verification to be completed.
-   * 
+   *
    * Process:
    * 1. Validates email and password format
    * 2. Finds user by email in database
@@ -834,14 +865,14 @@ This endpoint generates a new verification code and sends it to the user's email
    * 6. Generates refresh token (7d validity)
    * 7. Creates session record in database
    * 8. Returns tokens and user profile
-   * 
+   *
    * Security Features:
    * - Rate limited: 10 attempts per minute
    * - Requires email verification
    * - Bcrypt password verification
    * - JWT token-based authentication
    * - Session tracking in database
-   * 
+   *
    * Next Step: Use access token to access protected resources (Step 4)
    */
   @Post('login')
@@ -956,7 +987,10 @@ This endpoint authenticates a user with email and password, returning JWT tokens
             username: { type: 'string', example: 'johndoe' },
             firstName: { type: 'string', example: 'John' },
             lastName: { type: 'string', example: 'Doe' },
-            imageUrl: { type: 'string', example: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=johndoe' },
+            imageUrl: {
+              type: 'string',
+              example: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=johndoe',
+            },
             role: { type: 'string', example: 'USER' },
             emailVerified: { type: 'boolean', example: true },
             isActive: { type: 'boolean', example: true },
@@ -991,7 +1025,8 @@ This endpoint authenticates a user with email and password, returning JWT tokens
             { type: 'string', example: 'Invalid email or password' },
             {
               type: 'string',
-              example: 'Please verify your email address before logging in. Check your inbox for verification link.',
+              example:
+                'Please verify your email address before logging in. Check your inbox for verification link.',
             },
             { type: 'string', example: 'Account is inactive. Please contact support.' },
           ],
@@ -1051,12 +1086,13 @@ This endpoint authenticates a user with email and password, returning JWT tokens
         message: 'A 6-digit password reset code has been sent to your email.',
         expiresIn: '10 minutes',
         email: 'user@example.com',
-        nextStep: 'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
+        nextStep:
+          'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
       },
     },
   })
-  @ApiResponse({ 
-    status: 400, 
+  @ApiResponse({
+    status: 400,
     description: 'Rate limit exceeded - too many requests',
     schema: {
       example: {
@@ -1219,7 +1255,8 @@ their code is correct before entering their new password.
         message: 'A 6-digit password reset code has been sent to your email.',
         expiresIn: '10 minutes',
         email: 'user@example.com',
-        nextStep: 'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
+        nextStep:
+          'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
       },
     },
   })
@@ -1345,7 +1382,8 @@ their code is correct before entering their new password.
   @AuditLog({
     action: AuditAction.USER_CREATE,
     entity: 'User',
-    getEntityId: args => (args[0] as ClerkWebhookDto | undefined)?.data?.id as string ?? 'unknown',
+    getEntityId: args =>
+      ((args[0] as ClerkWebhookDto | undefined)?.data?.id as string) ?? 'unknown',
   })
   @ApiOperation({
     summary: 'Clerk webhook handler',
@@ -1391,7 +1429,7 @@ their code is correct before entering their new password.
   @AuditLog({
     action: AuditAction.LOGOUT,
     entity: 'User',
-    getEntityId: args => ((args[0] as AuthenticatedRequest | undefined)?.user?.userId ?? 'unknown'),
+    getEntityId: args => (args[0] as AuthenticatedRequest | undefined)?.user?.userId ?? 'unknown',
   })
   @ApiOperation({
     summary: 'Logout user',
@@ -1545,7 +1583,10 @@ their code is correct before entering their new password.
     description: 'Forbidden - Insufficient permissions',
   })
   @ApiResponse({ status: 404, description: 'Target user not found' })
-  async impersonateUser(@Request() req: AuthenticatedRequest, @Body() body: { targetUserId: string }) {
+  async impersonateUser(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: { targetUserId: string },
+  ) {
     if (!body.targetUserId) {
       throw new BadRequestException('targetUserId is required');
     }
@@ -1558,7 +1599,7 @@ their code is correct before entering their new password.
    * 🔐 GOOGLE LOGIN
    * ===============
    * Authenticate user with Google ID Token (Backend Token Validation Approach)
-   * 
+   *
    * Flow:
    * 1. Client gets Google ID token from Google Sign-In SDK (mobile/web)
    * 2. Client sends ID token to this endpoint
@@ -1566,7 +1607,7 @@ their code is correct before entering their new password.
    * 4. Backend finds or creates user in database
    * 5. Backend generates JWT tokens (access + refresh)
    * 6. Client stores tokens and redirects to dashboard
-   * 
+   *
    * Security:
    * - Rate limited: 10 requests per 5 minutes per IP
    * - Token validated with Google's API (prevents forgery)
@@ -1580,7 +1621,7 @@ their code is correct before entering their new password.
   @AuditLog({
     action: AuditAction.LOGIN,
     entity: 'User',
-    getEntityId: (args) => 'google_oauth',
+    getEntityId: args => 'google_oauth',
   })
   @ApiOperation({
     summary: '🔐 Login with Google',
@@ -1647,8 +1688,10 @@ import { GoogleLogin } from '@react-oauth/google';
       example: {
         success: true,
         message: 'Google authentication successful',
-        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwMjA0NjQwMH0.abc123...',
-        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwNDU1MjAwMH0.xyz789...',
+        accessToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwMjA0NjQwMH0.abc123...',
+        refreshToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwNDU1MjAwMH0.xyz789...',
         user: {
           id: 'user_abc123xyz',
           email: 'john.doe@gmail.com',
@@ -1689,7 +1732,7 @@ import { GoogleLogin } from '@react-oauth/google';
    * 🔐 FACEBOOK LOGIN
    * =================
    * Authenticate user with Facebook Access Token
-   * 
+   *
    * Flow:
    * 1. Client gets Facebook access token from Facebook Login SDK
    * 2. Client sends access token to this endpoint
@@ -1697,7 +1740,7 @@ import { GoogleLogin } from '@react-oauth/google';
    * 4. Backend fetches user data from Facebook
    * 5. Backend finds or creates user in database
    * 6. Backend generates JWT tokens
-   * 
+   *
    * Security:
    * - Rate limited: 10 requests per 5 minutes per IP
    * - Token validated with Facebook's Graph API
@@ -1710,7 +1753,7 @@ import { GoogleLogin } from '@react-oauth/google';
   @AuditLog({
     action: AuditAction.LOGIN,
     entity: 'User',
-    getEntityId: (args) => 'facebook_oauth',
+    getEntityId: args => 'facebook_oauth',
   })
   @ApiOperation({
     summary: '🔐 Login with Facebook',
@@ -1803,12 +1846,12 @@ import FacebookLogin from 'react-facebook-login';
    * ======================
    * Link Google account to existing authenticated user
    * Requires JWT authentication
-   * 
+   *
    * Use Case:
    * - User registered with email/password
    * - User wants to add Google login option
    * - After linking, user can login with either method
-   * 
+   *
    * Security:
    * - Requires valid JWT token (user must be logged in)
    * - Prevents linking same Google account to multiple users
@@ -1821,7 +1864,7 @@ import FacebookLogin from 'react-facebook-login';
   @AuditLog({
     action: AuditAction.USER_UPDATE,
     entity: 'User',
-    getEntityId: (args) => 'social_link_google',
+    getEntityId: args => 'social_link_google',
   })
   @ApiOperation({
     summary: '🔗 Link Google account to existing user',
@@ -1880,10 +1923,7 @@ await fetch('/api/v1/auth/social/link/google', {
   @ApiResponse({ status: 400, description: 'Google account already linked to another user' })
   @ApiResponse({ status: 401, description: 'JWT token invalid or expired' })
   @ApiResponse({ status: 409, description: 'Email mismatch or conflict' })
-  async linkGoogleAccount(
-    @Request() req: AuthenticatedRequest,
-    @Body() dto: LinkGoogleAccountDto,
-  ) {
+  async linkGoogleAccount(@Request() req: AuthenticatedRequest, @Body() dto: LinkGoogleAccountDto) {
     return this.authService.linkGoogleAccount(req.user.id, dto.idToken);
   }
 
@@ -1900,7 +1940,7 @@ await fetch('/api/v1/auth/social/link/google', {
   @AuditLog({
     action: AuditAction.USER_UPDATE,
     entity: 'User',
-    getEntityId: (args) => 'social_link_facebook',
+    getEntityId: args => 'social_link_facebook',
   })
   @ApiOperation({
     summary: '🔗 Link Facebook account to existing user',
@@ -1946,7 +1986,7 @@ Allows existing users to add Facebook login as an alternative authentication met
    * ========================
    * Remove Google or Facebook login from user account
    * Requires JWT authentication
-   * 
+   *
    * Security:
    * - Requires at least one authentication method remaining
    * - Cannot unlink if no password set (would lock user out)
@@ -1959,7 +1999,7 @@ Allows existing users to add Facebook login as an alternative authentication met
   @AuditLog({
     action: AuditAction.USER_UPDATE,
     entity: 'User',
-    getEntityId: (args) => 'social_unlink',
+    getEntityId: args => 'social_unlink',
   })
   @ApiOperation({
     summary: '🔓 Unlink social account (Google or Facebook)',
@@ -2026,7 +2066,7 @@ DELETE /api/v1/auth/social/unlink/facebook
    * ===================
    * Get current user's linked OAuth providers and authentication options
    * Requires JWT authentication
-   * 
+   *
    * Returns:
    * - List of linked providers (Google, Facebook)
    * - Whether user has password set
@@ -2086,5 +2126,4 @@ Returns information about user's linked OAuth providers and authentication optio
   async getOAuthStatus(@Request() req: AuthenticatedRequest) {
     return this.authService.getOAuthStatus(req.user.id);
   }
-
 }
