@@ -123,7 +123,7 @@
     "socket.io-client": "^4.8.1",
     "speakeasy": "^2.0.0",
     "svix": "^1.76.1",
-    "twilio": "^5.10.3",
+    "twilio": "^5.10.7",
     "uuid": "^13.0.0",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0",
