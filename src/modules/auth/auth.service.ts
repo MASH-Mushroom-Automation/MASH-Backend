@@ -16,14 +16,32 @@ import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
 import { OAuthService } from '../oauth/oauth.service';
 import { OAuthUserData } from '../oauth/interfaces/oauth-user.interface';
+import * as admin from 'firebase-admin';
+import { Response } from 'express';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
 import { RegisterDto } from './dto/register.dto';
-import { VerifyEmailDto, ResendVerificationDto, VerifyEmailCodeDto, ResendVerificationCodeDto } from './dto/verify-email.dto';
-import { ResetPasswordDto, VerifyResetCodeDto, ResendPasswordResetCodeDto } from './dto/password-reset.dto';
+import {
+  VerifyEmailDto,
+  ResendVerificationDto,
+  VerifyEmailCodeDto,
+  ResendVerificationCodeDto,
+} from './dto/verify-email.dto';
+import {
+  ResetPasswordDto,
+  VerifyResetCodeDto,
+  ResendPasswordResetCodeDto,
+} from './dto/password-reset.dto';
 import { OAuthCallbackDto } from './dto/oauth.dto';
 import { TokenResponse } from './interfaces/jwt-payload.interface';
 import { hashPassword, comparePassword } from '../../common/helpers/bcrypt.helper';
-import { generateVerificationToken, generateTokenExpiry, isTokenExpired, generateSixDigitCode, generateCodeExpiry, isCodeExpired } from '../../common/helpers/token.helper';
+import {
+  generateVerificationToken,
+  generateTokenExpiry,
+  isTokenExpired,
+  generateSixDigitCode,
+  generateCodeExpiry,
+  isCodeExpired,
+} from '../../common/helpers/token.helper';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 
@@ -223,9 +241,10 @@ export class AuthService {
       select: { oauthProvider: true },
     });
 
-    const updatedOAuthProviders = googleAccount && existingUser
-      ? Array.from(new Set([...(existingUser.oauthProvider || []), 'google']))
-      : existingUser?.oauthProvider;
+    const updatedOAuthProviders =
+      googleAccount && existingUser
+        ? Array.from(new Set([...(existingUser.oauthProvider || []), 'google']))
+        : existingUser?.oauthProvider;
 
     const user = await this.prisma.user.update({
       where: { clerkId: userData.id },
@@ -362,7 +381,7 @@ export class AuthService {
             // Check if email is verified
             if (!user.emailVerified) {
               throw new UnauthorizedException(
-                'Please verify your email address before logging in. Check your inbox for the verification link.'
+                'Please verify your email address before logging in. Check your inbox for the verification link.',
               );
             }
 
@@ -419,7 +438,7 @@ export class AuthService {
         // Check if email is verified
         if (!user.emailVerified) {
           throw new UnauthorizedException(
-            'Please verify your email address before logging in. Check your inbox for the verification link.'
+            'Please verify your email address before logging in. Check your inbox for the verification link.',
           );
         }
 
@@ -616,22 +635,29 @@ export class AuthService {
         logger.warn('[WARN] Clerk user creation failed, using local auth only');
         const errorMessage = clerkError instanceof Error ? clerkError.message : 'Unknown error';
         logger.warn(`[WARN] Clerk error: ${errorMessage}`);
-        
+
         // Check if it's a duplicate error (orphaned Clerk user scenario)
         if (errorMessage.includes('already exists') || errorMessage.includes('identifier_exists')) {
-          logger.warn('[WARN] Email exists in Clerk but not in database - likely orphaned user from failed registration');
+          logger.warn(
+            '[WARN] Email exists in Clerk but not in database - likely orphaned user from failed registration',
+          );
           logger.warn('[WARN] Continuing with local registration using fallback ID');
           logger.warn('[INFO] User can login using local auth (database password)');
         }
-        
+
         // If Clerk username is taken, generate a unique username for local database
-        if (clerkError?.errors?.[0]?.code === 'form_identifier_exists' && clerkError?.errors?.[0]?.meta?.paramName === 'username') {
+        if (
+          clerkError?.errors?.[0]?.code === 'form_identifier_exists' &&
+          clerkError?.errors?.[0]?.meta?.paramName === 'username'
+        ) {
           // Generate unique username by appending random suffix
-          const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+          const randomSuffix = Math.floor(Math.random() * 10000)
+            .toString()
+            .padStart(4, '0');
           clerkUsername = `${registerDto.username}_${randomSuffix}`;
           logger.warn(`[WARN] Clerk username taken, using local username: ${clerkUsername}`);
         }
-        
+
         // Continue with registration using local clerkId
         // The user can still login using local auth (database password)
       }
@@ -643,7 +669,7 @@ export class AuthService {
       // Step 7: Create user in database (with timeout handling)
       logger.log('[CONFIG] Creating user in database');
       let user;
-      
+
       try {
         // Set timeout for database operation (10 seconds max)
         const createUserPromise = this.prisma.user.create({
@@ -669,17 +695,17 @@ export class AuthService {
             emailVerificationExpiry: tokenExpiry,
           },
         });
-        
+
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Database operation timeout (10s)')), 10000)
+          setTimeout(() => reject(new Error('Database operation timeout (10s)')), 10000),
         );
-        
+
         user = await Promise.race([createUserPromise, timeoutPromise]);
         logger.log(`[SUCCESS] User created in database: ${user.id}`);
       } catch (dbError: any) {
         logger.error(`[ERROR] Database user creation failed: ${dbError.message}`);
         throw new InternalServerErrorException(
-          'Database is currently unavailable. Please try again in a few minutes.'
+          'Database is currently unavailable. Please try again in a few minutes.',
         );
       }
       this.prometheusService.recordUserRegistration();
@@ -723,7 +749,8 @@ export class AuthService {
       logger.log('[SUCCESS] Registration process completed');
       return {
         success: true,
-        message: 'Registration successful! A 6-digit verification code has been sent to your email.',
+        message:
+          'Registration successful! A 6-digit verification code has been sent to your email.',
         user: {
           id: user.id,
           clerkId: user.clerkId,
@@ -852,13 +879,17 @@ export class AuthService {
         });
 
         logger.warn(`[WARN] Invalid verification code for email: ${dto.email}`);
-        throw new BadRequestException('Invalid verification code. Please check your email and try again.');
+        throw new BadRequestException(
+          'Invalid verification code. Please check your email and try again.',
+        );
       }
 
       // Check if code already used
       if (user.emailVerificationCodeUsed) {
         logger.warn(`[WARN] Code already used for email: ${dto.email}`);
-        throw new BadRequestException('This verification code has already been used. Please request a new code.');
+        throw new BadRequestException(
+          'This verification code has already been used. Please request a new code.',
+        );
       }
 
       // Check if code expired
@@ -870,12 +901,14 @@ export class AuthService {
       // Check failed attempts (max 5)
       if (user.emailVerificationAttempts >= 5) {
         logger.warn(`[WARN] Too many verification attempts for email: ${dto.email}`);
-        throw new BadRequestException('Too many failed verification attempts. Please request a new code.');
+        throw new BadRequestException(
+          'Too many failed verification attempts. Please request a new code.',
+        );
       }
 
       // ✅ ALL CHECKS PASSED - Mark email as verified
       logger.log(`[SUCCESS] Verification code valid, marking email as verified`);
-      
+
       const verifiedUser = await this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -973,7 +1006,8 @@ export class AuthService {
       ? Date.now() - user.emailVerificationCodeSentAt.getTime()
       : Infinity;
 
-    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
+    if (timeSinceLastSent < 60000) {
+      // 60 seconds = 1 minute
       const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
       logger.warn(`[WARN] Rate limit hit for email: ${dto.email}, wait ${waitSeconds}s`);
       throw new BadRequestException(
@@ -1001,7 +1035,7 @@ export class AuthService {
 
     // Send new verification code via email
     logger.log(`[CONFIG] Sending new verification code via email`);
-    
+
     try {
       await this.emailService.sendVerificationCodeEmail(
         user.email,
@@ -1009,11 +1043,13 @@ export class AuthService {
         verificationCode,
         '10 minutes',
       );
-      
+
       logger.log(`[SUCCESS] New verification code sent to: ${user.email}`);
     } catch (emailError) {
       logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
-      throw new InternalServerErrorException('Failed to send verification code. Please try again later.');
+      throw new InternalServerErrorException(
+        'Failed to send verification code. Please try again later.',
+      );
     }
 
     return {
@@ -1055,7 +1091,8 @@ export class AuthService {
       ? Date.now() - user.emailVerificationCodeSentAt.getTime()
       : Infinity;
 
-    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
+    if (timeSinceLastSent < 60000) {
+      // 60 seconds = 1 minute
       const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
       logger.warn(`[WARN] Rate limit hit for email: ${resendDto.email}, wait ${waitSeconds}s`);
       throw new BadRequestException(
@@ -1083,7 +1120,7 @@ export class AuthService {
 
     // Send verification code email (same as registration)
     logger.log(`[CONFIG] Sending 6-digit verification code via email`);
-    
+
     try {
       await this.emailService.sendVerificationCodeEmail(
         user.email,
@@ -1091,11 +1128,13 @@ export class AuthService {
         verificationCode,
         '10 minutes',
       );
-      
+
       logger.log(`[SUCCESS] 6-digit verification code sent to: ${user.email}`);
     } catch (emailError) {
       logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
-      throw new InternalServerErrorException('Failed to send verification code. Please try again later.');
+      throw new InternalServerErrorException(
+        'Failed to send verification code. Please try again later.',
+      );
     }
 
     return {
@@ -1144,7 +1183,8 @@ export class AuthService {
       ? Date.now() - user.passwordResetCodeSentAt.getTime()
       : Infinity;
 
-    if (timeSinceLastSent < 60000) { // 60 seconds = 1 minute
+    if (timeSinceLastSent < 60000) {
+      // 60 seconds = 1 minute
       const waitSeconds = Math.ceil((60000 - timeSinceLastSent) / 1000);
       logger.warn(`[WARN] Rate limit hit for email: ${email}, wait ${waitSeconds}s`);
       throw new BadRequestException(
@@ -1172,7 +1212,7 @@ export class AuthService {
 
     // Send password reset code via email
     logger.log(`[CONFIG] Sending password reset code via email`);
-    
+
     try {
       await this.emailService.sendPasswordResetCodeEmail(
         user.email,
@@ -1180,11 +1220,13 @@ export class AuthService {
         resetCode,
         '10 minutes',
       );
-      
+
       logger.log(`[SUCCESS] Password reset code sent to: ${user.email}`);
     } catch (emailError) {
       logger.error(`[ERROR] Failed to send password reset code: ${emailError.message}`);
-      throw new InternalServerErrorException('Failed to send password reset code. Please try again later.');
+      throw new InternalServerErrorException(
+        'Failed to send password reset code. Please try again later.',
+      );
     }
 
     return {
@@ -1192,7 +1234,8 @@ export class AuthService {
       message: 'A 6-digit password reset code has been sent to your email.',
       expiresIn: '10 minutes',
       email: user.email,
-      nextStep: 'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
+      nextStep:
+        'Verify the code using POST /auth/verify-reset-code, then reset password with POST /auth/reset-password',
     };
   }
 
@@ -1206,7 +1249,7 @@ export class AuthService {
     logger.log(`[STARTUP] Verifying reset code for email: ${dto.email}`);
 
     const user = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         email: dto.email,
         passwordResetCode: dto.code,
       },
@@ -1214,7 +1257,7 @@ export class AuthService {
 
     if (!user) {
       logger.warn(`[WARN] Invalid reset code attempt for email: ${dto.email}`);
-      
+
       // Increment failed attempts if user exists
       const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
       if (existingUser && existingUser.passwordResetCode) {
@@ -1231,7 +1274,7 @@ export class AuthService {
           );
         }
       }
-      
+
       throw new BadRequestException('Invalid verification code.');
     }
 
@@ -1250,9 +1293,7 @@ export class AuthService {
     // Check failed attempts
     if (user.passwordResetAttempts >= 5) {
       logger.warn(`[WARN] Too many failed attempts for email: ${dto.email}`);
-      throw new BadRequestException(
-        'Too many failed attempts. Please request a new code.',
-      );
+      throw new BadRequestException('Too many failed attempts. Please request a new code.');
     }
 
     logger.log(`[SUCCESS] Reset code verified for email: ${dto.email}`);
@@ -1275,20 +1316,24 @@ export class AuthService {
     logger.log(`[STARTUP] Password reset for email: ${resetPasswordDto.email}`);
 
     const user = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         email: resetPasswordDto.email,
         passwordResetCode: resetPasswordDto.code,
       },
     });
 
     if (!user) {
-      logger.warn(`[WARN] Invalid reset code during password reset for email: ${resetPasswordDto.email}`);
+      logger.warn(
+        `[WARN] Invalid reset code during password reset for email: ${resetPasswordDto.email}`,
+      );
       throw new BadRequestException('Invalid verification code.');
     }
 
     // Check if code has been used
     if (user.passwordResetCodeUsed) {
-      logger.warn(`[WARN] Attempt to use already-used code for password reset: ${resetPasswordDto.email}`);
+      logger.warn(
+        `[WARN] Attempt to use already-used code for password reset: ${resetPasswordDto.email}`,
+      );
       throw new BadRequestException('This code has already been used. Please request a new one.');
     }
 
@@ -1300,10 +1345,10 @@ export class AuthService {
 
     // Check failed attempts
     if (user.passwordResetAttempts >= 5) {
-      logger.warn(`[WARN] Too many failed attempts during password reset: ${resetPasswordDto.email}`);
-      throw new BadRequestException(
-        'Too many failed attempts. Please request a new code.',
+      logger.warn(
+        `[WARN] Too many failed attempts during password reset: ${resetPasswordDto.email}`,
       );
+      throw new BadRequestException('Too many failed attempts. Please request a new code.');
     }
 
     // Hash new password
@@ -1386,7 +1431,7 @@ export class AuthService {
   /**
    * Login with Google ID Token
    * Validates token, finds or creates user, generates JWT tokens
-   * 
+   *
    * @param dto - Google login DTO containing ID token
    * @returns JWT tokens and user data
    */
@@ -1398,7 +1443,7 @@ export class AuthService {
       try {
         // 1. Validate Google ID token with OAuth service
         const oauthUser = await this.oauthService.validateGoogleToken(dto.idToken);
-        
+
         span.setAttribute('oauth.provider', 'google');
         span.setAttribute('user.email', oauthUser.email);
         this.logger.log(`Google token validated for user: ${oauthUser.email}`);
@@ -1453,12 +1498,15 @@ export class AuthService {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
         span.recordException(error instanceof Error ? error : new Error(String(error)));
-        this.logger.error(`❌ Google login failed: ${errorMessage}`, error instanceof Error ? error.stack : '');
-        
+        this.logger.error(
+          `❌ Google login failed: ${errorMessage}`,
+          error instanceof Error ? error.stack : '',
+        );
+
         if (error instanceof UnauthorizedException) {
           throw error;
         }
-        
+
         throw new InternalServerErrorException('Google login failed. Please try again.');
       } finally {
         span.end();
@@ -1469,7 +1517,7 @@ export class AuthService {
   /**
    * Login with Facebook Access Token
    * Validates token, finds or creates user, generates JWT tokens
-   * 
+   *
    * @param dto - Facebook login DTO containing access token
    * @returns JWT tokens and user data
    */
@@ -1481,7 +1529,7 @@ export class AuthService {
       try {
         // 1. Validate Facebook access token with OAuth service
         const oauthUser = await this.oauthService.validateFacebookToken(dto.accessToken);
-        
+
         span.setAttribute('oauth.provider', 'facebook');
         span.setAttribute('user.email', oauthUser.email);
         this.logger.log(`Facebook token validated for user: ${oauthUser.email}`);
@@ -1536,13 +1584,131 @@ export class AuthService {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
         span.recordException(error instanceof Error ? error : new Error(String(error)));
-        this.logger.error(`❌ Facebook login failed: ${errorMessage}`, error instanceof Error ? error.stack : '');
-        
+        this.logger.error(
+          `❌ Facebook login failed: ${errorMessage}`,
+          error instanceof Error ? error.stack : '',
+        );
+
         if (error instanceof UnauthorizedException) {
           throw error;
         }
-        
+
         throw new InternalServerErrorException('Facebook login failed. Please try again.');
+      } finally {
+        span.end();
+      }
+    });
+  }
+
+  /**
+   * Firebase Sync - Exchange Firebase ID token for backend JWT
+   * Used when frontend handles Google OAuth through Firebase SDK
+   *
+   * @param dto - Firebase sync DTO containing ID token
+   * @param res - Express response object for setting cookies
+   * @returns JWT tokens and user data
+   */
+  async firebaseSync(dto: { idToken: string; deviceInfo?: any }, res?: Response) {
+    return this.tracer.startActiveSpan('AuthService.firebaseSync', async span => {
+      this.logger.log('🔥 Firebase sync initiated');
+
+      try {
+        // 1. Verify Firebase ID token
+        let decodedToken: admin.auth.DecodedIdToken;
+        try {
+          decodedToken = await admin.auth().verifyIdToken(dto.idToken);
+        } catch (error) {
+          this.logger.error('Firebase token verification failed:', error);
+          throw new UnauthorizedException('Invalid or expired Firebase ID token');
+        }
+
+        span.setAttribute('firebase.uid', decodedToken.uid);
+        span.setAttribute('user.email', decodedToken.email || '');
+        this.logger.log(`Firebase token verified for user: ${decodedToken.email}`);
+
+        // 2. Extract user information from Firebase token
+        const firebaseUser: OAuthUserData = {
+          provider: 'google',
+          id: decodedToken.uid,
+          email: decodedToken.email || '',
+          firstName: decodedToken.name?.split(' ')[0] || '',
+          lastName: decodedToken.name?.split(' ').slice(1).join(' ') || '',
+          imageUrl: decodedToken.picture || '',
+          emailVerified: decodedToken.email_verified || false,
+        };
+
+        // 3. Find or create user in database
+        const { user, isNewUser } = await this.findOrCreateOAuthUser(firebaseUser);
+        span.setAttribute('user.id', user.id);
+        span.setAttribute('user.isNew', isNewUser);
+
+        // 4. Generate JWT tokens
+        const accessToken = this.jwtService.sign({
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        });
+
+        const refreshToken = this.jwtService.sign(
+          {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+          },
+          { expiresIn: '30d' },
+        );
+
+        // 5. Set HTTP-only cookie for web applications
+        if (res) {
+          res.cookie('auth-token', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          });
+          this.logger.log('Auth cookie set successfully');
+        }
+
+        // 6. Record metrics
+        if (isNewUser) {
+          this.prometheusService.recordUserRegistration();
+        }
+
+        span.addEvent('Firebase sync successful');
+        span.setStatus({ code: SpanStatusCode.OK });
+        this.logger.log(`✅ Firebase sync successful for user: ${user.id}`);
+
+        return {
+          success: true,
+          message: 'Firebase authentication synchronized',
+          accessToken,
+          refreshToken,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl,
+            role: user.role,
+            emailVerified: user.emailVerified,
+            oauthProvider: user.oauthProvider,
+          },
+          isNewUser,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
+        this.logger.error(
+          `❌ Firebase sync failed: ${errorMessage}`,
+          error instanceof Error ? error.stack : '',
+        );
+
+        if (error instanceof UnauthorizedException) {
+          throw error;
+        }
+
+        throw new InternalServerErrorException('Firebase sync failed. Please try again.');
       } finally {
         span.end();
       }
@@ -1552,12 +1718,20 @@ export class AuthService {
   /**
    * Find existing user or create new user from OAuth data
    * Handles email conflicts and account linking logic
-   * 
+   *
    * @param oauthUser - Normalized OAuth user data
    * @returns User and isNewUser flag
    */
   private async findOrCreateOAuthUser(oauthUser: OAuthUserData) {
-    const { provider, id: providerId, email, firstName, lastName, imageUrl, emailVerified } = oauthUser;
+    const {
+      provider,
+      id: providerId,
+      email,
+      firstName,
+      lastName,
+      imageUrl,
+      emailVerified,
+    } = oauthUser;
 
     // 1. Check if user exists with this OAuth provider ID
     const existingByProviderId = await this.prisma.user.findFirst({
@@ -1597,7 +1771,10 @@ export class AuthService {
     this.logger.log(`Creating new user from ${provider} OAuth data`);
 
     // Generate unique username from email
-    const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const baseUsername = email
+      .split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
     let username = baseUsername;
     let counter = 1;
 
@@ -1630,7 +1807,7 @@ export class AuthService {
 
   /**
    * Link Google account to existing authenticated user
-   * 
+   *
    * @param userId - Current user ID
    * @param idToken - Google ID token
    */
@@ -1684,7 +1861,7 @@ export class AuthService {
 
   /**
    * Link Facebook account to existing authenticated user
-   * 
+   *
    * @param userId - Current user ID
    * @param accessToken - Facebook access token
    */
@@ -1739,7 +1916,7 @@ export class AuthService {
   /**
    * Unlink social account from user
    * Requires user to have password or another OAuth provider
-   * 
+   *
    * @param userId - Current user ID
    * @param provider - Provider to unlink ('google' | 'facebook')
    */
@@ -1795,7 +1972,7 @@ export class AuthService {
   /**
    * Get OAuth status for current user
    * Returns linked providers and authentication options
-   * 
+   *
    * @param userId - Current user ID
    */
   async getOAuthStatus(userId: string) {
@@ -1844,5 +2021,4 @@ export class AuthService {
       },
     };
   }
-
 }

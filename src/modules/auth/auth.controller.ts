@@ -52,6 +52,7 @@ import {
   GoogleLinkResponseDto,
   GoogleUnlinkResponseDto,
 } from './dto/google-link.dto';
+import { FirebaseSyncDto } from './dto/firebase-sync.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuditLog } from '../../common/decorators/audit-log.decorator';
@@ -1729,7 +1730,132 @@ import { GoogleLogin } from '@react-oauth/google';
   }
 
   /**
-   * 🔐 FACEBOOK LOGIN
+   * � FIREBASE SYNC (Google OAuth via Firebase)
+   * ============================================
+   * Synchronize Firebase authentication with backend JWT tokens.
+   * Used when frontend handles Google OAuth through Firebase SDK.
+   *
+   * Flow:
+   * 1. User clicks "Sign in with Google" in frontend
+   * 2. Frontend redirects to Google OAuth screen
+   * 3. User authenticates with Google
+   * 4. Google redirects back with auth code
+   * 5. Frontend exchanges code for Firebase ID token
+   * 6. Frontend sends Firebase ID token to this endpoint
+   * 7. Backend verifies token with Firebase Admin SDK
+   * 8. Backend finds/creates user and generates JWT tokens
+   * 9. Backend sets auth-token cookie and returns user data
+   * 10. Frontend redirects to dashboard
+   *
+   * Security:
+   * - Rate limited: 10 requests per 5 minutes per IP
+   * - Token validated with Firebase Admin SDK (prevents forgery)
+   * - Email auto-verified (Firebase verifies via Google)
+   * - Sets secure HTTP-only cookie for web apps
+   */
+  @Post('firebase-sync')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 300000 } }) // 10 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.LOGIN,
+    entity: 'User',
+    getEntityId: args => 'firebase_google_oauth',
+  })
+  @ApiOperation({
+    summary: '🔥 Sync Firebase Authentication',
+    description: `
+**Firebase Google OAuth Sync**
+
+Exchange Firebase ID token (from Google OAuth) for backend JWT tokens.
+
+**Frontend Integration:**
+\`\`\`typescript
+// React/Next.js with Firebase
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth } from './firebase-config';
+
+const handleGoogleLogin = async () => {
+  const provider = new GoogleAuthProvider();
+  const result = await signInWithPopup(auth, provider);
+  
+  // Get Firebase ID token
+  const idToken = await result.user.getIdToken();
+  
+  // Send to backend
+  const response = await fetch('/api/v1/auth/firebase-sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', // Important: Include cookies
+    body: JSON.stringify({ idToken }),
+  });
+  
+  const data = await response.json();
+  // Cookie is set automatically, store access token
+  localStorage.setItem('accessToken', data.accessToken);
+  window.location.href = '/dashboard';
+};
+\`\`\`
+
+**Benefits:**
+- ✅ Leverages existing Firebase setup
+- ✅ Seamless Google OAuth integration
+- ✅ Automatic cookie management
+- ✅ Email auto-verified by Google
+- ✅ Single sign-on across devices
+`,
+  })
+  @ApiBody({ type: FirebaseSyncDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Firebase authentication synced successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Firebase authentication synchronized',
+        accessToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwMjA0NjQwMH0.abc123...',
+        refreshToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImVtYWlsIjoiam9obi5kb2VAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3MDE5NjAwMDAsImV4cCI6MTcwNDU1MjAwMH0.xyz789...',
+        user: {
+          id: 'user_abc123xyz',
+          email: 'john.doe@gmail.com',
+          firstName: 'John',
+          lastName: 'Doe',
+          imageUrl: 'https://lh3.googleusercontent.com/a/...',
+          role: 'USER',
+          emailVerified: true,
+          oauthProvider: ['google'],
+        },
+        isNewUser: false,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired Firebase ID token',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid Firebase ID token',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token validation failed with Firebase',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Rate limit exceeded (10 requests per 5 minutes)',
+  })
+  async firebaseSync(@Body() dto: FirebaseSyncDto, @Request() req: any) {
+    return this.authService.firebaseSync(dto, req.res);
+  }
+
+  /**
+   * �🔐 FACEBOOK LOGIN
    * =================
    * Authenticate user with Facebook Access Token
    *
