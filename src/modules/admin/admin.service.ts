@@ -14,56 +14,188 @@ export class AdminService {
   ) {}
 
   async getDashboardStats() {
+    const now = new Date();
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get current month data
     const [
-      totalUsers,
-      totalDevices,
       totalOrders,
       totalProducts,
-      activeUsers,
-      onlineDevices,
       pendingOrders,
-      recentOrders,
+      currentMonthRevenue,
+      currentMonthOrders,
+      currentMonthProducts,
     ] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.device.count(),
       this.prisma.order.count(),
       this.prisma.product.count(),
-      this.prisma.user.count({ where: { isActive: true } }),
-      this.prisma.device.count({ where: { status: 'ONLINE' } }),
       this.prisma.order.count({ where: { status: 'PENDING' } }),
-      this.prisma.order.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { user: { select: { firstName: true, lastName: true } } },
+      this.prisma.order.aggregate({
+        where: {
+          status: 'DELIVERED',
+          createdAt: { gte: currentMonthStart },
+        },
+        _sum: { total: true },
+      }),
+      this.prisma.order.count({
+        where: { createdAt: { gte: currentMonthStart } },
+      }),
+      this.prisma.product.count({
+        where: { createdAt: { gte: currentMonthStart } },
       }),
     ]);
 
-    const totalRevenue = await this.prisma.order.aggregate({
-      where: { status: 'COMPLETED' as any },
+    // Get last month data for comparison
+    const [lastMonthRevenue, lastMonthOrders] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          status: 'DELIVERED',
+          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+        },
+        _sum: { total: true },
+      }),
+      this.prisma.order.count({
+        where: {
+          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+        },
+      }),
+    ]);
+
+    // Calculate total sales (sum of all delivered orders)
+    const totalSalesAgg = await this.prisma.order.aggregate({
+      where: { status: 'DELIVERED' },
       _sum: { total: true },
     });
 
+    // Get last month total sales for comparison
+    const lastMonthTotalSales = Number(lastMonthRevenue._sum?.total || 0);
+    const currentMonthTotalRevenue = Number(currentMonthRevenue._sum?.total || 0);
+    const totalSales = Number(totalSalesAgg._sum?.total || 0);
+
+    // Calculate percentages
+    const salesChange =
+      lastMonthTotalSales > 0
+        ? ((currentMonthTotalRevenue - lastMonthTotalSales) / lastMonthTotalSales) * 100
+        : 0;
+
+    const ordersChange =
+      lastMonthOrders > 0 ? ((currentMonthOrders - lastMonthOrders) / lastMonthOrders) * 100 : 0;
+
+    const revenueChange =
+      lastMonthTotalSales > 0
+        ? ((currentMonthTotalRevenue - lastMonthTotalSales) / lastMonthTotalSales) * 100
+        : 0;
+
+    // Get weekly sales data (last 7 days)
+    const weeklySales = await this.getWeeklySales();
+
+    // Get monthly revenue trend (last 6 months)
+    const revenueTrend = await this.getRevenueTrend();
+
     return {
-      users: {
-        total: totalUsers,
-        active: activeUsers,
+      alert: {
+        pendingOrders,
+        message:
+          pendingOrders > 0
+            ? `You have ${pendingOrders} pending order${pendingOrders > 1 ? 's' : ''} awaiting confirmation. Review and process them to keep your customers satisfied.`
+            : 'All orders are up to date!',
       },
-      devices: {
-        total: totalDevices,
-        online: onlineDevices,
+      metrics: {
+        totalSales: {
+          value: totalSales,
+          currency: 'PHP',
+          change: parseFloat(salesChange.toFixed(1)),
+          changeLabel: 'vs. last month',
+        },
+        orders: {
+          value: totalOrders,
+          change: parseFloat(ordersChange.toFixed(1)),
+          changeLabel: 'vs. last month',
+        },
+        products: {
+          value: totalProducts,
+          change: currentMonthProducts,
+          changeLabel: 'new this month',
+        },
+        revenue: {
+          value: currentMonthTotalRevenue,
+          currency: 'PHP',
+          change: parseFloat(revenueChange.toFixed(1)),
+          changeLabel: 'vs. last month',
+        },
       },
-      orders: {
-        total: totalOrders,
-        pending: pendingOrders,
-        recent: recentOrders,
-      },
-      products: {
-        total: totalProducts,
-      },
-      revenue: {
-        total: totalRevenue._sum?.total || 0,
+      charts: {
+        weeklySales,
+        revenueTrend,
       },
     };
+  }
+
+  private async getWeeklySales() {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+
+    const dailySales = await this.prisma.order.groupBy({
+      by: ['createdAt'],
+      where: {
+        status: 'DELIVERED',
+        createdAt: { gte: sevenDaysAgo },
+      },
+      _sum: { total: true },
+    });
+
+    // Group by day and format
+    const salesByDay = new Map<string, number>();
+    dailySales.forEach(sale => {
+      const day = sale.createdAt.toISOString().split('T')[0];
+      const current = salesByDay.get(day) || 0;
+      salesByDay.set(day, current + Number(sale._sum.total || 0));
+    });
+
+    // Create array for last 7 days
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      const dateKey = date.toISOString().split('T')[0];
+      data.push({
+        date: dateKey,
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        sales: salesByDay.get(dateKey) || 0,
+      });
+    }
+
+    return data;
+  }
+
+  private async getRevenueTrend() {
+    const now = new Date();
+    const data = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+      const revenue = await this.prisma.order.aggregate({
+        where: {
+          status: 'DELIVERED',
+          createdAt: {
+            gte: monthDate,
+            lt: nextMonth,
+          },
+        },
+        _sum: { total: true },
+      });
+
+      data.push({
+        month: monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        revenue: Number(revenue._sum?.total || 0),
+      });
+    }
+
+    return data;
   }
 
   async getAllUsers(query: any) {
