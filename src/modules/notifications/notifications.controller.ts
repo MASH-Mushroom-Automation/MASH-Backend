@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
@@ -46,7 +47,7 @@ import * as nodemailer from 'nodemailer';
 export class NotificationsController {
   constructor(
     private readonly notificationsService: NotificationsService,
-    private readonly notificationQueue: NotificationQueueService,
+    @Optional() private readonly notificationQueue: NotificationQueueService | null,
     private readonly pushNotificationService: PushNotificationService,
     private readonly smsService: SmsService,
     private readonly communicationHubService: CommunicationHubService,

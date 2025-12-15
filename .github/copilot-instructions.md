@@ -2,6 +2,35 @@
 
 **NestJS 10 + Prisma 5 + PostgreSQL 15 | E-commerce + IoT Platform**
 
+## 🚀 Local Development with Frontend
+
+**Run backend on PORT 4000 to avoid conflict with Next.js frontend (port 3000):**
+
+### Terminal 1: Backend
+```bash
+cd MASH-Backend
+# Create .env from .env.example and set PORT=4000
+npm install --legacy-peer-deps  # REQUIRED for Windows
+npx prisma generate             # REQUIRED before first run
+npm run start:dev               # http://localhost:4000
+```
+
+### Terminal 2: Frontend
+```bash
+cd MASH-Ecommerce-Web
+npm install && npm run dev      # http://localhost:3000
+```
+
+### Backend .env (minimum for local dev)
+```env
+PORT=4000
+NODE_ENV=development
+DATABASE_URL="postgresql://user:pass@host/db?schema=public"
+JWT_SECRET="your-secret-key-32-chars-minimum"
+JWT_EXPIRATION=1d
+CORS_ORIGINS=http://localhost:3000
+```
+
 ## Critical Setup (Windows)
 
 ```bash
@@ -83,10 +112,26 @@ src/modules/feature/
 
 ## Troubleshooting
 
-- Port 3000 in use: netstat -ano | findstr :3000 → taskkill /PID <PID> /F
-- Cannot find module: Clean install (see top)
-- Prisma out of sync: npx prisma generate
-- Redis errors: App continues without Redis
+- **Port 4000 in use**: `netstat -ano | findstr :4000` → `taskkill /PID <PID> /F`
+- **Cannot find module**: Clean install (see top)
+- **Prisma out of sync**: `npx prisma generate`
+- **Redis errors**: App continues without Redis
+- **ERR_REQUIRE_ESM with uuid**: Use `crypto.randomUUID()` instead of uuid package (v9+ is ESM-only)
+
+## ESM/CommonJS Compatibility
+
+**IMPORTANT**: This project uses CommonJS. Avoid ESM-only packages:
+- ❌ `uuid` v9+ (ESM-only) → ✅ Use `crypto.randomUUID()` 
+- ❌ `nanoid` v4+ → ✅ Use `nanoid@3.x` or `crypto.randomBytes()`
+
+Example fix for uuid:
+```typescript
+// ❌ Before (breaks with uuid v9+)
+import { v4 as uuidv4 } from 'uuid';
+
+// ✅ After (Node.js built-in)
+import { randomUUID } from 'crypto';
+```
 
 ## Key Docs
 

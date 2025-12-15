@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -14,12 +15,18 @@ import { StartExportDto } from '../dto/import-export.dto';
 @Injectable()
 export class ExportService {
   private readonly logger = new Logger(ExportService.name);
+  private readonly queueAvailable: boolean;
 
   constructor(
-    @InjectQueue('export') private exportQueue: Queue,
+    @Optional() @InjectQueue('export') private exportQueue: Queue | null,
     private prisma: PrismaService,
     private fileStorage: FileStorageService,
-  ) {}
+  ) {
+    this.queueAvailable = !!exportQueue;
+    if (!this.queueAvailable) {
+      this.logger.warn('⚠️ Export queue not available - background processing disabled');
+    }
+  }
 
   /**
    * Create export job
@@ -65,28 +72,33 @@ export class ExportService {
         },
       });
 
-      // Queue job for background processing
-      await this.exportQueue.add(
-        'process-export',
-        {
-          jobId: job.id,
-          entityType: dto.entityType,
-          fileFormat: dto.fileFormat,
-          filters: dto.filters || {},
-          options: dto.options || {},
-          userId,
-        },
-        {
-          priority: this.getPriorityValue(dto.priority),
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 5000,
+      // Queue job for background processing (if Redis available)
+      if (this.queueAvailable && this.exportQueue) {
+        await this.exportQueue.add(
+          'process-export',
+          {
+            jobId: job.id,
+            entityType: dto.entityType,
+            fileFormat: dto.fileFormat,
+            filters: dto.filters || {},
+            options: dto.options || {},
+            userId,
           },
-        },
-      );
-
-      this.logger.log(`Export job ${job.id} created and queued successfully`);
+          {
+            priority: this.getPriorityValue(dto.priority),
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 5000,
+            },
+          },
+        );
+        this.logger.log(`Export job ${job.id} created and queued successfully`);
+      } else {
+        // Redis not available - job will remain in QUEUED status
+        this.logger.warn(`Export job ${job.id} created but cannot be processed - Redis queue not available`);
+        this.logger.warn('Install Redis locally or enable cloud Redis for background job processing');
+      }
 
       return {
         jobId: job.id,

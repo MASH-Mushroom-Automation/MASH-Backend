@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { AlertRule, AlertCategory, AlertPriority, Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -11,11 +11,17 @@ import { NotificationQueueService } from '../../queues/services/notification-que
 @Injectable()
 export class AlertEngineService {
   private readonly logger = new Logger(AlertEngineService.name);
+  private readonly queueAvailable: boolean;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationQueue: NotificationQueueService,
-  ) {}
+    @Optional() private readonly notificationQueue: NotificationQueueService | null,
+  ) {
+    this.queueAvailable = !!notificationQueue;
+    if (!this.queueAvailable) {
+      this.logger.warn('⚠️ Notification queue not available - alerts will be logged but not sent');
+    }
+  }
 
   /**
    * Evaluate an event against all active rules
@@ -299,19 +305,24 @@ export class AlertEngineService {
         return;
       }
 
-      // Queue email notifications
-      await this.notificationQueue.sendEmail({
-        to: emailRecipients,
-        subject: `🚨 ${this.getPriorityEmoji(alert.priority)} Alert: ${alert.title}`,
-        body: alert.message,
-        html: this.formatAlertEmail(alert, rule),
-        alertId: alert.id,
-        priority: alert.priority === 'CRITICAL' ? 'high' : 'normal',
-      });
-
-      this.logger.log(
-        `Queued email notifications for alert ${alert.id} to ${emailRecipients.length} recipients`,
-      );
+      // Queue email notifications (if queue is available)
+      if (this.queueAvailable && this.notificationQueue) {
+        await this.notificationQueue.sendEmail({
+          to: emailRecipients,
+          subject: `🚨 ${this.getPriorityEmoji(alert.priority)} Alert: ${alert.title}`,
+          body: alert.message,
+          html: this.formatAlertEmail(alert, rule),
+          alertId: alert.id,
+          priority: alert.priority === 'CRITICAL' ? 'high' : 'normal',
+        });
+        this.logger.log(
+          `Queued email notifications for alert ${alert.id} to ${emailRecipients.length} recipients`,
+        );
+      } else {
+        this.logger.warn(
+          `Alert ${alert.id} not sent - notification queue unavailable. Would have sent to: ${emailRecipients.join(', ')}`,
+        );
+      }
     } catch (error) {
       this.logger.error(`Failed to queue notifications: ${error.message}`);
       throw error;

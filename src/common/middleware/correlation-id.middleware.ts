@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 /**
  * Correlation ID Middleware
@@ -11,6 +11,9 @@ import { v4 as uuidv4 } from 'uuid';
  * - Adds correlation ID to response headers
  * - Preserves existing correlation ID from headers
  * - Enables request tracking across services
+ * 
+ * Note: Uses Node.js built-in crypto.randomUUID() instead of uuid package
+ * to avoid ESM/CommonJS compatibility issues with uuid v9+
  */
 
 @Injectable()
@@ -21,7 +24,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
       (req.headers['x-correlation-id'] as string) || (req.headers['x-request-id'] as string);
 
     // Generate new correlation ID or use existing one
-    const correlationId = existingCorrelationId || uuidv4();
+    const correlationId = existingCorrelationId || randomUUID();
 
     // Attach correlation ID to request object
     req['correlationId'] = correlationId;

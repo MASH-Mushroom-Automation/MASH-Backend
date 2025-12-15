@@ -5,7 +5,7 @@
  * Creates import jobs and queues them for background processing.
  */
 
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../../../database/prisma.service';
@@ -47,9 +47,10 @@ export interface ImportJobResult {
 @Injectable()
 export class ImportService {
   private readonly logger = new Logger(ImportService.name);
+  private readonly queueAvailable: boolean;
 
   constructor(
-    @InjectQueue('import') private importQueue: Queue,
+    @Optional() @InjectQueue('import') private importQueue: Queue | null,
     private readonly prisma: PrismaService,
     private readonly fileStorage: FileStorageService,
     private readonly validationService: ValidationService,
@@ -57,7 +58,12 @@ export class ImportService {
     private readonly productValidator: ProductImportValidator,
     private readonly userValidator: UserImportValidator,
     private readonly orderValidator: OrderImportValidator,
-  ) {}
+  ) {
+    this.queueAvailable = !!importQueue;
+    if (!this.queueAvailable) {
+      this.logger.warn('⚠️ Import queue not available - background processing disabled');
+    }
+  }
 
   /**
    * Upload and process import file
@@ -149,28 +155,33 @@ export class ImportService {
         ]);
       }
 
-      // 9. Queue job for background processing
-      await this.importQueue.add(
-        'process-import',
-        {
-          jobId: job.id,
-          entityType: dto.entityType,
-          fileKey,
-          fileFormat: dto.fileFormat,
-          validRecordsCount: validationResult.validRecords,
-          options: dto.options,
-        },
-        {
-          priority: this.getPriority(dto.priority),
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 1000,
+      // 9. Queue job for background processing (if Redis available)
+      if (this.queueAvailable && this.importQueue) {
+        await this.importQueue.add(
+          'process-import',
+          {
+            jobId: job.id,
+            entityType: dto.entityType,
+            fileKey,
+            fileFormat: dto.fileFormat,
+            validRecordsCount: validationResult.validRecords,
+            options: dto.options,
           },
-        },
-      );
-
-      this.logger.log(`Job queued for processing: ${job.id}`);
+          {
+            priority: this.getPriority(dto.priority),
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 1000,
+            },
+          },
+        );
+        this.logger.log(`Job queued for processing: ${job.id}`);
+      } else {
+        // Redis not available - job will remain in QUEUED status
+        this.logger.warn(`Job ${job.id} created but cannot be processed - Redis queue not available`);
+        this.logger.warn('Install Redis locally or enable cloud Redis for background job processing');
+      }
 
       // 10. Calculate estimated time (based on 1000 records/30s = ~30ms per record)
       const estimatedTimeMs = validationResult.validRecords * 30;

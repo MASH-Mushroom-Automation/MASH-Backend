@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Optional } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiExcludeController } from '@nestjs/swagger';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
 import { EmailService } from './services/email.service';
@@ -8,7 +8,7 @@ import { EmailService } from './services/email.service';
 @Controller('test-notifications')
 export class TestNotificationsController {
   constructor(
-    private readonly notificationQueue: NotificationQueueService,
+    @Optional() private readonly notificationQueue: NotificationQueueService | null,
     private readonly emailService: EmailService,
   ) {}
 
@@ -20,6 +20,13 @@ export class TestNotificationsController {
   @ApiOperation({ summary: 'Send test SMS via queue' })
   @ApiResponse({ status: 200, description: 'Test SMS queued' })
   async testSms(@Body() dto: { to: string; message?: string }) {
+    if (!this.notificationQueue) {
+      return {
+        success: false,
+        error: 'Queue service not available - Redis not configured',
+        timestamp: new Date().toISOString(),
+      };
+    }
     try {
       await this.notificationQueue.sendSms({
         to: dto.to,
