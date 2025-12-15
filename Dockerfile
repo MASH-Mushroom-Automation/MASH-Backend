@@ -1,7 +1,17 @@
 # Multi-stage Docker build for MASH Backend
-# Stage 1: Build stage
-# Updated: Fixes Railway deployment by preventing lifecycle scripts in production
+# Stage 1: Build stage (with Sharp pre-built for Alpine/musl)
+# Updated: Fixes Railway deployment by building Sharp in builder stage
 FROM node:25-alpine AS builder
+
+# Install build dependencies needed for Sharp and native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    libc-dev \
+    vips-dev \
+    fftw-dev
 
 # Set working directory
 WORKDIR /app
@@ -12,13 +22,17 @@ COPY package-lock.json ./
 COPY prisma ./prisma/
 
 # Install ALL dependencies (including dev dependencies needed for build)
-# Use `npm install` instead of `npm ci` because CI can fail when
-# package.json and package-lock.json are out of sync (common in CI builds).
-# `npm install --legacy-peer-deps` is more tolerant and works in the builder.
 # CRITICAL FIX: Set Prisma binary targets BEFORE install to avoid download during postinstall
+# Sharp is built here with native Alpine dependencies available
 ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
 ENV PRISMA_CLI_BINARY_TARGETS=linux-musl,linux-musl-openssl-3.0.x
+ENV npm_config_platform=linux
+ENV npm_config_arch=x64
+ENV npm_config_libc=musl
 RUN npm install --legacy-peer-deps && npm cache clean --force
+
+# Verify Sharp works in builder
+RUN node -e "const sharp = require('sharp'); console.log('Builder Sharp version:', sharp.versions);"
 
 # Generate Prisma Client (this downloads engines if not already cached)
 # Add retry logic for Prisma engine downloads
@@ -38,20 +52,12 @@ RUN npm run build && \
 # Stage 2: Production stage
 FROM node:25-alpine AS production
 
-# Install ALL dependencies needed for Sharp (keep everything, don't delete)
-# Sharp requires vips runtime libraries and build tools must remain for npm rebuild
+# Install ONLY runtime dependencies for Sharp (vips runtime)
+# NO build tools needed since we copy pre-built node_modules from builder
 RUN apk add --no-cache \
     dumb-init \
     wget \
-    vips \
-    vips-dev \
-    fftw-dev \
-    build-base \
-    python3 \
-    gcc \
-    g++ \
-    make \
-    pkgconfig
+    vips
 
 # Create app user
 RUN addgroup -g 1001 -S appuser && adduser -S appuser -u 1001
@@ -59,43 +65,23 @@ RUN addgroup -g 1001 -S appuser && adduser -S appuser -u 1001
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files (for reference only, not for install)
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Set Prisma environment variables for Alpine Linux (musl)
-ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
-ENV PRISMA_CLI_BINARY_TARGETS=linux-musl,linux-musl-openssl-3.0.x
-
-# Install production dependencies and force Sharp to rebuild for Alpine Linux
-# Step 1: Install without scripts to avoid husky
-# Step 2: Remove any existing Sharp binaries
-# Step 3: Reinstall Sharp with correct platform flags
-# Step 4: Rebuild Sharp to ensure native bindings are correct
-RUN set -eux; \
-    # Use npm install in production image to tolerate minor lockfile drift
-    npm install --legacy-peer-deps --omit=dev --ignore-scripts || true; \
-    # Ensure sharp is rebuilt for musl (Alpine). Try install/rebuild with a fallback
-    rm -rf node_modules/sharp || true; \
-    (npm install --legacy-peer-deps --omit=dev sharp --verbose || npm install --legacy-peer-deps --omit=dev sharp) && \
-    npm rebuild sharp --platform=linux --arch=x64 --libc=musl --verbose || echo "WARNING: sharp rebuild failed, proceeding without explicit rebuild"; \
-    npm cache clean --force || true
-
-# Verify Sharp is installed correctly
-RUN node -e "const sharp = require('sharp'); console.log('Sharp version:', sharp.versions);" || \
-    (echo "ERROR: Sharp installation failed!" && exit 1)
+# Copy ALL node_modules from builder (includes pre-built Sharp for Alpine/musl)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built application from builder stage
-# Prisma client artifacts are generated in the builder (where dev deps are present).
-# We avoid running `npx prisma generate` in production because `prisma` CLI is a devDependency
-# and we install production deps with `--omit=dev --ignore-scripts` to prevent lifecycle scripts
-# (e.g. husky prepare). Instead copy the generated prisma artifacts from the builder.
 COPY --from=builder /app/dist ./dist
-# Copy full node_modules (built in builder) to preserve native modules like sharp
-COPY --from=builder /app/node_modules ./node_modules
-# Copy prisma artifacts specifically as well (defensive)
+
+# Copy prisma artifacts specifically (defensive)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Verify Sharp works in production stage
+RUN node -e "const sharp = require('sharp'); console.log('Production Sharp version:', sharp.versions);" || \
+    (echo "ERROR: Sharp installation failed in production stage!" && exit 1)
 
 # Copy public folder for static assets (email templates, images, etc.)
 COPY --from=builder /app/public ./public
