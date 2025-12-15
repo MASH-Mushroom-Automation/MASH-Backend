@@ -673,6 +673,75 @@ export class AdminService {
     };
   }
 
+  async getTopPerformingProducts(query: any = {}) {
+    const { limit = 10, orderBy = 'revenue' } = query;
+    const take = Math.min(parseInt(limit), 100); // Max 100 products
+
+    // Get order items grouped by product with aggregations
+    const productSales = await this.prisma.orderItem.groupBy({
+      by: ['productId'],
+      _sum: {
+        quantity: true,
+        total: true,
+      },
+      _count: {
+        id: true,
+      },
+      orderBy: orderBy === 'units' ? { _sum: { quantity: 'desc' } } : { _sum: { total: 'desc' } },
+      take,
+    });
+
+    // Get product details and stock for each product
+    const productIds = productSales.map(sale => sale.productId);
+    const products = await this.prisma.product.findMany({
+      where: {
+        id: { in: productIds },
+      },
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+        price: true,
+        images: true,
+      },
+    });
+
+    // Create a map for quick lookup
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    // Combine data
+    const topProducts = productSales
+      .map(sale => {
+        const product = productMap.get(sale.productId);
+        if (!product) return null;
+
+        // Extract first image from images array (it's stored as Json[])
+        const images = product.images as any[];
+        const imageUrl = images && images.length > 0 ? images[0] : null;
+
+        return {
+          productId: sale.productId,
+          productName: product.name,
+          unitsSold: sale._sum.quantity || 0,
+          stock: product.stock || 0,
+          revenue: Number(sale._sum.total || 0),
+          price: Number(product.price || 0),
+          imageUrl,
+          orderCount: sale._count.id,
+        };
+      })
+      .filter(item => item !== null);
+
+    return {
+      data: topProducts,
+      meta: {
+        total: topProducts.length,
+        limit: take,
+        orderBy,
+      },
+    };
+  }
+
   private async checkDatabaseConnection(): Promise<boolean> {
     try {
       await this.prisma.$queryRaw`SELECT 1`;

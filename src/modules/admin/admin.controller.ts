@@ -103,6 +103,13 @@ export class AdminController {
     return this.adminService.generateReport(type);
   }
 
+  @Get('products/top-performing')
+  @ApiOperation({ summary: 'Get top performing products by sales and revenue' })
+  @ApiResponse({ status: 200, description: 'Top performing products retrieved successfully' })
+  async getTopPerformingProducts(@Query() query: any) {
+    return this.adminService.getTopPerformingProducts(query);
+  }
+
   @Delete('cache/clear')
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Clear system cache' })
