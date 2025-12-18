@@ -122,7 +122,7 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "speakeasy": "^2.0.0",
-    "svix": "^1.76.1",
+    "svix": "^1.81.0",
     "twilio": "^5.10.3",
     "uuid": "^13.0.0",
     "winston": "^3.18.3",
