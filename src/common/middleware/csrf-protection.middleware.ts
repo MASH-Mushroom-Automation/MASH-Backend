@@ -73,6 +73,7 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     '/api/v1/auth/oauth/callback', // OAuth callback endpoints (state parameter for CSRF)
     '/api/v1/webhook', // Webhook endpoints (use signature verification instead)
     '/api/v1/iot/devices', // IoT device endpoints (use API key authentication instead)
+    '/api/v1/users/me/apply-as-seller', // Seller application (JWT protected, called from Next.js server)
   ];
 
   use(req: Request, res: Response, next: NextFunction) {
