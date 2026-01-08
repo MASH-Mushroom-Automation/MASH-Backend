@@ -457,7 +457,7 @@ You must submit ALL required documents for verification.
     description: 'Only USER role can apply to become a seller',
   })
   async applyAsSeller(@Request() req: any, @Body() dto: RequestRoleChangeDto) {
-    return this.requestQueueService.createRoleChangeRequest(req.user.userId, {
+    return this.requestQueueService.createRoleChangeRequest(req.user.id, {
       // User Info
       city: dto.city,
       region: dto.region,
