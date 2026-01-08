@@ -409,16 +409,16 @@ export class TestNotificationsController {
     @Body() dto: { oldEmail: string; newEmail: string; firstName?: string },
   ) {
     try {
-      await this.emailService.sendEmailChangedNotification(
-        dto.oldEmail,
-        dto.newEmail,
-        dto.firstName || 'Test User',
-        new Date().toLocaleString(),
-        '192.168.1.1',
-        'Chrome on Windows',
-        'Manila, Philippines',
-        `${process.env.APP_URL}/account`,
-      );
+      await this.emailService.sendEmailChangedNotification({
+        oldEmail: dto.oldEmail,
+        newEmail: dto.newEmail,
+        firstName: dto.firstName || 'Test User',
+        changeDate: new Date().toLocaleString(),
+        ipAddress: '192.168.1.1',
+        device: 'Chrome on Windows',
+        location: 'Manila, Philippines',
+        accountUrl: `${process.env.APP_URL}/account`,
+      });
 
       return {
         success: true,
@@ -447,16 +447,16 @@ export class TestNotificationsController {
       const requestDate = new Date();
       const deletionDate = new Date(requestDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
-      await this.emailService.sendAccountDeletionEmail(
-        dto.to,
-        dto.firstName || 'Test User',
-        requestDate.toLocaleString(),
-        deletionDate.toLocaleString(),
-        '30',
-        `${process.env.APP_URL}/cancel-deletion?token=test-cancel-token`,
-        `${process.env.APP_URL}/download-data?token=test-download-token`,
-        `${process.env.APP_URL}/feedback`,
-      );
+      await this.emailService.sendAccountDeletionEmail({
+        to: dto.to,
+        firstName: dto.firstName || 'Test User',
+        requestDate: requestDate.toLocaleString(),
+        deletionDate: deletionDate.toLocaleString(),
+        gracePeriod: '30',
+        cancelUrl: `${process.env.APP_URL}/cancel-deletion?token=test-cancel-token`,
+        downloadDataUrl: `${process.env.APP_URL}/download-data?token=test-download-token`,
+        feedbackUrl: `${process.env.APP_URL}/feedback`,
+      });
 
       return {
         success: true,

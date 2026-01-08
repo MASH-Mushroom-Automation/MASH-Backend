@@ -3,8 +3,6 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Logger,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 
 // 🔥 CRITICAL FIX: Use type placeholders instead of static import
@@ -39,7 +37,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     // This prevents the native engine DLL from loading during NestJS module initialization
 
     // Get query timeout from environment variable (default: 30 seconds)
-    const timeoutFromEnv = parseInt(process.env.DATABASE_QUERY_TIMEOUT_MS || '30000', 10);
+    const timeoutFromEnv = Number.parseInt(process.env.DATABASE_QUERY_TIMEOUT_MS || '30000', 10);
     this.queryTimeoutMs = timeoutFromEnv > 0 ? timeoutFromEnv : 30000;
 
     this.logger.log('📊 PrismaService constructor called - client will be created lazily');
@@ -448,7 +446,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Connection in progress - wait for it
-    if (this.isInitializing && this.initPromise) {
+    if (this.isInitializing && this.initPromise !== null) {
       return this.initPromise;
     }
 

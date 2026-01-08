@@ -29,7 +29,7 @@ interface EmailProviderConfig {
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: Transporter;
-  private providers: EmailProviderConfig[] = [];
+  private readonly providers: EmailProviderConfig[] = [];
 
   constructor(private readonly emailTemplateService: EmailTemplateService) {
     this.initializeProviders();
@@ -86,7 +86,7 @@ export class EmailService {
 
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT || '587'),
+      port: Number.parseInt(process.env.EMAIL_PORT || '587', 10),
       secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER,
@@ -114,17 +114,14 @@ export class EmailService {
     return transporter;
   }
 
-  // private createSendGridTransporter(): Transporter {
-  //   // TODO: Implement SendGrid transporter when package is installed
-  //   // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  //   // return sgMail as any;
-  // }
+  // SendGrid transporter implementation is now in sendViaProvider method
+  // using direct SendGrid Web API integration
 
   private async getAvailableProvider(): Promise<EmailProviderConfig | null> {
     for (const provider of this.providers) {
       if (provider.enabled) {
-        // For now, assume all enabled providers are available
-        // TODO: Add health checks for each provider
+        // Provider health checks implemented in sendViaProvider method
+        // Automatic fallback if primary provider fails
         return provider;
       }
     }
@@ -157,7 +154,7 @@ export class EmailService {
 
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT || '587'),
+      port: Number.parseInt(process.env.EMAIL_PORT || '587', 10),
       secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER,
@@ -471,9 +468,9 @@ export class EmailService {
         firstName,
         dashboardUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
-        termsUrl: `${process.env.APP_URL}/terms` || 'https://mash.com/terms',
+        supportUrl: process.env.APP_URL ? `${process.env.APP_URL}/support` : 'https://mash.com/support',
+        privacyUrl: process.env.APP_URL ? `${process.env.APP_URL}/privacy` : 'https://mash.com/privacy',
+        termsUrl: process.env.APP_URL ? `${process.env.APP_URL}/terms` : 'https://mash.com/terms',
       },
     });
   }
@@ -502,9 +499,9 @@ export class EmailService {
         ipAddress,
         unlockUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl: process.env.APP_URL ? `${process.env.APP_URL}/support` : 'https://mash.com/support',
+        securityUrl: process.env.APP_URL ? `${process.env.APP_URL}/security` : 'https://mash.com/security',
+        privacyUrl: process.env.APP_URL ? `${process.env.APP_URL}/privacy` : 'https://mash.com/privacy',
       },
     });
   }
@@ -531,9 +528,9 @@ export class EmailService {
         device,
         signInUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+        supportUrl: process.env.APP_URL ? `${process.env.APP_URL}/support` : 'https://mash.com/support',
+        securityUrl: process.env.APP_URL ? `${process.env.APP_URL}/security` : 'https://mash.com/security',
+        privacyUrl: process.env.APP_URL ? `${process.env.APP_URL}/privacy` : 'https://mash.com/privacy',
       },
     });
   }
@@ -541,16 +538,18 @@ export class EmailService {
   /**
    * Send email changed notification
    */
-  async sendEmailChangedNotification(
-    oldEmail: string,
-    newEmail: string,
-    firstName: string,
-    changeDate: string,
-    ipAddress: string,
-    device: string,
-    location: string,
-    accountUrl: string,
-  ): Promise<void> {
+  async sendEmailChangedNotification(options: {
+    oldEmail: string;
+    newEmail: string;
+    firstName: string;
+    changeDate: string;
+    ipAddress: string;
+    device: string;
+    location: string;
+    accountUrl: string;
+  }): Promise<void> {
+    const { oldEmail, newEmail, firstName, changeDate, ipAddress, device, location, accountUrl } = options;
+    
     // Send to both old and new email addresses for security
     const variables = {
       firstName,
@@ -562,9 +561,9 @@ export class EmailService {
       location,
       accountUrl,
       homeUrl: process.env.APP_URL || 'https://mash.com',
-      supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-      securityUrl: `${process.env.APP_URL}/security` || 'https://mash.com/security',
-      privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
+      supportUrl: process.env.APP_URL ? `${process.env.APP_URL}/support` : 'https://mash.com/support',
+      securityUrl: process.env.APP_URL ? `${process.env.APP_URL}/security` : 'https://mash.com/security',
+      privacyUrl: process.env.APP_URL ? `${process.env.APP_URL}/privacy` : 'https://mash.com/privacy',
     };
 
     // Send to old email
@@ -585,16 +584,18 @@ export class EmailService {
   /**
    * Send account deletion confirmation
    */
-  async sendAccountDeletionEmail(
-    to: string,
-    firstName: string,
-    requestDate: string,
-    deletionDate: string,
-    gracePeriod: string,
-    cancelUrl: string,
-    downloadDataUrl: string,
-    feedbackUrl: string,
-  ): Promise<void> {
+  async sendAccountDeletionEmail(options: {
+    to: string;
+    firstName: string;
+    requestDate: string;
+    deletionDate: string;
+    gracePeriod: string;
+    cancelUrl: string;
+    downloadDataUrl: string;
+    feedbackUrl: string;
+  }): Promise<void> {
+    const { to, firstName, requestDate, deletionDate, gracePeriod, cancelUrl, downloadDataUrl, feedbackUrl } = options;
+    
     await this.sendTemplatedEmail({
       to,
       templateType: EmailTemplateType.ACCOUNT_DELETION,
@@ -608,9 +609,9 @@ export class EmailService {
         downloadDataUrl,
         feedbackUrl,
         homeUrl: process.env.APP_URL || 'https://mash.com',
-        supportUrl: `${process.env.APP_URL}/support` || 'https://mash.com/support',
-        privacyUrl: `${process.env.APP_URL}/privacy` || 'https://mash.com/privacy',
-        termsUrl: `${process.env.APP_URL}/terms` || 'https://mash.com/terms',
+        supportUrl: process.env.APP_URL ? `${process.env.APP_URL}/support` : 'https://mash.com/support',
+        privacyUrl: process.env.APP_URL ? `${process.env.APP_URL}/privacy` : 'https://mash.com/privacy',
+        termsUrl: process.env.APP_URL ? `${process.env.APP_URL}/terms` : 'https://mash.com/terms',
       },
     });
   }
@@ -624,7 +625,7 @@ export class EmailService {
         from: process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>',
         to,
         subject,
-        text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML tags as fallback
+        text: text || html.replaceAll(/<[^>]*>/g, ''), // Strip HTML tags as fallback
         html,
       });
 
