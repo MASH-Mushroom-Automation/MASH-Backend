@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 import { EmailTemplateService, EmailTemplateType } from './email-template.service';
 
 export interface SendEmailOptions {
@@ -35,28 +36,31 @@ export class EmailService {
   }
 
   private initializeProviders() {
-    // Initialize SMTP provider (always available as fallback)
-    this.providers.push({
-      name: EmailProvider.SMTP,
-      enabled: true,
-      priority: 10,
-      transporter: this.createSMTPTransporter(),
-    });
-
-    // Initialize SendGrid provider if configured
+    // Initialize SendGrid provider if configured (HIGHEST PRIORITY)
     if (process.env.SENDGRID_API_KEY) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       this.providers.push({
         name: EmailProvider.SENDGRID,
         enabled: true,
-        priority: 1, // Higher priority than SMTP
-        // transporter: this.createSendGridTransporter(), // TODO: Implement when SendGrid package is installed
+        priority: 1, // Highest priority
       });
+      this.logger.log('✅ SendGrid email provider initialized (Priority 1)');
     }
+
+    // Initialize SMTP provider (fallback)
+    const smtpTransporter = this.createSMTPTransporter();
+    this.providers.push({
+      name: EmailProvider.SMTP,
+      enabled: !!process.env.EMAIL_HOST, // Only enabled if SMTP is configured
+      priority: 10, // Lower priority
+      transporter: smtpTransporter,
+    });
 
     // Sort providers by priority (lower number = higher priority)
     this.providers.sort((a, b) => a.priority - b.priority);
 
-    this.logger.log(`Initialized ${this.providers.length} email providers`);
+    const enabledProviders = this.providers.filter(p => p.enabled).map(p => p.name);
+    this.logger.log(`Initialized ${this.providers.length} email providers: ${enabledProviders.join(', ')}`);
   }
 
   private createSMTPTransporter(): Transporter {
@@ -200,11 +204,27 @@ export class EmailService {
 
       // Use provided subject or template subject
       const emailSubject = options.subject || subject;
+      const fromEmail = process.env.EMAIL_FROM || 'noreply@mash.com';
 
       // Send using the selected provider
-      if (provider.name === EmailProvider.SMTP && provider.transporter) {
+      if (provider.name === EmailProvider.SENDGRID) {
+        // SendGrid API implementation
+        const msg = {
+          to: options.to,
+          from: fromEmail,
+          subject: emailSubject,
+          text: text,
+          html: html,
+        };
+
+        await sgMail.send(msg);
+        this.logger.log(
+          `✅ Email sent successfully to ${options.to} via SendGrid`,
+        );
+      } else if (provider.name === EmailProvider.SMTP && provider.transporter) {
+        // SMTP implementation (fallback)
         const info = await provider.transporter.sendMail({
-          from: process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>',
+          from: fromEmail,
           to: options.to,
           subject: emailSubject,
           text: text,
@@ -212,18 +232,44 @@ export class EmailService {
         });
 
         this.logger.log(
-          `Email sent successfully to ${options.to} via ${provider.name}: ${info.messageId}`,
+          `✅ Email sent successfully to ${options.to} via SMTP: ${info.messageId}`,
         );
-      } else if (provider.name === EmailProvider.SENDGRID) {
-        // TODO: Implement SendGrid sending
-        this.logger.log(`SendGrid sending not yet implemented for ${options.to}`);
-        throw new Error('SendGrid provider not yet implemented');
       } else {
         throw new Error(`Unsupported provider: ${provider.name}`);
       }
     } catch (error) {
-      this.logger.error(`Failed to send email to ${options.to}:`, error);
-      throw error;
+      this.logger.error(`❌ Failed to send email to ${options.to}:`, error.message || error);
+      
+      // If SendGrid fails and SMTP is available, try failover
+      const providers = this.providers.filter(p => p.enabled);
+      if (providers.length > 1 && providers[0].name === EmailProvider.SENDGRID) {
+        this.logger.warn('🔄 Attempting failover to SMTP...');
+        try {
+          const smtpProvider = providers.find(p => p.name === EmailProvider.SMTP);
+          if (smtpProvider?.transporter) {
+            const { html, text, subject } = await this.emailTemplateService.renderTemplate(
+              options.templateType,
+              options.variables,
+            );
+            const emailSubject = options.subject || subject;
+            const fromEmail = process.env.EMAIL_FROM || 'noreply@mash.com';
+            
+            const info = await smtpProvider.transporter.sendMail({
+              from: fromEmail,
+              to: options.to,
+              subject: emailSubject,
+              text: text,
+              html: html,
+            });
+            this.logger.log(`✅ Email sent via SMTP failover: ${info.messageId}`);
+            return; // Success via failover
+          }
+        } catch (failoverError) {
+          this.logger.error('❌ SMTP failover also failed:', failoverError.message);
+        }
+      }
+      
+      throw error; // Propagate original error
     }
   }
 

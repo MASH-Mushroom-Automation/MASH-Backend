@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Address Changed</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .info-box {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        .info-box p {
+            margin: 10px 0;
+            color: #0c5460;
+        }
+        .change-details {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .change-details p {
+            margin: 10px 0;
+            font-size: 15px;
+        }
+        .change-details strong {
+            color: #667eea;
+        }
+        .email-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .email-item {
+            padding: 15px 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin: 0 10px;
+            flex: 1;
+            text-align: center;
+        }
+        .email-item.old {
+            border: 2px solid #dc3545;
+        }
+        .email-item.new {
+            border: 2px solid #28a745;
+        }
+        .email-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .email-address {
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .arrow {
+            font-size: 24px;
+            color: #667eea;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .alert-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .alert-box p {
+            margin: 5px 0;
+            color: #721c24;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning-box p {
+            margin: 5px 0;
+            color: #856404;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer-links {
+            margin: 15px 0;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .email-box {
+                flex-direction: column;
+            }
+            .arrow {
+                transform: rotate(90deg);
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">📧</div>
+            <h1>Email Address Changed</h1>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <h3>✓ Your Email Address Has Been Updated</h3>
+                <p>
+                    This is a confirmation that your primary email address for your MASH 
+                    account has been successfully changed.
+                </p>
+            </div>
+            
+            <p style="font-size: 16px;">
+                Hello {{firstName}},
+            </p>
+            
+            <p>
+                Your MASH account email address has been updated. Here's what changed:
+            </p>
+
+            <div class="email-box">
+                <div class="email-item old">
+                    <div class="email-label" style="color: #dc3545;">Previous Email</div>
+                    <div class="email-address">{{oldEmail}}</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="email-item new">
+                    <div class="email-label" style="color: #28a745;">New Email</div>
+                    <div class="email-address">{{newEmail}}</div>
+                </div>
+            </div>
+
+            <div class="change-details">
+                <p><strong>📊 Change Details:</strong></p>
+                <p>Changed On: {{changeDate}}</p>
+                <p>IP Address: {{ipAddress}}</p>
+                <p>Device: {{device}}</p>
+                <p>Location: {{location}}</p>
+            </div>
+
+            <div class="warning-box">
+                <p><strong>⚠️ Important Notice:</strong></p>
+                <p>
+                    From now on, use <strong>{{newEmail}}</strong> to sign in to your MASH account. 
+                    Your old email address will no longer work for authentication.
+                </p>
+            </div>
+
+            <p>
+                All future notifications and communications will be sent to your new email address. 
+                Make sure you have access to this inbox.
+            </p>
+
+            <div style="text-align: center;">
+                <a href="{{accountUrl}}" class="button">
+                    👤 View Account Settings
+                </a>
+            </div>
+
+            <div class="info-box">
+                <h3>📝 What This Means:</h3>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Your login email is now <strong>{{newEmail}}</strong></li>
+                    <li>All notifications will be sent to your new email</li>
+                    <li>Password reset links will go to your new email</li>
+                    <li>Your account security remains unchanged</li>
+                    <li>Your devices and settings are not affected</li>
+                </ul>
+            </div>
+
+            <div class="alert-box">
+                <p><strong>🚨 Didn't Make This Change?</strong></p>
+                <p>
+                    If you didn't authorize this email change, your account may have been compromised. 
+                    Take immediate action:
+                </p>
+                <ol style="margin: 10px 0; padding-left: 20px;">
+                    <li>Contact our security team at <strong>security@mash.com</strong> immediately</li>
+                    <li>Try to access your account and change your password</li>
+                    <li>Review your recent account activity</li>
+                    <li>Enable two-factor authentication if not already enabled</li>
+                </ol>
+                <p style="margin-top: 10px;">
+                    <strong>Emergency Support:</strong> Call our 24/7 hotline or email security@mash.com
+                </p>
+            </div>
+
+            <p style="margin-top: 30px;">
+                If you need any assistance or have questions about this change, our support 
+                team is here to help.
+            </p>
+
+            <p style="color: #6c757d; font-size: 14px; margin-top: 20px;">
+                Best regards,<br>
+                <strong>The MASH Team</strong>
+            </p>
+
+            <p style="color: #999; font-size: 12px; margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                <strong>Note:</strong> This notification was sent to both your old email address 
+                ({{oldEmail}}) and your new email address ({{newEmail}}) for security purposes.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 MASH - Mushroom Automation Smart Home. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="{{homeUrl}}">Home</a> |
+                <a href="{{supportUrl}}">Support</a> |
+                <a href="{{securityUrl}}">Security Center</a> |
+                <a href="{{privacyUrl}}">Privacy Policy</a>
+            </div>
+            <p style="margin-top: 15px;">
+                Follow us: 
+                <a href="#" style="margin: 0 5px;">Facebook</a> |
+                <a href="#" style="margin: 0 5px;">Twitter</a> |
+                <a href="#" style="margin: 0 5px;">Instagram</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

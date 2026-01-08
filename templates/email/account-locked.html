@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Security Alert</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .alert-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .alert-box h3 {
+            margin-top: 0;
+            color: #721c24;
+        }
+        .alert-box p {
+            margin: 10px 0;
+            color: #721c24;
+        }
+        .info-box {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .info-box p {
+            margin: 5px 0;
+            color: #0c5460;
+        }
+        .reason {
+            font-size: 16px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .reason strong {
+            color: #dc3545;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: #ffffff !important;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .steps {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .steps h4 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .steps li {
+            padding: 8px 0;
+        }
+        .security-tips {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .security-tips h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer-links {
+            margin: 15px 0;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">🔒</div>
+            <h1>Security Alert</h1>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box">
+                <h3>⚠️ Your Account Has Been Locked</h3>
+                <p>
+                    For your security, we've temporarily locked your MASH account 
+                    <strong>{{email}}</strong>.
+                </p>
+            </div>
+            
+            <p style="font-size: 16px;">
+                Hello {{firstName}},
+            </p>
+            
+            <p>
+                Your account was locked on <strong>{{lockedAt}}</strong> to protect it from 
+                unauthorized access.
+            </p>
+
+            <div class="reason">
+                <strong>Reason:</strong> {{reason}}
+            </div>
+
+            <div class="info-box">
+                <p><strong>📊 Account Details:</strong></p>
+                <p>Email: {{email}}</p>
+                <p>User ID: {{userId}}</p>
+                <p>Locked At: {{lockedAt}}</p>
+                <p>IP Address: {{ipAddress}}</p>
+            </div>
+
+            <div class="steps">
+                <h4>🔓 How to Unlock Your Account:</h4>
+                <ol>
+                    <li>Click the button below to start the unlock process</li>
+                    <li>Verify your identity (you may need to provide additional information)</li>
+                    <li>Reset your password for security</li>
+                    <li>Review recent account activity</li>
+                    <li>Enable two-factor authentication (recommended)</li>
+                </ol>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="{{unlockUrl}}" class="button">
+                    🔓 Unlock My Account
+                </a>
+            </div>
+
+            <div class="security-tips">
+                <h4>🛡️ Security Recommendations:</h4>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Change your password immediately after unlocking</li>
+                    <li>Use a strong, unique password</li>
+                    <li>Enable two-factor authentication</li>
+                    <li>Review your recent login activity</li>
+                    <li>Never share your password with anyone</li>
+                    <li>Be cautious of phishing attempts</li>
+                </ul>
+            </div>
+
+            <div class="alert-box">
+                <h3>❓ Didn't Attempt to Access Your Account?</h3>
+                <p>
+                    If you didn't try to access your account and believe it may have been 
+                    compromised, please contact our security team immediately at 
+                    <strong>security@mash.com</strong> or call our support hotline.
+                </p>
+            </div>
+
+            <p style="margin-top: 30px;">
+                If you need assistance, our support team is available 24/7 to help you 
+                regain access to your account securely.
+            </p>
+
+            <p style="color: #6c757d; font-size: 14px; margin-top: 20px;">
+                Best regards,<br>
+                <strong>MASH Security Team</strong>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 MASH - Mushroom Automation Smart Home. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="{{homeUrl}}">Home</a> |
+                <a href="{{supportUrl}}">Support</a> |
+                <a href="{{securityUrl}}">Security Center</a> |
+                <a href="{{privacyUrl}}">Privacy Policy</a>
+            </div>
+            <p style="margin-top: 15px; color: #dc3545; font-weight: 600;">
+                🔒 This is a security-critical notification
+            </p>
+        </div>
+    </div>
+</body>
+</html>
