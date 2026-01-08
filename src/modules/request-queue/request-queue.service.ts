@@ -153,21 +153,31 @@ export class RequestQueueService {
    * Create a role change request for a user to become an ADMIN (seller)
    * This is a specialized use of the general request queue
    *
-   * Required Documents:
-   * - Valid government-issued ID
-   * - DTI/SEC Certificate
-   * - BIR Certificate with TIN
-   * - Bank account documentation
+   * Required Information:
+   * - User Info: city, region, complete address
+   * - Business Info: business name, business type
+   * - Product Info: mushroom types, monthly production capacity, certifications
+   * - Documents: government ID, BIR certificate, business certificate
    */
   async createRoleChangeRequest(
     userId: string,
-    documents: {
-      governmentId: string;
-      businessCertificate: string;
-      birCertificate: string;
-      bankAccountDocumentation: string;
+    data: {
+      // User Info
+      city: string;
+      region: string;
+      completeAddress: string;
+      // Business Info
       businessName: string;
-      businessAddress: string;
+      businessType: string;
+      // Product Info
+      mushroomTypes: string[];
+      monthlyProductionCapacity: string;
+      certifications?: string[];
+      // Documents
+      governmentId: string;
+      birCertificate: string;
+      businessCertificate: string;
+      // Optional
       additionalInfo?: string;
     },
   ) {
@@ -202,23 +212,32 @@ export class RequestQueueService {
       );
     }
 
-    // Create request queue entry with all required documents
+    // Create request queue entry with all required information
     const payload = {
       userId,
       currentRole: user.role,
       requestedRole: UserRole.ADMIN,
       userEmail: user.email,
       userName: `${user.firstName} ${user.lastName}`,
-      documents: {
-        governmentId: documents.governmentId,
-        businessCertificate: documents.businessCertificate,
-        birCertificate: documents.birCertificate,
-        bankAccountDocumentation: documents.bankAccountDocumentation,
+      userInfo: {
+        city: data.city,
+        region: data.region,
+        completeAddress: data.completeAddress,
       },
       businessInfo: {
-        businessName: documents.businessName,
-        businessAddress: documents.businessAddress,
-        additionalInfo: documents.additionalInfo || null,
+        businessName: data.businessName,
+        businessType: data.businessType,
+        additionalInfo: data.additionalInfo || null,
+      },
+      productInfo: {
+        mushroomTypes: data.mushroomTypes,
+        monthlyProductionCapacity: data.monthlyProductionCapacity,
+        certifications: data.certifications || [],
+      },
+      documents: {
+        governmentId: data.governmentId,
+        birCertificate: data.birCertificate,
+        businessCertificate: data.businessCertificate,
       },
       submittedAt: new Date().toISOString(),
     };
