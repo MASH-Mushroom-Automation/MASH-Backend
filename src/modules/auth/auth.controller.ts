@@ -155,6 +155,19 @@ export class AuthController {
    *
    * Next Step: User must verify email (Step 2) before login
    */
+  @Post('google/sync')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '🔄 Sync Google OAuth user',
+    description: 'Creates or updates user from Google authentication',
+  })
+  @ApiResponse({ status: 200, description: 'Sync successful' })
+  async syncGoogleUser(@Body() googleSyncDto: any) {
+    return this.authService.syncGoogleUser(googleSyncDto);
+  }
+
   @Post('register')
   @Public()
   @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 requests per minute
