@@ -82,7 +82,57 @@ export class AuthController {
   // Step 1: Registration → Step 2: Email Verification → Step 3: Login → Step 4: Access Resources
 
   /**
-   * 📝 STEP 1: USER REGISTRATION
+   * � CHECK USERNAME AVAILABILITY
+   * ===============================
+   * Checks if a username is available for registration.
+   *
+   * Process:
+   * 1. Validates username format (3-30 characters)
+   * 2. Checks database for existing username
+   * 3. Returns availability status
+   *
+   * Use Cases:
+   * - Frontend username generation during registration
+   * - Real-time username availability validation
+   * - Username uniqueness verification
+   *
+   * Returns:
+   * - available: true if username is not taken
+   * - available: false if username already exists
+   */
+  @Get('check-username')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 60000 } }) // 10 requests per minute
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '🔍 Check username availability',
+    description: 'Check if a username is available for registration. Used by frontend during username generation.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Username availability checked successfully',
+    schema: {
+      example: {
+        available: true,
+        username: 'johndoe',
+      },
+    },
+  })
+  async checkUsername(@Query('username') username: string) {
+    if (!username || username.length < 3 || username.length > 30) {
+      throw new BadRequestException('Username must be between 3 and 30 characters');
+    }
+
+    const exists = await this.authService.checkUsernameExists(username);
+
+    return {
+      available: !exists,
+      username,
+    };
+  }
+
+  /**
+   * �📝 STEP 1: USER REGISTRATION
    * ============================
    * Creates a new user account with email verification.
    *

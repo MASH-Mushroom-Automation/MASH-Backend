@@ -568,6 +568,19 @@ export class AuthService {
   // ==================== NEW AUTHENTICATION FLOW METHODS ====================
 
   /**
+   * Check if username already exists
+   * Used by frontend during registration to generate unique usernames
+   */
+  async checkUsernameExists(username: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+
+    return !!user;
+  }
+
+  /**
    * Register a new user with email verification
    * Clerk integration is optional - system works with database-first registration
    */
@@ -662,9 +675,9 @@ export class AuthService {
         // The user can still login using local auth (database password)
       }
 
-      // Step 6: Generate DiceBear avatar URL
+      // Step 6: Generate DiceBear avatar URL (use provided imageUrl or generate)
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
-      const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
+      const diceBearAvatarUrl = registerDto.imageUrl || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
       // Step 7: Create user in database (with timeout handling)
       logger.log('[CONFIG] Creating user in database');
