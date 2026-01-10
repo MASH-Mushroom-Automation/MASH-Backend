@@ -10,9 +10,7 @@ import {
   HttpStatus,
   BadRequestException,
   Query,
-  UseInterceptors,
 } from '@nestjs/common';
-import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import {
   ApiTags,
   ApiOperation,
@@ -104,8 +102,6 @@ export class AuthController {
    */
   @Get('check-username')
   @Public()
-  @UseInterceptors(CacheInterceptor) // Cache results for 5 minutes
-  @CacheTTL(300000) // 5 minutes in milliseconds
   @Throttle({ short: { limit: 20, ttl: 60000 } }) // Increased to 20 req/min
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
