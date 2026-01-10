@@ -54,6 +54,8 @@ export function getCorsConfig(
     'https://mash-ecommerce.vercel.app', // Vercel production
     'https://mash-ecommerce-web.vercel.app', // Vercel production alternative
     'https://mash-backend-api-production.up.railway.app', // Railway backend
+    'https://mash-backend-production.up.railway.app', // Railway backend (new)
+    'https://mash-ecommerce-web-production.up.railway.app', // Railway frontend (PRODUCTION)
   ];
 
   /**
