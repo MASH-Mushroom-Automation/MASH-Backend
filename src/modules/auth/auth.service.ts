@@ -568,6 +568,144 @@ export class AuthService {
   // ==================== NEW AUTHENTICATION FLOW METHODS ====================
 
   /**
+   * Check if username already exists
+   * Used by frontend during registration to generate unique usernames
+   */
+  async checkUsernameExists(username: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+
+    return !!user;
+  }
+
+  /**
+   * Sync Google Auth user to PostgreSQL database
+   * Creates or updates user from Google OAuth login
+   */
+  async syncGoogleUser(googleSyncDto: any) {
+    const logger = new Logger('AuthService.syncGoogleUser');
+    logger.log('[STARTUP] Google user sync process started');
+
+    try {
+      // Step 1: Check if user exists by Google ID or email
+      logger.log('[CONFIG] Checking for existing user');
+      let user = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { googleId: googleSyncDto.googleId },
+            { email: googleSyncDto.email },
+          ],
+        },
+      });
+
+      // Step 2: Generate username if not provided
+      let username = googleSyncDto.username;
+      if (!username) {
+        logger.log('[CONFIG] Auto-generating username from email/name');
+        const baseUsername = googleSyncDto.firstName
+          ? `${googleSyncDto.firstName}${googleSyncDto.lastName || ''}`
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '')
+          : googleSyncDto.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        // Check if username is taken, add random numbers if needed
+        username = baseUsername;
+        let attempts = 0;
+        while (await this.checkUsernameExists(username)) {
+          username = `${baseUsername}${Math.floor(1000 + Math.random() * 9000)}`;
+          attempts++;
+          if (attempts > 10) {
+            throw new InternalServerErrorException('Could not generate unique username');
+          }
+        }
+        logger.log(`[SUCCESS] Generated unique username: ${username}`);
+      }
+
+      // Step 3: Determine avatar URL (prioritize Google photoURL)
+      const imageUrl =
+        googleSyncDto.photoURL ||
+        `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
+
+      if (user) {
+        // Step 4a: Update existing user
+        logger.log(`[CONFIG] Updating existing user: ${user.id}`);
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: googleSyncDto.googleId,
+            firstName: googleSyncDto.firstName,
+            lastName: googleSyncDto.lastName,
+            imageUrl: googleSyncDto.photoURL || user.imageUrl, // Keep existing if no new photo
+            username: user.username || username, // Keep existing username if set
+            emailVerified: true, // Google emails are pre-verified
+            lastLoginAt: new Date(),
+          },
+        });
+        logger.log('[SUCCESS] User updated successfully');
+      } else {
+        // Step 4b: Create new user
+        logger.log('[CONFIG] Creating new Google user');
+        user = await this.prisma.user.create({
+          data: {
+            googleId: googleSyncDto.googleId,
+            email: googleSyncDto.email,
+            username,
+            firstName: googleSyncDto.firstName,
+            lastName: googleSyncDto.lastName,
+            imageUrl,
+            emailVerified: true, // Google emails are pre-verified
+            role: 'USER',
+            isActive: true,
+            lastLoginAt: new Date(),
+          },
+        });
+        logger.log(`[SUCCESS] New user created: ${user.id}`);
+      }
+
+      // Step 5: Generate JWT tokens
+      logger.log('[CONFIG] Generating JWT tokens');
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      };
+
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+      const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+      logger.log('[SUCCESS] Google user sync completed successfully');
+
+      return {
+        success: true,
+        message: 'Google authentication successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          imageUrl: user.imageUrl,
+          role: user.role,
+          emailVerified: user.emailVerified,
+        },
+        tokens: {
+          accessToken,
+          refreshToken,
+          expiresIn: 3600, // 1 hour in seconds
+        },
+      };
+    } catch (error) {
+      logger.error(`[ERROR] Google user sync failed: ${error.message}`);
+      if (error instanceof ConflictException || error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to sync Google user');
+    }
+  }
+
+  /**
    * Register a new user with email verification
    * Clerk integration is optional - system works with database-first registration
    */
@@ -662,9 +800,9 @@ export class AuthService {
         // The user can still login using local auth (database password)
       }
 
-      // Step 6: Generate DiceBear avatar URL
+      // Step 6: Generate DiceBear avatar URL (use provided imageUrl or generate)
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
-      const diceBearAvatarUrl = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
+      const diceBearAvatarUrl = registerDto.imageUrl || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
       // Step 7: Create user in database (with timeout handling)
       logger.log('[CONFIG] Creating user in database');

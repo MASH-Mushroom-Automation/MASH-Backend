@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Offline Alert - MASH</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="mushroom-icon">🍄</div>
+            <h1 class="logo">MASH</h1>
+        </div>
+
+        <div class="content">
+            <h2 class="greeting">Device Offline Alert</h2>
+
+            <div class="message">
+                <p>Dear {{userName}},</p>
+
+                <p><strong>Alert:</strong> Your device <strong>{{deviceName}}</strong> ({{deviceSerial}}) has gone offline.</p>
+
+                {{#if lastSeen}}
+                <p><strong>Last Seen:</strong> {{lastSeen}}</p>
+                {{/if}}
+
+                <p><strong>Location:</strong> {{deviceLocation}}</p>
+                <p><strong>Status:</strong> <span style="color: #dc3545; font-weight: bold;">OFFLINE</span></p>
+
+                <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+                    <h3 style="color: #856404; margin-top: 0;">What this means:</h3>
+                    <ul style="color: #856404;">
+                        <li>Your device is not responding to health checks</li>
+                        <li>Sensor data collection may be interrupted</li>
+                        <li>Automated systems may not function properly</li>
+                    </ul>
+                </div>
+
+                <p>Please check your device connection and power supply. If the issue persists, contact our support team.</p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{{appUrl}}/devices/{{deviceId}}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Device Details</a>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>If you have any questions, please contact our support team at <a href="mailto:support@mash.com">support@mash.com</a></p>
+                <p>&copy; {{year}} {{companyName}}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

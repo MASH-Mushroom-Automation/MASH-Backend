@@ -69,6 +69,7 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     '/api/v1/auth/verify-reset-code', // Verify password reset code (NEW)
     '/api/v1/auth/reset-password', // Reset password with 6-digit code (NEW)
     '/api/v1/auth/resend-password-reset-code', // Resend password reset code (NEW)
+    '/api/v1/auth/google/sync', // Google Auth sync (Firebase → PostgreSQL) - public endpoint
     '/api/v1/auth/google/login', // Google OAuth login (Firebase ID token validation)
     '/api/v1/auth/oauth/callback', // OAuth callback endpoints (state parameter for CSRF)
     '/api/v1/webhook', // Webhook endpoints (use signature verification instead)

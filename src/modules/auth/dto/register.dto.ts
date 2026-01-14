@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches, IsOptional, IsUrl } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
@@ -46,4 +46,14 @@ export class RegisterDto {
     message: 'Username can only contain letters, numbers, underscores and hyphens',
   })
   username?: string;
+
+  @ApiProperty({
+    example: 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=johndoe',
+    description: 'Profile image URL (optional, auto-generated from DiceBear API if not provided)',
+    required: false,
+  })
+  @IsOptional()
+  @IsUrl()
+  @MaxLength(500)
+  imageUrl?: string;
 }

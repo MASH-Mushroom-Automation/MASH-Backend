@@ -41,15 +41,60 @@ export function getCorsConfig(
   const isTest = nodeEnv === 'test';
 
   /**
+   * Default allowed origins for CORS
+   * Includes common development URLs and production URLs
+   */
+  const defaultOrigins = [
+    'http://localhost:3000',           // Next.js frontend (default)
+    'http://localhost:3001',           // Alternative frontend port
+    'http://localhost:4000',           // Alternative dev port
+    'http://localhost:30000',          // Backend (for same-origin testing)
+    'http://127.0.0.1:3000',           // IPv4 localhost
+    'http://127.0.0.1:3001',
+    'http://localhost:52291',          // Fluter dev port
+    'https://mash-ecommerce.vercel.app', // Vercel production
+    'https://mash-ecommerce-web.vercel.app', // Vercel production alternative
+    'https://mash-backend-api-production.up.railway.app', // Railway backend
+    'https://mash-backend-production.up.railway.app', // Railway backend (new)
+    'https://mash-ecommerce-web-production.up.railway.app', // Railway frontend (PRODUCTION)
+  ];
+
+  /**
    * Parse allowed origins
-   * - Development: Allow all origins for easy testing
-   * - Production: Allow all origins (as requested)
+   * - Development: Use dynamic origin callback to allow all localhost variants
+   * - Production: Use explicit whitelist + environment variable
    * - Test: Allow all (for integration tests)
    */
-  const getAllowedOrigins = (): string | string[] | boolean => {
-    // Allow all origins in all environments
-    // This enables CORS for both localhost development and production deployment
-    return true;
+  const getAllowedOrigins = (): string[] | boolean | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void) => {
+    // In test environment, allow all origins
+    if (isTest) {
+      return true;
+    }
+
+    // Dynamic origin handler to support credentials with multiple origins
+    return (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (mobile apps, Postman, curl)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // Parse additional origins from environment variable
+      const envOrigins = corsOrigins ? corsOrigins.split(',').map(o => o.trim()) : [];
+      const allAllowedOrigins = [...defaultOrigins, ...envOrigins];
+
+      // Check if origin is allowed
+      if (allAllowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else if (isDevelopment && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+        // In development, allow any localhost origin
+        callback(null, true);
+      } else {
+        // Log blocked origin for debugging
+        console.warn(`CORS blocked origin: ${origin}`);
+        callback(null, false);
+      }
+    };
   };
 
   return {
@@ -58,7 +103,7 @@ export function getCorsConfig(
      * - string: Single origin
      * - string[]: Array of allowed origins
      * - boolean: true = allow all (dangerous!), false = deny all
-     * - function: Dynamic origin validation
+     * - function: Dynamic origin validation (allows credentials with multiple origins)
      */
     origin: getAllowedOrigins(),
 
@@ -69,10 +114,9 @@ export function getCorsConfig(
      * - HTTP authentication
      * - Client certificates
      *
-     * Security Note: When credentials=true, origin cannot be '*'
-     * Since we're allowing all origins (origin: true), we must set credentials to false
+     * Note: Now enabled because we use dynamic origin callback instead of origin: true
      */
-    credentials: false, // Must be false when allowing all origins
+    credentials: enableCredentials, // Now supported with dynamic origin callback
 
     /**
      * methods: Allowed HTTP methods
