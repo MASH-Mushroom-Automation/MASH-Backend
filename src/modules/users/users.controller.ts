@@ -457,13 +457,23 @@ You must submit ALL required documents for verification.
     description: 'Only USER role can apply to become a seller',
   })
   async applyAsSeller(@Request() req: any, @Body() dto: RequestRoleChangeDto) {
-    return this.requestQueueService.createRoleChangeRequest(req.user.userId, {
-      governmentId: dto.governmentId,
-      businessCertificate: dto.businessCertificate,
-      birCertificate: dto.birCertificate,
-      bankAccountDocumentation: dto.bankAccountDocumentation,
+    return this.requestQueueService.createRoleChangeRequest(req.user.id, {
+      // User Info
+      city: dto.city,
+      region: dto.region,
+      completeAddress: dto.completeAddress,
+      // Business Info
       businessName: dto.businessName,
-      businessAddress: dto.businessAddress,
+      businessType: dto.businessType,
+      // Product Info
+      mushroomTypes: dto.mushroomTypes,
+      monthlyProductionCapacity: dto.monthlyProductionCapacity,
+      certifications: dto.certifications,
+      // Business Documents
+      governmentId: dto.governmentId,
+      birCertificate: dto.birCertificate,
+      businessCertificate: dto.businessCertificate,
+      // Optional
       additionalInfo: dto.additionalInfo,
     });
   }

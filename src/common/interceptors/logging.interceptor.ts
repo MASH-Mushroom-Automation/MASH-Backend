@@ -63,6 +63,13 @@ export class LoggingInterceptor implements NestInterceptor {
 
           // Log response details in debug mode
           if (process.env.LOG_LEVEL === 'debug') {
+            // Safely calculate response size - avoid circular reference errors
+            let responseSize = 0;
+            try {
+              responseSize = JSON.stringify(data || {}).length;
+            } catch {
+              responseSize = -1; // Indicates serialization failed
+            }
             this.logger.debug('Response Details:', {
               method,
               url,
@@ -70,7 +77,7 @@ export class LoggingInterceptor implements NestInterceptor {
               duration,
               correlationId,
               userId,
-              responseSize: JSON.stringify(data || {}).length,
+              responseSize,
             });
           }
         },
