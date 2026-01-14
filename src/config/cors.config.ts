@@ -51,6 +51,7 @@ export function getCorsConfig(
     'http://localhost:30000',          // Backend (for same-origin testing)
     'http://127.0.0.1:3000',           // IPv4 localhost
     'http://127.0.0.1:3001',
+    'http://localhost:52291',          // Fluter dev port
     'https://mash-ecommerce.vercel.app', // Vercel production
     'https://mash-ecommerce-web.vercel.app', // Vercel production alternative
     'https://mash-backend-api-production.up.railway.app', // Railway backend
