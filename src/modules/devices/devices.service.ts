@@ -87,6 +87,8 @@ export class DevicesService {
       type,
       status,
       search,
+      archived,
+      assigned,
       sortBy = 'createdAt',
       sortOrder = 'DESC',
     } = query;
@@ -101,6 +103,17 @@ export class DevicesService {
 
     if (type) where.type = type;
     if (status) where.status = status;
+    
+    // Handle archived filter (archived devices have isActive=false)
+    if (archived !== undefined) {
+      where.isActive = !archived;
+    }
+    
+    // Handle assigned filter (assigned devices have non-null userId)
+    if (assigned !== undefined) {
+      where.userId = assigned ? { not: null } : null;
+    }
+    
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -119,7 +132,9 @@ export class DevicesService {
           id: true,
           name: true,
           type: true,
+          serialNumber: true,
           status: true,
+          userId: true,
           location: true,
           description: true,
           firmware: true,
@@ -157,11 +172,14 @@ export class DevicesService {
   }
 
   async create(createDeviceDto: CreateDeviceDto, currentUser: any) {
-    // Generate unique serial number
-    const serialNumber = `DEV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    // Use provided serial number or generate one if not provided
+    const serialNumber = createDeviceDto.serialNumber || 
+      `DEV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     // Check if user can create devices
+    // If userId is provided, ensure user has permission to assign it
     if (
+      createDeviceDto.userId &&
       !['ADMIN', 'SUPER_ADMIN', 'GROWER'].includes(currentUser.role) &&
       createDeviceDto.userId !== currentUser.id
     ) {

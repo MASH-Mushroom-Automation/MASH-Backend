@@ -67,10 +67,31 @@ export class CreateDeviceDto {
   configuration?: any;
 
   @ApiProperty({
-    description: 'User ID who owns this device',
+    description: 'User ID who owns this device (optional - can be assigned later)',
     example: 'user-uuid-123',
+    required: false,
   })
   @IsString()
-  @IsNotEmpty()
-  userId: string;
+  @IsOptional()
+  userId?: string;
+
+  @ApiProperty({
+    description: 'Device serial number (auto-generated if not provided)',
+    example: 'MASH-B2-CAL26-A1B2C3',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  serialNumber?: string;
+
+  @ApiProperty({
+    description: 'Device firmware version',
+    example: 'v1.2.3',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  firmware?: string;
 }
