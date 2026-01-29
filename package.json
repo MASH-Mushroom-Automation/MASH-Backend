@@ -48,7 +48,7 @@
     "@bull-board/nestjs": "^6.14.0",
     "@bull-board/ui": "^6.14.2",
     "@clerk/backend": "^2.17.1",
-    "@clerk/clerk-js": "^5.107.0",
+    "@clerk/clerk-js": "^5.118.0",
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@elastic/elasticsearch": "^8.19.1",
     "@nestjs/axios": "^4.0.1",
