@@ -112,12 +112,18 @@ async function bootstrap() {
   logger.log('[CONFIG] Stage 7: Applying global exception filters...');
   // ==================== GLOBAL EXCEPTION FILTERS ====================
   // Apply exception filters in order of specificity (most specific first)
-  // Order matters: Specific exceptions should be caught before generic ones
+  // IMPORTANT: NestJS applies filters in REVERSE order of registration
+  // The LAST filter registered is checked FIRST
+  // So we register from least specific to most specific:
+  // 1. AllExceptionsFilter (catch-all) - registered first, checked last
+  // 2. HttpExceptionFilter (generic HTTP) - checked after specific filters
+  // 3. ValidationExceptionFilter (BadRequestException) - checked before HTTP
+  // 4. PrismaExceptionFilter (Prisma errors) - most specific, checked first
   app.useGlobalFilters(
-    new PrismaExceptionFilter(), // Catch Prisma database errors
-    new ValidationExceptionFilter(), // Catch validation errors
-    new HttpExceptionFilter(), // Catch HTTP exceptions
-    new AllExceptionsFilter(), // Catch all other exceptions (fallback)
+    new AllExceptionsFilter(), // Catch-all fallback - registered first, checked last
+    new HttpExceptionFilter(), // Generic HTTP exceptions
+    new ValidationExceptionFilter(), // Validation errors (BadRequestException)
+    new PrismaExceptionFilter(), // Prisma database errors - most specific
   );
   logger.log('[SUCCESS] Global exception filters applied successfully');
 
@@ -126,12 +132,12 @@ async function bootstrap() {
   // API prefix - exclude auth HTML pages and metrics endpoint from the prefix
   app.setGlobalPrefix('api/v1', {
     exclude: [
-      '/', 
-      '/register', 
-      '/verify', 
-      '/forgot-password', 
-      '/reset-password', 
-      '/dashboard', 
+      '/',
+      '/register',
+      '/verify',
+      '/forgot-password',
+      '/reset-password',
+      '/dashboard',
       { path: '/metrics', method: RequestMethod.ALL },
       { path: '/metrics/json', method: RequestMethod.ALL },
       { path: '/metrics/health', method: RequestMethod.ALL },
@@ -141,9 +147,15 @@ async function bootstrap() {
   // Swagger/OpenAPI Documentation - Clean and Simple Configuration
   const config = new DocumentBuilder()
     .setTitle('MASH Backend API')
-    .setDescription('Mushroom Automation Smart Harvesting - Backend API for automated mushroom cultivation with IoT integration, e-commerce, and real-time monitoring.')
+    .setDescription(
+      'Mushroom Automation Smart Harvesting - Backend API for automated mushroom cultivation with IoT integration, e-commerce, and real-time monitoring.',
+    )
     .setVersion('1.0.0')
-    .setContact('MASH Support', 'https://github.com/MASH-Mushroom-Automation/MASH-Backend', 'pp.namias@gmail.com')
+    .setContact(
+      'MASH Support',
+      'https://github.com/MASH-Mushroom-Automation/MASH-Backend',
+      'pp.namias@gmail.com',
+    )
     .setLicense('MIT', 'https://opensource.org/licenses/MIT')
     // API Tags (professional naming without emojis)
     .addTag('Authentication', 'User authentication and authorization')
@@ -202,14 +214,16 @@ async function bootstrap() {
 
   logger.log(`[CONFIG] Stage 9: Binding to port ${port} on 0.0.0.0...`);
   logger.log(`[METRICS] Memory before listen: ${JSON.stringify(process.memoryUsage())}`);
-  
+
   // Bind to 0.0.0.0 to accept connections from any network interface
   // This is required for cloud platforms like Render, Railway, etc.
   try {
     const startTime = Date.now();
     await app.listen(port, '0.0.0.0');
     const listenTime = Date.now() - startTime;
-    logger.log(`[SUCCESS] Stage 9 complete: Server listening on port ${port} (took ${listenTime}ms)`);
+    logger.log(
+      `[SUCCESS] Stage 9 complete: Server listening on port ${port} (took ${listenTime}ms)`,
+    );
   } catch (error) {
     logger.error('[ERROR] Stage 9 failed - Could not bind to port:', error);
     throw error;

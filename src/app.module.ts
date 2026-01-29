@@ -55,6 +55,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 // import { SearchModule } from './modules/search/search.module';
 import { ImportExportModule } from './modules/import-export/import-export.module';
 import { GatewayModule } from './modules/gateway/gateway.module';
+import { SellerVerificationModule } from './modules/seller-verification/seller-verification.module';
 import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -138,6 +139,9 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
 
     // API Gateway Module (Issue #32 - API Gateway & Rate Limiting Backend)
     GatewayModule,
+
+    // Seller Verification Module - Complete seller onboarding workflow
+    SellerVerificationModule,
 
     // 🔧 TEMPORARILY DISABLED FOR DEBUGGING
     // WebSocket module for real-time communication

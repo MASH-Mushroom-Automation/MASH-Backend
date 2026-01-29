@@ -39,8 +39,8 @@ export class CustomValidationPipe implements PipeTransform<any> {
       const formattedErrors = this.formatErrors(errors);
       throw new BadRequestException({
         message: 'Validation failed',
-        errors: formattedErrors.errors,
-        fields: Object.keys(formattedErrors.errors), // List failed fields
+        errors: formattedErrors,
+        fields: Object.keys(formattedErrors), // List failed fields
       });
     }
 
@@ -58,8 +58,8 @@ export class CustomValidationPipe implements PipeTransform<any> {
   /**
    * Format validation errors into structured format
    */
-  private formatErrors(errors: ValidationError[]): any {
-    const formattedErrors: any = {};
+  private formatErrors(errors: ValidationError[]): Record<string, any> {
+    const formattedErrors: Record<string, any> = {};
 
     errors.forEach(error => {
       formattedErrors[error.property] = {
@@ -74,9 +74,6 @@ export class CustomValidationPipe implements PipeTransform<any> {
       }
     });
 
-    return {
-      message: 'Validation failed',
-      errors: formattedErrors,
-    };
+    return formattedErrors;
   }
 }

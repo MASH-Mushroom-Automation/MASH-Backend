@@ -1,11 +1,17 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { RequestQueueStatus, UserRole, Prisma } from '@prisma/client';
+import { EmailService } from '../notifications/services/email.service';
+import {
+  EmailTemplateService,
+  EmailTemplateType,
+} from '../notifications/services/email-template.service';
 
 /**
  * General-purpose Request Queue Service
@@ -21,7 +27,13 @@ import { RequestQueueStatus, UserRole, Prisma } from '@prisma/client';
  */
 @Injectable()
 export class RequestQueueService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(RequestQueueService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+  ) {}
 
   // ============= GENERAL QUEUE OPERATIONS =============
 
@@ -515,6 +527,11 @@ export class RequestQueueService {
         },
       });
 
+      // Send approval email for seller applications
+      if (request.endpoint === '/admin/seller-applications') {
+        await this.sendSellerApprovalEmail(updatedUser, adminNotes);
+      }
+
       return {
         success: true,
         message: `Role change approved. User is now a ${requestedRole}`,
@@ -572,6 +589,15 @@ export class RequestQueueService {
         },
       },
     });
+
+    // Send rejection email for seller applications
+    if (request.endpoint === '/admin/seller-applications' && request.user) {
+      await this.sendSellerRejectionEmail(
+        request.user,
+        requestId,
+        adminNotes || 'Your application did not meet our requirements.',
+      );
+    }
 
     return {
       success: true,
@@ -755,5 +781,69 @@ export class RequestQueueService {
         results,
       },
     };
+  }
+
+  // ============= EMAIL NOTIFICATION HELPERS =============
+
+  /**
+   * Send seller application approval email
+   */
+  private async sendSellerApprovalEmail(
+    user: { email: string; firstName?: string | null },
+    adminNotes?: string,
+  ): Promise<void> {
+    try {
+      const variables = this.emailTemplateService.getSellerApplicationApprovedVariables(
+        user.firstName || 'Seller',
+        adminNotes,
+      );
+
+      await this.emailService.sendTemplatedEmail({
+        to: user.email,
+        templateType: EmailTemplateType.SELLER_APPLICATION_APPROVED,
+        variables,
+      });
+
+      this.logger.log(`Seller approval email sent to ${user.email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send seller approval email to ${user.email}: ${error instanceof Error ? error.message : error}`,
+      );
+      // Don't throw - email failure shouldn't block the approval
+    }
+  }
+
+  /**
+   * Send seller application rejection email
+   */
+  private async sendSellerRejectionEmail(
+    user: { email: string; firstName?: string | null },
+    requestId: string,
+    rejectionReason: string,
+    issues?: string[],
+    adminNotes?: string,
+  ): Promise<void> {
+    try {
+      const variables = this.emailTemplateService.getSellerApplicationRejectedVariables(
+        user.firstName || 'Applicant',
+        requestId,
+        rejectionReason,
+        issues,
+        adminNotes,
+      );
+
+      await this.emailService.sendTemplatedEmail({
+        to: user.email,
+        templateType: EmailTemplateType.SELLER_APPLICATION_REJECTED,
+        variables,
+      });
+
+      this.logger.log(`Seller rejection email sent to ${user.email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send seller rejection email to ${user.email}: ${error instanceof Error ? error.message : error}`,
+      );
+      // Don't throw - email failure shouldn't block the rejection
+    }
   }
 }

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seller Application Received - MASH</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+          sans-serif;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+      }
+      .content {
+        padding: 40px 30px;
+        line-height: 1.6;
+        color: #333333;
+      }
+      .greeting {
+        font-size: 22px;
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 20px;
+      }
+      .message {
+        font-size: 16px;
+        margin-bottom: 20px;
+      }
+      .status-box {
+        background-color: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 20px;
+        margin: 25px 0;
+        border-radius: 4px;
+      }
+      .status-box h3 {
+        margin-top: 0;
+        color: #1976d2;
+        font-size: 18px;
+      }
+      .details-box {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        padding: 20px;
+        margin: 25px 0;
+        border-radius: 8px;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+      }
+      .detail-row:last-child {
+        border-bottom: none;
+      }
+      .detail-label {
+        color: #6c757d;
+        font-weight: 500;
+      }
+      .detail-value {
+        color: #333;
+        font-weight: 600;
+      }
+      .timeline {
+        margin: 30px 0;
+      }
+      .timeline-item {
+        display: flex;
+        margin-bottom: 20px;
+      }
+      .timeline-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 14px;
+      }
+      .timeline-icon.completed {
+        background-color: #28a745;
+        color: white;
+      }
+      .timeline-icon.current {
+        background-color: #2196f3;
+        color: white;
+      }
+      .timeline-icon.pending {
+        background-color: #e9ecef;
+        color: #6c757d;
+      }
+      .timeline-content h4 {
+        margin: 0 0 5px 0;
+        font-size: 14px;
+      }
+      .timeline-content p {
+        margin: 0;
+        font-size: 12px;
+        color: #6c757d;
+      }
+      .button {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #ffffff !important;
+        padding: 15px 40px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: 600;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .footer {
+        background-color: #f8f9fa;
+        padding: 30px;
+        text-align: center;
+        color: #6c757d;
+        font-size: 14px;
+      }
+      .footer a {
+        color: #667eea;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="icon">📋</div>
+        <h1>Application Received!</h1>
+      </div>
+
+      <div class="content">
+        <p class="greeting">Hello {{firstName}},</p>
+
+        <p class="message">
+          Thank you for applying to become a seller on MASH! We have received your application and
+          our team will begin reviewing your submitted documents shortly.
+        </p>
+
+        <div class="status-box">
+          <h3>📌 Application Status: Under Review</h3>
+          <p>
+            Your application has been successfully submitted and is now in our review queue. We
+            typically process applications within <strong>1-3 business days</strong>.
+          </p>
+        </div>
+
+        <div class="details-box">
+          <h3 style="margin-top: 0; color: #333">Application Details</h3>
+          <div class="detail-row">
+            <span class="detail-label">Application ID:</span>
+            <span class="detail-value">{{requestId}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Business Name:</span>
+            <span class="detail-value">{{businessName}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Business Type:</span>
+            <span class="detail-value">{{businessType}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Submitted:</span>
+            <span class="detail-value">{{submittedAt}}</span>
+          </div>
+        </div>
+
+        <h3>📝 What Happens Next?</h3>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-icon completed">✓</div>
+            <div class="timeline-content">
+              <h4>Application Submitted</h4>
+              <p>Your documents have been received</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-icon current">2</div>
+            <div class="timeline-content">
+              <h4>Document Review</h4>
+              <p>Our team is verifying your documents</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-icon pending">3</div>
+            <div class="timeline-content">
+              <h4>Approval Decision</h4>
+              <p>You'll receive a decision via email</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-icon pending">4</div>
+            <div class="timeline-content">
+              <h4>Start Selling!</h4>
+              <p>List your products on MASH</p>
+            </div>
+          </div>
+        </div>
+
+        <p style="text-align: center">
+          <a href="{{appUrl}}/seller/application-status" class="button">Check Application Status</a>
+        </p>
+
+        <p class="message" style="margin-top: 30px">
+          If you have any questions about your application, please don't hesitate to contact our
+          seller support team at
+          <a href="mailto:seller-support@mash.com.ph">seller-support@mash.com.ph</a>.
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>© {{year}} MASH - Mushroom Automation Smart Harvesting</p>
+        <p>This is an automated message. Please do not reply directly to this email.</p>
+        <p><a href="{{appUrl}}">Visit MASH</a> | <a href="{{appUrl}}/help">Help Center</a></p>
+      </div>
+    </div>
+  </body>
+</html>
