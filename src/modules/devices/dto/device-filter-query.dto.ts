@@ -37,4 +37,20 @@ export class DeviceFilterQueryDto extends PaginationQueryDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @ApiProperty({
+    description: 'Filter by archived status (archived devices have isActive=false)',
+    required: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  archived?: boolean;
+
+  @ApiProperty({
+    description: 'Filter by device assignment status',
+    required: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  assigned?: boolean;
 }

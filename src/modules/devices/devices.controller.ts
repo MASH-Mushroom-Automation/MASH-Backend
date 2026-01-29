@@ -24,13 +24,17 @@ import { DeviceConfigurationDto } from './dto/device-configuration.dto';
 import { FirmwareUpdateDto } from './dto/firmware-update.dto';
 import { SensorCalibrationDto } from './dto/sensor-calibration.dto';
 import { DeviceAnalyticsQueryDto } from './dto/device-analytics-query.dto';
+import { DeviceStatusTask } from './tasks/device-status.task';
 
 @ApiTags('devices')
 @Controller('devices')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class DevicesController {
-  constructor(private readonly devicesService: DevicesService) {}
+  constructor(
+    private readonly devicesService: DevicesService,
+    private readonly deviceStatusTask: DeviceStatusTask,
+  ) {}
 
   // ========== Device CRUD (6 endpoints) ==========
 
@@ -119,6 +123,16 @@ export class DevicesController {
   @ApiResponse({ status: 200, description: 'Device activation status updated' })
   async toggleActivation(@Param('id') id: string, @Request() req) {
     return this.devicesService.toggleActivation(id, req.user);
+  }
+
+  @Post('status/check')
+  @ApiOperation({ 
+    summary: 'Trigger on-demand device status check',
+    description: 'Checks all devices and marks inactive ones as offline. Used by Admin Dashboard.'
+  })
+  @ApiResponse({ status: 200, description: 'Device status check completed' })
+  async checkDeviceStatus() {
+    return this.deviceStatusTask.checkDeviceStatusOnDemand();
   }
 
   // ========== Device Control & Commands (5 endpoints) ==========
