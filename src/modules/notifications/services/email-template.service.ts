@@ -23,11 +23,16 @@ export enum EmailTemplateType {
   EMAIL_CHANGED = 'email-changed',
   ACCOUNT_DELETION = 'account-deletion',
   WELCOME = 'welcome',
-  // Add more template types for device monitoring
+  // Device monitoring templates
   DEVICE_OFFLINE = 'device-offline',
   DEVICE_ERROR = 'device-error',
   HEALTH_WARNING = 'health-warning',
   HEALTH_CRITICAL = 'health-critical',
+  // Seller verification workflow templates
+  SELLER_APPLICATION_RECEIVED = 'seller-application-received',
+  SELLER_APPLICATION_APPROVED = 'seller-application-approved',
+  SELLER_APPLICATION_REJECTED = 'seller-application-rejected',
+  SELLER_RESUBMISSION_REQUIRED = 'seller-resubmission-required',
 }
 
 export interface TemplateMetadata {
@@ -185,6 +190,13 @@ export class EmailTemplateService {
       [EmailTemplateType.DEVICE_ERROR]: 'Device Error Alert - MASH',
       [EmailTemplateType.HEALTH_WARNING]: 'Device Health Warning - MASH',
       [EmailTemplateType.HEALTH_CRITICAL]: 'Critical Device Health Alert - MASH',
+      // Seller verification workflow subjects
+      [EmailTemplateType.SELLER_APPLICATION_RECEIVED]: 'Seller Application Received - MASH',
+      [EmailTemplateType.SELLER_APPLICATION_APPROVED]:
+        '🎉 Congratulations! Your Seller Application is Approved - MASH',
+      [EmailTemplateType.SELLER_APPLICATION_REJECTED]: 'Seller Application Update - MASH',
+      [EmailTemplateType.SELLER_RESUBMISSION_REQUIRED]:
+        'Action Required: Document Resubmission - MASH',
     };
 
     return subjects[templateType] || 'MASH Notification';
@@ -231,6 +243,93 @@ export class EmailTemplateService {
       firstName,
       code,
       expiresIn: '10 minutes',
+    };
+  }
+
+  /**
+   * Get template variables for seller application received email
+   */
+  getSellerApplicationReceivedVariables(
+    firstName: string,
+    requestId: string,
+    businessName: string,
+    businessType: string,
+    submittedAt: Date,
+  ): EmailTemplateVariables {
+    return {
+      firstName,
+      requestId,
+      businessName,
+      businessType,
+      submittedAt: submittedAt.toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+  }
+
+  /**
+   * Get template variables for seller application approved email
+   */
+  getSellerApplicationApprovedVariables(
+    firstName: string,
+    adminNotes?: string,
+  ): EmailTemplateVariables {
+    return {
+      firstName,
+      adminNotes: adminNotes || null,
+    };
+  }
+
+  /**
+   * Get template variables for seller application rejected email
+   */
+  getSellerApplicationRejectedVariables(
+    firstName: string,
+    requestId: string,
+    rejectionReason: string,
+    issues?: string[],
+    adminNotes?: string,
+  ): EmailTemplateVariables {
+    return {
+      firstName,
+      requestId,
+      rejectionReason,
+      issues: issues || [],
+      adminNotes: adminNotes || null,
+    };
+  }
+
+  /**
+   * Get template variables for seller document resubmission required email
+   */
+  getSellerResubmissionRequiredVariables(
+    firstName: string,
+    requestId: string,
+    documents: Array<{
+      name: string;
+      needsResubmission: boolean;
+      issue?: string;
+      instruction?: string;
+    }>,
+    deadline?: Date,
+    adminNotes?: string,
+  ): EmailTemplateVariables {
+    return {
+      firstName,
+      requestId,
+      documents,
+      deadline: deadline
+        ? deadline.toLocaleDateString('en-PH', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : null,
+      adminNotes: adminNotes || null,
     };
   }
 }
