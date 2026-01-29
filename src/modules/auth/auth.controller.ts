@@ -106,7 +106,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '🔍 Check username availability (OPTIMIZED)',
-    description: 'Check if a username is available for registration. Cached for 5 minutes. Response time: <100ms',
+    description:
+      'Check if a username is available for registration. Cached for 5 minutes. Response time: <100ms',
   })
   @ApiResponse({
     status: 200,
@@ -1790,6 +1791,36 @@ import { GoogleLogin } from '@react-oauth/google';
   })
   async loginWithGoogle(@Body() dto: GoogleLoginDto) {
     return this.authService.loginWithGoogle(dto);
+  }
+
+  /**
+   * 🔥 FIREBASE LOGIN (Main Endpoint)
+   * ================================
+   * Authenticate user with Firebase ID Token
+   *
+   * Alias for firebase-sync. Use this endpoint for standard Firebase login.
+   */
+  @Post('firebase')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 300000 } })
+  @HttpCode(HttpStatus.OK)
+  @AuditLog({
+    action: AuditAction.LOGIN,
+    entity: 'User',
+    getEntityId: args => 'firebase_login',
+  })
+  @ApiOperation({
+    summary: '🔥 Login with Firebase',
+    description:
+      'Authenticate user using Firebase ID token. Supports Email/Password, Google, Apple, etc. via Firebase.',
+  })
+  @ApiBody({ type: FirebaseSyncDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Firebase authentication successful',
+  })
+  async firebaseLogin(@Body() dto: FirebaseSyncDto, @Request() req: any) {
+    return this.authService.firebaseSync(dto, req.res);
   }
 
   /**

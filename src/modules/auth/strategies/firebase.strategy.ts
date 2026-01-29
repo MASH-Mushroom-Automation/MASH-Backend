@@ -17,7 +17,20 @@ export class FirebaseStrategy extends PassportStrategy(Strategy, 'firebase') {
       const rawPrivateKey = String(this.configService.get('FIREBASE_PRIVATE_KEY') || '');
 
       if (projectId.length > 0 && clientEmail.length > 0 && rawPrivateKey.length > 0) {
-        const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
+        // Robust Private Key Formatting:
+        // Handle both actual newlines (from template literals or correct env parsing)
+        // AND literal "\n" strings (common dotenv issue)
+        let privateKey = rawPrivateKey;
+
+        // If it contains literal "\n" characters, replace them with real newlines
+        if (privateKey.includes('\\n')) {
+          privateKey = privateKey.replace(/\\n/g, '\n');
+        }
+
+        // Remove surrounding quotes if they were included in the value
+        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+          privateKey = privateKey.slice(1, -1);
+        }
 
         try {
           admin.initializeApp({
