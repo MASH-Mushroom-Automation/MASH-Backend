@@ -4,46 +4,46 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-custom';
 import * as admin from 'firebase-admin';
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as dotenv from 'dotenv';
+
+// Load .env variables immediately
+dotenv.config();
+
+// --- Standalone Firebase Initialization ---
+// This runs once when the module is loaded, before NestJS instantiates any classes.
+// It bypasses any potential lifecycle issues with ConfigService.
+if (!admin.apps.length) {
+  try {
+    const serviceAccountPath = path.resolve(process.cwd(), 'firebase-service-account.json');
+
+    if (!fs.existsSync(serviceAccountPath)) {
+      throw new Error(`Firebase service account file not found at: ${serviceAccountPath}`);
+    }
+
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: process.env.FIREBASE_DATABASE_URL, // Read directly from process.env
+    });
+
+    console.log('✅✅✅ Firebase Admin SDK Initialized Successfully (Standalone Method) ✅✅✅');
+  } catch (error) {
+    console.error('🔥🔥🔥 FATAL: STANDALONE FIREBASE INITIALIZATION FAILED 🔥🔥🔥', error);
+  }
+}
 
 @Injectable()
 export class FirebaseStrategy extends PassportStrategy(Strategy, 'firebase') {
   constructor(private configService: ConfigService) {
     super();
-
-    // Initialize Firebase Admin SDK.
-    // It will automatically find and use the GOOGLE_APPLICATION_CREDENTIALS
-    // environment variable (the path to the JSON file).
+    // The constructor is now empty. Initialization happens above.
     if (!admin.apps.length) {
-      const serviceAccountJson = this.configService.get<string>(
-        'GOOGLE_APPLICATION_CREDENTIALS_JSON',
+      console.error(
+        'CRITICAL: FirebaseStrategy constructor ran, but Firebase app was not initialized.',
       );
-
-      try {
-        if (serviceAccountJson) {
-          // Production: Initialize from JSON string in environment variable
-          const serviceAccount = JSON.parse(serviceAccountJson);
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            databaseURL: this.configService.get('FIREBASE_DATABASE_URL'),
-          });
-          console.warn('✅ Firebase Admin SDK initialized from JSON environment variable.');
-        } else {
-          // Development: Initialize from file path
-          admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
-            databaseURL: this.configService.get('FIREBASE_DATABASE_URL'),
-          });
-          console.warn(
-            '✅ Firebase Admin SDK initialized from file path (GOOGLE_APPLICATION_CREDENTIALS).',
-          );
-        }
-      } catch (err) {
-        const message = (err && (err as Error).message) || String(err);
-        console.warn(
-          '⚠️ Firebase Admin SDK initialization failed. Check GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_APPLICATION_CREDENTIALS_JSON.',
-          message,
-        );
-      }
     }
   }
 
