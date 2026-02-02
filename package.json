@@ -65,7 +65,7 @@
     "@nestjs/swagger": "^8.0.0",
     "@nestjs/terminus": "^10.3.0",
     "@nestjs/throttler": "^6.5.0",
-    "@nestjs/websockets": "^11.1.11",
+    "@nestjs/websockets": "^11.1.12",
     "@opentelemetry/auto-instrumentations-node": "^0.67.2",
     "@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
     "@opentelemetry/instrumentation-express": "^0.57.0",
