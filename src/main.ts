@@ -32,10 +32,19 @@ async function bootstrap() {
   logger.log('[STARTUP] Bootstrap function started');
 
   logger.log('[CONFIG] Stage 1: Creating NestJS application...');
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
-    bufferLogs: true,
-  });
+  let app;
+  try {
+    app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+      bufferLogs: false, // Disabled to see logs immediately for debugging
+    });
+  } catch (createError) {
+    logger.error('[FATAL] NestFactory.create() failed!');
+    logger.error(`Error type: ${createError?.constructor?.name}`);
+    logger.error(`Error message: ${createError?.message}`);
+    logger.error(`Error stack: ${createError?.stack}`);
+    throw createError;
+  }
 
   logger.log('[SUCCESS] Stage 1 complete: Application created');
 
@@ -75,8 +84,8 @@ async function bootstrap() {
 
   // Get config service and environment variables first
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 3000);
-  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+  const port = configService.get('PORT', 3000) as number;
+  const nodeEnv = configService.get('NODE_ENV', 'development') as string;
 
   // Serve static files for auth pages (HTML, CSS, JS)
   // In production (dist), public folder is copied to dist/public
@@ -99,8 +108,8 @@ async function bootstrap() {
 
   logger.log('[CONFIG] Stage 5: Enabling CORS...');
   // CORS configuration - Cross-origin resource sharing
-  const corsOrigins = configService.get<string>('CORS_ORIGINS');
-  const corsCredentials = configService.get<boolean>('CORS_CREDENTIALS', true);
+  const corsOrigins = configService.get('CORS_ORIGINS') as string | undefined;
+  const corsCredentials = configService.get('CORS_CREDENTIALS', true) as boolean;
   app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
 
   logger.log('[CONFIG] Stage 6: Setting up audit logging...');
