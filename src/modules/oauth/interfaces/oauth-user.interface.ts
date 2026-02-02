@@ -22,10 +22,10 @@ export interface OAuthUserData {
   emailVerified: boolean;
 
   /** OAuth provider name */
-  provider: 'google' | 'facebook';
+  provider: 'google' | 'facebook' | 'firebase';
 }
 
 /**
  * OAuth Provider Type
  */
-export type OAuthProvider = 'google' | 'facebook';
+export type OAuthProvider = 'google' | 'facebook' | 'firebase';

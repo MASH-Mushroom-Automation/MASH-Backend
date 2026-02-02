@@ -39,6 +39,7 @@ model User {
   emailVerificationCodeUsed   Boolean                @default(false)
   facebookId                  String?                @unique
   googleId                    String?                @unique
+  firebaseUid                 String?                @unique
   oauthAccessToken            String?
   oauthProvider               String[]               @default([])
   oauthRefreshToken           String?

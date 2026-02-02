@@ -88,6 +88,7 @@ export class AuditLogInterceptor implements NestInterceptor {
         },
         error: error => {
           // Log failed attempts as well (for security monitoring)
+          // Fire and forget - don't await
           this.auditLogService
             .log({
               userId,
@@ -99,11 +100,10 @@ export class AuditLogInterceptor implements NestInterceptor {
               metadata: {
                 ...auditOptions.metadata,
                 error: error.message,
-                errorStack: error.stack,
               },
             })
-            .catch(logError => {
-              console.error('Audit log failed:', logError);
+            .catch(() => {
+              // Ignore audit failures during error handling
             });
         },
       }),

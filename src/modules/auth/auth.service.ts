@@ -593,10 +593,7 @@ export class AuthService {
       logger.log('[CONFIG] Checking for existing user');
       let user = await this.prisma.user.findFirst({
         where: {
-          OR: [
-            { googleId: googleSyncDto.googleId },
-            { email: googleSyncDto.email },
-          ],
+          OR: [{ googleId: googleSyncDto.googleId }, { email: googleSyncDto.email }],
         },
       });
 
@@ -608,7 +605,10 @@ export class AuthService {
           ? `${googleSyncDto.firstName}${googleSyncDto.lastName || ''}`
               .toLowerCase()
               .replace(/[^a-z0-9]/g, '')
-          : googleSyncDto.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+          : googleSyncDto.email
+              .split('@')[0]
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '');
 
         // Check if username is taken, add random numbers if needed
         username = baseUsername;
@@ -802,7 +802,9 @@ export class AuthService {
 
       // Step 6: Generate DiceBear avatar URL (use provided imageUrl or generate)
       const avatarSeed = registerDto.username || registerDto.email.split('@')[0];
-      const diceBearAvatarUrl = registerDto.imageUrl || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
+      const diceBearAvatarUrl =
+        registerDto.imageUrl ||
+        `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
       // Step 7: Create user in database (with timeout handling)
       logger.log('[CONFIG] Creating user in database');
@@ -1754,9 +1756,16 @@ export class AuthService {
         // 1. Verify Firebase ID token
         let decodedToken: admin.auth.DecodedIdToken;
         try {
-          decodedToken = await admin.auth().verifyIdToken(dto.idToken);
+          this.logger.debug(`Verifying Firebase token: ${dto.idToken.substring(0, 50)}...`);
+          // Verify token and check if the user is disabled/revoked
+          decodedToken = await admin.auth().verifyIdToken(dto.idToken, true);
+          this.logger.debug('Firebase token verified successfully.');
         } catch (error) {
           this.logger.error('Firebase token verification failed:', error);
+          if (error.code) {
+            this.logger.error(`Firebase Error Code: ${error.code}`);
+            this.logger.error(`Firebase Error Message: ${error.message}`);
+          }
           throw new UnauthorizedException('Invalid or expired Firebase ID token');
         }
 
@@ -1766,7 +1775,7 @@ export class AuthService {
 
         // 2. Extract user information from Firebase token
         const firebaseUser: OAuthUserData = {
-          provider: 'google',
+          provider: 'firebase',
           id: decodedToken.uid,
           email: decodedToken.email || '',
           firstName: decodedToken.name?.split(' ')[0] || '',
@@ -1872,8 +1881,13 @@ export class AuthService {
     } = oauthUser;
 
     // 1. Check if user exists with this OAuth provider ID
+    let whereCondition = {};
+    if (provider === 'google') whereCondition = { googleId: providerId };
+    else if (provider === 'facebook') whereCondition = { facebookId: providerId };
+    else if (provider === 'firebase') whereCondition = { firebaseUid: providerId };
+
     const existingByProviderId = await this.prisma.user.findFirst({
-      where: provider === 'google' ? { googleId: providerId } : { facebookId: providerId },
+      where: whereCondition,
     });
 
     if (existingByProviderId) {
@@ -1893,7 +1907,11 @@ export class AuthService {
       const updatedUser = await this.prisma.user.update({
         where: { id: existingByEmail.id },
         data: {
-          ...(provider === 'google' ? { googleId: providerId } : { facebookId: providerId }),
+          ...(provider === 'google'
+            ? { googleId: providerId }
+            : provider === 'facebook'
+              ? { facebookId: providerId }
+              : { firebaseUid: providerId }),
           oauthProvider: {
             set: [...new Set([...(existingByEmail.oauthProvider || []), provider])],
           },
@@ -1929,7 +1947,11 @@ export class AuthService {
         firstName,
         lastName,
         imageUrl,
-        ...(provider === 'google' ? { googleId: providerId } : { facebookId: providerId }),
+        ...(provider === 'google'
+          ? { googleId: providerId }
+          : provider === 'facebook'
+            ? { facebookId: providerId }
+            : { firebaseUid: providerId }),
         oauthProvider: [provider],
         emailVerified: emailVerified,
         role: 'USER',

@@ -215,6 +215,14 @@ export class DynamicRateLimitService {
       ],
     };
 
+    // 🚀 OPTIMIZED: Skip DB lookup for frequently accessed high-throughput endpoints
+    // These endpoints will always use default limits or specific memory-cached rules
+    const skipDbLookup = ['/api/v1/auth/firebase', '/api/v1/auth/firebase-sync'];
+    if (skipDbLookup.includes(endpoint) && !userId) {
+      this.logger.debug(`[SKIP DB] Rate limit override for high-traffic endpoint: ${endpoint}`);
+      return null;
+    }
+
     // Find override with highest priority
     // 🚀 OPTIMIZATION: SELECT only needed fields to reduce data transfer
     const override = await this.prisma.rateLimitOverride.findFirst({
@@ -233,11 +241,7 @@ export class DynamicRateLimitService {
     });
 
     // Cache result (even if null - prevents repeated DB queries for non-existent overrides)
-    await this.redis.set(
-      cacheKey,
-      override ? JSON.stringify(override) : 'null',
-      this.CACHE_TTL,
-    );
+    await this.redis.set(cacheKey, override ? JSON.stringify(override) : 'null', this.CACHE_TTL);
 
     return override;
   }

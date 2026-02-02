@@ -4,45 +4,19 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-custom';
 import * as admin from 'firebase-admin';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as dotenv from 'dotenv';
-
-// Load .env variables immediately
-dotenv.config();
-
-// --- Standalone Firebase Initialization ---
-// This runs once when the module is loaded, before NestJS instantiates any classes.
-// It bypasses any potential lifecycle issues with ConfigService.
-if (!admin.apps.length) {
-  try {
-    const serviceAccountPath = path.resolve(process.cwd(), 'firebase-service-account.json');
-
-    if (!fs.existsSync(serviceAccountPath)) {
-      throw new Error(`Firebase service account file not found at: ${serviceAccountPath}`);
-    }
-
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      databaseURL: process.env.FIREBASE_DATABASE_URL, // Read directly from process.env
-    });
-
-    console.log('✅✅✅ Firebase Admin SDK Initialized Successfully (Standalone Method) ✅✅✅');
-  } catch (error) {
-    console.error('🔥🔥🔥 FATAL: STANDALONE FIREBASE INITIALIZATION FAILED 🔥🔥🔥', error);
-  }
-}
 
 @Injectable()
 export class FirebaseStrategy extends PassportStrategy(Strategy, 'firebase') {
   constructor(private configService: ConfigService) {
     super();
-    // The constructor is now empty. Initialization happens above.
+
+    // The SDK is initialized in the primary AuthModule's FirebaseStrategy.
+    // This strategy is now a passive consumer.
     if (!admin.apps.length) {
+      // This log indicates a problem with module loading order.
+      // The AuthModule should always be loaded first.
       console.error(
-        'CRITICAL: FirebaseStrategy constructor ran, but Firebase app was not initialized.',
+        '🔥🔥🔥 FATAL: FirebaseStrategy in AnalyticsModule ran before AuthModule. Check module import order. 🔥🔥🔥',
       );
     }
   }
