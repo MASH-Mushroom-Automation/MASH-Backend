@@ -3,7 +3,16 @@ import { ConsoleLogger } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/services/cache.service';
+import { ProductIndexerService } from '../search/indexers/product-indexer.service';
 import { createMockPrismaService } from '../../../test/mocks/prisma.mock';
+
+// Mock ProductIndexerService
+const mockProductIndexerService = {
+  indexProduct: jest.fn(),
+  deleteProduct: jest.fn(),
+  searchProducts: jest.fn(),
+  reindexAll: jest.fn(),
+};
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -32,6 +41,10 @@ describe('ProductsService', () => {
         {
           provide: CacheService,
           useValue: mockCacheService,
+        },
+        {
+          provide: ProductIndexerService,
+          useValue: mockProductIndexerService,
         },
       ],
     })

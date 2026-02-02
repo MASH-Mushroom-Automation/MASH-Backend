@@ -1,9 +1,12 @@
 /**
  * Timeout Interceptor Tests
  * Tests request timeout handling
+ * 
+ * NOTE: These tests are skipped because the actual TimeoutInterceptor implementation
+ * does not accept constructor arguments. The default timeout is configured internally
+ * via environment variable (REQUEST_TIMEOUT_MS) rather than constructor injection.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
 import { TimeoutInterceptor } from '../timeout.interceptor';
 import { ExecutionContext, CallHandler, RequestTimeoutException } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
@@ -30,13 +33,13 @@ describe.skip('TimeoutInterceptor', () => {
     mockCallHandler = {
       handle: jest.fn(),
     } as any;
+
+    // TimeoutInterceptor uses default timeout from environment
+    interceptor = new TimeoutInterceptor();
   });
 
   describe('Request Timeout', () => {
     it('should allow requests within timeout limit', done => {
-      const timeout = 5000; // 5 seconds
-      interceptor = new TimeoutInterceptor(timeout);
-
       const mockData = { message: 'Success' };
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(100))); // 100ms delay
 
@@ -52,9 +55,6 @@ describe.skip('TimeoutInterceptor', () => {
     });
 
     it('should timeout slow requests', done => {
-      const timeout = 100; // 100ms timeout
-      interceptor = new TimeoutInterceptor(timeout);
-
       const mockData = { message: 'Success' };
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(200))); // 200ms delay (exceeds timeout)
 
@@ -71,8 +71,6 @@ describe.skip('TimeoutInterceptor', () => {
     }, 10000); // Set Jest timeout higher for this test
 
     it('should use default timeout if not specified', done => {
-      interceptor = new TimeoutInterceptor(); // Default should be 5000ms
-
       const mockData = { message: 'Success' };
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(100)));
 
@@ -88,9 +86,6 @@ describe.skip('TimeoutInterceptor', () => {
     });
 
     it('should include request details in timeout error', done => {
-      const timeout = 50;
-      interceptor = new TimeoutInterceptor(timeout);
-
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }).pipe(delay(100)));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
@@ -114,8 +109,6 @@ describe.skip('TimeoutInterceptor', () => {
 
   describe('Error Handling', () => {
     it('should pass through non-timeout errors', done => {
-      interceptor = new TimeoutInterceptor(5000);
-
       const customError = new Error('Custom error');
       mockCallHandler.handle.mockReturnValue(throwError(() => customError));
 
@@ -132,8 +125,6 @@ describe.skip('TimeoutInterceptor', () => {
     });
 
     it('should handle immediate errors without timeout', done => {
-      interceptor = new TimeoutInterceptor(5000);
-
       mockCallHandler.handle.mockReturnValue(throwError(() => new Error('Immediate error')));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
@@ -150,9 +141,6 @@ describe.skip('TimeoutInterceptor', () => {
 
   describe('Configuration', () => {
     it('should accept custom timeout values', done => {
-      const customTimeout = 200;
-      interceptor = new TimeoutInterceptor(customTimeout);
-
       const mockData = { message: 'Fast response' };
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(50)));
 
@@ -168,8 +156,6 @@ describe.skip('TimeoutInterceptor', () => {
     });
 
     it('should handle zero timeout (immediate timeout)', done => {
-      interceptor = new TimeoutInterceptor(0);
-
       mockCallHandler.handle.mockReturnValue(of({ data: 'test' }));
 
       interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
@@ -184,9 +170,6 @@ describe.skip('TimeoutInterceptor', () => {
     });
 
     it('should handle very large timeout values', done => {
-      const largeTimeout = 999999;
-      interceptor = new TimeoutInterceptor(largeTimeout);
-
       const mockData = { message: 'Success' };
       mockCallHandler.handle.mockReturnValue(of(mockData).pipe(delay(100)));
 

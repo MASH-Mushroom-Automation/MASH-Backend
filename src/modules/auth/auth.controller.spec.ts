@@ -136,9 +136,13 @@ describe('AuthController', () => {
     it('should return current user information', async () => {
       const mockRequest = {
         user: {
+          id: 'user-1',
           userId: 'user-1',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
           role: 'BUYER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
@@ -168,8 +172,13 @@ describe('AuthController', () => {
       // In real app, this would require valid JWT token
       const mockRequest = {
         user: {
+          id: 'user-1',
           userId: 'user-1',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
+          role: 'USER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
@@ -186,9 +195,13 @@ describe('AuthController', () => {
     it('should include user role information', async () => {
       const mockRequest = {
         user: {
+          id: 'user-1',
           userId: 'user-1',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
           role: 'SELLER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
@@ -211,9 +224,13 @@ describe('AuthController', () => {
     it('should return session information', async () => {
       const mockRequest = {
         user: {
+          id: 'user-1',
           userId: 'user-1',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
           role: 'BUYER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
@@ -224,7 +241,7 @@ describe('AuthController', () => {
         expiresAt: new Date(Date.now() + 3600000),
       };
 
-      authService.getSessionInfo.mockResolvedValue(mockSession as any);
+      authService.getSessionInfo.mockReturnValue(mockSession as any);
 
       const result = await controller.getSession(mockRequest);
 
@@ -235,14 +252,19 @@ describe('AuthController', () => {
     it('should require authentication for session info', async () => {
       const mockRequest = {
         user: {
+          id: 'user-1',
           userId: 'user-1',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
+          role: 'USER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
       const mockSession = { userId: 'user-1' };
 
-      authService.getSessionInfo.mockResolvedValue(mockSession as any);
+      authService.getSessionInfo.mockReturnValue(mockSession as any);
 
       const result = await controller.getSession(mockRequest);
 
@@ -280,8 +302,13 @@ describe('AuthController', () => {
     it('should handle service errors gracefully', async () => {
       const mockRequest = {
         user: {
+          id: 'invalid-id',
           userId: 'invalid-id',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
+          role: 'USER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
@@ -308,8 +335,13 @@ describe('AuthController', () => {
     it('should return properly formatted user data', async () => {
       const mockRequest = {
         user: {
+          id: 'user-1',
           userId: 'user-1',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
+          role: 'USER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
@@ -341,8 +373,13 @@ describe('AuthController', () => {
     it('should return session data with expiration', async () => {
       const mockRequest = {
         user: {
+          id: 'user-1',
           userId: 'user-1',
+          clerkId: 'clerk-123',
           email: 'test@example.com',
+          role: 'USER',
+          sessionId: 'session-123',
+          expiresAt: new Date(Date.now() + 3600000),
         },
       };
 
@@ -351,7 +388,7 @@ describe('AuthController', () => {
         expiresAt: new Date(Date.now() + 3600000),
       };
 
-      authService.getSessionInfo.mockResolvedValue(mockSession as any);
+      authService.getSessionInfo.mockReturnValue(mockSession as any);
 
       const result = await controller.getSession(mockRequest);
 

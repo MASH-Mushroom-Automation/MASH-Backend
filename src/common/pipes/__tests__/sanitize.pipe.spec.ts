@@ -5,13 +5,21 @@
 
 import { SanitizePipe } from '../sanitize.pipe';
 import { ArgumentMetadata, BadRequestException } from '@nestjs/common';
+import { SanitizationService } from '../../services/sanitization.service';
+
+// Mock SanitizationService
+const mockSanitizationService = {
+  sanitizeHtml: jest.fn((value: string) => value.replace(/<script>.*?<\/script>/gi, '').replace(/onerror=".*?"/gi, '')),
+  removeControlCharacters: jest.fn((value: string) => value),
+  sanitizeObject: jest.fn((obj: any) => obj),
+};
 
 // Mark as pending until SanitizePipe is implemented
 describe.skip('SanitizePipe', () => {
   let pipe: SanitizePipe;
 
   beforeEach(() => {
-    pipe = new SanitizePipe();
+    pipe = new SanitizePipe(mockSanitizationService as unknown as SanitizationService);
   });
 
   describe('XSS Prevention', () => {

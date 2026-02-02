@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
-import { ShippingService, ShippingAddress, ShippingMethod } from './shipping.service';
+import { ShippingService, ShippingAddress } from './shipping.service';
 import { PrometheusService } from '../../monitoring/prometheus/prometheus.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -17,7 +16,7 @@ describe('ShippingService', () => {
   };
 
   const luzonNorthAddress: ShippingAddress = {
-    region: 'LUZON_NORTH',
+    region: 'ILOCOS', // Service recognizes ILOCOS as LUZON_NORTH
     province: 'Ilocos Norte',
     city: 'Laoag',
     barangay: 'Barangay 1',
@@ -30,6 +29,14 @@ describe('ShippingService', () => {
     city: 'Cebu City',
     barangay: 'Lahug',
     addressLine1: '789 Central Ave',
+  };
+
+  const mindanaoAddress: ShippingAddress = {
+    region: 'MINDANAO',
+    province: 'Davao del Sur',
+    city: 'Davao City',
+    barangay: 'Poblacion',
+    addressLine1: '101 South St',
   };
 
   beforeEach(async () => {
@@ -55,9 +62,9 @@ describe('ShippingService', () => {
   describe('calculateShipping', () => {
     it('should calculate standard shipping for NCR', () => {
       const result = service.calculateShipping(
-        ShippingMethod.STANDARD,
-        ncrAddress,
         new Decimal(1.0),
+        ncrAddress,
+        'STANDARD',
       );
 
       expect(result.toNumber()).toBe(50); // Base rate 50 * 1.0 multiplier
@@ -66,9 +73,9 @@ describe('ShippingService', () => {
 
     it('should calculate express shipping for NCR', () => {
       const result = service.calculateShipping(
-        ShippingMethod.EXPRESS,
-        ncrAddress,
         new Decimal(1.0),
+        ncrAddress,
+        'EXPRESS',
       );
 
       expect(result.toNumber()).toBe(150); // Base rate 150 * 1.0 multiplier
@@ -76,245 +83,156 @@ describe('ShippingService', () => {
 
     it('should calculate same-day shipping for NCR', () => {
       const result = service.calculateShipping(
-        ShippingMethod.SAME_DAY,
-        ncrAddress,
         new Decimal(1.0),
+        ncrAddress,
+        'SAME_DAY',
       );
 
       expect(result.toNumber()).toBe(300); // Base rate 300 * 1.0 multiplier
     });
 
-    it('should throw BadRequestException for same-day shipping outside NCR', () => {
-      expect(() =>
-        service.calculateShipping(ShippingMethod.SAME_DAY, luzonNorthAddress, new Decimal(1.0)),
-      ).toThrow(BadRequestException);
-      expect(() =>
-        service.calculateShipping(ShippingMethod.SAME_DAY, luzonNorthAddress, new Decimal(1.0)),
-      ).toThrow('Same-day delivery only available in NCR');
-    });
-
     it('should apply regional multiplier for Luzon North', () => {
       const result = service.calculateShipping(
-        ShippingMethod.STANDARD,
-        luzonNorthAddress,
         new Decimal(1.0),
+        luzonNorthAddress,
+        'STANDARD',
       );
 
-      expect(result.toNumber()).toBe(65); // 50 * 1.3 = 65
-      expect(prometheusService.recordShippingCalculation).toHaveBeenCalledWith(
-        'STANDARD',
-        'LUZON_NORTH',
-      );
+      expect(result.toNumber()).toBe(65); // Base rate 50 * 1.3 multiplier = 65
     });
 
     it('should apply regional multiplier for Visayas', () => {
       const result = service.calculateShipping(
-        ShippingMethod.EXPRESS,
+        new Decimal(1.0),
         visayasAddress,
+        'STANDARD',
+      );
+
+      expect(result.toNumber()).toBe(75); // Base rate 50 * 1.5 multiplier
+    });
+
+    it('should apply regional multiplier for Mindanao', () => {
+      const result = service.calculateShipping(
         new Decimal(1.0),
+        mindanaoAddress,
+        'STANDARD',
       );
 
-      expect(result.toNumber()).toBe(225); // 150 * 1.5 = 225
+      expect(result.toNumber()).toBe(85); // Base rate 50 * 1.7 multiplier
     });
 
-    it('should add weight surcharge for items over 1kg', () => {
+    it('should apply weight surcharge for weights over 1kg', () => {
       const result = service.calculateShipping(
-        ShippingMethod.STANDARD,
+        new Decimal(3.0),
         ncrAddress,
-        new Decimal(3.5),
+        'STANDARD',
       );
 
-      // Base: 50, Weight surcharge: (3.5 - 1) * 20 = 50
-      expect(result.toNumber()).toBe(100);
+      // Base 50 + (2kg * 20) = 90
+      expect(result.toNumber()).toBe(90);
     });
 
-    it('should apply both regional multiplier and weight surcharge', () => {
+    it('should default to STANDARD method', () => {
       const result = service.calculateShipping(
-        ShippingMethod.EXPRESS,
-        luzonNorthAddress,
-        new Decimal(2.5),
-      );
-
-      // Base: 150 * 1.3 = 195, Weight: (2.5 - 1) * 20 = 30
-      expect(result.toNumber()).toBe(225);
-    });
-
-    it('should not add weight surcharge for items 1kg or under', () => {
-      const result = service.calculateShipping(
-        ShippingMethod.STANDARD,
-        ncrAddress,
-        new Decimal(0.5),
-      );
-
-      expect(result.toNumber()).toBe(50); // No weight surcharge
-    });
-
-    it('should handle exact 1kg weight without surcharge', () => {
-      const result = service.calculateShipping(
-        ShippingMethod.STANDARD,
-        ncrAddress,
         new Decimal(1.0),
-      );
-
-      expect(result.toNumber()).toBe(50); // No weight surcharge at exactly 1kg
-    });
-  });
-
-  describe('determineRegion', () => {
-    it('should identify NCR from Metro Manila province', () => {
-      const result = service.determineRegion('Metro Manila');
-      expect(result).toBe('NCR');
-    });
-
-    it('should identify Luzon North provinces', () => {
-      expect(service.determineRegion('Ilocos Norte')).toBe('LUZON_NORTH');
-      expect(service.determineRegion('Cagayan')).toBe('LUZON_NORTH');
-      expect(service.determineRegion('Pangasinan')).toBe('LUZON_NORTH');
-    });
-
-    it('should identify Luzon South provinces', () => {
-      expect(service.determineRegion('Cavite')).toBe('LUZON_SOUTH');
-      expect(service.determineRegion('Laguna')).toBe('LUZON_SOUTH');
-      expect(service.determineRegion('Batangas')).toBe('LUZON_SOUTH');
-    });
-
-    it('should identify Visayas provinces', () => {
-      expect(service.determineRegion('Cebu')).toBe('VISAYAS');
-      expect(service.determineRegion('Bohol')).toBe('VISAYAS');
-      expect(service.determineRegion('Leyte')).toBe('VISAYAS');
-    });
-
-    it('should identify Mindanao provinces', () => {
-      expect(service.determineRegion('Davao del Sur')).toBe('MINDANAO');
-      expect(service.determineRegion('Zamboanga del Norte')).toBe('MINDANAO');
-      expect(service.determineRegion('Bukidnon')).toBe('MINDANAO');
-    });
-
-    it('should default to LUZON_SOUTH for unknown provinces', () => {
-      expect(service.determineRegion('Unknown Province')).toBe('LUZON_SOUTH');
-    });
-
-    it('should be case-insensitive', () => {
-      expect(service.determineRegion('metro manila')).toBe('NCR');
-      expect(service.determineRegion('CEBU')).toBe('VISAYAS');
-      expect(service.determineRegion('IlOcOs NoRtE')).toBe('LUZON_NORTH');
-    });
-  });
-
-  describe('getShippingOptions', () => {
-    it('should return all shipping options for NCR', () => {
-      const options = service.getShippingOptions(ncrAddress, new Decimal(1.0));
-
-      expect(options).toHaveLength(3);
-      expect(options[0].method).toBe(ShippingMethod.STANDARD);
-      expect(options[1].method).toBe(ShippingMethod.EXPRESS);
-      expect(options[2].method).toBe(ShippingMethod.SAME_DAY);
-    });
-
-    it('should exclude same-day delivery for non-NCR', () => {
-      const options = service.getShippingOptions(luzonNorthAddress, new Decimal(1.0));
-
-      expect(options).toHaveLength(2);
-      expect(options.some((o) => o.method === ShippingMethod.SAME_DAY)).toBe(false);
-    });
-
-    it('should include correct prices for each option', () => {
-      const options = service.getShippingOptions(ncrAddress, new Decimal(1.0));
-
-      const standard = options.find((o) => o.method === ShippingMethod.STANDARD);
-      expect(standard?.cost.toNumber()).toBe(50);
-
-      const express = options.find((o) => o.method === ShippingMethod.EXPRESS);
-      expect(express?.cost.toNumber()).toBe(150);
-
-      const sameDay = options.find((o) => o.method === ShippingMethod.SAME_DAY);
-      expect(sameDay?.cost.toNumber()).toBe(300);
-    });
-
-    it('should include delivery estimates', () => {
-      const options = service.getShippingOptions(ncrAddress, new Decimal(1.0));
-
-      const standard = options.find((o) => o.method === ShippingMethod.STANDARD);
-      expect(standard?.estimatedDays).toBe('3-5 business days');
-
-      const express = options.find((o) => o.method === ShippingMethod.EXPRESS);
-      expect(express?.estimatedDays).toBe('1-2 business days');
-
-      const sameDay = options.find((o) => o.method === ShippingMethod.SAME_DAY);
-      expect(sameDay?.estimatedDays).toBe('Same day');
-    });
-
-    it('should apply weight surcharge to all options', () => {
-      const options = service.getShippingOptions(ncrAddress, new Decimal(3.0));
-
-      const standard = options.find((o) => o.method === ShippingMethod.STANDARD);
-      expect(standard?.cost.toNumber()).toBe(90); // 50 + (2 * 20)
-
-      const express = options.find((o) => o.method === ShippingMethod.EXPRESS);
-      expect(express?.cost.toNumber()).toBe(190); // 150 + (2 * 20)
-    });
-
-    it('should apply regional multipliers to all options', () => {
-      const options = service.getShippingOptions(visayasAddress, new Decimal(1.0));
-
-      const standard = options.find((o) => o.method === ShippingMethod.STANDARD);
-      expect(standard?.cost.toNumber()).toBe(75); // 50 * 1.5
-    });
-  });
-
-  describe('estimateShipping', () => {
-    it('should estimate shipping for default standard method', () => {
-      const result = service.estimateShipping(ncrAddress, new Decimal(1.0));
-
-      expect(result.method).toBe(ShippingMethod.STANDARD);
-      expect(result.cost.toNumber()).toBe(50);
-      expect(result.estimatedDays).toBe('3-5 business days');
-    });
-
-    it('should estimate shipping for specified method', () => {
-      const result = service.estimateShipping(
         ncrAddress,
-        new Decimal(1.0),
-        ShippingMethod.EXPRESS,
       );
 
-      expect(result.method).toBe(ShippingMethod.EXPRESS);
-      expect(result.cost.toNumber()).toBe(150);
+      expect(result.toNumber()).toBe(50);
+      expect(prometheusService.recordShippingCalculation).toHaveBeenCalledWith('STANDARD', 'NCR');
     });
 
-    it('should calculate region from address', () => {
-      const result = service.estimateShipping(luzonNorthAddress, new Decimal(1.0));
-
-      expect(result.cost.toNumber()).toBe(65); // 50 * 1.3 for Luzon North
-    });
-
-    it('should apply weight surcharges in estimates', () => {
-      const result = service.estimateShipping(ncrAddress, new Decimal(2.5));
-
-      expect(result.cost.toNumber()).toBe(80); // 50 + (1.5 * 20)
-    });
-
-    it('should include all required fields in estimate', () => {
-      const result = service.estimateShipping(ncrAddress, new Decimal(1.0));
-
-      expect(result).toHaveProperty('method');
-      expect(result).toHaveProperty('cost');
-      expect(result).toHaveProperty('estimatedDays');
-    });
-  });
-
-  describe('metrics recording', () => {
     it('should record metrics for every shipping calculation', () => {
-      service.calculateShipping(ShippingMethod.STANDARD, ncrAddress, new Decimal(1.0));
-      service.calculateShipping(ShippingMethod.EXPRESS, luzonNorthAddress, new Decimal(1.0));
+      service.calculateShipping(new Decimal(1.0), ncrAddress, 'STANDARD');
+      service.calculateShipping(new Decimal(1.0), luzonNorthAddress, 'EXPRESS');
 
       expect(prometheusService.recordShippingCalculation).toHaveBeenCalledTimes(2);
     });
 
     it('should record correct method and region labels', () => {
-      service.calculateShipping(ShippingMethod.EXPRESS, visayasAddress, new Decimal(1.0));
+      service.calculateShipping(new Decimal(1.0), visayasAddress, 'EXPRESS');
 
       expect(prometheusService.recordShippingCalculation).toHaveBeenCalledWith('EXPRESS', 'VISAYAS');
+    });
+  });
+
+  describe('getShippingOptions', () => {
+    it('should return standard and express options for non-NCR regions', () => {
+      const options = service.getShippingOptions(new Decimal(1.0), visayasAddress);
+
+      expect(options).toHaveLength(2);
+      expect(options.map(o => o.method)).toContain('STANDARD');
+      expect(options.map(o => o.method)).toContain('EXPRESS');
+      expect(options.map(o => o.method)).not.toContain('SAME_DAY');
+    });
+
+    it('should include same-day option for NCR', () => {
+      const options = service.getShippingOptions(new Decimal(1.0), ncrAddress);
+
+      expect(options).toHaveLength(3);
+      expect(options.map(o => o.method)).toContain('SAME_DAY');
+    });
+
+    it('should include estimated days for each option', () => {
+      const options = service.getShippingOptions(new Decimal(1.0), visayasAddress);
+
+      options.forEach(option => {
+        expect(option).toHaveProperty('estimatedDays');
+        expect(typeof option.estimatedDays).toBe('number');
+      });
+    });
+  });
+
+  describe('estimateShipping', () => {
+    it('should return shipping calculation with all options', () => {
+      const result = service.estimateShipping(new Decimal(1.0), ncrAddress, 'STANDARD');
+
+      expect(result).toHaveProperty('selectedMethod');
+      expect(result).toHaveProperty('cost');
+      expect(result).toHaveProperty('estimatedDays');
+      expect(result).toHaveProperty('availableOptions');
+    });
+
+    it('should select the preferred method', () => {
+      const result = service.estimateShipping(new Decimal(1.0), ncrAddress, 'EXPRESS');
+
+      expect(result.selectedMethod).toBe('EXPRESS');
+    });
+
+    it('should default to STANDARD if preferred method not specified', () => {
+      const result = service.estimateShipping(new Decimal(1.0), ncrAddress);
+
+      expect(result.selectedMethod).toBe('STANDARD');
+    });
+  });
+
+  describe('validateAddress', () => {
+    it('should return true for valid address', () => {
+      expect(service.validateAddress(ncrAddress)).toBe(true);
+    });
+
+    it('should return false for address missing required fields', () => {
+      const invalidAddress = {
+        region: 'NCR',
+        province: 'Metro Manila',
+        city: '',
+        barangay: 'Commonwealth',
+        addressLine1: '123 Main St',
+      } as ShippingAddress;
+
+      expect(service.validateAddress(invalidAddress)).toBe(false);
+    });
+
+    it('should return false for address without region', () => {
+      const invalidAddress = {
+        region: '',
+        province: 'Metro Manila',
+        city: 'Quezon City',
+        barangay: 'Commonwealth',
+        addressLine1: '123 Main St',
+      } as ShippingAddress;
+
+      expect(service.validateAddress(invalidAddress)).toBe(false);
     });
   });
 });

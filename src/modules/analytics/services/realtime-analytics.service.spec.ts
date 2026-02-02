@@ -62,7 +62,13 @@ describe('RealtimeAnalyticsService', () => {
       mockPrismaService.device.count.mockResolvedValue(3);
 
       // Act
-      const result = await service.getLiveMetrics();
+      const result = await service.getLiveMetrics() as {
+        todayOrders: number;
+        todayRevenue: number;
+        activeUsers: number;
+        onlineDevices: number;
+        timestamp: string;
+      };
 
       // Assert
       expect(result).toHaveProperty('todayOrders', 10);
@@ -103,7 +109,7 @@ describe('RealtimeAnalyticsService', () => {
       mockPrismaService.device.count.mockResolvedValue(0);
 
       // Act
-      const result = await service.getLiveMetrics();
+      const result = await service.getLiveMetrics() as { todayRevenue: number };
 
       // Assert
       expect(result.todayRevenue).toBe(0);

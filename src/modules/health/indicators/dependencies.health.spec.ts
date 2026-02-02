@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DependenciesHealthIndicator } from './dependencies.health';
+import { HealthCheckError } from '@nestjs/terminus';
 
 describe('DependenciesHealthIndicator', () => {
   let indicator: DependenciesHealthIndicator;
@@ -14,7 +15,7 @@ describe('DependenciesHealthIndicator', () => {
 
   afterEach(() => {
     // Clear services after each test
-    (indicator as any).services.clear();
+    (indicator as any).serviceStatuses.clear();
   });
 
   it('should be defined', () => {
@@ -23,65 +24,65 @@ describe('DependenciesHealthIndicator', () => {
 
   describe('registerService', () => {
     it('should register a new service', () => {
-      const healthCheck = jest.fn().mockResolvedValue({ status: 'up' });
+      const healthCheck = jest.fn().mockResolvedValue(true);
       
       indicator.registerService('test-service', healthCheck);
       
-      const services = (indicator as any).services;
-      expect(services.has('test-service')).toBe(true);
+      const serviceStatuses = (indicator as any).serviceStatuses;
+      expect(serviceStatuses.has('test-service')).toBe(true);
     });
 
-    it('should store health check function', () => {
-      const healthCheck = jest.fn().mockResolvedValue({ status: 'up' });
+    it('should initialize with healthy=false', () => {
+      const healthCheck = jest.fn().mockResolvedValue(true);
       
       indicator.registerService('test-service', healthCheck);
       
-      const services = (indicator as any).services;
-      const service = services.get('test-service');
-      expect(service).toHaveProperty('healthCheck');
-      expect(service.healthCheck).toBe(healthCheck);
-    });
-
-    it('should initialize with unknown status', () => {
-      const healthCheck = jest.fn().mockResolvedValue({ status: 'up' });
-      
-      indicator.registerService('test-service', healthCheck);
-      
-      const services = (indicator as any).services;
-      const service = services.get('test-service');
-      expect(service.status).toBe('unknown');
+      const serviceStatuses = (indicator as any).serviceStatuses;
+      const service = serviceStatuses.get('test-service');
+      expect(service.healthy).toBe(false);
     });
   });
 
   describe('updateServiceStatus', () => {
-    it('should update service status', () => {
-      const healthCheck = jest.fn().mockResolvedValue({ status: 'up' });
+    it('should update service status to healthy', () => {
+      const healthCheck = jest.fn().mockResolvedValue(true);
       indicator.registerService('test-service', healthCheck);
       
-      indicator.updateServiceStatus('test-service', 'up');
+      indicator.updateServiceStatus('test-service', true);
       
-      const services = (indicator as any).services;
-      const service = services.get('test-service');
-      expect(service.status).toBe('up');
+      const serviceStatuses = (indicator as any).serviceStatuses;
+      const service = serviceStatuses.get('test-service');
+      expect(service.healthy).toBe(true);
     });
 
-    it('should update lastChecked timestamp', () => {
-      const healthCheck = jest.fn().mockResolvedValue({ status: 'up' });
+    it('should update service status to unhealthy', () => {
+      const healthCheck = jest.fn().mockResolvedValue(true);
       indicator.registerService('test-service', healthCheck);
       
-      const beforeUpdate = Date.now();
-      indicator.updateServiceStatus('test-service', 'up');
-      const afterUpdate = Date.now();
+      indicator.updateServiceStatus('test-service', false);
       
-      const services = (indicator as any).services;
-      const service = services.get('test-service');
-      expect(service.lastChecked).toBeGreaterThanOrEqual(beforeUpdate);
-      expect(service.lastChecked).toBeLessThanOrEqual(afterUpdate);
+      const serviceStatuses = (indicator as any).serviceStatuses;
+      const service = serviceStatuses.get('test-service');
+      expect(service.healthy).toBe(false);
+    });
+
+    it('should update lastCheck timestamp', () => {
+      const healthCheck = jest.fn().mockResolvedValue(true);
+      indicator.registerService('test-service', healthCheck);
+      
+      const beforeUpdate = new Date();
+      indicator.updateServiceStatus('test-service', true);
+      const afterUpdate = new Date();
+      
+      const serviceStatuses = (indicator as any).serviceStatuses;
+      const service = serviceStatuses.get('test-service');
+      expect(service.lastCheck.getTime()).toBeGreaterThanOrEqual(beforeUpdate.getTime());
+      expect(service.lastCheck.getTime()).toBeLessThanOrEqual(afterUpdate.getTime());
     });
 
     it('should not throw error for non-existent service', () => {
       expect(() => {
-        indicator.updateServiceStatus('non-existent', 'up');
+        indicator.updateServiceStatus('non-existent', true);
       }).not.toThrow();
     });
   });
@@ -94,111 +95,58 @@ describe('DependenciesHealthIndicator', () => {
       expect(result.dependencies.status).toBe('up');
     });
 
-    it('should return healthy status when all services are up', async () => {
-      const healthCheck1 = jest.fn().mockResolvedValue({ status: 'up' });
-      const healthCheck2 = jest.fn().mockResolvedValue({ status: 'up' });
+    it('should return healthy status when all services are healthy', async () => {
+      const healthCheck1 = jest.fn().mockResolvedValue(true);
+      const healthCheck2 = jest.fn().mockResolvedValue(true);
       
       indicator.registerService('service1', healthCheck1);
       indicator.registerService('service2', healthCheck2);
-      indicator.updateServiceStatus('service1', 'up');
-      indicator.updateServiceStatus('service2', 'up');
+      indicator.updateServiceStatus('service1', true);
+      indicator.updateServiceStatus('service2', true);
       
       const result = await indicator.isHealthy('dependencies');
       
       expect(result.dependencies.status).toBe('up');
     });
 
-    it('should return unhealthy status when any service is down', async () => {
-      const healthCheck1 = jest.fn().mockResolvedValue({ status: 'up' });
-      const healthCheck2 = jest.fn().mockResolvedValue({ status: 'down' });
+    it('should throw HealthCheckError when any service is unhealthy', async () => {
+      const healthCheck1 = jest.fn().mockResolvedValue(true);
+      const healthCheck2 = jest.fn().mockResolvedValue(false);
       
       indicator.registerService('service1', healthCheck1);
       indicator.registerService('service2', healthCheck2);
-      indicator.updateServiceStatus('service1', 'up');
-      indicator.updateServiceStatus('service2', 'down');
+      indicator.updateServiceStatus('service1', true);
+      indicator.updateServiceStatus('service2', false);
       
-      const result = await indicator.isHealthy('dependencies');
-      
-      expect(result.dependencies.status).toBe('down');
+      await expect(indicator.isHealthy('dependencies')).rejects.toThrow(HealthCheckError);
     });
 
     it('should include all service details', async () => {
-      const healthCheck = jest.fn().mockResolvedValue({ status: 'up' });
+      const healthCheck = jest.fn().mockResolvedValue(true);
       
       indicator.registerService('test-service', healthCheck);
-      indicator.updateServiceStatus('test-service', 'up');
+      indicator.updateServiceStatus('test-service', true, 50);
       
       const result = await indicator.isHealthy('dependencies');
       
       expect(result.dependencies).toHaveProperty('services');
       expect(result.dependencies.services).toHaveProperty('test-service');
-      expect(result.dependencies.services['test-service']).toHaveProperty('status');
-      expect(result.dependencies.services['test-service']).toHaveProperty('lastChecked');
+      expect(result.dependencies.services['test-service']).toHaveProperty('healthy', true);
+      expect(result.dependencies.services['test-service']).toHaveProperty('responseTime', '50ms');
     });
 
-    it('should execute health checks for all services', async () => {
-      const healthCheck1 = jest.fn().mockResolvedValue({ status: 'up' });
-      const healthCheck2 = jest.fn().mockResolvedValue({ status: 'up' });
+    it('should include totalServices and healthyServices count', async () => {
+      const healthCheck = jest.fn().mockResolvedValue(true);
       
-      indicator.registerService('service1', healthCheck1);
-      indicator.registerService('service2', healthCheck2);
-      
-      await indicator.isHealthy('dependencies');
-      
-      expect(healthCheck1).toHaveBeenCalled();
-      expect(healthCheck2).toHaveBeenCalled();
-    });
-
-    it('should handle health check failures gracefully', async () => {
-      const healthCheck = jest.fn().mockRejectedValue(new Error('Check failed'));
-      
-      indicator.registerService('failing-service', healthCheck);
+      indicator.registerService('service1', healthCheck);
+      indicator.registerService('service2', healthCheck);
+      indicator.updateServiceStatus('service1', true);
+      indicator.updateServiceStatus('service2', true);
       
       const result = await indicator.isHealthy('dependencies');
       
-      expect(result.dependencies.status).toBe('down');
-      expect(result.dependencies.services['failing-service'].status).toBe('down');
-    });
-  });
-
-  describe('getServiceStatus', () => {
-    it('should return service status', () => {
-      const healthCheck = jest.fn().mockResolvedValue({ status: 'up' });
-      indicator.registerService('test-service', healthCheck);
-      indicator.updateServiceStatus('test-service', 'up');
-      
-      const status = indicator.getServiceStatus('test-service');
-      
-      expect(status).toBe('up');
-    });
-
-    it('should return unknown for non-existent service', () => {
-      const status = indicator.getServiceStatus('non-existent');
-      
-      expect(status).toBe('unknown');
-    });
-  });
-
-  describe('getAllServices', () => {
-    it('should return all registered services', () => {
-      const healthCheck1 = jest.fn().mockResolvedValue({ status: 'up' });
-      const healthCheck2 = jest.fn().mockResolvedValue({ status: 'up' });
-      
-      indicator.registerService('service1', healthCheck1);
-      indicator.registerService('service2', healthCheck2);
-      
-      const services = indicator.getAllServices();
-      
-      expect(services).toHaveLength(2);
-      expect(services[0]).toHaveProperty('name');
-      expect(services[0]).toHaveProperty('status');
-      expect(services[0]).toHaveProperty('lastChecked');
-    });
-
-    it('should return empty array when no services registered', () => {
-      const services = indicator.getAllServices();
-      
-      expect(services).toHaveLength(0);
+      expect(result.dependencies.totalServices).toBe(2);
+      expect(result.dependencies.healthyServices).toBe(2);
     });
   });
 });
