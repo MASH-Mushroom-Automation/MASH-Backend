@@ -419,6 +419,8 @@ export class AuthService {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
+                role: user.role,
+                isActive: user.isActive,
               },
             };
           }
@@ -477,6 +479,8 @@ export class AuthService {
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
+            role: user.role,
+            isActive: user.isActive,
           },
         };
       } catch (error) {
