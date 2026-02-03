@@ -31,7 +31,10 @@ import { randomBytes, createHmac } from 'crypto';
  * const csrfToken = getCookie('XSRF-TOKEN');
  * fetch('/api/v1/resource', {
  *   method: 'POST',
- *   headers: { 'X-XSRF-TOKEN': csrfToken },
+ *   headers: {
+ *     'x-csrf-token': csrfToken,  // Frontend uses this (lowercase)
+ *     // OR 'X-XSRF-TOKEN': csrfToken,  // Standard XSRF header (also supported)
+ *   },
  *   body: JSON.stringify(data),
  * });
  * ```
@@ -98,14 +101,22 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     }
 
     try {
-      // Get CSRF token from request
-      const token = req.headers[this.headerName] || req.body?.[this.bodyFieldName];
+      // Get CSRF token from request (support multiple header names for compatibility)
+      // Frontend sends: x-csrf-token (lowercase)
+      // Standard: x-xsrf-token (Angular convention)
+      const token =
+        req.headers['x-csrf-token'] || // Frontend's header (lowercase)
+        req.headers['x-xsrf-token'] || // Standard XSRF header
+        req.headers[this.headerName] || // Configured header name
+        req.body?.[this.bodyFieldName]; // Body field fallback
 
       // Get CSRF secret from cookie
       const secret = req.cookies?.[this.secretCookieName];
 
       if (!token || !secret) {
         this.logger.warn(`CSRF token missing for ${req.method} ${req.path} from IP ${req.ip}`);
+        this.logger.debug(`Headers: ${JSON.stringify(req.headers)}`);
+        this.logger.debug(`Cookies: ${JSON.stringify(req.cookies)}`);
         throw new ForbiddenException('CSRF token missing');
       }
 
@@ -310,7 +321,8 @@ export function getCsrfConfig(): CsrfConfig {
  *   method: 'POST',
  *   headers: {
  *     'Content-Type': 'application/json',
- *     'X-XSRF-TOKEN': csrfToken,
+ *     'x-csrf-token': csrfToken,  // Frontend uses lowercase
+ *     // OR 'X-XSRF-TOKEN': csrfToken,  // Standard (also supported)
  *   },
  *   credentials: 'include',
  *   body: JSON.stringify(data),
