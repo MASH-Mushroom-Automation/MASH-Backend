@@ -1,9 +1,10 @@
 # Multi-stage Docker build for MASH Backend
 # Stage 1: Build stage (with Sharp pre-built for Alpine/musl)
-# Updated: Fixes Railway deployment by building Sharp in builder stage
-FROM node:25-alpine AS builder
+# Updated: Fixes Railway deployment - Node 22 LTS for engine compatibility
+FROM node:22-alpine AS builder
 
 # Install build dependencies needed for Sharp and native modules
+# node-gyp requires python3, make, g++ for native compilation
 RUN apk add --no-cache \
     python3 \
     make \
@@ -11,7 +12,8 @@ RUN apk add --no-cache \
     gcc \
     libc-dev \
     vips-dev \
-    fftw-dev
+    fftw-dev \
+    pkgconfig
 
 # Set working directory
 WORKDIR /app
@@ -26,9 +28,12 @@ COPY prisma ./prisma/
 # Sharp is built here with native Alpine dependencies available
 ENV PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
 ENV PRISMA_CLI_BINARY_TARGETS=linux-musl,linux-musl-openssl-3.0.x
-ENV npm_config_platform=linux
-ENV npm_config_arch=x64
-ENV npm_config_libc=musl
+
+# Install node-gyp globally first (required for Sharp if prebuilt binaries unavailable)
+RUN npm install -g node-gyp
+
+# Install dependencies - Sharp will use prebuilt binaries for linux-musl
+# If prebuilt unavailable, node-gyp will build from source
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
 # Verify Sharp works in builder
@@ -50,7 +55,7 @@ RUN npm run build && \
     test -f dist/main.js || (echo "ERROR: dist/main.js not found after build!" && exit 1)
 
 # Stage 2: Production stage
-FROM node:25-alpine AS production
+FROM node:22-alpine AS production
 
 # Install ONLY runtime dependencies for Sharp (vips runtime)
 # NO build tools needed since we copy pre-built node_modules from builder

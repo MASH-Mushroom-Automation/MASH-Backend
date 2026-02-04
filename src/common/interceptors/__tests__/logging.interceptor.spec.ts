@@ -121,7 +121,7 @@ describe.skip('LoggingInterceptor', () => {
           const logCall = mockLogger.log.mock.calls.find(call =>
             call[0].includes('Outgoing Response'),
           );
-          expect(logCall[1].duration).toBeGreaterThanOrEqual(0);
+          expect((logCall?.[1] as unknown as { duration: number })?.duration).toBeGreaterThanOrEqual(0);
           done();
         },
       });
