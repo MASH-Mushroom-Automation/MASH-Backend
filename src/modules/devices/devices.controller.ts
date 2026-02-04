@@ -51,10 +51,14 @@ export class DevicesController {
       'userId',
       'createdAt',
       'updatedAt',
+      'serialNumber',
+      'location',
+      'description',
+      'user',
     ],
     requiredFields: ['id', 'name', 'status'],
-    defaultFields: ['id', 'name', 'type', 'status', 'isActive', 'lastSeen'],
-    maxFields: 12,
+    defaultFields: ['id', 'name', 'type', 'status', 'isActive', 'lastSeen', 'serialNumber', 'location', 'description', 'user', 'userId'],
+    maxFields: 15,
   })
   @ApiOperation({ summary: 'List all devices with pagination and filters' })
   @ApiResponse({
@@ -89,9 +93,13 @@ export class DevicesController {
       'userId',
       'createdAt',
       'updatedAt',
+      'serialNumber',
+      'location',
+      'description',
+      'user',
     ],
     requiredFields: ['id'],
-    defaultFields: ['id', 'name', 'type', 'status', 'isActive', 'lastSeen', 'firmware'],
+    defaultFields: ['id', 'name', 'type', 'status', 'isActive', 'lastSeen', 'firmware', 'serialNumber', 'location', 'description', 'user'],
     maxFields: 15,
   })
   @ApiOperation({ summary: 'Get device details by ID' })

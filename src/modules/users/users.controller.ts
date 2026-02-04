@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -55,12 +56,13 @@ export class UsersController {
       'role',
       'isActive',
       'avatar',
-      'phone',
+      'phoneNumber',
       'createdAt',
       'updatedAt',
+      'devices',
     ],
     requiredFields: ['id', 'email'],
-    defaultFields: ['id', 'email', 'firstName', 'lastName', 'role', 'isActive'],
+    defaultFields: ['id', 'email', 'firstName', 'lastName', 'role', 'isActive', 'devices', 'phoneNumber'],
     maxFields: 12,
   })
   @ApiOperation({
@@ -227,6 +229,7 @@ export class UsersController {
 
   // 4. PUT /users/:id - Update user
   @Put(':id')
+  @Patch(':id') // Allow PATCH as well
   @ApiOperation({ summary: 'Update user information' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
