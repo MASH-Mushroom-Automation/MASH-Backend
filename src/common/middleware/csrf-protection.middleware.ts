@@ -76,10 +76,14 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
     '/api/v1/auth/google/login', // Google OAuth login (Firebase ID token validation)
     '/api/v1/auth/firebase', // Firebase login (Public endpoint)
     '/api/v1/auth/firebase-sync', // Firebase sync (Public endpoint)
+    // Add non-prefixed paths for frontend calls that might bypass the global prefix
+    '/auth/firebase',
+    '/auth/firebase-sync',
     '/api/v1/auth/oauth/callback', // OAuth callback endpoints (state parameter for CSRF)
     '/api/v1/webhook', // Webhook endpoints (use signature verification instead)
     '/api/v1/iot/devices', // IoT device endpoints (use API key authentication instead)
     '/api/v1/users/me/apply-as-seller', // Seller application (JWT protected, called from Next.js server)
+    '/users/me/apply-as-seller', // Seller application (non-prefixed path for Next.js server calls)
   ];
 
   use(req: Request, res: Response, next: NextFunction) {
@@ -91,12 +95,40 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
 
     // Skip CSRF for excluded paths
     if (this.isExcludedPath(req.path)) {
+      this.logger.debug(`Skipping CSRF for excluded path: ${req.path}`);
       return next();
     }
 
     // Skip CSRF for API key authenticated requests
     if (req.headers['x-api-key']) {
       this.logger.debug(`Skipping CSRF for API key authenticated request: ${req.path}`);
+      return next();
+    }
+
+    // Skip CSRF for JWT Bearer token authenticated requests
+    // JWT tokens are not vulnerable to CSRF because they're not automatically sent by browsers
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      this.logger.debug(`Skipping CSRF for JWT authenticated request: ${req.path}`);
+      return next();
+    }
+
+    // Skip CSRF for Firebase/OAuth token requests (token in body, not cookie-based)
+    // These use their own token validation and are not vulnerable to CSRF
+    if (req.body?.idToken || req.body?.accessToken || req.body?.firebaseToken) {
+      this.logger.debug(`Skipping CSRF for OAuth/Firebase token request: ${req.path}`);
+      return next();
+    }
+
+    // Skip CSRF for JSON API requests from non-browser clients (e.g., mobile apps, Postman)
+    // These are not vulnerable to CSRF as they require explicit header setting
+    const contentType = req.headers['content-type'];
+    const origin = req.headers['origin'];
+    const referer = req.headers['referer'];
+
+    // If it's a JSON request without origin/referer, it's likely not from a browser form
+    if (contentType?.includes('application/json') && !origin && !referer) {
+      this.logger.debug(`Skipping CSRF for non-browser JSON request: ${req.path}`);
       return next();
     }
 
@@ -246,7 +278,15 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
    * Check if path is excluded from CSRF protection
    */
   private isExcludedPath(path: string): boolean {
-    return this.excludedPaths.some(excluded => path.startsWith(excluded));
+    // Normalize path: remove trailing slash, convert to lowercase for comparison
+    const normalizedPath = path.replace(/\/+$/, '').toLowerCase();
+
+    return this.excludedPaths.some(excluded => {
+      const normalizedExcluded = excluded.toLowerCase();
+      return (
+        normalizedPath === normalizedExcluded || normalizedPath.startsWith(normalizedExcluded + '/')
+      );
+    });
   }
 }
 

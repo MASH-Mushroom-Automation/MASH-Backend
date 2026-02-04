@@ -98,19 +98,19 @@ async function bootstrap() {
     prefix: '/public/',
   });
 
-  logger.log('[CONFIG] Stage 3: Applying security middleware...');
-  // Security middleware - Helmet with comprehensive headers
-  app.use(helmet(getHelmetConfig(nodeEnv)));
-
-  logger.log('[CONFIG] Stage 4: Applying compression...');
-  // Compression middleware - Optimized response compression with threshold and filtering
-  app.use(compression(getCompressionConfig(nodeEnv)));
-
-  logger.log('[CONFIG] Stage 5: Enabling CORS...');
+  logger.log('[CONFIG] Stage 3: Enabling CORS...');
   // CORS configuration - Cross-origin resource sharing
   const corsOrigins = configService.get('CORS_ORIGINS') as string | undefined;
   const corsCredentials = configService.get('CORS_CREDENTIALS', true) as boolean;
   app.enableCors(getCorsConfig(nodeEnv, corsOrigins, corsCredentials));
+
+  logger.log('[CONFIG] Stage 4: Applying security middleware...');
+  // Security middleware - Helmet with comprehensive headers
+  app.use(helmet(getHelmetConfig(nodeEnv)));
+
+  logger.log('[CONFIG] Stage 5: Applying compression...');
+  // Compression middleware - Optimized response compression with threshold and filtering
+  app.use(compression(getCompressionConfig(nodeEnv)));
 
   logger.log('[CONFIG] Stage 6: Setting up audit logging...');
   // Audit logging interceptor - Track sensitive operations
@@ -138,7 +138,7 @@ async function bootstrap() {
 
   // Note: Global validation pipes are registered in CommonModule
 
-  // API prefix - exclude auth HTML pages and metrics endpoint from the prefix
+  // API prefix - exclude auth HTML pages, metrics, and legacy auth endpoints from the prefix
   app.setGlobalPrefix('api/v1', {
     exclude: [
       '/',
@@ -150,6 +150,9 @@ async function bootstrap() {
       { path: '/metrics', method: RequestMethod.ALL },
       { path: '/metrics/json', method: RequestMethod.ALL },
       { path: '/metrics/health', method: RequestMethod.ALL },
+      // Legacy auth endpoints (for frontend compatibility without /api/v1 prefix)
+      { path: '/auth/firebase-sync', method: RequestMethod.POST },
+      { path: '/auth/firebase', method: RequestMethod.POST },
     ],
   });
 

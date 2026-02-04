@@ -60,6 +60,7 @@ import { RedisService } from './database/redis.service';
 import { RedisThrottlerStorage } from './common/storage/redis-throttler.storage';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics.interceptor';
+import { FirebaseModule } from './modules/firebase/firebase.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { MetricsInterceptor } from './monitoring/prometheus/interceptors/metrics
     // Core modules
     CommonModule, // 🆕 Added - Global utilities, filters, interceptors, pipes
     DatabaseModule,
+    FirebaseModule, // 🆕 Firebase Admin SDK initialization (must be before AuthModule)
     HealthModule,
     PrometheusModule, // 🆕 Prometheus metrics collection
     TracingModule, // 🆕 OpenTelemetry distributed tracing

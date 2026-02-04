@@ -18,6 +18,7 @@ import { PermissionsGuard } from './guards/permissions.guard';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OAuthModule } from '../oauth/oauth.module';
 import clerkConfig from '../../config/clerk.config';
+import { AuthLegacyController } from './auth-legacy.controller';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import clerkConfig from '../../config/clerk.config';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AuthLegacyController],
   providers: [
     AuthService,
     JwtStrategy,
