@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { Request } from 'express';
 import { PrismaService } from '../../../database/prisma.service';
 
 export interface JwtPayload {
@@ -11,6 +12,26 @@ export interface JwtPayload {
   iat?: number;
   exp?: number;
 }
+
+/**
+ * Custom JWT extractor that checks multiple sources:
+ * 1. Authorization: Bearer <token> header (standard)
+ * 2. auth-token cookie (for Next.js frontend with HttpOnly cookies)
+ */
+const extractJwtFromRequestOrCookie = (req: Request): string | null => {
+  // First, try to extract from Authorization header
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  // Then, try to extract from auth-token cookie (set by Next.js frontend)
+  if (req.cookies && req.cookies['auth-token']) {
+    return req.cookies['auth-token'];
+  }
+
+  return null;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -23,7 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new Error('JWT_SECRET is not defined in environment variables');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: extractJwtFromRequestOrCookie,
       ignoreExpiration: false,
       secretOrKey: secret,
     });
