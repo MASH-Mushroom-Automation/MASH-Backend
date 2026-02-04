@@ -52,6 +52,25 @@ export class CreateDeviceDto {
   location?: string;
 
   @ApiProperty({
+    description: 'Device serial number',
+    example: 'MASH-A1-CAL26-123456',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  serialNumber: string;
+
+  @ApiProperty({
+    description: 'Device firmware version',
+    example: 'v1.0.0',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  firmware?: string;
+
+  @ApiProperty({
     description: 'Device configuration as JSON object',
     example: {
       readingInterval: 60,
