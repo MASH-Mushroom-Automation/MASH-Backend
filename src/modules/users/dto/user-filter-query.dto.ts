@@ -44,4 +44,20 @@ export class UserFilterQueryDto extends PaginationQueryDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Filter users who have at least one device',
+    required: false,
+  })
+  @IsOptional()
+  hasDevice?: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'Filter by active status',
+    required: false,
+  })
+  @IsOptional()
+  isActive?: boolean;
 }

@@ -36,7 +36,7 @@ export class UsersService {
    * Phase 2: Cache user listings
    */
   async findAll(query: UserFilterQueryDto) {
-    const { page = 1, limit = 10, role, status, search } = query;
+    const { page = 1, limit = 10, role, status, search, hasDevice, isActive } = query;
     const skip = (page - 1) * limit;
 
     // Generate cache key
@@ -51,6 +51,11 @@ export class UsersService {
     const where: any = {};
     if (role) where.role = role;
     if (status) where.status = status;
+    if (isActive !== undefined) {
+       // Convert string 'true'/'false' to boolean if coming from query params as string
+       const isActiveBool = String(isActive) === 'true';
+       where.isActive = isActiveBool; 
+    }
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
@@ -58,6 +63,11 @@ export class UsersService {
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
       ];
+    }
+    
+    // Filter by device existence
+    if (hasDevice === true || hasDevice === 'true' as any) {
+      where.devices = { some: {} };
     }
 
     const [users, total] = await Promise.all([
@@ -75,6 +85,18 @@ export class UsersService {
           isActive: true,
           imageUrl: true,
           createdAt: true,
+          phoneNumber: true,
+          devices: {
+             select: {
+               id: true,
+               serialNumber: true,
+               name: true,
+               type: true,
+               status: true,
+               location: true,
+               firmware: true,
+             }
+          }
         },
       }),
       this.prisma.user.count({ where }),

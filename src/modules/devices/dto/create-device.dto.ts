@@ -52,13 +52,14 @@ export class CreateDeviceDto {
   location?: string;
 
   @ApiProperty({
-    description: 'Device serial number',
+    description: 'Device serial number (auto-generated if not provided)',
     example: 'MASH-A1-CAL26-123456',
+    required: false,
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(100)
-  serialNumber: string;
+  serialNumber?: string;
 
   @ApiProperty({
     description: 'Device firmware version',
@@ -94,23 +95,4 @@ export class CreateDeviceDto {
   @IsOptional()
   userId?: string;
 
-  @ApiProperty({
-    description: 'Device serial number (auto-generated if not provided)',
-    example: 'MASH-B2-CAL26-A1B2C3',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  serialNumber?: string;
-
-  @ApiProperty({
-    description: 'Device firmware version',
-    example: 'v1.2.3',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(50)
-  firmware?: string;
 }
