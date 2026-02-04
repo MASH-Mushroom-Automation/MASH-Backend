@@ -45,13 +45,13 @@ export function getCorsConfig(
    * Includes common development URLs and production URLs
    */
   const defaultOrigins = [
-    'http://localhost:3000',           // Next.js frontend (default)
-    'http://localhost:3001',           // Alternative frontend port
-    'http://localhost:4000',           // Alternative dev port
-    'http://localhost:30000',          // Backend (for same-origin testing)
-    'http://127.0.0.1:3000',           // IPv4 localhost
+    'http://localhost:3000', // Next.js frontend (default)
+    'http://localhost:3001', // Alternative frontend port
+    'http://localhost:4000', // Alternative dev port
+    'http://localhost:30000', // Backend (for same-origin testing)
+    'http://127.0.0.1:3000', // IPv4 localhost
     'http://127.0.0.1:3001',
-    'http://localhost:52291',          // Fluter dev port
+    'http://localhost:52291', // Fluter dev port
     'https://mash-ecommerce.vercel.app', // Vercel production
     'https://mash-ecommerce-web.vercel.app', // Vercel production alternative
     'https://mash-backend-api-production.up.railway.app', // Railway backend
@@ -65,7 +65,13 @@ export function getCorsConfig(
    * - Production: Use explicit whitelist + environment variable
    * - Test: Allow all (for integration tests)
    */
-  const getAllowedOrigins = (): string[] | boolean | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void) => {
+  const getAllowedOrigins = ():
+    | string[]
+    | boolean
+    | ((
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean) => void,
+      ) => void) => {
     // In test environment, allow all origins
     if (isTest) {
       return true;
@@ -136,6 +142,8 @@ export function getCorsConfig(
       'X-Requested-With', // AJAX identification
       'X-Correlation-ID', // Request tracing
       'X-Request-ID', // Request identification
+      'X-XSRF-TOKEN', // CSRF token header
+      'X-CSRF-TOKEN', // Alternative CSRF token header
     ],
 
     /**
@@ -149,6 +157,7 @@ export function getCorsConfig(
       'X-Correlation-ID', // Request tracing
       'X-Request-ID',
       'X-Response-Time', // Performance metrics
+      'X-CSRF-Token', // CSRF token for client
     ],
 
     /**
