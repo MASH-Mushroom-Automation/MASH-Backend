@@ -18,7 +18,7 @@ import { PermissionsGuard } from './guards/permissions.guard';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OAuthModule } from '../oauth/oauth.module';
 import clerkConfig from '../../config/clerk.config';
-import { AuthLegacyController } from './auth-legacy.controller';
+// AuthLegacyController removed - frontend now uses /api/v1/auth/firebase-sync
 
 @Module({
   imports: [
@@ -37,7 +37,7 @@ import { AuthLegacyController } from './auth-legacy.controller';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController, AuthLegacyController],
+  controllers: [AuthController],
   providers: [
     AuthService,
     JwtStrategy,

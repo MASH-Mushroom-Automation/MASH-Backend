@@ -155,7 +155,7 @@ async function bootstrap() {
 
   // Note: Global validation pipes are registered in CommonModule
 
-  // API prefix - exclude auth HTML pages, metrics, and legacy auth endpoints from the prefix
+  // API prefix - exclude auth HTML pages and metrics from the prefix
   app.setGlobalPrefix('api/v1', {
     exclude: [
       '/',
@@ -167,9 +167,6 @@ async function bootstrap() {
       { path: '/metrics', method: RequestMethod.ALL },
       { path: '/metrics/json', method: RequestMethod.ALL },
       { path: '/metrics/health', method: RequestMethod.ALL },
-      // Legacy auth endpoints (for frontend compatibility without /api/v1 prefix)
-      { path: '/auth/firebase-sync', method: RequestMethod.POST },
-      { path: '/auth/firebase', method: RequestMethod.POST },
     ],
   });
 
