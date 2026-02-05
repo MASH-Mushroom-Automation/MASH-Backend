@@ -1,13 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class AssignDeviceDto {
   @ApiProperty({
     description: 'User ID to assign the device to',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    example: 'cmjbr0wmj0004nn7wwdjqc0yx',
   })
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
   userId: string;
 }
