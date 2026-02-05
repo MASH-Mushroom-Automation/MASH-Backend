@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Response } from 'express';
@@ -35,9 +29,7 @@ export class CartSessionInterceptor implements NestInterceptor {
     }
 
     // Get or generate session ID for guest users
-    let sessionId =
-      request.cookies?.['cart_session_id'] ||
-      request.headers['x-session-id'];
+    let sessionId = request.cookies?.['cart_session_id'] || request.headers['x-session-id'];
 
     if (!sessionId) {
       // Generate new session ID
@@ -52,12 +44,14 @@ export class CartSessionInterceptor implements NestInterceptor {
       tap(() => {
         // Set session cookie in response
         if (!request.cookies?.['cart_session_id']) {
+          const isProduction = process.env.NODE_ENV === 'production';
           response.cookie('cart_session_id', sessionId, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: isProduction, // Required for sameSite: 'none'
+            sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain in production
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             path: '/',
+            domain: isProduction ? '.mashmarket.app' : undefined, // Share across subdomains
           });
 
           this.logger.debug(`Set cart session cookie: ${sessionId}`);

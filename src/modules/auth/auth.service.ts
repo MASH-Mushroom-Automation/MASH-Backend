@@ -1811,11 +1811,15 @@ export class AuthService {
 
         // 5. Set HTTP-only cookie for web applications
         if (res) {
+          // Use 'none' for cross-domain (api.mashmarket.app -> mashmarket.app)
+          // 'none' requires secure: true
+          const isProduction = process.env.NODE_ENV === 'production';
           res.cookie('auth-token', accessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: isProduction, // Required for sameSite: 'none'
+            sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain in production
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            domain: isProduction ? '.mashmarket.app' : undefined, // Share across subdomains
           });
           this.logger.log('Auth cookie set successfully');
         }
