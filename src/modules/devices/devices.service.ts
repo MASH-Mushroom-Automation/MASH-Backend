@@ -306,7 +306,7 @@ export class DevicesService {
     
     // Invalidate device caches
     await this.cacheService.invalidateByTags(['devices', 'devices:list', `device:${deviceId}`]);
-    
+
     // Invalidate user-specific device list caches for both old and new users
     if (previousUserId) {
       await this.cacheService.invalidateByTags([`devices:user:${previousUserId}`]);
