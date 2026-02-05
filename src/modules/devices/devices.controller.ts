@@ -117,6 +117,15 @@ export class DevicesController {
     return this.devicesService.update(id, updateDeviceDto, req.user);
   }
 
+  @Put(':id/assign')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Assign device to user' })
+  @ApiResponse({ status: 200, description: 'Device assigned successfully' })
+  async assign(@Param('id') id: string, @Body('userId') userId: string) {
+    return this.devicesService.assignDevice(id, userId);
+  }
+
   @Delete(':id')
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
