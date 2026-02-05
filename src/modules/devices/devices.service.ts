@@ -284,6 +284,39 @@ export class DevicesService {
     return updated;
   }
 
+  async assignDevice(deviceId: string, userId: string) {
+    const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
+    if (!device) throw new NotFoundException('Device not found');
+    if (!device.isActive) throw new BadRequestException('Cannot assign an archived device');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.isActive) throw new BadRequestException('Cannot assign device to an archived user');
+
+    const previousUserId = device.userId;
+
+    const updated = await this.prisma.device.update({
+      where: { id: deviceId },
+      data: { userId },
+      include: {
+        user: true,
+        sensors: { where: { isActive: true } },
+      },
+    });
+    
+    // Invalidate device caches
+    await this.cacheService.invalidateByTags(['devices', 'devices:list', `device:${deviceId}`]);
+    
+    // Invalidate user-specific device list caches for both old and new users
+    if (previousUserId) {
+      await this.cacheService.invalidateByTags([`devices:user:${previousUserId}`]);
+    }
+    await this.cacheService.invalidateByTags([`devices:user:${userId}`]);
+
+    this.logger.log(`Device assigned: ${deviceId} to user ${userId}`);
+    return updated;
+  }
+
   async remove(id: string) {
     // Soft delete
     const device = await this.prisma.device.update({
