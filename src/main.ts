@@ -58,6 +58,23 @@ async function bootstrap() {
     logger.error('Failed to setup custom logger:', error);
   }
 
+  // Add this BEFORE app.enableCors() and any other middleware
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      // Set CORS headers manually for preflight
+      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+      res.header(
+        'Access-Control-Allow-Headers',
+        req.headers['access-control-request-headers'] || 'Content-Type,Authorization',
+      );
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.status(204).send();
+    } else {
+      next();
+    }
+  });
+
   // Apply global middleware (order matters!)
   const correlationIdMiddleware = new CorrelationIdMiddleware();
   app.use(correlationIdMiddleware.use.bind(correlationIdMiddleware));
