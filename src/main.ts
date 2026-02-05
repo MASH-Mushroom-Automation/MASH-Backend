@@ -58,17 +58,39 @@ async function bootstrap() {
     logger.error('Failed to setup custom logger:', error);
   }
 
-  // Add this BEFORE app.enableCors() and any other middleware
+  // CORS middleware - Add headers to ALL responses (not just OPTIONS)
+  // This must be FIRST before any other middleware
   app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+      'https://mashmarket.app',
+      'https://www.mashmarket.app',
+      'https://api.mashmarket.app',
+      'http://localhost:3000',
+      'http://localhost:4200',
+      'http://localhost:5173',
+    ];
+
+    // Check if origin is allowed
+    if (origin && allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+      // Allow requests with no origin (like mobile apps or Postman)
+      res.header('Access-Control-Allow-Origin', '*');
+    }
+
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.header(
+      'Access-Control-Allow-Headers',
+      'Content-Type,Authorization,X-XSRF-TOKEN,X-CSRF-TOKEN,Accept,Accept-Language,X-Requested-With,X-Correlation-ID,X-Request-ID',
+    );
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header(
+      'Access-Control-Expose-Headers',
+      'X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Correlation-ID,X-Request-ID,X-CSRF-Token',
+    );
+
     if (req.method === 'OPTIONS') {
-      // Set CORS headers manually for preflight
-      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-      res.header(
-        'Access-Control-Allow-Headers',
-        req.headers['access-control-request-headers'] || 'Content-Type,Authorization',
-      );
-      res.header('Access-Control-Allow-Credentials', 'true');
       res.status(204).send();
     } else {
       next();
