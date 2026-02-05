@@ -16,11 +16,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SelectableFields } from '../../common/decorators/selectable-fields.decorator';
-import { AuditLog } from '../../common/decorators/audit-log.decorator';
-import { AuditAction } from '../../common/services/audit-log.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
-import { AssignDeviceDto } from './dto/assign-device.dto';
 import { DeviceFilterQueryDto } from './dto/device-filter-query.dto';
 import { DeviceCommandDto } from './dto/device-command.dto';
 import { DeviceConfigurationDto } from './dto/device-configuration.dto';
@@ -123,17 +120,10 @@ export class DevicesController {
   @Put(':id/assign')
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard)
-  @AuditLog({
-    action: 'DEVICE_ASSIGN',
-    entity: 'Device',
-    getEntityId: args => args[0],
-  })
   @ApiOperation({ summary: 'Assign device to user' })
   @ApiResponse({ status: 200, description: 'Device assigned successfully' })
-  @ApiResponse({ status: 400, description: 'Cannot assign an archived device or user' })
-  @ApiResponse({ status: 404, description: 'Device or user not found' })
-  async assign(@Param('id') id: string, @Body() assignDeviceDto: AssignDeviceDto) {
-    return this.devicesService.assignDevice(id, assignDeviceDto.userId);
+  async assign(@Param('id') id: string, @Body('userId') userId: string) {
+    return this.devicesService.assignDevice(id, userId);
   }
 
   @Delete(':id')
