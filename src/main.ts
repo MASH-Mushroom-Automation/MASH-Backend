@@ -69,6 +69,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:4200',
       'http://localhost:5173',
+      'http://localhost:52291',
     ];
 
     // Check if origin is allowed
@@ -231,7 +232,7 @@ async function bootstrap() {
     )
     // Servers
     .addServer(`http://localhost:${port}`, 'Local Development')
-    .addServer('https://mash-backend-api-production.up.railway.app', 'Production')
+    .addServer('https://api.mashmarket.app', 'Production')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
