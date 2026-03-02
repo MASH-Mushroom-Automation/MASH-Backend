@@ -349,7 +349,7 @@ jobs:
           EOF
 
       - name: Upload security artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         continue-on-error: true  # Don't fail if some files are missing
         with:
           name: security-reports
