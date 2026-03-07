@@ -66,6 +66,26 @@ Returns comprehensive information about your seller application including:
     return this.sellerVerificationService.getVerificationStatus(req.user.userId);
   }
 
+  @Get('my-status')
+  @ApiOperation({
+    summary: 'Check seller application status (lightweight)',
+    description: 'Quick check for button redirect logic — returns minimal status for nav purposes',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: {
+        hasPendingRequest: true,
+        status: 'pending',
+        requestId: 'req_123456',
+        submittedAt: '2024-01-01T00:00:00.000Z',
+      },
+    },
+  })
+  async checkMySellerStatus(@Request() req: any) {
+    return this.sellerVerificationService.checkMySellerStatus(req.user.userId);
+  }
+
   @Put('documents')
   @ApiOperation({
     summary: 'Update/resubmit documents',
