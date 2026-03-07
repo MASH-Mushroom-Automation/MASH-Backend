@@ -731,4 +731,46 @@ export class SellerVerificationService {
 
     return timeline;
   }
+
+  /**
+   * Check the current user's seller application status
+   * Safe to call for any authenticated user — only returns their own data
+   */
+  async checkMySellerStatus(userId: string): Promise<{
+    hasPendingRequest: boolean;
+    status: 'none' | 'pending' | 'approved' | 'rejected';
+    requestId?: string;
+    submittedAt?: Date;
+  }> {
+    const request = await this.prisma.requestQueue.findFirst({
+      where: {
+        userId,
+        endpoint: '/admin/seller-applications',
+      },
+      orderBy: { queuedAt: 'desc' }, // get the most recent one
+      select: {
+        id: true,
+        status: true,
+        queuedAt: true,
+      },
+    });
+
+    if (!request) {
+      return { hasPendingRequest: false, status: 'none' };
+    }
+
+    const statusMap = {
+      [RequestQueueStatus.PENDING]: 'pending',
+      [RequestQueueStatus.COMPLETED]: 'approved',
+      [RequestQueueStatus.FAILED]: 'rejected',
+      [RequestQueueStatus.PROCESSING]: 'pending', // treat as still pending
+    } as const;
+
+    return {
+      hasPendingRequest: request.status === RequestQueueStatus.PENDING,
+      status: statusMap[request.status] ?? 'none',
+      requestId: request.id,
+      submittedAt: request.queuedAt,
+    };
+  }
 }
