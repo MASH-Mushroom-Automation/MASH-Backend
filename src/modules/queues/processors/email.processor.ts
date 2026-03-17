@@ -28,7 +28,7 @@ export class EmailProcessor extends WorkerHost {
     });
 
     // Verify transporter configuration
-    this.transporter.verify((error) => {
+    this.transporter.verify(error => {
       if (error) {
         this.logger.error(`SMTP Email transporter verification failed: ${error.message}`);
       } else {
@@ -134,8 +134,6 @@ export class EmailProcessor extends WorkerHost {
       }
 
       throw error; // Bull will retry based on job configuration
-    }
-  }
     }
   }
 

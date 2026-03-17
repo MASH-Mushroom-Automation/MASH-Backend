@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
   UnauthorizedException,
@@ -14,6 +17,7 @@ import { Cacheable } from '../../common/decorators/cache.decorator';
 import { CacheInterceptor } from '../../common/interceptors/cache.interceptor';
 import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
+import { EmailTemplateService } from '../notifications/services/email-template.service';
 import { OAuthService } from '../oauth/oauth.service';
 import { OAuthUserData } from '../oauth/interfaces/oauth-user.interface';
 import { NotificationQueueService } from '../queues/services/notification-queue.service';
@@ -875,7 +879,7 @@ export class AuthService {
         // Render the email template first
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
         const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
-        
+
         const { html, text, subject } = await this.emailTemplateService.renderTemplate(
           'verification-code' as any,
           {
@@ -897,12 +901,14 @@ export class AuthService {
           userId: user.id,
           priority: 'high',
         });
-        
+
         logger.log('[SUCCESS] Verification code email added to processing queue');
       } catch (emailError: unknown) {
         // If queueing fails (e.g., Redis down), log as warning but DON'T rollback registration
         // The user is already created, we can tell them to resend later
-        logger.warn(`[WARN] Failed to queue verification email: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
+        logger.warn(
+          `[WARN] Failed to queue verification email: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`,
+        );
         logger.warn('[WARN] Registration will continue, but user might need to resend the code');
       }
 
@@ -1193,10 +1199,6 @@ export class AuthService {
       },
     });
 
-    // Send new verification code via email
-    logger.log(`[CONFIG] Sending new verification code via email`);
-
-    try {
     // Send new verification code via email (asynchronously via queue)
     logger.log(`[CONFIG] Queueing new verification code to ${user.email}`);
 
@@ -1204,7 +1206,7 @@ export class AuthService {
       // Render the email template first
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
-      
+
       const { html, text, subject } = await this.emailTemplateService.renderTemplate(
         'verification-code' as any,
         {
@@ -1226,7 +1228,7 @@ export class AuthService {
         userId: user.id,
         priority: 'high',
       });
-      
+
       logger.log('[SUCCESS] New verification code email added to processing queue');
     } catch (emailError: any) {
       // If queueing fails, log as warning but return success (user can try again later)
@@ -1306,7 +1308,7 @@ export class AuthService {
       // Render the email template first
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
-      
+
       const { html, text, subject } = await this.emailTemplateService.renderTemplate(
         'verification-code' as any,
         {
@@ -1328,7 +1330,7 @@ export class AuthService {
         userId: user.id,
         priority: 'high',
       });
-      
+
       logger.log('[SUCCESS] 6-digit verification code added to processing queue');
     } catch (emailError: any) {
       // If queueing fails, log as warning but return success (user can try again later)
@@ -1415,7 +1417,7 @@ export class AuthService {
       // Render the email template first
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
-      
+
       const { html, text, subject } = await this.emailTemplateService.renderTemplate(
         'password-reset-code' as any,
         {
@@ -1437,7 +1439,7 @@ export class AuthService {
         userId: user.id,
         priority: 'high',
       });
-      
+
       logger.log('[SUCCESS] Password reset code added to processing queue');
     } catch (emailError: any) {
       // If queueing fails, log as warning but return success (user can try again later)
