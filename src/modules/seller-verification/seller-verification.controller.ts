@@ -23,6 +23,13 @@ import {
   SellerVerificationStatusResponseDto,
 } from '../users/dto/seller-verification.dto';
 
+export interface AuthenticatedRequest {
+  user: {
+    id: string;
+    [key: string]: any;
+  };
+}
+
 @ApiTags('Seller Verification')
 @Controller('seller-verification')
 @UseGuards(JwtAuthGuard)
@@ -62,8 +69,8 @@ Returns comprehensive information about your seller application including:
     type: SellerVerificationStatusResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getVerificationStatus(@Request() req: any) {
-    return this.sellerVerificationService.getVerificationStatus(req.user.userId);
+  async getVerificationStatus(@Request() req: AuthenticatedRequest) {
+    return this.sellerVerificationService.getVerificationStatus(req.user.id);
   }
 
   @Get('my-status')
@@ -82,8 +89,8 @@ Returns comprehensive information about your seller application including:
       },
     },
   })
-  async checkMySellerStatus(@Request() req: any) {
-    return this.sellerVerificationService.checkMySellerStatus(req.user.userId);
+  async checkMySellerStatus(@Request() req: AuthenticatedRequest) {
+    return this.sellerVerificationService.checkMySellerStatus(req.user.id);
   }
 
   @Put('documents')
@@ -122,8 +129,11 @@ Only documents that you provide will be updated. Other documents remain unchange
   @ApiResponse({ status: 400, description: 'Invalid document data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'No pending application found' })
-  async updateDocuments(@Request() req: any, @Body() updateDto: UpdateSellerDocumentsDto) {
-    return this.sellerVerificationService.updateDocuments(req.user.userId, updateDto);
+  async updateDocuments(
+    @Request() req: AuthenticatedRequest,
+    @Body() updateDto: UpdateSellerDocumentsDto,
+  ) {
+    return this.sellerVerificationService.updateDocuments(req.user.id, updateDto);
   }
 
   @Post('resend-verification-email')
@@ -153,8 +163,9 @@ This email includes:
     },
   })
   @ApiResponse({ status: 404, description: 'No seller application found' })
-  async resendVerificationEmail(@Request() req: any) {
-    const status = await this.sellerVerificationService.getVerificationStatus(req.user.userId);
+  async resendVerificationEmail(@Request() req: AuthenticatedRequest) {
+    const userId = String(req.user.id);
+    const status = await this.sellerVerificationService.getVerificationStatus(userId);
 
     if (!status.hasApplication) {
       return {
@@ -166,7 +177,7 @@ This email includes:
     // Get user details and resend email
     const request = await this.sellerVerificationService['prisma'].requestQueue.findFirst({
       where: {
-        userId: req.user.userId,
+        userId,
         endpoint: '/admin/seller-applications',
       },
       orderBy: { queuedAt: 'desc' },
@@ -181,7 +192,12 @@ This email includes:
     });
 
     if (request && request.user) {
-      const payload = request.payload as any;
+      const payload = request.payload as unknown as {
+        businessInfo?: {
+          businessName?: string;
+          businessType?: string;
+        };
+      };
       await this.sellerVerificationService.sendApplicationReceivedEmail(
         { email: request.user.email, firstName: request.user.firstName || 'Applicant' },
         request.id,
@@ -236,13 +252,13 @@ Allows admin to review and provide feedback on individual documents.
     @Param('requestId') requestId: string,
     @Param('documentType') documentType: DocumentType,
     @Body() reviewDto: ReviewDocumentDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.sellerVerificationService.reviewDocument(
       requestId,
       documentType,
       reviewDto,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -296,12 +312,12 @@ The applicant will receive:
   async requestResubmission(
     @Param('requestId') requestId: string,
     @Body() resubmissionDto: RequestResubmissionDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.sellerVerificationService.requestResubmission(
       requestId,
       resubmissionDto,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -340,6 +356,6 @@ The applicant will receive:
       };
     }
 
-    return this.sellerVerificationService.getVerificationStatus(request.userId!);
+    return this.sellerVerificationService.getVerificationStatus(request.userId);
   }
 }
