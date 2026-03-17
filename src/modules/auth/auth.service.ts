@@ -865,7 +865,7 @@ export class AuthService {
       }
 
       // Step 9: Send MASH verification code email (primary method for mobile)
-      logger.log('[CONFIG] Sending 6-digit verification code via Gmail SMTP');
+      logger.log(`[CONFIG] Sending 6-digit verification code to ${registerDto.email}`);
 
       try {
         await this.emailService.sendVerificationCodeEmail(
@@ -876,16 +876,14 @@ export class AuthService {
         );
         logger.log('[SUCCESS] Verification code email sent successfully');
       } catch (emailError: unknown) {
-        logger.error('[ERROR] Failed to send verification code email');
-        const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
-        logger.error(`[ERROR] Email error: ${errorMessage}`);
+        logger.error(`[ERROR] Failed to send verification code email: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
 
         // Rollback user creation if email fails (user won't be able to verify)
         await this.prisma.user.delete({ where: { id: user.id } });
         logger.error('[ERROR] User creation rolled back due to email failure');
 
         throw new InternalServerErrorException(
-          'Failed to send verification email. Please try again later.',
+          'Failed to send verification email. Our email service is currently slow or unavailable. Please try again in a few moments.',
         );
       }
 

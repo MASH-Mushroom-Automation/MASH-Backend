@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
 import sgMail from '@sendgrid/mail';
+import axios from 'axios';
 import { EmailTemplateService, EmailTemplateType } from './email-template.service';
 
 export interface SendEmailOptions {
@@ -24,6 +25,7 @@ interface EmailProviderConfig {
   enabled: boolean;
   priority: number; // Lower number = higher priority
   transporter?: Transporter;
+  apiKey?: string;
 }
 
 @Injectable()
@@ -36,23 +38,14 @@ export class EmailService {
   }
 
   private initializeProviders() {
-    // Initialize Resend provider if configured (MAIN SMTP - Highest Priority)
+    // Initialize Resend provider if configured (MAIN API - Highest Priority)
     const resendApiKey = process.env.RESEND_API || process.env.RESEND_API_KEY;
     if (resendApiKey) {
-      const resendTransporter = nodemailer.createTransport({
-        host: 'smtp.resend.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: 'resend',
-          pass: resendApiKey,
-        },
-      });
       this.providers.push({
         name: EmailProvider.RESEND,
         enabled: true,
         priority: 0, // Highest priority
-        transporter: resendTransporter,
+        apiKey: resendApiKey,
       });
       this.logger.log('✅ Resend email provider initialized (Priority 0)');
     }
@@ -115,6 +108,9 @@ export class EmailService {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
       },
+      connectionTimeout: 5000, // 5s to connect
+      greetingTimeout: 5000,   // 5s to wait for greeting
+      socketTimeout: 10000,    // 10s to wait for socket activity
     });
 
     // Verify transporter configuration
@@ -175,7 +171,28 @@ export class EmailService {
       const fromEmail = process.env.EMAIL_FROM || 'noreply@mash.com';
 
       // Send using the selected provider
-      if (provider.name === EmailProvider.SENDGRID) {
+      if (provider.name === EmailProvider.RESEND && provider.apiKey) {
+        // Resend API implementation (DIRECT HTTP CALL - FASTEST)
+        // This prevents SMTP timeouts commonly seen in production/Railway environments
+        await axios.post(
+          'https://api.resend.com/emails',
+          {
+            from: fromEmail,
+            to: [options.to],
+            subject: emailSubject,
+            text: text,
+            html: html,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${provider.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 8000, // 8s timeout to prevent hanging registration (Railway limit is ~30s)
+          },
+        );
+        this.logger.log(`✅ Email sent successfully to ${options.to} via Resend API (HTTP)`);
+      } else if (provider.name === EmailProvider.SENDGRID) {
         // SendGrid API implementation
         const msg = {
           to: options.to,
@@ -187,11 +204,8 @@ export class EmailService {
 
         await sgMail.send(msg);
         this.logger.log(`✅ Email sent successfully to ${options.to} via SendGrid`);
-      } else if (
-        (provider.name === EmailProvider.SMTP || provider.name === EmailProvider.RESEND) &&
-        provider.transporter
-      ) {
-        // SMTP / Resend implementation
+      } else if (provider.name === EmailProvider.SMTP && provider.transporter) {
+        // SMTP implementation (fallback)
         const info = await provider.transporter.sendMail({
           from: fromEmail,
           to: options.to,
@@ -200,45 +214,59 @@ export class EmailService {
           html: html,
         });
 
-        this.logger.log(
-          `✅ Email sent successfully to ${options.to} via ${provider.name}: ${info.messageId}`,
-        );
+        this.logger.log(`✅ Email sent successfully to ${options.to} via SMTP: ${info.messageId}`);
       } else {
         throw new Error(`Unsupported provider: ${provider.name}`);
       }
     } catch (error) {
       this.logger.error(`❌ Failed to send email to ${options.to}:`, error.message || error);
 
-      // If SendGrid fails and SMTP is available, try failover
+      // Automatic Failover Logic: If the primary provider fails, try the next available one
       const providers = this.providers.filter(p => p.enabled);
-      if (providers.length > 1 && providers[0].name === EmailProvider.SENDGRID) {
-        this.logger.warn('🔄 Attempting failover to SMTP...');
-        try {
-          const smtpProvider = providers.find(p => p.name === EmailProvider.SMTP);
-          if (smtpProvider?.transporter) {
-            const { html, text, subject } = await this.emailTemplateService.renderTemplate(
-              options.templateType,
-              options.variables,
-            );
-            const emailSubject = options.subject || subject;
+      if (providers.length > 1) {
+        // Find the index of the provider that just failed
+        const currentProviderIndex = providers.findIndex(p => p.name === provider.name);
+        // If there's a next provider, try it
+        if (currentProviderIndex !== -1 && currentProviderIndex < providers.length - 1) {
+          const fallbackProvider = providers[currentProviderIndex + 1];
+          this.logger.warn(`🔄 Attempting failover to ${fallbackProvider.name}...`);
+
+          try {
+            // Render template again (variables are still in scope)
+            const { html, text, subject: fallbackSubject } =
+              await this.emailTemplateService.renderTemplate(options.templateType, options.variables);
+
+            const emailSubject = options.subject || fallbackSubject;
             const fromEmail = process.env.EMAIL_FROM || 'noreply@mash.com';
 
-            const info = await smtpProvider.transporter.sendMail({
-              from: fromEmail,
-              to: options.to,
-              subject: emailSubject,
-              text: text,
-              html: html,
-            });
-            this.logger.log(`✅ Email sent via SMTP failover: ${info.messageId}`);
-            return; // Success via failover
+            if (fallbackProvider.name === EmailProvider.SENDGRID) {
+              await sgMail.send({
+                to: options.to,
+                from: fromEmail,
+                subject: emailSubject,
+                text,
+                html,
+              });
+              this.logger.log(`✅ Email sent via ${fallbackProvider.name} failover`);
+              return;
+            } else if (fallbackProvider.transporter) {
+              const info = await fallbackProvider.transporter.sendMail({
+                from: fromEmail,
+                to: options.to,
+                subject: emailSubject,
+                text,
+                html,
+              });
+              this.logger.log(`✅ Email sent via ${fallbackProvider.name} failover: ${info.messageId}`);
+              return;
+            }
+          } catch (failoverError) {
+            this.logger.error(`❌ ${fallbackProvider.name} failover also failed:`, failoverError.message);
           }
-        } catch (failoverError) {
-          this.logger.error('❌ SMTP failover also failed:', failoverError.message);
         }
       }
 
-      throw error; // Propagate original error
+      throw error; // Propagate final error if all attempts fail
     }
   }
 
@@ -638,7 +666,27 @@ export class EmailService {
       this.logger.log(`Using email provider for raw email: ${provider.name}`);
       const fromEmail = process.env.EMAIL_FROM || 'MASH System <noreply@mash.com>';
 
-      if (provider.name === EmailProvider.SENDGRID) {
+      if (provider.name === EmailProvider.RESEND && provider.apiKey) {
+        // Fast Resend API implementation
+        await axios.post(
+          'https://api.resend.com/emails',
+          {
+            from: fromEmail,
+            to: [to],
+            subject,
+            text: text || html.replaceAll(/<[^>]*>/g, ''),
+            html,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${provider.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 8000,
+          },
+        );
+        this.logger.log(`✅ Raw email sent successfully to ${to} via Resend API (HTTP)`);
+      } else if (provider.name === EmailProvider.SENDGRID) {
         const msg = {
           to,
           from: fromEmail,
