@@ -151,9 +151,10 @@ export class EmailService {
    * Send an email using a template with provider failover
    */
   async sendTemplatedEmail(options: SendEmailOptions): Promise<void> {
+    let provider: EmailProviderConfig | null = null;
     try {
       // Get the best available provider
-      const provider = await this.getAvailableProvider();
+      provider = await this.getAvailableProvider();
       if (!provider) {
         throw new Error('No email providers available');
       }
@@ -225,9 +226,10 @@ export class EmailService {
       const providers = this.providers.filter(p => p.enabled);
       if (providers.length > 1) {
         // Find the index of the provider that just failed
-        const currentProviderIndex = providers.findIndex(p => p.name === provider.name);
+        // If provider is null (failed during lookup), start from the first one
+        const currentProviderIndex = provider ? providers.findIndex(p => p.name === provider.name) : -1;
         // If there's a next provider, try it
-        if (currentProviderIndex !== -1 && currentProviderIndex < providers.length - 1) {
+        if (currentProviderIndex < providers.length - 1) {
           const fallbackProvider = providers[currentProviderIndex + 1];
           this.logger.warn(`🔄 Attempting failover to ${fallbackProvider.name}...`);
 
