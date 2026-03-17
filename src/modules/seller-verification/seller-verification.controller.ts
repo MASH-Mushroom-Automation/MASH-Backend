@@ -70,7 +70,7 @@ Returns comprehensive information about your seller application including:
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getVerificationStatus(@Request() req: AuthenticatedRequest) {
-    return this.sellerVerificationService.getVerificationStatus(req.user.id);
+    return this.sellerVerificationService.getVerificationStatus(String(req.user.id));
   }
 
   @Get('my-status')
@@ -90,7 +90,7 @@ Returns comprehensive information about your seller application including:
     },
   })
   async checkMySellerStatus(@Request() req: AuthenticatedRequest) {
-    return this.sellerVerificationService.checkMySellerStatus(req.user.id);
+    return this.sellerVerificationService.checkMySellerStatus(String(req.user.id));
   }
 
   @Put('documents')
@@ -133,7 +133,7 @@ Only documents that you provide will be updated. Other documents remain unchange
     @Request() req: AuthenticatedRequest,
     @Body() updateDto: UpdateSellerDocumentsDto,
   ) {
-    return this.sellerVerificationService.updateDocuments(req.user.id, updateDto);
+    return this.sellerVerificationService.updateDocuments(String(req.user.id), updateDto);
   }
 
   @Post('resend-verification-email')
@@ -258,7 +258,7 @@ Allows admin to review and provide feedback on individual documents.
       requestId,
       documentType,
       reviewDto,
-      req.user.id,
+      String(req.user.id),
     );
   }
 
@@ -317,7 +317,7 @@ The applicant will receive:
     return this.sellerVerificationService.requestResubmission(
       requestId,
       resubmissionDto,
-      req.user.id,
+      String(req.user.id),
     );
   }
 
