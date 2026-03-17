@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import axios from 'axios';
 import { PrismaService } from '../../../database/prisma.service';
 import { NotificationStatus } from '@prisma/client';
 import type { EmailNotificationJob } from '../services/notification-queue.service';
@@ -13,7 +14,7 @@ export class EmailProcessor extends WorkerHost {
 
   constructor(private prisma: PrismaService) {
     super();
-    // Use your existing Gmail SMTP configuration
+    // Configure default SMTP (fallback)
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: parseInt(process.env.EMAIL_PORT || '587'),
@@ -22,14 +23,16 @@ export class EmailProcessor extends WorkerHost {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
       },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
     });
 
     // Verify transporter configuration
-    this.transporter.verify((error, success) => {
+    this.transporter.verify((error) => {
       if (error) {
-        this.logger.error(`Email transporter verification failed: ${error.message}`);
+        this.logger.error(`SMTP Email transporter verification failed: ${error.message}`);
       } else {
-        this.logger.log('Email transporter is ready to send messages');
+        this.logger.log('SMTP Email transporter is ready to send messages');
       }
     });
   }
@@ -43,14 +46,49 @@ export class EmailProcessor extends WorkerHost {
       // Create notification record in database
       const notification = await this.createNotificationRecord(job.data);
 
-      // Send email via Gmail SMTP
-      const info = await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: to.join(', '),
-        subject,
-        text: body,
-        html: html || this.formatAsHtml(body),
-      });
+      const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+      const resendApiKey = process.env.RESEND_API || process.env.RESEND_API_KEY;
+
+      let info;
+
+      if (resendApiKey) {
+        // Try Resend API first (Fast and reliable)
+        try {
+          await axios.post(
+            'https://api.resend.com/emails',
+            {
+              from: fromEmail,
+              to: to,
+              subject,
+              text: body,
+              html: html || this.formatAsHtml(body),
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 10000,
+            },
+          );
+          this.logger.log(`✅ Email sent successfully via Resend API: ${to.join(', ')}`);
+          info = { messageId: 'resend-api-' + Date.now(), response: 'ok' };
+        } catch (resendError) {
+          this.logger.warn(`Resend API failed, falling back to SMTP: ${resendError.message}`);
+        }
+      }
+
+      if (!info) {
+        // Send email via Gmail SMTP (fallback)
+        info = await this.transporter.sendMail({
+          from: fromEmail,
+          to: to.join(', '),
+          subject,
+          text: body,
+          html: html || this.formatAsHtml(body),
+        });
+        this.logger.log(`✅ Email sent successfully via SMTP: ${info.messageId}`);
+      }
 
       // Update notification status to SENT
       await this.prisma.notification.update({
@@ -66,15 +104,13 @@ export class EmailProcessor extends WorkerHost {
         },
       });
 
-      this.logger.log(`Email sent successfully: ${info.messageId}`);
-
       return {
         success: true,
         messageId: info.messageId,
         notificationId: notification.id,
       };
     } catch (error) {
-      this.logger.error(`Failed to send email: ${error.message}`);
+      this.logger.error(`❌ Failed to send email job ${job.id}: ${error.message}`);
 
       // Update notification status to FAILED
       try {
@@ -98,6 +134,8 @@ export class EmailProcessor extends WorkerHost {
       }
 
       throw error; // Bull will retry based on job configuration
+    }
+  }
     }
   }
 

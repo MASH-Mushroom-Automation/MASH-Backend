@@ -109,8 +109,8 @@ export class EmailService {
         pass: process.env.EMAIL_PASSWORD,
       },
       connectionTimeout: 5000, // 5s to connect
-      greetingTimeout: 5000,   // 5s to wait for greeting
-      socketTimeout: 10000,    // 10s to wait for socket activity
+      greetingTimeout: 5000, // 5s to wait for greeting
+      socketTimeout: 10000, // 10s to wait for socket activity
     });
 
     // Verify transporter configuration
@@ -227,7 +227,9 @@ export class EmailService {
       if (providers.length > 1) {
         // Find the index of the provider that just failed
         // If provider is null (failed during lookup), start from the first one
-        const currentProviderIndex = provider ? providers.findIndex(p => p.name === provider.name) : -1;
+        const currentProviderIndex = provider
+          ? providers.findIndex(p => p.name === provider.name)
+          : -1;
         // If there's a next provider, try it
         if (currentProviderIndex < providers.length - 1) {
           const fallbackProvider = providers[currentProviderIndex + 1];
@@ -235,8 +237,14 @@ export class EmailService {
 
           try {
             // Render template again (variables are still in scope)
-            const { html, text, subject: fallbackSubject } =
-              await this.emailTemplateService.renderTemplate(options.templateType, options.variables);
+            const {
+              html,
+              text,
+              subject: fallbackSubject,
+            } = await this.emailTemplateService.renderTemplate(
+              options.templateType,
+              options.variables,
+            );
 
             const emailSubject = options.subject || fallbackSubject;
             const fromEmail = process.env.EMAIL_FROM || 'noreply@mash.com';
@@ -259,11 +267,16 @@ export class EmailService {
                 text,
                 html,
               });
-              this.logger.log(`✅ Email sent via ${fallbackProvider.name} failover: ${info.messageId}`);
+              this.logger.log(
+                `✅ Email sent via ${fallbackProvider.name} failover: ${info.messageId}`,
+              );
               return;
             }
           } catch (failoverError) {
-            this.logger.error(`❌ ${fallbackProvider.name} failover also failed:`, failoverError.message);
+            this.logger.error(
+              `❌ ${fallbackProvider.name} failover also failed:`,
+              failoverError.message,
+            );
           }
         }
       }

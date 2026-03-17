@@ -63,8 +63,7 @@ const StubNotificationQueueService = {
     SmsService,
     SMSTemplateService,
     CommunicationHubService,
-    // Export the stub service when Redis not available
-    ...(REDIS_ENABLED ? [] : [NotificationQueueService]),
+    NotificationQueueService, // Always export the queue service (real or stub)
   ],
 })
 export class NotificationsModule {}

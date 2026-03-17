@@ -16,6 +16,7 @@ import { ClerkService } from './services/clerk.service';
 import { EmailService } from '../notifications/services/email.service';
 import { OAuthService } from '../oauth/oauth.service';
 import { OAuthUserData } from '../oauth/interfaces/oauth-user.interface';
+import { NotificationQueueService } from '../queues/services/notification-queue.service';
 import * as admin from 'firebase-admin';
 import { Response } from 'express';
 import { ClerkWebhookDto } from './dto/clerk-webhook.dto';
@@ -81,8 +82,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly clerkService: ClerkService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly prometheusService: PrometheusService,
     private readonly oauthService: OAuthService,
+    private readonly notificationQueueService: NotificationQueueService,
   ) {}
 
   async handleClerkWebhook(payload: ClerkWebhookDto) {
@@ -864,35 +867,50 @@ export class AuthService {
         }
       }
 
-      // Step 9: Send MASH verification code email (primary method for mobile)
-      logger.log(`[CONFIG] Sending 6-digit verification code to ${registerDto.email}`);
+      // Step 9: Send MASH verification code email (asynchronously via queue)
+      // This prevents 408 Request Timeouts in production (Railway limit is 30s)
+      logger.log(`[CONFIG] Queueing 6-digit verification code to ${registerDto.email}`);
 
       try {
-        await this.emailService.sendVerificationCodeEmail(
-          registerDto.email,
-          registerDto.firstName,
-          verificationCode,
-          '10 minutes',
+        // Render the email template first
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+        const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
+        
+        const { html, text, subject } = await this.emailTemplateService.renderTemplate(
+          'verification-code' as any,
+          {
+            firstName: registerDto.firstName,
+            code: verificationCode,
+            expiresIn: '10 minutes',
+            supportEmail,
+            appUrl: frontendUrl,
+            year: new Date().getFullYear().toString(),
+          },
         );
-        logger.log('[SUCCESS] Verification code email sent successfully');
+
+        // Add to background processing queue
+        await this.notificationQueueService.sendEmail({
+          to: [registerDto.email],
+          subject,
+          body: text,
+          html,
+          userId: user.id,
+          priority: 'high',
+        });
+        
+        logger.log('[SUCCESS] Verification code email added to processing queue');
       } catch (emailError: unknown) {
-        logger.error(`[ERROR] Failed to send verification code email: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
-
-        // Rollback user creation if email fails (user won't be able to verify)
-        await this.prisma.user.delete({ where: { id: user.id } });
-        logger.error('[ERROR] User creation rolled back due to email failure');
-
-        throw new InternalServerErrorException(
-          'Failed to send verification email. Our email service is currently slow or unavailable. Please try again in a few moments.',
-        );
+        // If queueing fails (e.g., Redis down), log as warning but DON'T rollback registration
+        // The user is already created, we can tell them to resend later
+        logger.warn(`[WARN] Failed to queue verification email: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
+        logger.warn('[WARN] Registration will continue, but user might need to resend the code');
       }
 
       // Step 10: Return success response
       logger.log('[SUCCESS] Registration process completed');
       return {
         success: true,
-        message:
-          'Registration successful! A 6-digit verification code has been sent to your email.',
+        message: 'Registration successful! Your verification code is on its way.',
         user: {
           id: user.id,
           clerkId: user.clerkId,
@@ -1179,19 +1197,40 @@ export class AuthService {
     logger.log(`[CONFIG] Sending new verification code via email`);
 
     try {
-      await this.emailService.sendVerificationCodeEmail(
-        user.email,
-        user.firstName || 'User',
-        verificationCode,
-        '10 minutes',
+    // Send new verification code via email (asynchronously via queue)
+    logger.log(`[CONFIG] Queueing new verification code to ${user.email}`);
+
+    try {
+      // Render the email template first
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
+      
+      const { html, text, subject } = await this.emailTemplateService.renderTemplate(
+        'verification-code' as any,
+        {
+          firstName: user.firstName || 'User',
+          code: verificationCode,
+          expiresIn: '10 minutes',
+          supportEmail,
+          appUrl: frontendUrl,
+          year: new Date().getFullYear().toString(),
+        },
       );
 
-      logger.log(`[SUCCESS] New verification code sent to: ${user.email}`);
-    } catch (emailError) {
-      logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
-      throw new InternalServerErrorException(
-        'Failed to send verification code. Please try again later.',
-      );
+      // Add to background processing queue
+      await this.notificationQueueService.sendEmail({
+        to: [user.email],
+        subject,
+        body: text,
+        html,
+        userId: user.id,
+        priority: 'high',
+      });
+      
+      logger.log('[SUCCESS] New verification code email added to processing queue');
+    } catch (emailError: any) {
+      // If queueing fails, log as warning but return success (user can try again later)
+      logger.warn(`[WARN] Failed to queue verification email: ${emailError.message}`);
     }
 
     return {
@@ -1260,23 +1299,40 @@ export class AuthService {
       },
     });
 
-    // Send verification code email (same as registration)
-    logger.log(`[CONFIG] Sending 6-digit verification code via email`);
+    // Send verification code email (asynchronously via queue)
+    logger.log(`[CONFIG] Queueing 6-digit verification code to ${user.email}`);
 
     try {
-      await this.emailService.sendVerificationCodeEmail(
-        user.email,
-        user.firstName || 'User',
-        verificationCode,
-        '10 minutes',
+      // Render the email template first
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
+      
+      const { html, text, subject } = await this.emailTemplateService.renderTemplate(
+        'verification-code' as any,
+        {
+          firstName: user.firstName || 'User',
+          code: verificationCode,
+          expiresIn: '10 minutes',
+          supportEmail,
+          appUrl: frontendUrl,
+          year: new Date().getFullYear().toString(),
+        },
       );
 
-      logger.log(`[SUCCESS] 6-digit verification code sent to: ${user.email}`);
-    } catch (emailError) {
-      logger.error(`[ERROR] Failed to send verification code: ${emailError.message}`);
-      throw new InternalServerErrorException(
-        'Failed to send verification code. Please try again later.',
-      );
+      // Add to background processing queue
+      await this.notificationQueueService.sendEmail({
+        to: [user.email],
+        subject,
+        body: text,
+        html,
+        userId: user.id,
+        priority: 'high',
+      });
+      
+      logger.log('[SUCCESS] 6-digit verification code added to processing queue');
+    } catch (emailError: any) {
+      // If queueing fails, log as warning but return success (user can try again later)
+      logger.warn(`[WARN] Failed to queue verification email: ${emailError.message}`);
     }
 
     return {
@@ -1352,23 +1408,40 @@ export class AuthService {
       },
     });
 
-    // Send password reset code via email
-    logger.log(`[CONFIG] Sending password reset code via email`);
+    // Send password reset code via email (asynchronously via queue)
+    logger.log(`[CONFIG] Queueing password reset code to ${user.email}`);
 
     try {
-      await this.emailService.sendPasswordResetCodeEmail(
-        user.email,
-        user.firstName || 'User',
-        resetCode,
-        '10 minutes',
+      // Render the email template first
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const supportEmail = process.env.EMAIL_FROM || 'support@mash.com';
+      
+      const { html, text, subject } = await this.emailTemplateService.renderTemplate(
+        'password-reset-code' as any,
+        {
+          firstName: user.firstName || 'User',
+          code: resetCode,
+          expiresIn: '10 minutes',
+          supportEmail,
+          appUrl: frontendUrl,
+          year: new Date().getFullYear().toString(),
+        },
       );
 
-      logger.log(`[SUCCESS] Password reset code sent to: ${user.email}`);
-    } catch (emailError) {
-      logger.error(`[ERROR] Failed to send password reset code: ${emailError.message}`);
-      throw new InternalServerErrorException(
-        'Failed to send password reset code. Please try again later.',
-      );
+      // Add to background processing queue
+      await this.notificationQueueService.sendEmail({
+        to: [user.email],
+        subject,
+        body: text,
+        html,
+        userId: user.id,
+        priority: 'high',
+      });
+      
+      logger.log('[SUCCESS] Password reset code added to processing queue');
+    } catch (emailError: any) {
+      // If queueing fails, log as warning but return success (user can try again later)
+      logger.warn(`[WARN] Failed to queue password reset email: ${emailError.message}`);
     }
 
     return {
