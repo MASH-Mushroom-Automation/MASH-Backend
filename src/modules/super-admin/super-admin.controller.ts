@@ -132,12 +132,26 @@ Use this endpoint to review applications before approving/rejecting.
             governmentId: 'https://s3.bucket.com/gov-id.jpg',
             businessCertificate: 'https://s3.bucket.com/dti-cert.pdf',
             birCertificate: 'https://s3.bucket.com/bir-cert.pdf',
-            bankAccountDocumentation: 'https://s3.bucket.com/bank-docs.pdf',
           },
           businessInfo: {
             businessName: 'Manila Mushroom Farm',
-            businessAddress: 'Unit 123, Metro Manila, Philippines',
+            businessType: 'Sole Proprietor',
             additionalInfo: 'Growing organic mushrooms for 5 years',
+          },
+          productInfo: {
+            mushroomTypes: ['Oyster', 'Shiitake', 'Button'],
+            monthlyProductionCapacity: '500-1000 kg',
+            certifications: ['Organic', 'GAP'],
+          },
+          userInfo: {
+            city: 'Quezon City',
+            region: 'NCR',
+            completeAddress: 'Unit 123, Brgy. San Antonio, Metro Manila, Philippines',
+          },
+          contactInfo: {
+            city: 'Quezon City',
+            region: 'NCR',
+            completeAddress: 'Unit 123, Brgy. San Antonio, Metro Manila, Philippines',
           },
           status: 'PENDING',
           queuedAt: '2025-12-04T10:00:00Z',

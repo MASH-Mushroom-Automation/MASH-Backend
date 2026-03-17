@@ -695,6 +695,21 @@ export class RequestQueueService {
         requestedRole: payload?.requestedRole,
         documents: payload?.documents || {},
         businessInfo: payload?.businessInfo || {},
+        productInfo: payload?.productInfo || {
+          mushroomTypes: [],
+          monthlyProductionCapacity: '',
+          certifications: [],
+        },
+        userInfo: payload?.userInfo || {
+          city: '',
+          region: '',
+          completeAddress: '',
+        },
+        contactInfo: payload?.userInfo || {
+          city: '',
+          region: '',
+          completeAddress: '',
+        },
         status: request.status,
         queuedAt: request.queuedAt,
         processedAt: request.processedAt,
