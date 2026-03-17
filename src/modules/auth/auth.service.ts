@@ -904,12 +904,23 @@ export class AuthService {
 
         logger.log('[SUCCESS] Verification code email added to processing queue');
       } catch (emailError: unknown) {
-        // If queueing fails (e.g., Redis down), log as warning but DON'T rollback registration
-        // The user is already created, we can tell them to resend later
         logger.warn(
           `[WARN] Failed to queue verification email: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`,
         );
-        logger.warn('[WARN] Registration will continue, but user might need to resend the code');
+        logger.warn('[WARN] Queue unavailable — falling back to direct email send');
+        try {
+          await this.emailService.sendVerificationCodeEmail(
+            registerDto.email,
+            registerDto.firstName,
+            verificationCode,
+            '10 minutes',
+          );
+          logger.log('[SUCCESS] Verification code sent directly (queue fallback)');
+        } catch (directEmailError: unknown) {
+          logger.error(
+            `[ERROR] Direct email fallback also failed: ${directEmailError instanceof Error ? directEmailError.message : 'Unknown error'}`,
+          );
+        }
       }
 
       // Step 10: Return success response
@@ -1231,8 +1242,19 @@ export class AuthService {
 
       logger.log('[SUCCESS] New verification code email added to processing queue');
     } catch (emailError: any) {
-      // If queueing fails, log as warning but return success (user can try again later)
       logger.warn(`[WARN] Failed to queue verification email: ${emailError.message}`);
+      logger.warn('[WARN] Queue unavailable — falling back to direct email send');
+      try {
+        await this.emailService.sendVerificationCodeEmail(
+          user.email,
+          user.firstName || 'User',
+          verificationCode,
+          '10 minutes',
+        );
+        logger.log('[SUCCESS] Verification code sent directly (queue fallback)');
+      } catch (directEmailError: any) {
+        logger.error(`[ERROR] Direct email fallback also failed: ${directEmailError.message}`);
+      }
     }
 
     return {
@@ -1333,8 +1355,19 @@ export class AuthService {
 
       logger.log('[SUCCESS] 6-digit verification code added to processing queue');
     } catch (emailError: any) {
-      // If queueing fails, log as warning but return success (user can try again later)
       logger.warn(`[WARN] Failed to queue verification email: ${emailError.message}`);
+      logger.warn('[WARN] Queue unavailable — falling back to direct email send');
+      try {
+        await this.emailService.sendVerificationCodeEmail(
+          user.email,
+          user.firstName || 'User',
+          verificationCode,
+          '10 minutes',
+        );
+        logger.log('[SUCCESS] Verification code sent directly (queue fallback)');
+      } catch (directEmailError: any) {
+        logger.error(`[ERROR] Direct email fallback also failed: ${directEmailError.message}`);
+      }
     }
 
     return {
