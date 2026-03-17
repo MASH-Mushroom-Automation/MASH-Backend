@@ -63,7 +63,9 @@ const StubNotificationQueueService = {
     SmsService,
     SMSTemplateService,
     CommunicationHubService,
-    NotificationQueueService, // Always export the queue service (real or stub)
+    // Re-export QueuesModule when Redis is enabled (NotificationQueueService belongs to QueuesModule).
+    // When Redis is disabled, export the stub directly (it is in this module's own providers).
+    ...(REDIS_ENABLED ? [QueuesModule] : [NotificationQueueService]),
   ],
 })
 export class NotificationsModule {}
