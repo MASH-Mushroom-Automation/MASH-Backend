@@ -53,11 +53,17 @@ export class EmailProcessor extends WorkerHost {
 
       if (resendApiKey) {
         // Try Resend API first (Fast and reliable)
+        // Resend requires a verified domain - gmail.com will NOT work
+        const resendFromEmail =
+          process.env.RESEND_FROM_EMAIL ||
+          process.env.RESEND_FROM ||
+          fromEmail;
+
         try {
-          await axios.post(
+          const response = await axios.post(
             'https://api.resend.com/emails',
             {
-              from: fromEmail,
+              from: resendFromEmail,
               to: to,
               subject,
               text: body,
@@ -72,9 +78,10 @@ export class EmailProcessor extends WorkerHost {
             },
           );
           this.logger.log(`✅ Email sent successfully via Resend API: ${to.join(', ')}`);
-          info = { messageId: 'resend-api-' + Date.now(), response: 'ok' };
+          info = { messageId: response.data?.id || 'resend-api-' + Date.now(), response: 'ok' };
         } catch (resendError) {
-          this.logger.warn(`Resend API failed, falling back to SMTP: ${resendError.message}`);
+          const errMsg = resendError?.response?.data?.message || resendError.message;
+          this.logger.warn(`Resend API failed (from: ${resendFromEmail}), falling back to SMTP: ${errMsg}`);
         }
       }
 

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
@@ -41,6 +43,7 @@ export class EmailService {
     // Initialize Resend provider if configured (MAIN API - Highest Priority)
     const resendApiKey = process.env.RESEND_API || process.env.RESEND_API_KEY;
     if (resendApiKey) {
+      const resendFrom = process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM;
       this.providers.push({
         name: EmailProvider.RESEND,
         enabled: true,
@@ -48,6 +51,13 @@ export class EmailService {
         apiKey: resendApiKey,
       });
       this.logger.log('✅ Resend email provider initialized (Priority 0)');
+      if (!resendFrom) {
+        this.logger.warn(
+          '⚠️ RESEND_FROM_EMAIL not set - Resend requires a verified domain. Gmail addresses will be REJECTED. Set RESEND_FROM_EMAIL=YourName <noreply@your-verified-domain.com>',
+        );
+      } else {
+        this.logger.log(`📧 Resend from address: ${resendFrom}`);
+      }
     }
 
     // Initialize SendGrid provider if configured (Priority 1)
@@ -175,10 +185,16 @@ export class EmailService {
       if (provider.name === EmailProvider.RESEND && provider.apiKey) {
         // Resend API implementation (DIRECT HTTP CALL - FASTEST)
         // This prevents SMTP timeouts commonly seen in production/Railway environments
+        // Resend requires a verified domain - gmail.com will NOT work
+        const resendFromEmail =
+          process.env.RESEND_FROM_EMAIL ||
+          process.env.RESEND_FROM ||
+          fromEmail;
+
         await axios.post(
           'https://api.resend.com/emails',
           {
-            from: fromEmail,
+            from: resendFromEmail,
             to: [options.to],
             subject: emailSubject,
             text: text,
@@ -683,10 +699,16 @@ export class EmailService {
 
       if (provider.name === EmailProvider.RESEND && provider.apiKey) {
         // Fast Resend API implementation
+        // Resend requires a verified domain - gmail.com will NOT work
+        const resendFromEmail =
+          process.env.RESEND_FROM_EMAIL ||
+          process.env.RESEND_FROM ||
+          fromEmail;
+
         await axios.post(
           'https://api.resend.com/emails',
           {
-            from: fromEmail,
+            from: resendFromEmail,
             to: [to],
             subject,
             text: text || html.replaceAll(/<[^>]*>/g, ''),
