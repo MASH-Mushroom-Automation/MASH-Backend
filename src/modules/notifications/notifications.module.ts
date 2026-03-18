@@ -26,16 +26,13 @@ const StubNotificationQueueService = {
   provide: NotificationQueueService,
   useValue: {
     sendEmail: async () => {
-      logger.warn('Email queue unavailable - Redis not configured');
-      return null;
+      throw new Error('Email queue unavailable - Redis not configured');
     },
     sendSms: async () => {
-      logger.warn('SMS queue unavailable - Redis not configured');
-      return null;
+      throw new Error('SMS queue unavailable - Redis not configured');
     },
     sendPush: async () => {
-      logger.warn('Push queue unavailable - Redis not configured');
-      return null;
+      throw new Error('Push queue unavailable - Redis not configured');
     },
     getQueueStats: async () => ({ email: null, sms: null, push: null }),
   },
