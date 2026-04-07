@@ -1,7 +1,7 @@
 # Multi-stage Docker build for MASH Backend
 # Stage 1: Build stage (with Sharp pre-built for Alpine/musl)
 # Updated: Fixes Railway deployment - Node 22 LTS for engine compatibility
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Install build dependencies needed for Sharp and native modules
 # node-gyp requires python3, make, g++ for native compilation
@@ -55,7 +55,7 @@ RUN npm run build && \
     test -f dist/main.js || (echo "ERROR: dist/main.js not found after build!" && exit 1)
 
 # Stage 2: Production stage
-FROM node:22-alpine AS production
+FROM node:25-alpine AS production
 
 # Install ONLY runtime dependencies for Sharp (vips runtime)
 # NO build tools needed since we copy pre-built node_modules from builder
