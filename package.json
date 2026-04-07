@@ -55,7 +55,7 @@
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.11",
     "@nestjs/config": "^1.1.5",
-    "@nestjs/core": "^11.1.11",
+    "@nestjs/core": "^11.1.18",
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^10.0.3",
