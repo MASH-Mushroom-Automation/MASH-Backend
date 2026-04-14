@@ -107,7 +107,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Upload test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: unit-test-results
@@ -416,7 +416,7 @@ jobs:
           done
 
       - name: Upload Newman HTML Reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: newman-html-reports
@@ -424,7 +424,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Newman XML Reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: newman-xml-reports
@@ -432,7 +432,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Newman Summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: newman-summary
