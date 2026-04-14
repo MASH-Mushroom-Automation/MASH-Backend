@@ -52,7 +52,7 @@ jobs:
           df -h
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         continue-on-error: true
         with:
           driver-opts: |
@@ -70,7 +70,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -82,7 +82,7 @@ jobs:
 
       - name: Build Docker image
         id: docker-build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         continue-on-error: true
         with:
           context: .
@@ -103,7 +103,7 @@ jobs:
       - name: Build Docker image (without cache fallback)
         if: steps.docker-build.outcome == 'failure'
         id: docker-build-no-cache
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
@@ -349,7 +349,7 @@ jobs:
           EOF
 
       - name: Upload security artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         continue-on-error: true  # Don't fail if some files are missing
         with:
           name: security-reports
@@ -407,7 +407,7 @@ jobs:
       - name: Push image to registry
         if: github.event_name == 'push' && steps.parse-results.outputs.should_fail == 'false'
         id: docker-push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         continue-on-error: true
         with:
           context: .
@@ -420,7 +420,7 @@ jobs:
         
       - name: Push image to registry (without cache fallback)
         if: github.event_name == 'push' && steps.parse-results.outputs.should_fail == 'false' && steps.docker-push.outcome == 'failure'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
