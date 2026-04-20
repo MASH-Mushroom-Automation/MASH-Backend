@@ -55,7 +55,7 @@ jobs:
 
       - name: Copilot Code Review
         id: copilot-review
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -243,7 +243,7 @@ jobs:
 
       - name: Request changes if critical issues found
         if: steps.copilot-review.outputs.has_critical == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.pulls.createReview({
@@ -255,7 +255,7 @@ jobs:
             });
 
       - name: Add labels based on review
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const labels = [];
