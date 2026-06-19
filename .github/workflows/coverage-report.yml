@@ -118,7 +118,7 @@ jobs:
             fs.writeFileSync('coverage-badge.json', JSON.stringify(badge));
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage/lcov.info
           flags: unittests
