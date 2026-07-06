@@ -132,7 +132,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
-    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^9.18.0",
     "@faker-js/faker": "^10.0.0",
     "@nestjs/cli": "^11.0.23",
