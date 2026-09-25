@@ -137,7 +137,7 @@
     "@faker-js/faker": "^10.6.0",
     "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.1.0",
-    "@nestjs/testing": "^11.1.28",
+    "@nestjs/testing": "^11.2.3",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/compression": "^1.8.1",
