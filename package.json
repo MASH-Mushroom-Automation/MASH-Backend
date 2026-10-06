@@ -50,7 +50,7 @@
     "@clerk/backend": "^3.17.1",
     "@clerk/clerk-js": "^6.25.12",
     "@clerk/clerk-sdk-node": "^5.1.6",
-    "@elastic/elasticsearch": "^8.19.1",
+    "@elastic/elasticsearch": "^9.5.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.2.7",
