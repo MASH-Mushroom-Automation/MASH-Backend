@@ -117,7 +117,7 @@
     "regression": "^2.0.1",
     "rxjs": "^7.8.1",
     "sanitize-html": "^2.17.0",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "simple-statistics": "^7.11.0",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4",
