@@ -107,7 +107,7 @@
     "nodemailer": "^10.0.13",
     "papaparse": "^5.5.3",
     "passport": "^0.7.0",
-    "passport-custom": "^1.1.1",
+    "passport-custom": "^1.2.1",
     "passport-jwt": "^4.0.1",
     "pdfkit": "^0.19.1",
     "prom-client": "^15.1.3",
